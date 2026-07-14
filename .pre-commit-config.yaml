@@ -26,10 +26,16 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  # Code-complexity gate with knots — prebuilt wheel, Python-only for this repo
+  # Code-complexity gate with knots — prebuilt wheel, Python-only for this repo.
+  # require_serial: knots errors ("No functions found") when a *batch* of files
+  # has zero functions between them. pre-commit chunks files across workers, so a
+  # chunk of only function-free modules (early stubs, enums-only files) would
+  # trip it; running serially keeps every matched file in one invocation, which
+  # always includes function-bearing modules.
   - repo: https://github.com/brandon-arrendondo/knots-pre-commit
     rev: v1.15.1
     hooks:
       - id: knots
         types: [python]
         exclude: ^docs/conf\.py$
+        require_serial: true
