@@ -27,15 +27,22 @@ Roadmap (see [`DESIGN.md`](DESIGN.md) §10):
 ## Getting started
 
 This repo uses the **shared virtualenv** at `~/data/stars/venv` — do **not**
-create a new one. Install the package and dev tooling into it, then use the
-`make` targets:
+create a new one. Install the package and dev tooling into it:
 
 ```bash
-make dev          # pip install -e ".[dev]" into the shared venv
-make check        # lint (ruff) + typecheck (mypy) + test (pytest) — the CI gate
-make docs         # build the Sphinx developer docs -> docs/_build/html
-make todo         # show the task list (todo-sqlite-cli)
-make help         # list all targets
+~/data/stars/venv/bin/pip install -e ".[dev]"
+```
+
+Development tasks are driven by [`invoke`](https://www.pyinvoke.org/)
+(`tasks.py`); run them from the venv:
+
+```bash
+invoke check          # pre-commit hooks + type check + tests — the CI gate
+invoke test           # run the test suite
+invoke build          # build the sdist and wheel into dist/
+invoke docs           # build the Sphinx developer docs -> docs/_build/html
+invoke bump-version   # bump the version across all files (dry-run with no args)
+invoke --list         # list all tasks
 ```
 
 Install the git hooks once per clone:

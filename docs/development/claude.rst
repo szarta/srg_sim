@@ -34,6 +34,6 @@ Keep tasks scoped to the milestones in :file:`DESIGN.md` §10.
 Before you commit
 -----------------
 
-Run ``make check`` (lint + typecheck + test) and ``make precommit``. Both must
-be green. The ``knots`` complexity gate will reject overly complex functions —
-prefer small, well-named helpers that read like the surrounding code.
+Run ``invoke check`` (pre-commit hooks + type check + tests). It must be green.
+The ``knots`` complexity gate will reject overly complex functions — prefer
+small, well-named helpers that read like the surrounding code.

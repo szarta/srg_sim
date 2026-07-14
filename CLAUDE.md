@@ -17,23 +17,27 @@ Headless, deterministic **SRG Supershow** match simulator. Read this first, then
 
 ## Environment
 
-- **Shared venv:** `~/data/stars/venv` — do **not** create another. `make dev`
-  installs `srg_sim[dev]` into it.
+- **Shared venv:** `~/data/stars/venv` — do **not** create another. Install with
+  `~/data/stars/venv/bin/pip install -e ".[dev]"`.
 - **Card data:** source of authority is the Postgres DB at
   `~/data/srg_card_search_website/backend/app` (snapshot: `backend/app/cards.yaml`).
   Not vendored here; assume every user has that repo + DB.
 
 ## Commands
 
+Development tasks run through `invoke` (`tasks.py`):
+
 ```bash
-make check        # ruff lint + mypy + pytest  (the CI gate)
-make fmt          # auto-format + ruff --fix
-make docs         # build Sphinx docs
-make precommit    # run all pre-commit hooks
+invoke check          # pre-commit hooks + mypy + pytest  (the CI gate)
+invoke test           # run the test suite
+invoke build          # build sdist + wheel into dist/
+invoke docs           # build Sphinx docs
+invoke bump-version   # bump version across all files (dry-run with no args)
 ```
 
 Install hooks once: `~/data/stars/venv/bin/pre-commit install`.
-The **knots** hook gates code complexity — keep functions small.
+The **knots** hook gates code complexity — keep functions small. Formatting is
+applied automatically by the ruff-format pre-commit hook (part of `invoke check`).
 
 ## Tasks
 
@@ -45,4 +49,4 @@ todo-sqlite-cli start <id>      # in-progress
 todo-sqlite-cli done  <id>      # complete
 ```
 
-Before committing: `make check` and `make precommit` must be green.
+Before committing: `invoke check` must be green.

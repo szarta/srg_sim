@@ -4,30 +4,34 @@ Workflow
 Everyday commands
 -----------------
 
-Run from the repository root (they target the shared venv):
+Development tasks are driven by `invoke <https://www.pyinvoke.org/>`_
+(:file:`tasks.py`). Each task shells out to the interpreter running invoke — the
+shared venv — so it works whether or not that venv is on ``PATH``. First install
+the package::
+
+    ~/data/stars/venv/bin/pip install -e ".[dev]"
 
 .. list-table::
    :header-rows: 1
-   :widths: 22 78
+   :widths: 26 74
 
    * - Command
      - What it does
-   * - ``make dev``
-     - Install |project| + dev deps into the venv (editable).
-   * - ``make lint``
-     - ``ruff check`` over ``srg_sim`` and ``tests``.
-   * - ``make fmt``
-     - Auto-format and apply ``ruff`` fixes.
-   * - ``make typecheck``
-     - ``mypy srg_sim`` (strict; see ``pyproject.toml``).
-   * - ``make test``
-     - ``pytest``.
-   * - ``make check``
-     - lint + typecheck + test — the same gate CI runs.
-   * - ``make docs``
-     - Build these docs to ``docs/_build/html``.
-   * - ``make precommit``
-     - Run all pre-commit hooks against every file.
+   * - ``invoke check``
+     - pre-commit hooks (ruff + knots + hygiene) + ``mypy`` + ``pytest`` — the
+       same gate CI runs.
+   * - ``invoke test``
+     - Run the test suite (``pytest``).
+   * - ``invoke build``
+     - Build the sdist and wheel into ``dist/``.
+   * - ``invoke docs``
+     - Build these docs to ``docs/_build/html`` (``--open-browser`` to view).
+   * - ``invoke bump-version``
+     - Bump the version across all files; dry-runs with no ``--new-version``.
+   * - ``invoke clean``
+     - Remove build and test artifacts.
+
+Run ``invoke --list`` to see every task.
 
 Pre-commit
 ----------
@@ -47,6 +51,6 @@ The configured hooks (see :file:`.pre-commit-config.yaml`):
 Continuous integration
 ----------------------
 
-``.github/workflows/ci.yml`` runs the ``check`` gate (ruff lint + format check,
-mypy, pytest) on Python 3.11 and 3.12, and builds the docs with warnings treated
-as errors.
+``.github/workflows/ci.yml`` runs the same checks ``invoke check`` runs (ruff
+lint + format check, mypy, pytest) on Python 3.11 and 3.12, and builds the docs
+with warnings treated as errors.

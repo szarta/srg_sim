@@ -18,6 +18,10 @@ dev = [
     "pytest>=8",
     "mypy>=1.8",
     "ruff>=0.6",
+    "invoke>=2",
+    "build>=1",
+    "pre-commit>=3",
+    "sphinx>=7",
 ]
 
 [project.scripts]

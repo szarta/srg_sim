@@ -8,14 +8,15 @@ Virtualenv
 create a new one — it wastes disk. All tooling (``ruff``, ``pre-commit``,
 ``sphinx-build``) is expected to be available there.
 
-Install |project| and its dev dependencies (``pytest``, ``mypy``, ``ruff``)
-into that venv in editable mode::
+Install |project| and its dev dependencies (``pytest``, ``mypy``, ``ruff``,
+``invoke``, ``build``, ``pre-commit``, ``sphinx``) into that venv in editable
+mode::
 
-    make dev
-    # equivalent to: ~/data/stars/venv/bin/pip install -e ".[dev]"
+    ~/data/stars/venv/bin/pip install -e ".[dev]"
 
-The repo-root :file:`Makefile` points every target at that venv. Override the
-location for a one-off with ``make VENV=/path/to/venv <target>``.
+Development tasks then run through ``invoke`` (see :doc:`workflow`); each task
+shells out to the interpreter running invoke, so the shared venv is used
+automatically.
 
 Card database
 -------------
@@ -46,4 +47,3 @@ in the repo root (resolved via the ``.todo-sqlite-cli`` marker). Common commands
     todo-sqlite-cli list        # active work
     todo-sqlite-cli next        # the single next task
     todo-sqlite-cli add "..."   # add a task
-    make todo                   # shortcut for `list`
