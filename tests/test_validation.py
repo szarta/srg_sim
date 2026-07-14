@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import collections
 
-from tests.demo_decks import bull, fae, make_deck
 from srg_sim.engine import Engine
 from srg_sim.gamelog import matches
 from srg_sim.policy import RandomPolicy
+
+from tests.demo_decks import bull, fae, make_deck
 
 GAMES = 400
 ROLLS = 1000
@@ -23,8 +24,12 @@ def _mirror_win_counts(games: int) -> collections.Counter[str]:
     wins: collections.Counter[str] = collections.Counter()
     for seed in range(games):
         eng = Engine(
-            make_deck("A", bull()), make_deck("B", bull()),
-            RandomPolicy(), RandomPolicy(), seed=seed, created="x",
+            make_deck("A", bull()),
+            make_deck("B", bull()),
+            RandomPolicy(),
+            RandomPolicy(),
+            seed=seed,
+            created="x",
         )
         wins[eng.play().winner] += 1
     return wins
@@ -49,8 +54,12 @@ def test_turn_roll_is_fair_against_closed_form() -> None:
     winners: collections.Counter[str] = collections.Counter()
     for seed in range(ROLLS):
         eng = Engine(
-            make_deck("A", bull()), make_deck("B", fae()),
-            RandomPolicy(), RandomPolicy(), seed=seed, created="x",
+            make_deck("A", bull()),
+            make_deck("B", fae()),
+            RandomPolicy(),
+            RandomPolicy(),
+            seed=seed,
+            created="x",
         )
         eng.setup()
         eng.state.turn_no = 1
@@ -62,8 +71,12 @@ def test_turn_roll_is_fair_against_closed_form() -> None:
 def test_same_seed_is_byte_identical_and_replays() -> None:
     def run() -> Engine:
         eng = Engine(
-            make_deck("A", bull()), make_deck("B", fae()),
-            RandomPolicy(), RandomPolicy(), seed=2024, created="2026-07-14",
+            make_deck("A", bull()),
+            make_deck("B", fae()),
+            RandomPolicy(),
+            RandomPolicy(),
+            seed=2024,
+            created="2026-07-14",
         )
         eng.play()
         return eng

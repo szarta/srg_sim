@@ -7,19 +7,22 @@ import json
 from dataclasses import replace
 
 import pytest
-from tests.demo_decks import bull, bull_vs_fae, fae, make_deck, with_effects
 from srg_sim import effects as fx
 from srg_sim.cards import AtkType, Card, PlayOrder
 from srg_sim.engine import Engine, GameResult, beats
 from srg_sim.gamelog import GameLog
 from srg_sim.policy import HeuristicPolicy, Policy, RandomPolicy
 
+from tests.demo_decks import bull, bull_vs_fae, fae, make_deck, with_effects
+
 VALID_REASONS = {"finish", "count_out", "disqualification", "pinfall", "turn_cap"}
 
 
 def _play(seed: int, pa: Policy | None = None, pb: Policy | None = None) -> Engine:
     da, db = bull_vs_fae()
-    eng = Engine(da, db, pa or RandomPolicy(), pb or RandomPolicy(), seed=seed, created="2026-07-14")
+    eng = Engine(
+        da, db, pa or RandomPolicy(), pb or RandomPolicy(), seed=seed, created="2026-07-14"
+    )
     eng.play()
     return eng
 

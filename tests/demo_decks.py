@@ -11,7 +11,6 @@ are vanilla (no gimmick effects) so a duel is the ≈50/50 baseline of DESIGN.md
 from __future__ import annotations
 
 from srg_sim.cards import (
-    AtkType,
     Card,
     Competitor,
     Deck,
