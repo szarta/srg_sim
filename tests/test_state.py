@@ -6,8 +6,8 @@ from srg_sim.cards import AtkType, Card, Competitor, EntranceCard, PlayOrder, Sk
 from srg_sim.effects import (
     Always,
     BuffSkill,
-    CrowdMeterCompare,
     Comparator,
+    CrowdMeterCompare,
     Duration,
     Effect,
     EffectSource,
