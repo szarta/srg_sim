@@ -48,7 +48,12 @@ def _competitor(uuid: str, name: str, division: str, strike: int) -> dict[str, A
         "db_uuid": uuid,
         "name": name,
         "division": division,
-        "power": 10, "technique": 6, "agility": 5, "submission": 8, "grapple": 9, "strike": strike,
+        "power": 10,
+        "technique": 6,
+        "agility": 5,
+        "submission": 8,
+        "grapple": 9,
+        "strike": strike,
         "rules_text": "When the moon is full, do something arcane.",  # unsupported gimmick
     }
 
@@ -114,9 +119,7 @@ def test_play_writes_a_parseable_log(
     assert json.loads(log.read_text().splitlines()[-1])["type"] == "result"
 
 
-def test_play_is_deterministic(
-    world: dict[str, Path], capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_play_is_deterministic(world: dict[str, Path], capsys: pytest.CaptureFixture[str]) -> None:
     main(_play_args(world, seed="42"))
     first = capsys.readouterr().out
     main(_play_args(world, seed="42"))

@@ -1,0 +1,149 @@
+"""Evaluate Effect-IR conditions against live game state (DESIGN.md §3).
+
+A :class:`~srg_sim.effects.Condition` is a predicate on the current
+:class:`~srg_sim.state.GameState`, evaluated relative to the effect's **owner**
+(the player the effect belongs to; ``SELF`` is the owner, ``OPP`` the other side).
+:func:`holds` dispatches on the node type and returns a bool.
+
+This is what turns a skill stop "online" (``SkillCompare``), gates a see-1 stop
+(``HasInPlay``), and lets conditional ``Static`` buffs resolve — so a card that
+raises a skill can flip a stop online, and one that lowers the opponent's can flip
+theirs offline (SUPERSHOW_MECHANICS §4/§6).
+
+``SkillCompare`` reads the **derived** stats (base + unconditional buffs) via
+``effective_stats`` with no evaluator, which both reflects active buffs *and*
+avoids a buff→condition→buff recursion: a conditional buff's own condition sees
+unconditional buffs only. Roll-scoped conditions (``RollWasSkill`` / ``RollGap*``)
+need a :class:`RollContext`; without one they are simply false.
+"""
+
+from __future__ import annotations
+
+import operator
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
+
+from srg_sim import effects as fx
+from srg_sim.cards import Card, Skill
+
+if TYPE_CHECKING:
+    from srg_sim.state import GameState
+
+_CMP: dict[fx.Comparator, Callable[[int, int], bool]] = {
+    fx.Comparator.GT: operator.gt,
+    fx.Comparator.GE: operator.ge,
+    fx.Comparator.EQ: operator.eq,
+    fx.Comparator.LT: operator.lt,
+}
+
+
+@dataclass(frozen=True)
+class RollContext:
+    """The current turn roll, for roll-scoped conditions (from the owner's view)."""
+
+    skill: Skill | None = None
+    gap: int | None = None  # owner's rolled value minus the opponent's
+
+
+def card_matches(card: Card, filt: fx.CardFilter) -> bool:
+    """True iff ``card`` satisfies every set criterion of ``filt`` (AND; ``raw`` ignored)."""
+    if filt.number is not None and card.number != filt.number:
+        return False
+    if filt.atk_type is not None and card.atk_type is not filt.atk_type:
+        return False
+    if filt.play_order is not None and card.play_order is not filt.play_order:
+        return False
+    if filt.tag is not None and filt.tag not in card.tags:
+        return False
+    return not (filt.name is not None and card.name != filt.name)
+
+
+def _who(state: GameState, owner: str, who: fx.Who) -> str:
+    return owner if who is fx.Who.SELF else state.opponent_of(owner)
+
+
+def _skill_value(state: GameState, key: str, skill: Skill) -> int:
+    # No evaluator: derived stats reflect unconditional buffs and cannot recurse.
+    return state.effective_stats(key)[skill.value]
+
+
+def holds(
+    cond: fx.Condition, state: GameState, owner: str, roll: RollContext | None = None
+) -> bool:
+    """Whether ``cond`` holds for ``owner`` in ``state`` (unknown nodes → False)."""
+    handler = _HANDLERS.get(type(cond))
+    return handler(cond, state, owner, roll) if handler else False
+
+
+def _h_always(c: Any, s: GameState, o: str, r: RollContext | None) -> bool:
+    return True
+
+
+def _h_and(c: fx.And, s: GameState, o: str, r: RollContext | None) -> bool:
+    return all(holds(x, s, o, r) for x in c.items)
+
+
+def _h_or(c: fx.Or, s: GameState, o: str, r: RollContext | None) -> bool:
+    return any(holds(x, s, o, r) for x in c.items)
+
+
+def _h_not(c: fx.Not, s: GameState, o: str, r: RollContext | None) -> bool:
+    return not holds(c.item, s, o, r)
+
+
+def _h_skill(c: fx.SkillCompare, s: GameState, o: str, r: RollContext | None) -> bool:
+    subject = _who(s, o, c.who)
+    left = _skill_value(s, subject, c.skill)
+    if c.vs is fx.Vs.VALUE:
+        right = c.value or 0
+    else:  # OPP_SAME: the subject's opponent, same skill
+        right = _skill_value(s, s.opponent_of(subject), c.skill)
+    return _CMP[c.cmp](left, right)
+
+
+def _h_handsize(c: fx.HandSizeCompare, s: GameState, o: str, r: RollContext | None) -> bool:
+    subject = _who(s, o, c.who)
+    left = len(s.players[subject].hand)
+    right = (c.value or 0) if c.vs is fx.Vs.VALUE else len(s.players[s.opponent_of(subject)].hand)
+    return _CMP[c.cmp](left, right)
+
+
+def _h_crowd(c: fx.CrowdMeterCompare, s: GameState, o: str, r: RollContext | None) -> bool:
+    return _CMP[c.cmp](s.crowd_meter, c.value)
+
+
+def _h_in_play(c: fx.HasInPlay, s: GameState, o: str, r: RollContext | None) -> bool:
+    return any(card_matches(card, c.filter) for card in s.players[_who(s, o, c.who)].in_play)
+
+
+def _h_in_discard(c: fx.HasInDiscard, s: GameState, o: str, r: RollContext | None) -> bool:
+    return any(card_matches(card, c.filter) for card in s.players[_who(s, o, c.who)].discard)
+
+
+def _h_roll_was(c: fx.RollWasSkill, s: GameState, o: str, r: RollContext | None) -> bool:
+    return r is not None and r.skill is c.skill
+
+
+def _h_gap_exact(c: fx.RollGapExactly, s: GameState, o: str, r: RollContext | None) -> bool:
+    return r is not None and r.gap == c.k
+
+
+def _h_gap_at_least(c: fx.RollGapAtLeast, s: GameState, o: str, r: RollContext | None) -> bool:
+    return r is not None and r.gap is not None and r.gap >= c.k
+
+
+_HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]] = {
+    fx.Always: _h_always,
+    fx.And: _h_and,
+    fx.Or: _h_or,
+    fx.Not: _h_not,
+    fx.SkillCompare: _h_skill,
+    fx.HandSizeCompare: _h_handsize,
+    fx.CrowdMeterCompare: _h_crowd,
+    fx.HasInPlay: _h_in_play,
+    fx.HasInDiscard: _h_in_discard,
+    fx.RollWasSkill: _h_roll_was,
+    fx.RollGapExactly: _h_gap_exact,
+    fx.RollGapAtLeast: _h_gap_at_least,
+}

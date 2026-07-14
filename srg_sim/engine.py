@@ -25,6 +25,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from srg_sim import conditions
 from srg_sim import effects as fx
 from srg_sim import gamelog as gl
 from srg_sim.cards import AtkType, Card, Deck, PlayOrder, Skill
@@ -200,9 +201,21 @@ class Engine:
         self._log(gl.TurnResult(t=self.state.turn_no, winner=winner, tie_bumps=bumps))
         return winner
 
+    # -- derived stats (with live condition evaluation) --------------------
+
+    def _holds(self, key: str) -> Callable[[fx.Condition], bool]:
+        """A condition evaluator bound to ``key`` (resolves conditional buffs/stops)."""
+        return lambda cond: conditions.holds(cond, self.state, key)
+
+    def _stats(self, key: str) -> dict[str, int]:
+        return self.state.effective_stats(key, self._holds(key))
+
+    def _stat(self, key: str, skill: Skill) -> int:
+        return self.state.effective_stat(key, skill, self._holds(key))
+
     def _roll_for(self, key: str, use_pending: bool) -> int:
         skill = self.state.rng.roll()
-        base = self.state.effective_stat(key, skill)
+        base = self._stat(key, skill)
         mods: list[gl.RollMod] = []
         delta = self.state.players[key].pending_roll_mods["this"] if use_pending else 0
         if delta:
@@ -361,9 +374,9 @@ class Engine:
         if stop.number not in _SKILL_STOP_NUMBERS:
             return True
         result = evaluate_stop(
-            self.state.effective_stats(defender),
+            self._stats(defender),
             attack.atk_type.value,
-            self.state.effective_stats(attacker),
+            self._stats(attacker),
         )
         return result["online"]
 
@@ -387,7 +400,7 @@ class Engine:
 
     def _finish_sequence(self, finisher: str, defender: str, card: Card) -> None:
         skill = self.state.rng.roll()
-        base = self.state.effective_stat(finisher, skill)
+        base = self._stat(finisher, skill)
         bonus = card.bonus_for(skill)
         cm = self.state.crowd_meter
         value = base + bonus + cm
@@ -419,7 +432,7 @@ class Engine:
         broke = False
         for _ in range(BREAKOUT_ATTEMPTS):
             skill = self.state.rng.roll()
-            val = self.state.effective_stat(defender, skill)
+            val = self._stat(defender, skill)
             success = stat_breaks_out(val, finish_value, 0, cm)
             rolls.append(gl.BreakoutRoll(skill=skill.value, value=val, penalty=0, success=success))
             if success:
