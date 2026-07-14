@@ -11,18 +11,33 @@ format and later used to fit human-like policies.
 
 ## Status
 
-🚧 **Design phase.** [`DESIGN.md`](DESIGN.md) is the review gate: it pins the
-architecture, the Effect IR, and the game-log schema before the engine is
-implemented. Everything under `srg_sim/` is currently a docstring stub.
+✅ **M1 complete.** Two decks play a full legal game end-to-end under seeded RNG;
+the JSONL log replays byte-for-byte; the rules parser compiles card text to the
+Effect IR with a coverage report. [`DESIGN.md`](DESIGN.md) remains the review
+gate for the Effect IR and game-log schema.
 
 Roadmap (see [`DESIGN.md`](DESIGN.md) §10):
 
-- **M1** — rules-correct engine + serialized log (two decks play a full legal
+- **M1** ✅ — rules-correct engine + serialized log (two decks play a full legal
   game; deterministic under a seed; validation suite green).
 - **M2** — batch analysis harness (win-rate / finish / stop stats per matchup).
 - **M3** — broaden `rules_text` → Effect coverage; drive `Unsupported` to zero
   across the top-96 competitors.
 - **M4** — ingest real match logs; fit a human-like policy.
+
+## Usage
+
+The `srg-sim` CLI plays matches, reports rules coverage, and verifies replays.
+It resolves cards against the DB export (`--cards`, defaulting to the snapshot):
+
+```bash
+srg-sim play decks/bull.yaml decks/fae.yaml --seed 7 --out game.jsonl
+srg-sim replay game.jsonl          # re-run from the header seed; verify it matches
+srg-sim coverage --top96           # grammar / override / unsupported clause tally
+```
+
+`--policy-a` / `--policy-b` select `random` or `heuristic`. A decklist names a
+competitor, an entrance, and 30 cards (see [`decks/`](decks/) and DESIGN.md §2).
 
 ## Getting started
 

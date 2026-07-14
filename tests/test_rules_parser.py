@@ -108,7 +108,9 @@ def test_add_from_discard() -> None:
 
 
 def test_shuffle_into_deck() -> None:
-    assert isinstance(_one("Shuffle 2 cards from your discard pile into your deck."), ShuffleIntoDeck)
+    assert isinstance(
+        _one("Shuffle 2 cards from your discard pile into your deck."), ShuffleIntoDeck
+    )
 
 
 def test_stop_plain_and_ordered() -> None:
@@ -123,17 +125,20 @@ def test_stop_dual_order() -> None:
 
 
 def test_conditional_stop_skill_compare() -> None:
-    effect = rp.parse_text(
-        "If your Submission skill is greater than your opponent's Submission skill, stop any Strike.",
-        CARD,
-    )[0]
+    clause = (
+        "If your Submission skill is greater than your opponent's "
+        "Submission skill, stop any Strike."
+    )
+    effect = rp.parse_text(clause, CARD)[0]
     assert isinstance(effect.condition, SkillCompare)
     assert effect.condition.skill is Skill.SUBMISSION
     assert isinstance(effect.actions[0], Stop)
 
 
 def test_conditional_stop_crowd_meter() -> None:
-    effect = rp.parse_text("If the Crowd Meter is 2 or greater, stop any Follow Up Grapple.", CARD)[0]
+    effect = rp.parse_text("If the Crowd Meter is 2 or greater, stop any Follow Up Grapple.", CARD)[
+        0
+    ]
     assert isinstance(effect.condition, CrowdMeterCompare)
     assert effect.condition.value == 2
 
