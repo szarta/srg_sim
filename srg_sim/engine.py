@@ -36,7 +36,7 @@ from srg_sim.stops import STOP_CARDS, evaluate_stop
 if TYPE_CHECKING:
     from srg_sim.policy import Option, Policy
 
-OPENING_HAND = 5
+OPENING_HAND = 3
 HAND_CAP = 10
 BREAKOUT_ATTEMPTS = 3
 TURN_CAP = 400
@@ -125,15 +125,28 @@ class Engine:
             self._mulligan(key)
 
     def _mulligan(self, key: str) -> None:
+        # First-turn option (DESIGN.md §6): only with NO Leads in hand, a player
+        # may randomly bury the hand to the bottom of the deck and redraw the same
+        # number. With a Lead in hand the option is not offered.
         player = self.state.players[key]
-        legal: list[Option] = [{"kind": "keep"}, {"kind": "redraw"}]
+        if not player.hand or any(c.play_order is PlayOrder.LEAD for c in player.hand):
+            return
+        legal: list[Option] = [{"kind": "redraw"}, {"kind": "keep"}]
         if self._decide("mulligan", key, legal)["kind"] != "redraw":
             return
-        n = len(player.hand)
-        player.deck.extend(player.hand)
+        buried = list(player.hand)
+        self.state.rng.shuffle(buried)  # randomly buried
         player.hand.clear()
-        self.state.rng.shuffle(player.deck)
-        self._draw(key, n)
+        player.deck.extend(buried)  # to the bottom of the deck
+        self._log(
+            gl.Bury(
+                t=self.state.turn_no,
+                player=key,
+                cards=[c.db_uuid for c in buried],
+                source="hand",
+            )
+        )
+        self._draw(key, len(buried))
 
     # -- main loop ---------------------------------------------------------
 
@@ -279,14 +292,29 @@ class Engine:
         return None if choice["kind"] == "stop_chain" else choice
 
     def _do_pass(self, active: str) -> None:
-        hand = self.state.players[active].hand
-        if not hand:
+        # Passing recycles one card from discard to the bottom of the deck (§6).
+        discard = self.state.players[active].discard
+        if not discard:
             return
-        legal = [self._card_option(c) for c in hand]
+        legal = [self._card_option(c) for c in discard]
         chosen = self._decide("bury", active, legal)
-        card = self._take_from_hand(active, chosen["number"])
-        self.state.players[active].buried.append(card)
-        self._log(gl.Bury(t=self.state.turn_no, player=active, cards=[card.db_uuid]))
+        card = next(c for c in discard if c.db_uuid == chosen["card"])
+        self._bury_cards(active, [card])
+
+    def _bury_cards(self, key: str, cards: list[Card]) -> None:
+        """Move ``cards`` from discard to the bottom of the deck (DESIGN.md §5)."""
+        player = self.state.players[key]
+        for card in cards:
+            player.discard.remove(card)
+            player.deck.append(card)  # bottom of deck
+        self._log(
+            gl.Bury(
+                t=self.state.turn_no,
+                player=key,
+                cards=[c.db_uuid for c in cards],
+                source="discard",
+            )
+        )
 
     # -- play resolution + stops ------------------------------------------
 
@@ -474,7 +502,27 @@ class Engine:
         self._draw(key, action.n, action.source)
 
     def _act_bury(self, action: fx.Bury, key: str) -> None:
-        self._move_from_hand(key, action.count, "buried", gl.Bury)
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        cards = list(self.state.players[target].discard[: action.count])
+        if action.random:
+            self.state.rng.shuffle(cards)
+        if cards:
+            self._bury_cards(target, cards)
+
+    def _act_flip(self, action: fx.Flip, key: str) -> None:
+        player = self.state.players[key]
+        flipped = player.deck[: action.n]
+        del player.deck[: action.n]
+        player.discard.extend(flipped)
+        if flipped:
+            self._log(
+                gl.Discard(
+                    t=self.state.turn_no,
+                    player=key,
+                    cards=[c.db_uuid for c in flipped],
+                    source="deck",  # flip: top of deck -> discard
+                )
+            )
 
     def _act_discard(self, action: fx.Discard, key: str) -> None:
         self._move_from_hand(key, action.count, "discard", gl.Discard)
@@ -622,6 +670,7 @@ def _playable(chain: list[Card], card: Card) -> bool:
 _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.Draw: Engine._act_draw,
     fx.Bury: Engine._act_bury,
+    fx.Flip: Engine._act_flip,
     fx.Discard: Engine._act_discard,
     fx.CrowdMeter: Engine._act_crowd,
     fx.ModifyRoll: Engine._act_modify_roll,

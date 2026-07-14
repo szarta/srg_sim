@@ -48,8 +48,12 @@ def _synth_records() -> list[dict[str, Any]]:
             "db_uuid": "comp1",
             "name": "Test Comp",
             "division": "Worlds",
-            "power": 10, "technique": 6, "agility": 5,
-            "submission": 8, "grapple": 9, "strike": 7,
+            "power": 10,
+            "technique": 6,
+            "agility": 5,
+            "submission": 8,
+            "grapple": 9,
+            "strike": 7,
             "rules_text": "a gimmick",
             "related_finishes": ["m28", "m29", "m30"],
         }
@@ -59,7 +63,11 @@ def _synth_records() -> list[dict[str, Any]]:
             "card_type": "SingleCompetitorCard",
             "db_uuid": "comp2",
             "name": "Broken Comp",
-            "technique": 6, "agility": 5, "submission": 8, "grapple": 9, "strike": 7,
+            "technique": 6,
+            "agility": 5,
+            "submission": 8,
+            "grapple": 9,
+            "strike": 7,
         }
     )
     records.append(
@@ -189,7 +197,7 @@ def test_load_deck_incomplete_is_invalid(tmp_path: Path, index: CardIndex) -> No
 def test_slot_number_mismatch_warns(tmp_path: Path, index: CardIndex) -> None:
     lines = ["competitor: Test Comp", "entrance: Test Ent", "cards:"]
     # Deliberately mislabel M01 (real number 1) as slot number 2.
-    lines.append('  - {number: 2, name: M01}')
+    lines.append("  - {number: 2, name: M01}")
     lines += [f"  - {{number: {n}, name: M{n:02d}}}" for n in range(2, 31) if n != 1]
     result = load_deck(_write_decklist(tmp_path / "d.yaml", lines), index)
     assert any("slot number 2" in w for w in result.warnings)

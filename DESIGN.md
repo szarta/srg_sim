@@ -122,7 +122,8 @@ Always
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
 Draw(n, from=TOP|BOTTOM)      Bury(selector, count)         Discard(selector, count)
-Search(filter, dest=HAND)     ShuffleIntoDeck(selector)     AddFromDiscard(filter)
+Flip(n)                       Search(filter, dest=HAND)     ShuffleIntoDeck(selector)
+AddFromDiscard(filter)
 ModifyRoll(who, delta, when=THIS|NEXT)     BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
 Reroll(who, once=True)        WinTie(who)                   Bump(who)
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
@@ -130,8 +131,11 @@ BlankText(card, until=END_OF_TURN)             LoseBy(kind=DISQUALIFICATION|PINF
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
 ```
-`BuffSkill` applies to the **unified derived-stats view** — i.e. it affects turn rolls, stops,
-*and* breakout rolls alike; there is no per-context scope, only `duration`. `LoseBy` is how
+`Bury(selector, count)` moves `count` cards from the **discard pile to the bottom of the
+deck**; `Flip(n)` moves the **top `n` cards of the deck to the discard pile** (there is no
+"buried" zone — see §5). `BuffSkill` applies to the **unified derived-stats view** — i.e. it
+affects turn rolls, stops, *and* breakout rolls alike; there is no per-context scope, only
+`duration`. `LoseBy` is how
 cards trigger the DQ / pinfall loss conditions (§6). Count-out is engine-driven, not an action.
 
 **Unsupported sentinel** — any clause the parser can't confidently map:
@@ -171,11 +175,19 @@ unparsed phrasings — this drives M3 work. Target: unsupported → 0 across the
 
 ## 5. Game state (`state.py`)
 
-`PlayerState`: `competitor, entrance, hand[], deck[], discard[], in_play[], buried[],
+There are exactly **five regions** per side: the `competitor`+`entrance` (fixed), and
+four card zones — `deck`, `hand`, `discard`, `in_play`. **Visibility:** `discard` and
+`in_play` are public; `hand` is private to its owner; `deck` is hidden to everyone (though
+as a deck shrinks, remaining hand cards become inferable from public info). Policies never
+read hidden zones (opponent `hand`/either `deck`) unless an effect reveals them.
+
+`PlayerState`: `competitor, entrance, hand[], deck[], discard[], in_play[],
 pending_roll_mods{this,next}, freq_counters, gimmick_blanked:bool, flags`. `GameState`:
 `players[A,B], crowd_meter, active, turn_no, rng, log`. All snapshottable
 (`to_dict`/`from_dict`) so any state is reproducible and diffable. `deck` order matters;
-shuffles/searches go through the seeded RNG.
+shuffles/searches go through the seeded RNG. **Bury** = move a card from `discard` to the
+**bottom of `deck`**; **Flip** = move the top of `deck` to `discard` (there is no separate
+"buried" zone — a buried card lives in the deck).
 
 **Derived stats.** There is no stored `static_buffs`; a player's effective skills are
 *computed on demand* = base competitor stats + every active `BuffSkill` whose source is
@@ -190,7 +202,9 @@ rolls, stop checks, and breakout rolls, so buffs/blanks are always consistent an
 
 ```
 setup: build both decks; apply StartOfMatch effects (incl. Entrance/gimmick);
-       shuffle (seeded); draw opening hands; run mulligan decisions via policy.
+       shuffle (seeded); each player draws 3 (opening hand) before the first roll.
+       First-turn mulligan: a player with NO Leads in hand MAY randomly bury the
+       hand to the bottom of the deck and redraw the same number (policy decides).
 loop until a player loses or a turn cap:
   # --- turn roll ---
   rollA = roll(playerA); rollB = roll(playerB)      # roll = uniform skill face -> derived stat
@@ -203,7 +217,8 @@ loop until a player loses or a turn cap:
   if active must draw and active.deck empty and active.hand empty:
       -> active WINS by COUNT-OUT (deck+hand exhausted on a won turn)   # win condition
   active.draw(1)
-  action = policy(active).choose_turn_action(legal_actions)   # play 1 card OR pass+bury 1
+  action = policy(active).choose_turn_action(legal_actions)   # play 1 card OR pass
+  # on pass: bury 1 (recycle a discard card to the bottom of the deck; no-op if discard empty)
   if play: enforce ordering chain (Lead->Followup->Finish; stack same stage);
            the played card resolves ("is hit") unless the defender plays ONE valid ONLINE
            stop (RPS type + skill-stop logic); the stop, if played, is itself "hit";

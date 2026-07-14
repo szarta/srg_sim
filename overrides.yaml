@@ -1,2 +1,26 @@
 # Hand-authored Effect IR for cards the grammar cannot parse (DESIGN.md §4).
-# keyed by db_uuid.
+#
+# Keyed by db_uuid; each value is a list of Effect dicts in the same tag-based
+# form as `effects.Effect.to_dict()` (the "@type" key names each node). When a
+# card's db_uuid appears here, the parser uses these effects verbatim and skips
+# the grammar. Top-96 gimmicks land here first; the coverage report tracks the
+# shrinking `unsupported` tail toward zero (M3).
+#
+# Example (a competitor gimmick "+1 to Power" while the gimmick is active):
+#
+#   "0123456789abcdef0123456789abcdef":
+#     - "@type": Effect
+#       trigger: {"@type": Static}
+#       condition: {"@type": Always}
+#       actions:
+#         - "@type": BuffSkill
+#           skill: Power
+#           delta: 1
+#           who: SELF
+#           duration: WHILE_GIMMICK_ACTIVE
+#       duration: WHILE_GIMMICK_ACTIVE
+#       frequency: {"@type": FrequencyGuard, kind: UNLIMITED, n: null}
+#       raw_clause: "+1 to Power"
+#       source: gimmick
+#
+# (No active overrides yet.)

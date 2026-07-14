@@ -29,6 +29,7 @@ from srg_sim.effects import (
     Effect,
     EffectSource,
     FinishBonus,
+    Flip,
     Frequency,
     FrequencyGuard,
     HandSizeCompare,
@@ -103,6 +104,7 @@ SAMPLES: list[IRNode] = [
     # actions
     Draw(2, DeckEnd.BOTTOM),
     Bury(CardFilter(number=1), 2),
+    Flip(2),
     Discard(CardFilter(play_order=PlayOrder.FINISH), 1),
     Search(CardFilter(name="Colossal Smash"), Dest.HAND),
     ShuffleIntoDeck(CardFilter(tag="x")),

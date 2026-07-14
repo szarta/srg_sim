@@ -49,7 +49,6 @@ class PlayerState:
     deck: list[Card] = field(default_factory=list)
     discard: list[Card] = field(default_factory=list)
     in_play: list[Card] = field(default_factory=list)
-    buried: list[Card] = field(default_factory=list)
     pending_roll_mods: dict[str, int] = field(default_factory=lambda: {"this": 0, "next": 0})
     freq_counters: dict[str, int] = field(default_factory=dict)
     gimmick_blanked: bool = False
@@ -70,7 +69,6 @@ class PlayerState:
             "deck": _cards_to_list(self.deck),
             "discard": _cards_to_list(self.discard),
             "in_play": _cards_to_list(self.in_play),
-            "buried": _cards_to_list(self.buried),
             "pending_roll_mods": dict(self.pending_roll_mods),
             "freq_counters": dict(self.freq_counters),
             "gimmick_blanked": self.gimmick_blanked,
@@ -86,7 +84,6 @@ class PlayerState:
             deck=_cards_from_list(data["deck"]),
             discard=_cards_from_list(data["discard"]),
             in_play=_cards_from_list(data["in_play"]),
-            buried=_cards_from_list(data["buried"]),
             pending_roll_mods=dict(data["pending_roll_mods"]),
             freq_counters=dict(data["freq_counters"]),
             gimmick_blanked=data["gimmick_blanked"],

@@ -379,8 +379,26 @@ class Draw(IRNode):
 
 @dataclass(frozen=True)
 class Bury(IRNode):
+    """Move ``count`` cards from a discard pile to the **bottom of that deck**.
+
+    ``who`` picks whose discard/deck (SELF or the opponent's, e.g. "bury N cards
+    in your opponent's discard pile"). ``selector`` picks which discard cards
+    (empty = engine's choice). The card's owner (or the actor, for an opponent
+    bury) chooses the buried order; ``random=True`` buries in random order. There
+    is no separate "buried" zone — a buried card lives at the bottom of the deck.
+    """
+
     selector: CardFilter = CardFilter()
     count: int = 1
+    who: Who = Who.SELF
+    random: bool = False
+
+
+@dataclass(frozen=True)
+class Flip(IRNode):
+    """Move the top ``n`` cards of the deck to the discard pile (§5)."""
+
+    n: int = 1
 
 
 @dataclass(frozen=True)
@@ -551,6 +569,7 @@ Condition = (
 Action = (
     Draw
     | Bury
+    | Flip
     | Discard
     | Search
     | ShuffleIntoDeck
