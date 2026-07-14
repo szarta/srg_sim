@@ -1,0 +1,35 @@
+# Pre-commit hooks for srg_sim (Python).
+#
+#   Install once:   pre-commit install
+#   Run manually:   pre-commit run --all-files
+#
+# The knots hook uses the prebuilt PyPI wheel (language: python) so the first
+# run is seconds — no Rust toolchain. See ~/data/knots for the source of truth.
+
+repos:
+  # Standard hygiene hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+
+  # Lint + format with ruff (config lives in pyproject.toml)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.21
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  # Code-complexity gate with knots — prebuilt wheel, Python-only for this repo
+  - repo: https://github.com/brandon-arrendondo/knots-pre-commit
+    rev: v1.15.1
+    hooks:
+      - id: knots
+        types: [python]
+        exclude: ^docs/conf\.py$

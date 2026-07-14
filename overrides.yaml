@@ -1,0 +1,2 @@
+# Hand-authored Effect IR for cards the grammar cannot parse (DESIGN.md §4).
+# keyed by db_uuid.

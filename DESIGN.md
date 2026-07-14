@@ -1,0 +1,359 @@
+# srg_sim — Design (review gate)
+
+This document is the **review artifact** before the engine is implemented. It pins the two
+expensive-to-change decisions — the **Effect IR** and the **game-log schema** — plus the
+phase-0 scope, module layout, and turn loop. Nothing in `srg_sim/` has engine logic yet.
+
+Read alongside the authoritative sources in [`README.md`](README.md). The finish/breakout
+math and skill-stop logic are **ported verbatim** from the validated `fae_comp` modules; we
+do not re-derive them.
+
+---
+
+## 1. Scope — phase 0
+
+A **game** is a singles match: each side is `{1 SingleCompetitorCard, 30-card main deck,
+1 Entrance card}`. The simulator takes **two decklists** and plays them; card-pool *formats*
+(Worlds / Hardcore / Old School / Super Lucha) only restrict deck *building* and are
+therefore irrelevant to the engine.
+
+**In scope**
+- SingleCompetitor games (one competitor per side).
+- 30-card main deck (one printing each of `deck_card_number` 1–30).
+- One **Entrance card** per side, declared at start; its effect is modeled.
+- **Standard crowd meter** baseline: starts 0; adds +N to the finish roll at level N; +1 on
+  each breakout.
+- The full turn duel, card ordering chain, stops (RPS + skill-stops), finish + breakout.
+
+**Out of scope (phase 0)** — each represented as an explicit `Unsupported`/ignored flag in
+the log, never silently modeled:
+- Trio and Tornado competitors (separate formats).
+- Tag games (multiple competitors per side) and card text keyed to tag play.
+- Spectacle cards (one-per-game Newman/Valiant pick).
+- CrowdMeter **card types** and their rule modifications (max handsize, no-DQ, count-outs…).
+- Deck-build legality (format pools; the `skill-requirement cards ≤ 2 / deck` rule) — handled
+  later by an optional offline validator, not the engine.
+
+**Priority signal.** Competitor cards carry a `division` field. **Worlds** (top 64) +
+**Underworld** (next 32) = the **top-96** most-played/competitive comps, set quarterly and
+mostly stable. Gimmick (`rules_text`) coverage and validation are prioritized on these.
+
+---
+
+## 2. Domain model (`cards.py`)
+
+Immutable, hashable, serializable.
+
+- `AtkType` = {Strike, Grapple, Submission, None}. RPS: Strike ▷ Grapple ▷ Submission ▷ Strike.
+- `PlayOrder` = {Lead, Followup, Finish, None}.
+- `Card`: `db_uuid, name, number (1–30 for main deck), atk_type, play_order,
+  finish_bonuses:{skill:int}, tags:[str], raw_text:str, effects:[Effect]`.
+  - `type_from_number(n) = [Submission, Strike, Grapple][n % 3]` (n≡1 Strike, 2 Grapple, 0 Sub).
+    (Cross-checked against `atk_type` at load; mismatches logged.)
+- `Competitor`: `name, division, stats:{6 skills}, gimmick_text, effects:[Effect],
+  related_finishes:[db_uuid]`.
+- `EntranceCard`: `name, raw_text, effects:[Effect]` (play_order None, no atk_type).
+- `Deck`: `competitor, entrance, cards:[Card]` (exactly 30) + integrity checks
+  (`len==30`, numbers present). Format legality is **not** enforced here.
+
+**Card data source.** The **source of authority** is the PostgreSQL database
+behind the SRG card-search website/app (`~/data/srg_card_search_website/backend/app`,
+`postgresql://…@localhost/srg_cards`), updated often. `loader.py` consumes the
+read-only YAML export (`backend/app/cards.yaml`) regenerated from it. Card data
+is **not vendored** here; the assumption is every user has that repo + DB access.
+
+**Decklist file** (`decks/*.yaml`) — the sim's input:
+```yaml
+competitor: "The Bull"          # resolved by name (+ optional variant/version)
+entrance: "Calling in Kanik"
+cards:                          # 30 entries; each a db_uuid OR name (+set to disambiguate)
+  - {number: 1, name: "American Double Punch"}
+  - {number: 2, db_uuid: "..."}
+  # ...
+```
+
+---
+
+## 3. Effect IR (`effects.py`) — the linchpin
+
+Cards, competitor gimmicks, and Entrance effects **all** compile to one typed IR. The engine
+executes **only IR**, never raw text. An `Effect` is a `(trigger, condition, actions[])`
+triple. Everything below is `@dataclass(frozen=True)` and round-trips to JSON.
+
+**Trigger** — *when* an effect fires:
+```
+OnPlay                       # when this card is played
+OnRoll(skill, who=SELF)      # when `who` rolls `skill` for a turn/finish roll
+OnWinTurn / OnLoseTurn(by=?) # after the turn roll resolves
+OnStop(dir=YOURS|THEIRS)     # when a stop happens
+OnHit(keyword|name)          # when a matching card RESOLVES into play — see "hit" below
+StartOfTurn / StartOfMatch
+Static                       # always-on passive (e.g. "+1 to Power"); duration-scoped, see below
+```
+**"Hit" = a card resolving into play.** A card is hit either (a) when you play it and it is
+*not* stopped, or (b) when a **stop** you play resolves into play (your stop is itself "hit").
+`OnHit` fires on both.
+
+Frequency guards: `once_per_turn`, `once_per_match`, `n_times_per_match(k)`.
+
+**Duration** — how long a `Static`/buff effect stays active (a first-class field on Effect):
+```
+WHILE_IN_PLAY        # card-sourced buffs: active while the SOURCE CARD is in play.
+                     #   Finishes buff this way -> on breakout all in-play cards are
+                     #   discarded, so their buffs end automatically.
+WHILE_GIMMICK_ACTIVE # competitor-gimmick buffs (e.g. Tytan +1 Power): active while the
+                     #   competitor's Gimmick is NOT blanked.
+INSTANT              # one-shot mutation (draw, bury, ±roll), no lasting state.
+```
+**Gimmick blanking** is itself `WHILE_IN_PLAY`: a blanker card sets `gimmick_blanked` on the
+target while the blanker is in play; when the blanker leaves play the Gimmick un-blanks and
+its buffs return. Blanked gimmicks contribute no effects (incl. no `Static` buffs) while blanked.
+
+**Condition** — a predicate on `GameState` (composable via And/Or/Not):
+```
+SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?)
+HandSizeCompare(cmp, vs=OPP|VALUE, value?)
+CrowdMeterCompare(cmp, value)
+HasInPlay(who, filter) / HasInDiscard(...)
+RollWasSkill(skill) / RollGapExactly(k) / RollGapAtLeast(k)
+Always
+```
+
+**Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
+```
+Draw(n, from=TOP|BOTTOM)      Bury(selector, count)         Discard(selector, count)
+Search(filter, dest=HAND)     ShuffleIntoDeck(selector)     AddFromDiscard(filter)
+ModifyRoll(who, delta, when=THIS|NEXT)     BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
+Reroll(who, once=True)        WinTie(who)                   Bump(who)
+Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
+BlankText(card, until=END_OF_TURN)             LoseBy(kind=DISQUALIFICATION|PINFALL, who)
+CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
+FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
+```
+`BuffSkill` applies to the **unified derived-stats view** — i.e. it affects turn rolls, stops,
+*and* breakout rolls alike; there is no per-context scope, only `duration`. `LoseBy` is how
+cards trigger the DQ / pinfall loss conditions (§6). Count-out is engine-driven, not an action.
+
+**Unsupported sentinel** — any clause the parser can't confidently map:
+```
+Unsupported(raw_text, reason)      # engine ignores it BUT logs a `unsupported` event
+```
+So coverage is always measurable and no gimmick is ever silently mis-played.
+
+`Effect = {trigger, condition: Condition = Always, actions: [Action|Unsupported],
+raw_clause: str, source: card|gimmick|entrance}`.
+
+**Executor** (in `engine.py`): at each trigger point the engine collects every active
+`Effect` whose `trigger` matches and `condition` holds, respecting frequency guards, and
+applies its actions in text order. Static effects fold into a `derived-stats` view used by
+rolls/stops. Optional effects (reroll, self-buff, "you may…") are surfaced to the **policy**
+as choices, not auto-applied.
+
+---
+
+## 4. rules_text → Effect pipeline (`rules_parser.py`)
+
+Data-driven, three layers, tried in order:
+1. **Pattern grammar.** A small library of regexes/templates for the recurring shapes:
+   `+N to <skill>`, `draw N card(s)`, `bury N`, `when you roll <skill>`, `your (next )?turn
+   roll is +N`, `stop any <order?> <type>`, `if your <skill> is greater than your opponent's
+   <skill>`, `once (per|a) (turn|match)`, trigger clauses `When … :`. Splits `rules_text`
+   into clauses (newlines / sentences) and maps each to `(trigger, condition, actions)`.
+2. **Curated override table** (`overrides.yaml`, keyed by `db_uuid`): hand-authored IR for
+   cards the grammar can't parse. This is where top-96 gimmicks land first.
+3. **`Unsupported(raw_clause, reason)`** for anything left over.
+
+A **coverage report** (`srg-sim coverage`) prints, over the whole DB and over the top-96
+subset: % clauses parsed by grammar / by override / unsupported, and the most-common
+unparsed phrasings — this drives M3 work. Target: unsupported → 0 across the top-96.
+
+---
+
+## 5. Game state (`state.py`)
+
+`PlayerState`: `competitor, entrance, hand[], deck[], discard[], in_play[], buried[],
+pending_roll_mods{this,next}, freq_counters, gimmick_blanked:bool, flags`. `GameState`:
+`players[A,B], crowd_meter, active, turn_no, rng, log`. All snapshottable
+(`to_dict`/`from_dict`) so any state is reproducible and diffable. `deck` order matters;
+shuffles/searches go through the seeded RNG.
+
+**Derived stats.** There is no stored `static_buffs`; a player's effective skills are
+*computed on demand* = base competitor stats + every active `BuffSkill` whose source is
+still present: cards in `in_play` (`WHILE_IN_PLAY`) and the competitor gimmick if
+`not gimmick_blanked` (`WHILE_GIMMICK_ACTIVE`). This single derived-stats view feeds turn
+rolls, stop checks, and breakout rolls, so buffs/blanks are always consistent and reversible
+(a card leaving play or a gimmick being blanked simply drops out of the recomputation).
+
+---
+
+## 6. Turn loop (`engine.py`) — pseudocode
+
+```
+setup: build both decks; apply StartOfMatch effects (incl. Entrance/gimmick);
+       shuffle (seeded); draw opening hands; run mulligan decisions via policy.
+loop until a player loses or a turn cap:
+  # --- turn roll ---
+  rollA = roll(playerA); rollB = roll(playerB)      # roll = uniform skill face -> derived stat
+  apply pending_roll_mods, static buffs, OnRoll effects
+  if tie: resolve bump/reroll (WinTie / Bump / anti-bump / reroll options via policy)
+  winner = higher value (or lower, if a "lowest wins" effect is active)
+  fire OnWinTurn/OnLoseTurn effects; decrement/refresh freq guards
+  # --- active player's action ---
+  active = winner
+  if active must draw and active.deck empty and active.hand empty:
+      -> active WINS by COUNT-OUT (deck+hand exhausted on a won turn)   # win condition
+  active.draw(1)
+  action = policy(active).choose_turn_action(legal_actions)   # play 1 card OR pass+bury 1
+  if play: enforce ordering chain (Lead->Followup->Finish; stack same stage);
+           the played card resolves ("is hit") unless the defender plays ONE valid ONLINE
+           stop (RPS type + skill-stop logic); the stop, if played, is itself "hit";
+           fire OnHit/OnStop effects; if a Finish resolves unstopped -> finish sequence
+  any LoseBy(DQ|Pinfall) triggered by a resolved/stopped card ends the game immediately
+  hand cap 10 (discard down)
+finish sequence:
+  finisher makes ONE finish roll = derived stat(rolled skill) + finish_bonus(if skill matches)
+                                    + crowd_meter + flat effect mods
+  auto-success rule + CM0-10-always rule (ported from supershow.finish_odds semantics)
+  defender takes up to 3 breakout rolls (own derived stats, own penalties); success if >= finish value
+  any success -> discard all in_play (their WHILE_IN_PLAY buffs end), crowd_meter += 1, resume;
+  all fail -> defender LOSES by finish
+```
+
+**Win/loss conditions** (a `GameResult{winner, reason}`):
+- `finish` — defender fails all breakout rolls.
+- `count_out` — the **active** player wins a turn and must draw with **both deck and hand
+  empty** → that player **wins** (running yourself out on a won turn is a win, not a deck-out loss).
+- `disqualification` — a `LoseBy(DISQUALIFICATION)` action fires (e.g. "if this card is
+  stopped, you lose by disqualification").
+- `pinfall` — a `LoseBy(PINFALL)` action fires (e.g. one of Stung's finishers).
+
+**Ported verbatim** (with their self-checks) into `finish.py` and `stops.py`:
+- `finish.py` ← `fae_comp/supershow.py` finish/breakout math (uncapped value; CM0-10-always;
+  ≥11-at-CM>0 auto-success; ≥ breaks out).
+- `stops.py` ← `fae_comp/skill_stops.py` skill-stop online logic (beat-opp, equal-8,
+  Colossal Smash). Cards 13/14/15 keyed to skill pairs partitioning the 6 skills.
+
+Rolls use **actual seeded draws** (a roll picks one of 6 skills uniformly; value = that
+derived stat). The closed-form `finish_odds`/`turn_odds` tools are used only in validation.
+
+---
+
+## 7. Policy interface (`policy.py`) — where "player skill" lives
+
+`Policy` is handed the **observable** state + the **legal action set** at each decision point
+and returns a choice. Decision points (the skill surface):
+```
+mulligan(hand)                         choose_turn_action(play-or-pass, which card, bury target)
+respond_with_stop(valid_stops | none)  commit_finish?(given CM / stop risk)
+choose_finish(which finish card)       use_optional?(reroll / self-buff / "you may")
+choose_target(for a targeted effect)   breakout_choices(if any optional)
+```
+Ships `RandomPolicy` and `HeuristicPolicy` (M1). `LearnedPolicy` (M4) consumes exactly the
+`(observable_state, legal_actions)` tuples the log already records → the training signal is
+free. Policies never see hidden info (opponent hand/deck order) unless an effect reveals it.
+
+---
+
+## 8. Game-log schema (`gamelog.py`) — one schema for SIM *and* REAL games
+
+JSON Lines (one event per line) + a header. A recorded human match is the same schema with
+`policy: "human"`. Enough to (a) deterministically replay a sim, (b) transcribe a real match,
+(c) train a policy.
+
+```jsonc
+// header
+{"schema": 1, "seed": 11, "kind": "sim|real", "created": "<passed-in>",
+ "players": {"A": {"competitor": "...", "entrance": "...", "deck": [<card refs>],
+                   "policy": "heuristic|random|human|learned:v1"},
+             "B": {...}}}
+// then an ordered stream of events, each: {"t": turn_no, "type": ..., ...}
+roll        {player, skill, base, mods:[{src,delta}], value}
+turn_result {winner, tie_bumps}
+decision    {player, point:"turn_action|stop|finish|mulligan|target|optional",
+             legal:[...], chosen:<idx|action>, policy}
+play        {player, card, order, atk_type}
+stop        {player, card, stopped, reason}
+draw|bury|discard|search {player, cards:[...], from?}
+finish_attempt {player, finish, value, bonus:{...}, crowd_meter, auto_success}
+breakout    {defender, rolls:[{skill, value, penalty, success}], broke_out}
+crowd_meter {delta, value}
+unsupported {owner, card|gimmick, raw, reason}
+effect      {src, action, target, detail}          // executed IR (audit trail)
+result      {winner, reason:"finish|count_out|disqualification|pinfall", turns}
+```
+`decision` events are the key export: `legal` + `chosen` + observable-state ref = the
+imitation-learning dataset. Replay = re-run the engine with the header seed and assert the
+event stream matches.
+
+---
+
+## 9. Module layout
+
+```
+srg_sim/
+  cards.py        # Card, Competitor, EntranceCard, Deck, enums
+  loader.py       # cards.yaml -> index; resolve decklist -> Deck (name/uuid/variant)
+  effects.py      # Effect IR: Trigger, Condition, Action, Effect, Unsupported
+  rules_parser.py # rules_text -> [Effect]; grammar + overrides.yaml + coverage report
+  state.py        # GameState, PlayerState, snapshots
+  engine.py       # turn loop, effect executor, stop resolution, finish sequence
+  finish.py       # PORTED from fae_comp/supershow.py (finish/breakout) + self-checks
+  stops.py        # PORTED from fae_comp/skill_stops.py (skill-stop online logic)
+  rng.py          # seeded RNG wrapper; roll(), shuffle(), reveal()
+  policy.py       # Policy ABC + RandomPolicy, HeuristicPolicy
+  gamelog.py      # event dataclasses, JSONL read/write, replay/verify
+  cli.py          # `srg-sim play|coverage|replay`
+decks/            # example decklists (yaml)
+overrides.yaml    # hand-authored IR for cards the grammar can't parse
+tests/            # parity + regression (see §10)
+DESIGN.md README.md pyproject.toml
+```
+
+---
+
+## 10. Milestones
+
+- **M1 — rules-correct engine + log.** Two decks play a full legal game end-to-end under
+  `RandomPolicy`/`HeuristicPolicy`; deterministic under a seed; complete JSONL log; replay
+  verifies. Effect IR + executor cover cards actually in the two demo decks; everything else
+  flags `Unsupported`. Validation suite green.
+- **M2 — analysis harness.** Batch N seeded games for a matchup; aggregate win-rate, finish
+  type/rate, stop usage, crowd-meter curves, game length; A/B deck diff.
+- **M3 — coverage.** Grow grammar + overrides until `Unsupported == 0` over the top-96;
+  coverage report tracked in CI.
+- **M4 — player data.** Ingest recorded real matches (same schema); fit `LearnedPolicy`;
+  compare to heuristics; expose per-decision divergence as a "how a human differs" analysis.
+
+---
+
+## 11. Validation (`tests/`)
+
+Regression against the validated `fae_comp` tools:
+- Gimmick-free turn duel → **≈50/50**; Monte-Carlo converges to closed-form `turn_odds` (CI).
+- `tournament_turnsim` self-checks reproduced (Bull vs vanilla 54.1%, vs Fae 45.9%).
+- `finish.py` parity vs `supershow.finish_odds` / `FinishCalculator.jsx` on a case batch.
+- `stops.py` coverage cases (Bull vs Fae; Colossal Smash always-on).
+- Determinism: same seed + same decks + same policies → byte-identical log; replay verifies.
+
+---
+
+## 12. Open questions / deferred (flag, don't guess)
+
+**Resolved (folded into the design):**
+- ✅ Loss/win conditions — finish, count-out (a *win* on exhausting deck+hand on a won turn),
+  disqualification, pinfall. See §6 / §8.
+- ✅ "Hit a card" = a card resolving into play — an unstopped played card, or a stop entering
+  play (the stop is itself hit). See §3.
+- ✅ Buff duration — `WHILE_IN_PLAY` for card sources (Finishes' buffs die on breakout),
+  `WHILE_GIMMICK_ACTIVE` for gimmicks (until blanked; blank lifts when the blanker leaves
+  play). Buffs apply to the unified derived-stats view (turn rolls, stops, breakouts). §3/§5.
+- ✅ Incremental-value cards (7–9, 10–12, 16–18, 22–24) — no longer a permanent gap; the
+  **full card DB is parsed** during build-up, so these fill via grammar + overrides. Anything
+  still unparsed flags `Unsupported` and shows in the coverage report.
+
+**Still open (confirm as we hit them):**
+- Exact interaction of some gimmicks with multi-roll breakouts and with the ordering stack
+  (e.g. buffs that change mid-breakout, effects that add breakout attempts).
+- Ordering-stack edge cases: how many same-stage cards may stack, and stop timing against a
+  stacked chain.
+- Simultaneity/priority when both players have triggered effects on the same event.
