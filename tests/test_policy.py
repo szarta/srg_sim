@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from srg_sim.cards import EntranceCard, PlayOrder
+from srg_sim.cards import EntranceCard
 from srg_sim.policy import HeuristicPolicy, has_stop_effect
 from srg_sim.rng import SeededRNG
 from srg_sim.state import GameState, PlayerState
@@ -24,19 +24,30 @@ def _card(number: int):  # type: ignore[no-untyped-def]
 
 
 def _play_opt(card) -> dict:  # type: ignore[no-untyped-def]
-    return {"kind": "play", "number": card.number, "card": card.db_uuid, "order": card.play_order.value}
+    return {
+        "kind": "play",
+        "number": card.number,
+        "card": card.db_uuid,
+        "order": card.play_order.value,
+    }
 
 
 # --- defense: reserve stops for Finishes -----------------------------------
 
 
 def test_stops_a_finish() -> None:
-    legal = [{"kind": "none", "vs_order": "Finish", "vs_type": "Strike"}, {"kind": "stop", "number": 15}]
+    legal = [
+        {"kind": "none", "vs_order": "Finish", "vs_type": "Strike"},
+        {"kind": "stop", "number": 15},
+    ]
     assert POLICY._at_stop(legal, _state(), "A")["kind"] == "stop"
 
 
 def test_lets_a_lead_resolve_to_save_the_stop() -> None:
-    legal = [{"kind": "none", "vs_order": "Lead", "vs_type": "Grapple"}, {"kind": "stop", "number": 1}]
+    legal = [
+        {"kind": "none", "vs_order": "Lead", "vs_type": "Grapple"},
+        {"kind": "stop", "number": 1},
+    ]
     assert POLICY._at_stop(legal, _state(), "A")["kind"] == "none"
 
 
@@ -67,6 +78,33 @@ def test_passes_when_the_chain_is_already_built_without_a_finish() -> None:
     legal = [_play_opt(plain_lead), {"kind": "pass"}]
     # Lead + Follow Up already in play and no Finish playable -> hold and pass.
     assert POLICY._at_turn_action(legal, state, "A")["kind"] == "pass"
+
+
+def test_passes_rather_than_spend_an_online_stop_to_build() -> None:
+    state = _state()
+    stop_lead = _card(1)  # the only Lead is an online stop
+    state.players["A"].hand = [stop_lead]
+    legal = [_play_opt(stop_lead), {"kind": "pass"}]
+    assert POLICY._at_turn_action(legal, state, "A")["kind"] == "pass"  # hoard it
+
+
+# --- pass/bury: recycle the most valuable card ------------------------------
+
+
+def test_bury_recycles_a_finish_before_a_stop_or_dead_card() -> None:
+    state = _state()
+    dead, stop, finish = _card(7), _card(1), _card(28)
+    state.players["A"].discard = [dead, stop, finish]
+    legal = [_play_opt(dead), _play_opt(stop), _play_opt(finish)]
+    assert POLICY._at_bury(legal, state, "A")["number"] == 28
+
+
+def test_bury_prefers_a_stop_over_a_dead_card() -> None:
+    state = _state()
+    dead, stop = _card(7), _card(1)
+    state.players["A"].discard = [dead, stop]
+    legal = [_play_opt(dead), _play_opt(stop)]
+    assert POLICY._at_bury(legal, state, "A")["number"] == 1
 
 
 # --- helper ----------------------------------------------------------------

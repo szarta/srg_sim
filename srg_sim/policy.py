@@ -84,11 +84,11 @@ class HeuristicPolicy(Policy):
             return finish  # go for the win
         need = _next_build_order(state.players[key].in_play)
         if need is not None:
-            candidate = self._least_valuable(
+            candidate = self._cheapest_builder(
                 [o for o in plays if o.get("order") == need], state, key
             )
             if candidate is not None:
-                return candidate  # advance one chain with the least valuable card
+                return candidate  # advance one chain with a non-stop / offline stop
         return _by_kind(legal, "pass") or legal[0]  # hold stops, pass to gather more
 
     def _at_stop(self, legal: list[Option], state: GameState, key: str) -> Option:
@@ -98,22 +98,26 @@ class HeuristicPolicy(Policy):
         return legal[0]  # let a Lead / Follow Up resolve; save the stop
 
     def _at_bury(self, legal: list[Option], state: GameState, key: str) -> Option:
-        """Recycle a card from discard back into the deck (refined in the bury task)."""
-        return legal[0]
+        """When passing, recycle the most valuable card from discard back into the
+        deck: a Finish to re-attempt (the "keep pushing the stopped Finish" line),
+        then a stop to re-defend, before dead cards."""
+        return max(legal, key=lambda o: _recycle_value(_discard_card(state, key, o["card"])))
 
     def _at_optional(self, legal: list[Option], state: GameState, key: str) -> Option:
         """Take optional edges (reroll / self-buff) when offered."""
         return _by_kind(legal, "yes") or legal[0]
 
     @staticmethod
-    def _least_valuable(options: list[Option], state: GameState, key: str) -> Option | None:
-        """The build card we'd most willingly spend: non-stops first, then offline
-        stops, holding online stops (highest value) in hand for defense."""
+    def _cheapest_builder(options: list[Option], state: GameState, key: str) -> Option | None:
+        """The card we'd most willingly commit to build a chain: the least valuable
+        (non-stop < offline stop). Returns None if the only options are ONLINE stops
+        — we never spend those offensively; pass and hoard them instead."""
         if not options:
             return None
-        return min(
+        best = min(
             options, key=lambda o: _play_value(_hand_card(state, key, o["card"]), state, key)
         )
+        return best if _play_value(_hand_card(state, key, best["card"]), state, key) < 2 else None
 
 
 def _next_build_order(board: list[Card]) -> str | None:
@@ -147,8 +151,22 @@ def _play_value(card: Card, state: GameState, key: str) -> int:
     return 2 if _stop_online(card, state, key) else 1
 
 
+def _recycle_value(card: Card) -> int:
+    """Priority for recycling a discard card back into the deck (higher = keep):
+    a Finish (re-attempt) over a stop (re-defend) over a dead card."""
+    if card.play_order is PlayOrder.FINISH:
+        return 3
+    if has_stop_effect(card):
+        return 2
+    return 1
+
+
 def _hand_card(state: GameState, key: str, uuid: str) -> Card:
     return next(c for c in state.players[key].hand if c.db_uuid == uuid)
+
+
+def _discard_card(state: GameState, key: str, uuid: str) -> Card:
+    return next(c for c in state.players[key].discard if c.db_uuid == uuid)
 
 
 def _by_kind(legal: list[Option], kind: str) -> Option | None:
