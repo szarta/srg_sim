@@ -220,6 +220,34 @@ def test_lose_by_disqualification_when_a_card_is_stopped() -> None:
     assert eng.result == GameResult("B", "disqualification", 1)
 
 
+def test_stop_enters_the_defenders_board_not_discard() -> None:
+    # DESIGN.md §6 / walkthrough: the stopping card is PLAYED onto the defender's
+    # board and persists; only the stopped attack goes to the attacker's discard.
+    eng = _fresh()
+    attack = _attack(AtkType.GRAPPLE, PlayOrder.LEAD)
+    stopper = replace(eng.state.players["B"].deck[0], atk_type=AtkType.STRIKE, db_uuid="stp")
+    eng._apply_stop("A", "B", attack, stopper)
+    assert stopper in eng.state.players["B"].in_play
+    assert stopper not in eng.state.players["B"].discard
+    assert attack in eng.state.players["A"].discard
+
+
+def test_followup_stop_enters_play_with_no_lead() -> None:
+    # A Follow Up used as a stop enters play even with no Lead — stopping bypasses
+    # the play-sequence gate — so it can then enable a Finish (DESIGN.md §6, todo #33).
+    from srg_sim.engine import _playable
+
+    eng = _fresh()
+    attack = _attack(AtkType.STRIKE, PlayOrder.LEAD)
+    stopper = _attack(AtkType.SUBMISSION, PlayOrder.FOLLOWUP)
+    assert not eng.state.players["B"].in_play
+    eng._apply_stop("A", "B", attack, stopper)
+    board = eng.state.players["B"].in_play
+    assert stopper in board  # FU sits on the board with no Lead beneath it
+    fin = _attack(AtkType.SUBMISSION, PlayOrder.FINISH)
+    assert _playable(board, fin)  # and now enables a Finish
+
+
 # -- stops (text-driven: a card stops only via its parsed Stop effects) -------
 
 
@@ -422,6 +450,17 @@ def test_hand_cap_discards_down_to_ten_by_owner_choice() -> None:
     eng._hand_cap("A")
     assert len(eng.state.players["A"].hand) == 10
     assert len(eng.state.players["A"].discard) == 2  # exactly the excess shed
+
+
+def test_draw_over_cap_discards_immediately_not_at_end_of_turn() -> None:
+    # DESIGN.md §6 / todo #28: any draw that puts a player over max caps right then,
+    # inside _draw — a top-deck to 11 forces a discard-down before the play action.
+    eng = _fresh()
+    hand = [next(c for c in eng.state.players["A"].deck if c.number == n) for n in range(1, 11)]
+    eng.state.players["A"].hand = list(hand)  # exactly at the cap of 10
+    eng._draw("A", 1)  # 11th card must be shed immediately
+    assert len(eng.state.players["A"].hand) == 10
+    assert len(eng.state.players["A"].discard) == 1
 
 
 def test_opponent_forced_discard_targets_and_lets_the_owner_choose() -> None:

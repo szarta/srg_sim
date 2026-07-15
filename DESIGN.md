@@ -226,12 +226,18 @@ loop until a player loses or a turn cap:
            The played card resolves ("is hit") unless the defender plays ONE valid stop:
            STOPS ARE TEXT-DRIVEN — a hand card can stop iff one of its parsed `Stop` effects
            matches the attack's order/type AND that effect's condition holds (skill stops,
-           see-1, crowd-meter gates; §3/§4). The stop, if played, is itself "hit" (spent
-           into the defender's in-play), and you cannot stop a stop.
+           see-1, crowd-meter gates; §3/§4). The stop, if played, resolves onto the
+           defender's in-play board and PERSISTS there (it is itself "hit"); only the
+           stopped attack goes to the attacker's discard, and you cannot stop a stop.
+           A Follow Up used as a stop enters play EVEN WITH NO LEAD beneath it — stopping
+           bypasses the play-sequence gate — so a stop can build board state, arm see-1
+           stops, feed combo/finish bonuses, and even enable a later Finish off the FU.
            Resolved cards PERSIST in `in_play` across turns (both sides); a Finish that
            resolves unstopped -> finish sequence. fire OnHit/OnStop effects.
   any LoseBy(DQ|Pinfall) triggered by a resolved/stopped card ends the game immediately
-  hand cap 10 (discard down, by policy choice)
+  # hand cap 10 is enforced IMMEDIATELY inside every draw (turn draw, bump draws, effect
+  # draws) — not batched here — so a player over the max sheds by policy choice the moment
+  # they exceed it, e.g. before their play action or on a bump (§3, todo #28).
 finish sequence:
   finisher makes ONE finish roll = derived stat(rolled skill)                     # base + all-roll BuffSkills
                                   + SUM finish_bonus(rolled skill) over the WHOLE  # combo numbers, finish-only,
@@ -285,8 +291,9 @@ choose_finish(which finish card)       use_optional?(reroll / self-buff / "you m
 choose_target(for a targeted effect)   breakout_choices(if any optional)
 discard(which card to shed)            # hand-cap over 10, or a card-forced discard
 ```
-`discard` fires whenever a hand must shed a card — over the max hand size (10) at
-end of turn, or forced by an effect (`Discard N`, "your opponent discards N"). The
+`discard` fires whenever a hand must shed a card — over the max hand size (10),
+enforced immediately on the draw that exceeds it, or forced by an effect
+(`Discard N`, "your opponent discards N"). The
 hand's **owner** always chooses which card, even on an opponent-forced discard,
 *unless* the effect is random (`random=True` → seeded RNG picks). `HeuristicPolicy`
 sheds the least valuable card: dead card → offline stop → online stop → needed chain

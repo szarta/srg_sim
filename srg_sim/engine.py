@@ -180,9 +180,6 @@ class Engine:
         if self._ended() or not self._draw_for_turn(winner):
             return
         self._take_turn_action(winner)  # play ONE card (or pass+bury); the board persists
-        if self._ended():
-            return
-        self._hand_cap(winner)
 
     # -- roll-off ----------------------------------------------------------
 
@@ -273,6 +270,10 @@ class Engine:
                     source=source.value,
                 )
             )
+            # Hand cap is enforced IMMEDIATELY (DESIGN.md §6): any draw that puts a
+            # player over the max forces a discard-down right now — before their play
+            # action, on a bump, or after an effect-draw — not batched at end of turn.
+            self._hand_cap(key)
 
     # -- attack sequence ---------------------------------------------------
 
@@ -387,8 +388,13 @@ class Engine:
         )
 
     def _apply_stop(self, active: str, defender: str, attack: Card, stop: Card) -> None:
+        # Only the stopped ATTACK goes to the attacker's discard; the stopping card
+        # is played onto the defender's board and persists (DESIGN.md §6). A Follow Up
+        # used as a stop enters play even with no Lead — stopping bypasses the
+        # play-sequence gate. Stops thus build board state (combo/finish bonuses,
+        # see-1 enablers) and clear only on a breakout.
         self.state.players[active].discard.append(attack)
-        self.state.players[defender].discard.append(stop)
+        self.state.players[defender].in_play.append(stop)
         self._log(
             gl.Stop(
                 t=self.state.turn_no,
@@ -473,7 +479,8 @@ class Engine:
     # -- end of turn -------------------------------------------------------
 
     def _hand_cap(self, key: str) -> None:
-        # Over the max hand size: the owner chooses which to shed (DESIGN.md §6/§7).
+        # Called immediately after any draw. Over the max hand size: the owner
+        # chooses which to shed (DESIGN.md §6/§7).
         excess = len(self.state.players[key].hand) - HAND_CAP
         if excess > 0:
             self._discard_from_hand(key, excess, random=False)
