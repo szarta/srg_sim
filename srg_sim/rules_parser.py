@@ -49,6 +49,7 @@ from srg_sim.effects import (
     Comparator,
     Condition,
     CrowdMeterCompare,
+    DeckEnd,
     Direction,
     Discard,
     Draw,
@@ -68,6 +69,7 @@ from srg_sim.effects import (
     OnPlay,
     OnStop,
     RollWhen,
+    ShuffleDeck,
     ShuffleIntoDeck,
     SkillCompare,
     Static,
@@ -91,7 +93,11 @@ _ORDERS = {"Lead": PlayOrder.LEAD, "Follow Up": PlayOrder.FOLLOWUP, "Finish": Pl
 _SK = r"(Power|Technique|Agility|Strike|Submission|Grapple)"
 _ATK = r"(Strike|Grapple|Submission)"
 _ORD = r"(Lead|Follow Up|Finish)"
+_ORD_RE = r"Lead|Follow Up|Finish"  # non-capturing forms for the stop-target parser
+_ATK_RE = r"Strike|Grapple|Submission"
 _YOURS = Direction.YOURS
+
+_STOP_PART = re.compile(rf"(?:({_ORD_RE}) )?({_ATK_RE})")
 
 
 def _skill(text: str) -> Skill:
@@ -126,11 +132,35 @@ def _eff(
 # ---------------------------------------------------------------------------
 
 
-def _rule(pattern: str, builder: Callable[[re.Match[str]], Effect]) -> tuple[re.Pattern[str], Any]:
+def _rule(
+    pattern: str, builder: Callable[[re.Match[str]], Effect | None]
+) -> tuple[re.Pattern[str], Any]:
     return re.compile(pattern + r"$"), builder
 
 
-_RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect]]] = [
+def _stop_targets(text: str) -> list[Stop] | None:
+    """Parse a "stop any …" target into ``Stop`` actions, or ``None`` if any part is
+    not a plain ``<type>`` / ``<order> <type>`` (declining unmodelled targets like
+    "… even if it cannot be stopped"). Handles the "X or Y" two-target form."""
+    stops: list[Stop] = []
+    for part in re.split(r"\s+or\s+", text.strip()):
+        m = _STOP_PART.fullmatch(part.strip())
+        if m is None:
+            return None
+        stops.append(Stop(order=_order(m[1]) if m[1] else None, atk_type=_atk(m[2])))
+    return stops or None
+
+
+def _stop_eff(target: str, condition: Condition | None) -> Effect | None:
+    """An ``OnPlay`` stop effect for a "stop any ``target``" clause, or ``None`` when
+    the target is not a modelled stop shape (so the clause falls through)."""
+    stops = _stop_targets(target)
+    if stops is None:
+        return None
+    return _eff(OnPlay(), list(stops), condition=condition)
+
+
+_RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect | None]]] = [
     # Flat "+N to your Finish rolls" (any skill, finish-only) — before the bare
     # "+N to <skill>" combo rule, since that rule's skill list excludes "Finish".
     _rule(
@@ -157,9 +187,26 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect]]] = [
             duration=Duration.WHILE_IN_PLAY,
         ),
     ),
+    _rule(
+        r"Each player draws? (\d+) cards?",
+        lambda m: _eff(OnHit(), [Draw(n=int(m[1])), Draw(n=int(m[1]), who=Who.OPP)]),
+    ),
+    _rule(
+        r"Your opponent draws? (\d+) cards?",
+        lambda m: _eff(OnHit(), [Draw(n=int(m[1]), who=Who.OPP)]),
+    ),
     _rule(r"Draw (\d+) cards?", lambda m: _eff(OnHit(), [Draw(n=int(m[1]))])),
     _rule(
+        r"Draw the bottom (\d+) cards? of your deck",
+        lambda m: _eff(OnHit(), [Draw(n=int(m[1]), source=DeckEnd.BOTTOM)]),
+    ),
+    _rule(r"Shuffle your deck", lambda m: _eff(OnHit(), [ShuffleDeck()])),
+    _rule(
         r"Your next turn roll is \+(\d+)",
+        lambda m: _eff(OnHit(), [ModifyRoll(Who.SELF, int(m[1]), RollWhen.NEXT)]),
+    ),
+    _rule(
+        r"\+(\d+) to your next turn roll",
         lambda m: _eff(OnHit(), [ModifyRoll(Who.SELF, int(m[1]), RollWhen.NEXT)]),
     ),
     _rule(
@@ -233,44 +280,25 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect]]] = [
         r"Shuffle (?:up to )?(\d+) cards? from your discard pile into your deck",
         lambda m: _eff(OnHit(), [ShuffleIntoDeck(CardFilter())]),
     ),
-    _rule(rf"Stop any {_ATK}", lambda m: _eff(OnPlay(), [Stop(atk_type=_atk(m[1]))])),
+    # "stop any <target>" — the target is parsed by _stop_targets (bare type,
+    # "<order> <type>", or "X or Y"), shared by the unconditional and conditional
+    # forms; an unmodelled target declines (None) so the clause stays Unsupported.
+    _rule(r"Stop any (.+)", lambda m: _stop_eff(m[1], None)),
+    # Skill stop: online while your skill beats your opponent's ("skill"/apostrophe
+    # optional across printings). The "at least N greater" offset form is not yet
+    # modelled (SkillCompare has no delta) and stays Unsupported.
     _rule(
-        rf"Stop any {_ORD} {_ATK}",
-        lambda m: _eff(OnPlay(), [Stop(order=_order(m[1]), atk_type=_atk(m[2]))]),
+        rf"If your {_SK}(?: skill)? is greater than your opponent'?s {_SK}(?: skill)?, "
+        r"stop any (.+)",
+        lambda m: _stop_eff(m[3], SkillCompare(_skill(m[1]), Comparator.GT, Who.SELF, Vs.OPP_SAME)),
     ),
     _rule(
-        rf"Stop any {_ORD} {_ATK} or {_ORD} {_ATK}",
-        lambda m: _eff(
-            OnPlay(),
-            [
-                Stop(order=_order(m[1]), atk_type=_atk(m[2])),
-                Stop(order=_order(m[3]), atk_type=_atk(m[4])),
-            ],
-        ),
+        rf"If your opponent has another {_ATK} in play, stop any (.+)",
+        lambda m: _stop_eff(m[2], HasInPlay(Who.OPP, CardFilter(atk_type=_atk(m[1])))),
     ),
     _rule(
-        rf"If your {_SK} skill is greater than your opponent's {_SK} skill, stop any {_ATK}",
-        lambda m: _eff(
-            OnPlay(),
-            [Stop(atk_type=_atk(m[3]))],
-            condition=SkillCompare(_skill(m[1]), Comparator.GT, Who.SELF, Vs.OPP_SAME),
-        ),
-    ),
-    _rule(
-        rf"If your opponent has another {_ATK} in play, stop any {_ATK}",
-        lambda m: _eff(
-            OnPlay(),
-            [Stop(atk_type=_atk(m[2]))],
-            condition=HasInPlay(Who.OPP, CardFilter(atk_type=_atk(m[1]))),
-        ),
-    ),
-    _rule(
-        rf"If the [Cc]rowd [Mm]eter is (\d+) or greater, stop any (?:Follow Up )?{_ATK}",
-        lambda m: _eff(
-            OnPlay(),
-            [Stop(atk_type=_atk(m[2]))],
-            condition=CrowdMeterCompare(Comparator.GE, int(m[1])),
-        ),
+        r"If the [Cc]rowd [Mm]eter is (\d+) or greater, stop any (.+)",
+        lambda m: _stop_eff(m[2], CrowdMeterCompare(Comparator.GE, int(m[1]))),
     ),
 ]
 
@@ -280,6 +308,16 @@ _FREQ_HEADERS: list[tuple[re.Pattern[str], Frequency]] = [
     (re.compile(r"Once (?:per|a) turn:?$", re.I), Frequency.ONCE_PER_TURN),
 ]
 _N_PER_MATCH = re.compile(r"(\d+) times per match:?$", re.I)
+
+# Non-effect metadata clauses: recognized and skipped (not a game effect, and not
+# Unsupported). "Skill Requirement: <skill> N+" is a deck-BUILD constraint printed on
+# the card, not something that resolves during a match (DESIGN.md §4).
+_METADATA = [re.compile(r"Skill Requirement:", re.I)]
+
+
+def _is_metadata(clause: str) -> bool:
+    stripped = clause.strip()
+    return any(pattern.match(stripped) for pattern in _METADATA)
 
 
 def split_clauses(text: str) -> list[str]:
@@ -306,7 +344,9 @@ def _match_grammar(clause: str) -> Effect | None:
     for pattern, builder in _RULES:
         m = pattern.match(stripped)
         if m:
-            return builder(m)
+            eff = builder(m)
+            if eff is not None:  # a builder may decline (e.g. an unmodelled stop target)
+                return eff
     return None
 
 
@@ -340,6 +380,8 @@ def parse_text(
         if header is not None:
             freq, n = header
             continue
+        if _is_metadata(clause):
+            continue  # deck-build metadata, not a match effect
         effects.append(_compile(clause, source, freq, n))
     return effects
 
@@ -436,7 +478,11 @@ def coverage(
     total = grammar = override = unsupported = 0
     shapes: Counter[str] = Counter()
     for rec in records:
-        clauses = [c for c in split_clauses(_record_text(rec)) if _freq_header(c) is None]
+        clauses = [
+            c
+            for c in split_clauses(_record_text(rec))
+            if _freq_header(c) is None and not _is_metadata(c)
+        ]
         if overrides and rec.get("db_uuid") in overrides:
             total += len(clauses)
             override += len(clauses)

@@ -379,6 +379,7 @@ class RollGapAtLeast(IRNode):
 class Draw(IRNode):
     n: int = 1
     source: DeckEnd = DeckEnd.TOP
+    who: Who = Who.SELF  # SELF, or OPP for "your opponent draws N" / "each player draws N"
 
 
 @dataclass(frozen=True)
@@ -425,6 +426,14 @@ class Discard(IRNode):
 class Search(IRNode):
     filter: CardFilter = CardFilter()
     dest: Dest = Dest.HAND
+
+
+@dataclass(frozen=True)
+class ShuffleDeck(IRNode):
+    """Shuffle an entire deck ("Shuffle your deck"). Distinct from
+    :class:`ShuffleIntoDeck`, which folds discard cards back in first."""
+
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)
@@ -609,6 +618,7 @@ Action = (
     | Flip
     | Discard
     | Search
+    | ShuffleDeck
     | ShuffleIntoDeck
     | AddFromDiscard
     | ModifyRoll

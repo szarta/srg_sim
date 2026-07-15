@@ -611,7 +611,13 @@ class Engine:
     # individual action handlers (kept tiny for the complexity gate) --------
 
     def _act_draw(self, action: fx.Draw, key: str) -> None:
-        self._draw(key, action.n, action.source)
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        self._draw(target, action.n, action.source)
+
+    def _act_shuffle_deck(self, action: fx.ShuffleDeck, key: str) -> None:
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        self.state.rng.shuffle(self.state.players[target].deck)
+        self._log_effect(key, "ShuffleDeck", target, None)
 
     def _act_bury(self, action: fx.Bury, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
@@ -828,4 +834,5 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.WinTie: Engine._act_win_tie,
     fx.LoseBy: Engine._act_lose_by,
     fx.LowestRollWins: Engine._act_noop,
+    fx.ShuffleDeck: Engine._act_shuffle_deck,
 }

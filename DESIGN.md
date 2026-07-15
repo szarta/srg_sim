@@ -122,8 +122,9 @@ Always
 
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
-Draw(n, from=TOP|BOTTOM)      Bury(selector, count)         Discard(selector, count)
+Draw(n, from=TOP|BOTTOM, who) Bury(selector, count)         Discard(selector, count)
 Flip(n)                       Search(filter, dest=HAND)     ShuffleIntoDeck(selector)
+ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)
 ModifyRoll(who, delta, when=THIS|NEXT)     BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
 Reroll(who, once=True)        WinTie(who)                   Bump(who)
@@ -168,6 +169,12 @@ Data-driven, three layers, tried in order:
 2. **Curated override table** (`overrides.yaml`, keyed by `db_uuid`): hand-authored IR for
    cards the grammar can't parse. This is where top-96 gimmicks land first.
 3. **`Unsupported(raw_clause, reason)`** for anything left over.
+
+**Non-effect metadata** (e.g. `Skill Requirement: <skill> N+`, a deck-BUILD constraint, not a
+match effect) is recognized and skipped like a frequency-guard header — neither compiled to an
+effect nor counted as a clause in coverage. A grammar builder may also **decline** (return
+None) on a shape it can't faithfully model — e.g. a "stop any … even if it cannot be stopped"
+target — so the clause falls through to `Unsupported` rather than dropping the qualifier.
 
 A **coverage report** (`srg-sim coverage`) prints, over the whole DB and over the top-96
 subset: % clauses parsed by grammar / by override / unsupported, and the most-common

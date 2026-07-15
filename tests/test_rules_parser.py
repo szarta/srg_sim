@@ -18,6 +18,7 @@ from srg_sim.effects import (
     BuffSkill,
     Bury,
     CrowdMeterCompare,
+    DeckEnd,
     Discard,
     Draw,
     Duration,
@@ -29,6 +30,7 @@ from srg_sim.effects import (
     LoseBy,
     ModifyRoll,
     RollWhen,
+    ShuffleDeck,
     ShuffleIntoDeck,
     SkillCompare,
     Static,
@@ -187,6 +189,68 @@ def test_conditional_stop_crowd_meter() -> None:
     assert effect.condition.value == 2
 
 
+# --- #27 coverage cleanup: metadata, skill-stop printings, draws, shuffle ----
+
+
+def test_skill_requirement_is_metadata_not_an_effect() -> None:
+    # A deck-build constraint printed on the card, not a match effect: recognized
+    # and skipped (never Unsupported), and it doesn't count against coverage.
+    assert rp.parse_text("Skill Requirement: Submission 8+", CARD) == []
+    effects = rp.parse_text("Draw 2 cards.\nSkill Requirement: Strike 10+, Agility 9+", CARD)
+    assert len(effects) == 1 and isinstance(effects[0].actions[0], Draw)
+
+
+def test_skill_stop_printed_without_the_word_skill() -> None:
+    # Some printings drop "skill": "If your Power is greater than your opponent's Power".
+    effect = rp.parse_text(
+        "If your Power is greater than your opponent's Power, stop any Submission.", CARD
+    )[0]
+    assert isinstance(effect.condition, SkillCompare)
+    assert effect.condition.skill is Skill.POWER
+    assert effect.actions == (Stop(atk_type=AtkType.SUBMISSION),)
+
+
+def test_conditional_stop_with_dual_order_target() -> None:
+    clause = (
+        "If your Submission skill is greater than your opponent's Submission skill, "
+        "stop any Follow Up Strike or Finish Strike."
+    )
+    effect = rp.parse_text(clause, CARD)[0]
+    assert isinstance(effect.condition, SkillCompare)
+    assert [a.order for a in effect.actions] == [PlayOrder.FOLLOWUP, PlayOrder.FINISH]
+
+
+def test_unmodelled_stop_target_declines_to_unsupported() -> None:
+    # "even if it cannot be stopped" isn't modelled, so the clause stays Unsupported
+    # rather than silently dropping the qualifier.
+    act = _one("Stop any Finish Strike even if it cannot be stopped.")
+    assert isinstance(act, Unsupported)
+
+
+def test_each_player_and_opponent_draw() -> None:
+    each = rp.parse_text("Each player draws 1 card.", CARD)[0]
+    assert [(a.n, a.who) for a in each.actions] == [(1, Who.SELF), (1, Who.OPP)]
+    opp = _one("Your opponent draws 2 cards.")
+    assert isinstance(opp, Draw) and opp.n == 2 and opp.who is Who.OPP
+
+
+def test_draw_from_the_bottom_of_the_deck() -> None:
+    act = _one("Draw the bottom 3 cards of your deck.")
+    assert isinstance(act, Draw) and act.n == 3 and act.source is DeckEnd.BOTTOM
+
+
+def test_plus_n_to_your_next_turn_roll() -> None:
+    act = _one("+1 to your next turn roll.")
+    assert isinstance(act, ModifyRoll) and act.when is RollWhen.NEXT and act.delta == 1
+
+
+def test_shuffle_your_deck() -> None:
+    act = _one("Shuffle your deck.")
+    assert isinstance(act, ShuffleDeck) and act.who is Who.SELF
+    # The compound "Shuffle your deck and draw…" is not a single action, stays Unsupported.
+    assert isinstance(_one("Shuffle your deck and draw 1 card."), Unsupported)
+
+
 # --- frequency headers, unsupported, multi-clause --------------------------
 
 
@@ -284,6 +348,11 @@ def test_coverage_counts_grammar_override_unsupported() -> None:
 def test_coverage_frequency_headers_are_not_counted() -> None:
     report = rp.coverage([_rec("a", "Once per match:\nDraw 1 card.")])
     assert report.total == 1  # header excluded, one real clause
+
+
+def test_coverage_skips_skill_requirement_metadata() -> None:
+    report = rp.coverage([_rec("a", "Draw 1 card.\nSkill Requirement: Power 8+")])
+    assert report.total == 1 and report.grammar == 1  # metadata excluded, not unsupported
 
 
 def test_is_top96() -> None:

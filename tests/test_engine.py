@@ -166,6 +166,26 @@ def test_draw_effect_logs_a_draw_not_an_effect_event() -> None:
     assert types["draw"] > 0  # Draw is logged as its concrete event, not `effect`
 
 
+def test_opponent_draw_action_draws_for_the_opponent() -> None:
+    # Draw(who=OPP) moves cards to the OTHER player's hand (#27 "your opponent draws N").
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    before = len(eng.state.players["B"].hand)
+    eng._act_draw(fx.Draw(n=2, who=fx.Who.OPP), "A")
+    assert len(eng.state.players["B"].hand) == before + 2
+
+
+def test_shuffle_deck_action_reorders_without_losing_cards() -> None:
+    # ShuffleDeck permutes the deck in place (#27 "Shuffle your deck").
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=4, created="x")
+    eng.setup()
+    before = list(eng.state.players["A"].deck)
+    eng._act_shuffle_deck(fx.ShuffleDeck(), "A")
+    after = eng.state.players["A"].deck
+    assert sorted(c.db_uuid for c in after) == sorted(c.db_uuid for c in before)  # same multiset
+    assert len(after) == len(before)
+
+
 def test_movement_hidden_flag_tracks_private_endpoints() -> None:
     # §8 information model: draws (deck->hand) are hidden; discards (->public
     # pile) never are. A real game exercises both.
