@@ -20,8 +20,10 @@ from srg_sim.effects import (
     CrowdMeterCompare,
     Discard,
     Draw,
+    Duration,
     EffectSource,
     FinishBonus,
+    FinishRollBonus,
     Flip,
     Frequency,
     LoseBy,
@@ -51,10 +53,30 @@ def _one(clause: str) -> Any:
 
 def test_finish_bonus() -> None:
     act = _one("+2 to Grapple")
-    assert isinstance(act, FinishBonus)
+    assert isinstance(act, FinishBonus)  # a combo number: finish-only, per-skill
     assert act.skill is Skill.GRAPPLE
     assert act.delta == 2
     assert isinstance(rp.parse_text("+2 to Grapple", CARD)[0].trigger, Static)
+
+
+def test_flat_finish_roll_bonus_is_any_skill() -> None:
+    for clause in ("+3 to your Finish rolls", "+6 to Finish rolls", "Your Finish roll is +2"):
+        act = _one(clause)
+        assert isinstance(act, FinishRollBonus), clause
+    assert _one("+3 to your Finish rolls").delta == 3
+
+
+def test_persistent_self_skill_buff_is_all_rolls_not_a_combo_bonus() -> None:
+    # "Your <skill> is +N" is a Static BuffSkill (folds into every roll), NOT the
+    # finish-only combo bonus that a bare "+N to <skill>" compiles to.
+    act = _one("Your Strike is +1")
+    assert isinstance(act, BuffSkill)
+    assert (act.skill, act.delta, act.who, act.duration) == (
+        Skill.STRIKE,
+        1,
+        Who.SELF,
+        Duration.WHILE_IN_PLAY,
+    )
 
 
 def test_draw() -> None:

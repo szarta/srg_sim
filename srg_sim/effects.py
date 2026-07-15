@@ -507,7 +507,21 @@ class SetFinishRoll(IRNode):
 
 @dataclass(frozen=True)
 class FinishBonus(IRNode):
+    """A card's printed combo bonus for one skill ("+2 to Grapple"). Applies to the
+    **Finish roll only**, summed across every card in the finisher's play sequence
+    (Lead + Follow Up + Finish). Not a turn/breakout modifier — for those, a card
+    reads "Your <skill> is +N", which compiles to a persistent :class:`BuffSkill`."""
+
     skill: Skill
+    delta: int
+
+
+@dataclass(frozen=True)
+class FinishRollBonus(IRNode):
+    """A flat "+N to your Finish rolls" — added to the owner's Finish roll whatever
+    skill is rolled (any-skill), summed across in-play cards. Finish attempts only;
+    it does not help breakout rolls (a defender's rolls are a separate check)."""
+
     delta: int
 
 
@@ -597,6 +611,7 @@ Action = (
     | PlayExtraCard
     | SetFinishRoll
     | FinishBonus
+    | FinishRollBonus
     | BreakoutModifier
 )
 

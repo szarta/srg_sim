@@ -358,6 +358,60 @@ def test_breakout_clears_both_boards_and_bumps_crowd_meter() -> None:
     assert eng.state.crowd_meter == 1
 
 
+# -- finish bonuses: whole-combo sum + flat finish-roll bonus (§5) -----------
+
+
+def _finish_value(eng: Engine) -> int:
+    for line in eng.state.log.to_lines():
+        e = json.loads(line)
+        if e.get("type") == "finish_attempt":
+            return int(e["value"])
+    raise AssertionError("no finish_attempt logged")
+
+
+def _combo_card(number: int, order: PlayOrder, skill: Skill, delta: int) -> Card:
+    return Card(
+        db_uuid=f"c{number}",
+        name=f"C{number}",
+        number=number,
+        atk_type=AtkType.STRIKE,
+        play_order=order,
+        finish_bonuses=((skill, delta),),
+    )
+
+
+def test_finish_sums_the_whole_in_play_combo_not_just_the_finish_card(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    eng = _fresh()
+    monkeypatch.setattr(eng.state.rng, "roll", lambda: Skill.STRIKE)
+    monkeypatch.setattr(eng, "_stat", lambda key, skill: 0)  # isolate the bonus
+    lead = _combo_card(7, PlayOrder.LEAD, Skill.STRIKE, 1)
+    fu = _combo_card(19, PlayOrder.FOLLOWUP, Skill.STRIKE, 2)
+    fin = _combo_card(28, PlayOrder.FINISH, Skill.STRIKE, 3)
+    eng.state.players["A"].in_play = [lead, fu, fin]
+    eng._finish_sequence("A", "B", fin)
+    assert _finish_value(eng) == 6  # 1 + 2 + 3, the full Lead+FU+Finish combo
+
+
+def test_flat_finish_roll_bonus_adds_any_skill(monkeypatch: pytest.MonkeyPatch) -> None:
+    eng = _fresh()
+    monkeypatch.setattr(eng.state.rng, "roll", lambda: Skill.POWER)  # no combo bonus for Power
+    monkeypatch.setattr(eng, "_stat", lambda key, skill: 0)
+    boost = fx.Effect(trigger=fx.Static(), actions=(fx.FinishRollBonus(4),))
+    fin = Card(
+        db_uuid="f",
+        name="F",
+        number=28,
+        atk_type=AtkType.STRIKE,
+        play_order=PlayOrder.FINISH,
+        effects=(boost,),
+    )
+    eng.state.players["A"].in_play = [fin]
+    eng._finish_sequence("A", "B", fin)
+    assert _finish_value(eng) == 4  # flat +4 regardless of the rolled skill
+
+
 # -- discard: hand-cap + forced discards route through the owner (§6/§7) ------
 
 

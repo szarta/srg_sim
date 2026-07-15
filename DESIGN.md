@@ -233,8 +233,15 @@ loop until a player loses or a turn cap:
   any LoseBy(DQ|Pinfall) triggered by a resolved/stopped card ends the game immediately
   hand cap 10 (discard down, by policy choice)
 finish sequence:
-  finisher makes ONE finish roll = derived stat(rolled skill) + finish_bonus(if skill matches)
-                                    + crowd_meter + flat effect mods
+  finisher makes ONE finish roll = derived stat(rolled skill)                     # base + all-roll BuffSkills
+                                  + SUM finish_bonus(rolled skill) over the WHOLE  # combo numbers, finish-only,
+                                        in-play sequence (Lead + Follow Up + …)    # summed across the combo
+                                  + flat FinishRollBonus (any-skill "+N to Finish rolls", finisher only)
+                                  + crowd_meter
+    # Two distinct "+N" channels: a bare "+N to <skill>" is a per-skill combo bonus (finish-only,
+    # via finish_bonuses/bonus_for); "Your <skill> is +N" is a persistent BuffSkill folded into the
+    # derived stat (so it also lifts turn + breakout rolls). Do NOT route combo numbers through
+    # derived stats — that would inflate turn rolls by the whole board.
   auto-success rule + CM0-10-always rule (ported from supershow.finish_odds semantics)
   defender takes up to 3 breakout rolls (own derived stats, own penalties); success if >= finish value
   any success -> discard ALL in-play on BOTH sides (their WHILE_IN_PLAY buffs end),

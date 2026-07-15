@@ -407,7 +407,10 @@ class Engine:
     def _finish_sequence(self, finisher: str, defender: str, card: Card) -> None:
         skill = self.state.rng.roll()
         base = self._stat(finisher, skill)
-        bonus = card.bonus_for(skill)
+        # The whole in-play combo pays off: sum every card's printed bonus for the
+        # rolled skill, plus any flat "+N to your Finish rolls" (DESIGN.md §5).
+        bonus = sum(c.bonus_for(skill) for c in self.state.players[finisher].in_play)
+        bonus += self._finish_roll_bonus(finisher)
         cm = self.state.crowd_meter
         value = base + bonus + cm
         auto = is_auto_success(value, cm)
@@ -416,6 +419,15 @@ class Engine:
             self._on_broken_out(finisher)  # defender broke out; the match resumes
             return
         self._win(finisher, "finish")
+
+    def _finish_roll_bonus(self, key: str) -> int:
+        """Flat any-skill "+N to your Finish rolls" from the finisher's live effects
+        (in-play combo, gimmick, entrance), each gated by its condition (DESIGN.md §5)."""
+        total = 0
+        for eff in self._standing_effects(key):
+            if conditions.holds(eff.condition, self.state, key):
+                total += sum(a.delta for a in eff.actions if isinstance(a, fx.FinishRollBonus))
+        return total
 
     def _log_finish_attempt(
         self, finisher: str, card: Card, skill: Skill, bonus: int, value: int, cm: int, auto: bool

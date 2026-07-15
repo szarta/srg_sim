@@ -29,6 +29,7 @@ from srg_sim.effects import (
     Effect,
     EffectSource,
     FinishBonus,
+    FinishRollBonus,
     Flip,
     Frequency,
     FrequencyGuard,
@@ -122,6 +123,7 @@ SAMPLES: list[IRNode] = [
     PlayExtraCard(PlayOrder.FINISH),
     SetFinishRoll(11, CrowdMeterCompare(Comparator.GT, 0)),
     FinishBonus(Skill.STRIKE, 2),
+    FinishRollBonus(3),
     BreakoutModifier(1, attempts=2),
     # sentinels / meta
     Unsupported("some weird clause", "no grammar match"),

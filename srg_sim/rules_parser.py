@@ -56,6 +56,7 @@ from srg_sim.effects import (
     Effect,
     EffectSource,
     FinishBonus,
+    FinishRollBonus,
     Flip,
     Frequency,
     FrequencyGuard,
@@ -130,10 +131,30 @@ def _rule(pattern: str, builder: Callable[[re.Match[str]], Effect]) -> tuple[re.
 
 
 _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect]]] = [
+    # Flat "+N to your Finish rolls" (any skill, finish-only) — before the bare
+    # "+N to <skill>" combo rule, since that rule's skill list excludes "Finish".
+    _rule(
+        r"\+(\d+) to (?:your )?Finish rolls?",
+        lambda m: _eff(Static(), [FinishRollBonus(int(m[1]))], duration=Duration.WHILE_IN_PLAY),
+    ),
+    _rule(
+        r"Your Finish rolls? (?:is|are) \+(\d+)",
+        lambda m: _eff(Static(), [FinishRollBonus(int(m[1]))], duration=Duration.WHILE_IN_PLAY),
+    ),
     _rule(
         rf"\+(\d+) to {_SK}",
         lambda m: _eff(
             Static(), [FinishBonus(_skill(m[2]), int(m[1]))], duration=Duration.WHILE_IN_PLAY
+        ),
+    ),
+    # Persistent self skill buff ("Your Strike is +N"): unlike the combo bonus this
+    # folds into derived stats, so it applies to turn, breakout, AND finish rolls.
+    _rule(
+        rf"Your {_SK} is \+(\d+)",
+        lambda m: _eff(
+            Static(),
+            [BuffSkill(_skill(m[1]), int(m[2]), Who.SELF, Duration.WHILE_IN_PLAY)],
+            duration=Duration.WHILE_IN_PLAY,
         ),
     ),
     _rule(r"Draw (\d+) cards?", lambda m: _eff(OnHit(), [Draw(n=int(m[1]))])),
