@@ -299,6 +299,52 @@ def test_see1_stop_needs_opp_type_in_play() -> None:
     assert card19 in eng._legal_stops("B", "A", grapple)
 
 
+def test_heuristic_actually_plays_stops() -> None:
+    # Regression: stop options must be tagged so the heuristic defender uses them
+    # (the persistent board exposed a kind-mismatch that made it never stop).
+    total = 0
+    for seed in range(20):
+        eng = _play(seed, HeuristicPolicy(), HeuristicPolicy())
+        total += sum(1 for x in eng.state.log.to_lines()[1:] if json.loads(x)["type"] == "stop")
+    assert total > 0
+
+
+# -- persistent board + cross-turn chain (DESIGN.md §6) ----------------------
+
+
+def test_playable_is_order_only_against_the_board() -> None:
+    from srg_sim.engine import _playable
+
+    lead = _attack(AtkType.STRIKE, PlayOrder.LEAD)
+    fu = _attack(AtkType.STRIKE, PlayOrder.FOLLOWUP)
+    fin = _attack(AtkType.STRIKE, PlayOrder.FINISH)
+    assert _playable([], lead)  # a Lead is always playable
+    assert _playable([lead], lead)  # you may stack another Lead
+    assert not _playable([], fu)  # a Follow Up needs a Lead in play
+    assert _playable([lead], fu)
+    assert not _playable([lead], fin)  # a Finish needs a Follow Up, not just a Lead
+    assert _playable([lead, fu], fin)
+
+
+def test_resolved_card_persists_in_play_across_the_turn() -> None:
+    eng = _fresh()
+    eng.state.players["B"].hand = []  # defender cannot stop
+    lead = next(c for c in eng.state.players["A"].deck if c.number == 7)  # plain Lead, no stop
+    eng.state.players["A"].hand = [lead]
+    eng._take_turn_action("A")
+    assert lead in eng.state.players["A"].in_play  # board is NOT cleared each turn
+
+
+def test_breakout_clears_both_boards_and_bumps_crowd_meter() -> None:
+    eng = _fresh()
+    eng.state.players["A"].in_play = [_attack(AtkType.STRIKE, PlayOrder.LEAD)]
+    eng.state.players["B"].in_play = [_attack(AtkType.GRAPPLE, PlayOrder.LEAD)]
+    eng._on_broken_out("A")
+    assert eng.state.players["A"].in_play == []
+    assert eng.state.players["B"].in_play == []
+    assert eng.state.crowd_meter == 1
+
+
 # -- snapshot mid-game -------------------------------------------------------
 
 

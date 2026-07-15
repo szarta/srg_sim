@@ -7,10 +7,12 @@ non-deterministic flows through the shared :class:`~srg_sim.rng.SeededRNG`, so
 ``Engine(...).play()`` is a pure function of ``(decks, policies, seed)`` —
 re-running reproduces a byte-identical log (DESIGN.md §8 replay).
 
-**M1 scope & simplifications** (each honest, none silent). A won turn resolves
-one *within-turn* combo (Lead → Followup* → optional Finish); the combo does not
-persist across turns, so cross-turn board state is out of scope (DESIGN.md §12).
-Rolls and breakouts use **actual seeded draws** (a face is drawn, its value is the
+**Turn structure** (DESIGN.md §6). On a won turn the active player draws 1 then
+plays **one** card advancing the order-only chain (a Lead is always playable; a
+Follow Up needs a Lead in play; a Finish needs a Follow Up in play) or passes and
+buries 1. The in-play board **persists across turns** (both sides) and clears only
+on a breakout, which discards every in-play card on both sides and bumps the Crowd
+Meter. Rolls and breakouts use **actual seeded draws** (a face is drawn, its value is the
 derived stat), sharing the exact per-face rules ported into :mod:`srg_sim.finish`.
 **Stops are text-driven**: a hand card can stop an attack iff one of its parsed
 ``Stop`` effects matches the attack's order/type and that effect's condition holds
@@ -177,11 +179,10 @@ class Engine:
         self._run_effects(self._standing_effects(loser), fx.OnLoseTurn, loser)
         if self._ended() or not self._draw_for_turn(winner):
             return
-        self._attack_sequence(winner)
+        self._take_turn_action(winner)  # play ONE card (or pass+bury); the board persists
         if self._ended():
             return
         self._hand_cap(winner)
-        self._cleanup_in_play(winner)
 
     # -- roll-off ----------------------------------------------------------
 
@@ -273,7 +274,12 @@ class Engine:
 
     # -- attack sequence ---------------------------------------------------
 
-    def _attack_sequence(self, active: str) -> None:
+    def _take_turn_action(self, active: str) -> None:
+        """Play ONE card advancing the persistent chain, or pass+bury (DESIGN.md §6).
+
+        Cards resolve into ``in_play`` and stay there across turns; a Finish that
+        resolves unstopped triggers the finish sequence.
+        """
         defender = self.state.opponent_of(active)
         legal = self._playable_options(active) + [{"kind": "pass"}]
         choice = self._decide("turn_action", active, legal)
@@ -281,29 +287,8 @@ class Engine:
             self._do_pass(active)
             return
         card = self._take_from_hand(active, choice["number"])
-        self._play_chain(active, defender, card)
-
-    def _play_chain(self, active: str, defender: str, card: Card) -> None:
-        while True:
-            if not self._resolve_play(active, defender, card):
-                return  # stopped -> chain broken
-            if self._ended():
-                return
-            if card.play_order is PlayOrder.FINISH:
-                self._finish_sequence(active, defender, card)
-                return
-            nxt = self._continue_choice(active)
-            if nxt is None:
-                return
-            card = self._take_from_hand(active, nxt["number"])
-
-    def _continue_choice(self, active: str) -> Option | None:
-        plays = self._playable_options(active)
-        if not plays:
-            return None
-        legal = plays + [{"kind": "stop_chain"}]
-        choice = self._decide("continue", active, legal)
-        return None if choice["kind"] == "stop_chain" else choice
+        if self._resolve_play(active, defender, card) and card.play_order is PlayOrder.FINISH:
+            self._finish_sequence(active, defender, card)
 
     def _do_pass(self, active: str) -> None:
         # Passing recycles one card from discard to the bottom of the deck (§6).
@@ -357,11 +342,21 @@ class Engine:
         stops = self._legal_stops(defender, attacker, card)
         if not stops:
             return None
-        legal = [{"kind": "none"}] + [self._card_option(c) for c in stops]
+        legal = [{"kind": "none"}] + [self._stop_option(c) for c in stops]
         choice = self._decide("stop", defender, legal)
         if choice["kind"] == "none":
             return None
         return self._take_from_hand(defender, choice["number"])
+
+    @staticmethod
+    def _stop_option(card: Card) -> Option:
+        return {
+            "kind": "stop",
+            "number": card.number,
+            "card": card.db_uuid,
+            "order": card.play_order.value,
+            "atk_type": card.atk_type.value,
+        }
 
     def _legal_stops(self, defender: str, attacker: str, card: Card) -> list[Card]:
         return [
@@ -448,7 +443,9 @@ class Engine:
         return broke
 
     def _on_broken_out(self, finisher: str) -> None:
-        self._discard_in_play(finisher)
+        # Breakout: ALL cards in play on BOTH sides clear to discard (§5), CM +1.
+        for key in ("A", "B"):
+            self._discard_in_play(key)
         self.state.crowd_meter += 1
         self._log(gl.CrowdMeter(t=self.state.turn_no, delta=1, value=self.state.crowd_meter))
 
@@ -463,9 +460,6 @@ class Engine:
         del hand[:excess]
         self.state.players[key].discard.extend(dropped)
         self._log(gl.Discard(t=self.state.turn_no, player=key, cards=[c.db_uuid for c in dropped]))
-
-    def _cleanup_in_play(self, key: str) -> None:
-        self._discard_in_play(key)
 
     def _discard_in_play(self, key: str) -> None:
         player = self.state.players[key]
@@ -675,17 +669,20 @@ def _stop_matches(stop: fx.Stop, attack: Card) -> bool:
     return stop.atk_type is None or stop.atk_type is attack.atk_type
 
 
-def _playable(chain: list[Card], card: Card) -> bool:
-    """Whether ``card`` is a legal next link given the current combo ``chain``."""
+def _playable(board: list[Card], card: Card) -> bool:
+    """Whether ``card`` is a legal play given the player's own persistent in-play
+    board (DESIGN.md §6, order-only chain): a Lead is always playable (you may
+    stack another); a Follow Up needs a Lead in play; a Finish needs a Follow Up
+    in play. Type is irrelevant to the chain — it only matters for stops.
+    """
     order = card.play_order
-    if order is PlayOrder.NONE:
-        return False
-    if not chain:
-        return order is PlayOrder.LEAD
-    top = chain[-1].play_order
-    if top is PlayOrder.FINISH:
-        return False  # a completed combo takes no more links
-    return order is not PlayOrder.LEAD  # a Followup or Finish extends the chain
+    if order is PlayOrder.LEAD:
+        return True
+    if order is PlayOrder.FOLLOWUP:
+        return any(c.play_order is PlayOrder.LEAD for c in board)
+    if order is PlayOrder.FINISH:
+        return any(c.play_order is PlayOrder.FOLLOWUP for c in board)
+    return False  # PlayOrder.NONE cards aren't played as attacks
 
 
 # Action dispatch table (bound methods resolved on the instance at call time).
