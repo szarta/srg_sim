@@ -8,4 +8,5 @@ How to set up, work in, and contribute to |project|.
 
    environment
    workflow
+   playing
    claude
