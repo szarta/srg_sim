@@ -209,30 +209,44 @@ loop until a player loses or a turn cap:
   # --- turn roll ---
   rollA = roll(playerA); rollB = roll(playerB)      # roll = uniform skill face -> derived stat
   apply pending_roll_mods, static buffs, OnRoll effects
-  if tie: resolve bump/reroll (WinTie / Bump / anti-bump / reroll options via policy)
+  if tie: BOTH players bump (each draws 1), then re-roll — until it breaks
+          (WinTie / anti-bump can win the tie instead of bumping; reroll via policy)
   winner = higher value (or lower, if a "lowest wins" effect is active)
   fire OnWinTurn/OnLoseTurn effects; decrement/refresh freq guards
-  # --- active player's action ---
+  # --- active player's action (plays exactly ONE card, or passes) ---
   active = winner
   if active must draw and active.deck empty and active.hand empty:
       -> active WINS by COUNT-OUT (deck+hand exhausted on a won turn)   # win condition
   active.draw(1)
-  action = policy(active).choose_turn_action(legal_actions)   # play 1 card OR pass
+  action = policy(active).choose_turn_action(legal_actions)   # play 1 card OR pass+bury 1
   # on pass: bury 1 (recycle a discard card to the bottom of the deck; no-op if discard empty)
-  if play: enforce ordering chain (Lead->Followup->Finish; stack same stage);
-           the played card resolves ("is hit") unless the defender plays ONE valid ONLINE
-           stop (RPS type + skill-stop logic); the stop, if played, is itself "hit";
-           fire OnHit/OnStop effects; if a Finish resolves unstopped -> finish sequence
+  if play: ordering chain is ORDER-ONLY vs your OWN persistent in-play board — a Lead is
+           always playable (you may stack another), a Follow Up needs a Lead in play, a
+           Finish needs a Follow Up in play (type is irrelevant to the chain).
+           The played card resolves ("is hit") unless the defender plays ONE valid stop:
+           STOPS ARE TEXT-DRIVEN — a hand card can stop iff one of its parsed `Stop` effects
+           matches the attack's order/type AND that effect's condition holds (skill stops,
+           see-1, crowd-meter gates; §3/§4). The stop, if played, is itself "hit" (spent
+           into the defender's in-play), and you cannot stop a stop.
+           Resolved cards PERSIST in `in_play` across turns (both sides); a Finish that
+           resolves unstopped -> finish sequence. fire OnHit/OnStop effects.
   any LoseBy(DQ|Pinfall) triggered by a resolved/stopped card ends the game immediately
-  hand cap 10 (discard down)
+  hand cap 10 (discard down, by policy choice)
 finish sequence:
   finisher makes ONE finish roll = derived stat(rolled skill) + finish_bonus(if skill matches)
                                     + crowd_meter + flat effect mods
   auto-success rule + CM0-10-always rule (ported from supershow.finish_odds semantics)
   defender takes up to 3 breakout rolls (own derived stats, own penalties); success if >= finish value
-  any success -> discard all in_play (their WHILE_IN_PLAY buffs end), crowd_meter += 1, resume;
+  any success -> discard ALL in-play on BOTH sides (their WHILE_IN_PLAY buffs end),
+                 crowd_meter += 1, the turn ends, play resumes;
   all fail -> defender LOSES by finish
 ```
+
+The in-play board persists across turns, so the strategic spine is a card-economy war: build a
+chain toward a Finish while the defender holds stops to spend on it (a stop is worth more held
+in hand than played as a weak attack). Stops are **text-driven per printing** — the 30-card
+number-map (§4) is the *typical* pattern, but each card's actual stop ability comes from its
+parsed `Stop` effect(s); a card with no Stop effect cannot stop.
 
 **Win/loss conditions** (a `GameResult{winner, reason}`):
 - `finish` — defender fails all breakout rolls.
@@ -345,10 +359,15 @@ DESIGN.md README.md pyproject.toml
 
 Regression against the validated `fae_comp` tools:
 - Gimmick-free turn duel → **≈50/50**; Monte-Carlo converges to closed-form `turn_odds` (CI).
-- `tournament_turnsim` self-checks reproduced (Bull vs vanilla 54.1%, vs Fae 45.9%).
 - `finish.py` parity vs `supershow.finish_odds` / `FinishCalculator.jsx` on a case batch.
-- `stops.py` coverage cases (Bull vs Fae; Colossal Smash always-on).
+- `stops.py` coverage cases (Bull vs Fae; Colossal Smash always-on) — a deck-analysis tool
+  (the engine's stops are text-driven; see §4).
+- Text-driven stops **engage** under skilled play: a demo Bull-vs-Fae heuristic batch spends
+  stops contesting Finishes across the persistent board (regression against a null-defense sim).
 - Determinism: same seed + same decks + same policies → byte-identical log; replay verifies.
+- `tournament_turnsim` self-checks (Bull vs vanilla 54.1%, vs Fae 45.9%) — **deferred to the
+  turn-roll gimmick layer**: these numbers depend on modeling the Bull comeback and Fae
+  lowest-wins gimmicks, which need roll-context threading into `OnRoll`/`OnLoseTurn` firing.
 
 ---
 
@@ -365,10 +384,17 @@ Regression against the validated `fae_comp` tools:
 - ✅ Incremental-value cards (7–9, 10–12, 16–18, 22–24) — no longer a permanent gap; the
   **full card DB is parsed** during build-up, so these fill via grammar + overrides. Anything
   still unparsed flags `Unsupported` and shows in the coverage report.
+- ✅ Board persistence & the chain — the in-play board **persists across turns** (both sides),
+  one card played per won turn, order-only chain (§6). Cleared only on breakout (both sides).
+  Any number of same-stage cards may stack. Replaces the earlier within-turn-combo model.
+- ✅ Stops — **text-driven per printing** (a card's parsed `Stop` effects + conditions), not
+  universal RPS; the 30-card number-map (§4) is the typical pattern. See §6.
 
 **Still open (confirm as we hit them):**
-- Exact interaction of some gimmicks with multi-roll breakouts and with the ordering stack
-  (e.g. buffs that change mid-breakout, effects that add breakout attempts).
-- Ordering-stack edge cases: how many same-stage cards may stack, and stop timing against a
-  stacked chain.
-- Simultaneity/priority when both players have triggered effects on the same event.
+- **Turn-roll gimmick layer** — thread roll context (rolled skill, gap) into `OnRoll` /
+  `OnLoseTurn` firing so gap-based comebacks (Bull), lowest-wins (Fae), and pending-debuff
+  gimmicks (Grump) model correctly; then reproduce the `tournament_turnsim` parity (§11).
+- Finish-bonus model — combo cards contributing to the finish via `BuffSkill`, plus flat
+  "+N to your Finish rolls" (in progress).
+- Exact interaction of some gimmicks with multi-roll breakouts (buffs that change mid-breakout,
+  effects that add breakout attempts) and simultaneity when both players trigger on one event.

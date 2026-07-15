@@ -9,15 +9,36 @@ deterministic and replayable under its seed.
 from __future__ import annotations
 
 import collections
+import json
 
 from srg_sim.engine import Engine
 from srg_sim.gamelog import matches
-from srg_sim.policy import RandomPolicy
+from srg_sim.policy import HeuristicPolicy, RandomPolicy
 
 from tests.demo_decks import bull, fae, make_deck
 
 GAMES = 400
 ROLLS = 1000
+
+
+def test_text_driven_stops_engage_under_skilled_play() -> None:
+    """Persistent board + text-driven stops -> defenders actually spend stops
+    contesting attacks (regression against a null-defense sim; DESIGN.md §11)."""
+    total_stops = 0
+    for seed in range(30):
+        eng = Engine(
+            make_deck("A", bull()),
+            make_deck("B", fae()),
+            HeuristicPolicy(),
+            HeuristicPolicy(),
+            seed=seed,
+            created="x",
+        )
+        eng.play()
+        total_stops += sum(
+            1 for x in eng.state.log.to_lines()[1:] if json.loads(x)["type"] == "stop"
+        )
+    assert total_stops > 20  # heuristic Bull-vs-Fae spends ~100+ stops over 30 games
 
 
 def _mirror_win_counts(games: int) -> collections.Counter[str]:
