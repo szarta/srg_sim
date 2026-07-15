@@ -344,7 +344,14 @@ class Engine:
         stops = self._legal_stops(defender, attacker, card)
         if not stops:
             return None
-        legal = [{"kind": "none"}] + [self._stop_option(c) for c in stops]
+        # The "none" option carries what is being defended, so a policy can reserve
+        # stops for the real threat (a Finish) rather than spend them on cheap bait.
+        none: Option = {
+            "kind": "none",
+            "vs_order": card.play_order.value,
+            "vs_type": card.atk_type.value,
+        }
+        legal = [none] + [self._stop_option(c) for c in stops]
         choice = self._decide("stop", defender, legal)
         if choice["kind"] == "none":
             return None

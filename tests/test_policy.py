@@ -1,0 +1,88 @@
+"""Tests for the HeuristicPolicy's playstyle rules (DESIGN.md §7, sim-fix)."""
+
+from __future__ import annotations
+
+from srg_sim.cards import EntranceCard, PlayOrder
+from srg_sim.policy import HeuristicPolicy, has_stop_effect
+from srg_sim.rng import SeededRNG
+from srg_sim.state import GameState, PlayerState
+
+from tests.demo_decks import bull, fae, make_deck
+
+POLICY = HeuristicPolicy()
+
+
+def _state() -> GameState:
+    ent = EntranceCard("e", "E")
+    a = PlayerState(competitor=bull(), entrance=ent)
+    b = PlayerState(competitor=fae(), entrance=ent)
+    return GameState(players={"A": a, "B": b}, rng=SeededRNG(1))
+
+
+def _card(number: int):  # type: ignore[no-untyped-def]
+    return next(c for c in make_deck("A", bull()).cards if c.number == number)
+
+
+def _play_opt(card) -> dict:  # type: ignore[no-untyped-def]
+    return {"kind": "play", "number": card.number, "card": card.db_uuid, "order": card.play_order.value}
+
+
+# --- defense: reserve stops for Finishes -----------------------------------
+
+
+def test_stops_a_finish() -> None:
+    legal = [{"kind": "none", "vs_order": "Finish", "vs_type": "Strike"}, {"kind": "stop", "number": 15}]
+    assert POLICY._at_stop(legal, _state(), "A")["kind"] == "stop"
+
+
+def test_lets_a_lead_resolve_to_save_the_stop() -> None:
+    legal = [{"kind": "none", "vs_order": "Lead", "vs_type": "Grapple"}, {"kind": "stop", "number": 1}]
+    assert POLICY._at_stop(legal, _state(), "A")["kind"] == "none"
+
+
+# --- offense: build minimally, hold online stops ---------------------------
+
+
+def test_goes_for_the_finish_when_playable() -> None:
+    fin, lead = _card(28), _card(7)
+    legal = [_play_opt(lead), _play_opt(fin), {"kind": "pass"}]
+    assert POLICY._at_turn_action(legal, _state(), "A")["number"] == 28
+
+
+def test_builds_with_the_least_valuable_card_holding_online_stops() -> None:
+    state = _state()
+    plain_lead = _card(7)  # incremental Lead, no stop
+    stop_lead = _card(1)  # Lead that stops Grapple Leads (online: unconditional)
+    state.players["A"].hand = [stop_lead, plain_lead]
+    legal = [_play_opt(stop_lead), _play_opt(plain_lead), {"kind": "pass"}]
+    # Board empty -> needs a Lead; plays the non-stop and keeps the stop in hand.
+    assert POLICY._at_turn_action(legal, state, "A")["number"] == 7
+
+
+def test_passes_when_the_chain_is_already_built_without_a_finish() -> None:
+    state = _state()
+    state.players["A"].in_play = [_card(7), _card(19)]  # a Lead + a Follow Up already down
+    plain_lead = _card(10)
+    state.players["A"].hand = [plain_lead]
+    legal = [_play_opt(plain_lead), {"kind": "pass"}]
+    # Lead + Follow Up already in play and no Finish playable -> hold and pass.
+    assert POLICY._at_turn_action(legal, state, "A")["kind"] == "pass"
+
+
+# --- helper ----------------------------------------------------------------
+
+
+def test_has_stop_effect() -> None:
+    assert has_stop_effect(_card(1))  # 1-3 stop Leads
+    assert has_stop_effect(_card(25))  # 25-27 stop-any
+    assert not has_stop_effect(_card(7))  # 7-12 incremental value
+    assert not has_stop_effect(_card(28))  # Finishes don't stop
+
+
+def test_mulligan_keeps_a_hand_with_a_lead() -> None:
+    state = _state()
+    state.players["A"].hand = [_card(7)]  # a Lead
+    legal = [{"kind": "redraw"}, {"kind": "keep"}]
+    assert POLICY._at_mulligan(legal, state, "A")["kind"] == "keep"
+    state.players["A"].hand = [_card(19)]  # a Follow Up, no Lead
+    assert POLICY._at_mulligan(legal, state, "A")["kind"] == "redraw"
