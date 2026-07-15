@@ -88,6 +88,9 @@ class Engine:
         self.state.log = gl.GameLog(header=self._header(seed, created))
         self.result: GameResult | None = None
         self._pending_loss: tuple[str, str] | None = None
+        # Per-player context of the most recent roll-off (rolled skill + margin),
+        # so turn-roll gimmicks (OnWinTurn/OnLoseTurn) can gate on RollGap*/RollWasSkill.
+        self._roll_ctx: dict[str, conditions.RollContext] = {}
 
     # -- setup -------------------------------------------------------------
 
@@ -173,35 +176,94 @@ class Engine:
     def _turn(self) -> None:
         self.state.turn_no += 1
         self._clear_turn_freq()
-        winner = self._roll_off()
-        self.state.active = winner
-        loser = self.state.opponent_of(winner)
-        self._run_effects(self._standing_effects(winner), fx.OnWinTurn, winner)
-        self._run_effects(self._standing_effects(loser), fx.OnLoseTurn, loser)
+        winner = self._turn_roll()
         if self._ended() or not self._draw_for_turn(winner):
             return
         self._take_turn_action(winner)  # play ONE card (or pass+bury); the board persists
 
+    def _turn_roll(self) -> str:
+        """Resolve the roll-off and fire the turn-roll gimmicks (DESIGN.md §6/§11).
+
+        Split out from :meth:`_turn` so the gimmick layer — Bull's gap-based
+        comeback (``OnRoll`` + ``RollGap*`` -> ``ModifyRoll(NEXT)``) and Fae's
+        lowest-wins flip — can be driven and measured without the draw/play tail.
+        """
+        winner = self._roll_off()
+        self.state.active = winner
+        loser = self.state.opponent_of(winner)
+        ctx = self._roll_ctx
+        self._run_effects(self._standing_effects(winner), fx.OnWinTurn, winner, ctx[winner])
+        self._run_effects(self._standing_effects(loser), fx.OnLoseTurn, loser, ctx[loser])
+        # OnRoll is outcome-agnostic (fires on each side's roll), so it fires for
+        # both players regardless of who won — the Bull's "N less than target" comeback.
+        self._run_on_roll("A")
+        self._run_on_roll("B")
+        return winner
+
+    def _run_on_roll(self, key: str) -> None:
+        """Fire ``key``'s ``OnRoll`` effects for the deciding turn roll: matched by
+        the roller's skill (``None`` = any) and gated by the roller's roll context."""
+        opp = self.state.opponent_of(key)
+        for eff in self._standing_effects(key):
+            trig = eff.trigger
+            if not isinstance(trig, fx.OnRoll):
+                continue
+            ctx = self._roll_ctx[key if trig.who is fx.Who.SELF else opp]
+            if trig.skill is None or ctx.skill is trig.skill:
+                self._fire_if_ready(eff, key, ctx)
+
     # -- roll-off ----------------------------------------------------------
 
     def _roll_off(self) -> str:
-        va = self._roll_for("A", use_pending=True)
-        vb = self._roll_for("B", use_pending=True)
+        lowest = self._lowest_wins()
+        sa, va = self._roll_for("A", use_pending=True)
+        sb, vb = self._roll_for("B", use_pending=True)
         self._consume_pending()
         bumps = 0
         while va == vb and bumps < MAX_TIE_REROLLS:
             forced = self._tie_winner()
             if forced is not None:
+                self._record_roll_ctx(sa, va, sb, vb)
                 self._log(gl.TurnResult(t=self.state.turn_no, winner=forced, tie_bumps=bumps))
                 return forced
             self._draw("A", 1)  # bump: both players draw, then re-roll (mechanics §2)
             self._draw("B", 1)
             bumps += 1
-            va = self._roll_for("A", use_pending=False)
-            vb = self._roll_for("B", use_pending=False)
-        winner = "A" if va >= vb else "B"
+            sa, va = self._roll_for("A", use_pending=False)
+            sb, vb = self._roll_for("B", use_pending=False)
+        winner = self._roll_winner(va, vb, lowest)
+        self._record_roll_ctx(sa, va, sb, vb)
         self._log(gl.TurnResult(t=self.state.turn_no, winner=winner, tie_bumps=bumps))
         return winner
+
+    @staticmethod
+    def _roll_winner(va: int, vb: int, lowest: bool) -> str:
+        """The roll-off winner. Highest roll wins, unless a lowest-wins gimmick
+        (Fae) flips it to the lowest; A holds the edge on a residual tie."""
+        if lowest:
+            return "A" if va <= vb else "B"
+        return "A" if va >= vb else "B"
+
+    def _lowest_wins(self) -> bool:
+        """True iff either side's active gimmick declares the roll-off lowest-wins
+        (a Static :class:`~srg_sim.effects.LowestRollWins`; blanked gimmicks drop out
+        of ``_standing_effects``, so blanking Fae restores highest-wins)."""
+        for key in ("A", "B"):
+            for eff in self._standing_effects(key):
+                if isinstance(eff.trigger, fx.Static) and any(
+                    isinstance(a, fx.LowestRollWins) for a in eff.actions
+                ):
+                    return True
+        return False
+
+    def _record_roll_ctx(self, sa: Skill, va: int, sb: Skill, vb: int) -> None:
+        """Stash each side's rolled skill + signed gap (opponent minus self, so a
+        positive gap means that side rolled lower) for roll-scoped conditions fired
+        this turn (RollGap*/RollWasSkill; DESIGN.md §3)."""
+        self._roll_ctx = {
+            "A": conditions.RollContext(skill=sa, gap=vb - va),
+            "B": conditions.RollContext(skill=sb, gap=va - vb),
+        }
 
     # -- derived stats (with live condition evaluation) --------------------
 
@@ -215,7 +277,7 @@ class Engine:
     def _stat(self, key: str, skill: Skill) -> int:
         return self.state.effective_stat(key, skill, self._holds(key))
 
-    def _roll_for(self, key: str, use_pending: bool) -> int:
+    def _roll_for(self, key: str, use_pending: bool) -> tuple[Skill, int]:
         skill = self.state.rng.roll()
         base = self._stat(key, skill)
         mods: list[gl.RollMod] = []
@@ -233,7 +295,7 @@ class Engine:
                 mods=tuple(mods),
             )
         )
-        return value
+        return skill, value
 
     def _consume_pending(self) -> None:
         for player in self.state.players.values():
@@ -511,12 +573,27 @@ class Engine:
         return tuple(out)
 
     def _run_effects(
-        self, effects: tuple[fx.Effect, ...], trigger: type[fx.IRNode], key: str
+        self,
+        effects: tuple[fx.Effect, ...],
+        trigger: type[fx.IRNode],
+        key: str,
+        roll: conditions.RollContext | None = None,
     ) -> None:
+        """Fire every effect whose trigger matches, condition holds, and frequency
+        guard permits (DESIGN.md §3). ``roll`` supplies the roll context so
+        ``RollGap*`` / ``RollWasSkill`` conditions resolve on turn-roll triggers;
+        it is ``None`` (those conditions then fail) at non-roll trigger points."""
         for eff in effects:
-            if isinstance(eff.trigger, trigger) and self._may_fire(eff, key):
-                self._mark_fired(eff, key)
-                self._apply_actions(eff, key)
+            if isinstance(eff.trigger, trigger):
+                self._fire_if_ready(eff, key, roll)
+
+    def _fire_if_ready(self, eff: fx.Effect, key: str, roll: conditions.RollContext | None) -> None:
+        """Fire one effect if its frequency guard permits and its condition holds
+        (the trigger is matched by the caller). Shared by trigger dispatch and the
+        skill/who-matched OnRoll path so both honour condition + frequency alike."""
+        if self._may_fire(eff, key) and conditions.holds(eff.condition, self.state, key, roll):
+            self._mark_fired(eff, key)
+            self._apply_actions(eff, key)
 
     def _apply_actions(self, eff: fx.Effect, key: str) -> None:
         for action in eff.actions:
@@ -579,6 +656,11 @@ class Engine:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         self.state.players[target].flags["win_tie"] = True
         self._log_effect(key, "WinTie", target, None)
+
+    def _act_noop(self, action: fx.IRNode, key: str) -> None:
+        """A passive marker read elsewhere (e.g. LowestRollWins at roll-off), not a
+        mutation — folded like a Static buff, so executing it is a no-op, never
+        ``Unsupported``."""
 
     def _act_lose_by(self, action: fx.LoseBy, key: str) -> None:
         loser = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
@@ -745,4 +827,5 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.ModifyRoll: Engine._act_modify_roll,
     fx.WinTie: Engine._act_win_tie,
     fx.LoseBy: Engine._act_lose_by,
+    fx.LowestRollWins: Engine._act_noop,
 }

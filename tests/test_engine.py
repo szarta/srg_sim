@@ -343,7 +343,8 @@ def test_bump_makes_both_players_draw(monkeypatch: pytest.MonkeyPatch) -> None:
     eng.setup()
     eng.state.turn_no = 1
     a0, b0 = len(eng.state.players["A"].deck), len(eng.state.players["B"].deck)
-    rolls = iter([5, 5, 6, 5])  # tie once (5,5) -> bump -> then A wins (6,5)
+    # _roll_for now returns (skill, value); tie once (5,5) -> bump -> then A wins (6,5).
+    rolls = iter([(Skill.POWER, 5), (Skill.POWER, 5), (Skill.POWER, 6), (Skill.POWER, 5)])
     monkeypatch.setattr(eng, "_roll_for", lambda key, use_pending: next(rolls))
     assert eng._roll_off() == "A"
     assert len(eng.state.players["A"].deck) == a0 - 1  # each drew exactly once on the bump

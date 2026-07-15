@@ -239,9 +239,13 @@ class OnPlay(IRNode):
 
 @dataclass(frozen=True)
 class OnRoll(IRNode):
-    """When ``who`` rolls ``skill`` for a turn / finish roll."""
+    """After ``who`` makes a turn roll — outcome-agnostic (fires whether that roll
+    won or lost the turn), so roll-value gimmicks like the Bull's "3 less than your
+    target's roll" comeback live here rather than on ``OnWinTurn`` / ``OnLoseTurn``.
+    ``skill`` scopes to a rolled skill; ``None`` means any skill (the Bull cares
+    only about the gap, gated by a ``RollGap*`` condition)."""
 
-    skill: Skill
+    skill: Skill | None = None
     who: Who = Who.SELF
 
 
@@ -531,6 +535,15 @@ class BreakoutModifier(IRNode):
     attempts: int | None = None
 
 
+@dataclass(frozen=True)
+class LowestRollWins(IRNode):
+    """Turn-roll gimmick marker (Fae Dragon): while active, the roll-off is won by
+    the **lowest** roll instead of the highest (SUPERSHOW_MECHANICS §2). Global —
+    if *either* competitor's active gimmick declares it, the whole roll-off flips.
+    Carried as a ``Static`` passive read at roll-off time (like a Static
+    :class:`BuffSkill`), never executed as a mutation."""
+
+
 # ---------------------------------------------------------------------------
 # Unsupported sentinel + the Effect itself
 # ---------------------------------------------------------------------------
@@ -613,6 +626,7 @@ Action = (
     | FinishBonus
     | FinishRollBonus
     | BreakoutModifier
+    | LowestRollWins
 )
 
 ActionOrUnsupported = Action | Unsupported

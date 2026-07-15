@@ -40,10 +40,16 @@ _CMP: dict[fx.Comparator, Callable[[int, int], bool]] = {
 
 @dataclass(frozen=True)
 class RollContext:
-    """The current turn roll, for roll-scoped conditions (from the owner's view)."""
+    """The current turn roll, for roll-scoped conditions (from the owner's view).
+
+    ``gap`` is the **opponent's** rolled value minus the **owner's**, so a positive
+    gap means the owner rolled *lower* by that much — i.e. ``RollGapExactly(3)``
+    reads "your roll is exactly 3 less than your target's" (the Bull). It is signed:
+    rolling *higher* gives a negative gap, which no ``RollGap*(k>0)`` matches, so a
+    "rolled lower by k" gimmick correctly stays silent when you roll high."""
 
     skill: Skill | None = None
-    gap: int | None = None  # owner's rolled value minus the opponent's
+    gap: int | None = None  # opponent's roll minus owner's; positive => owner rolled lower
 
 
 def card_matches(card: Card, filt: fx.CardFilter) -> bool:

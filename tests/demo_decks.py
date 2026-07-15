@@ -26,8 +26,16 @@ from srg_sim.cards import (
 from srg_sim.effects import (
     CardFilter,
     Comparator,
+    Duration,
     Effect,
+    EffectSource,
     HasInPlay,
+    LowestRollWins,
+    ModifyRoll,
+    OnRoll,
+    RollGapAtLeast,
+    RollGapExactly,
+    RollWhen,
     SkillCompare,
     Static,
     Stop,
@@ -40,6 +48,8 @@ LEAD_NUMBERS = frozenset({*range(1, 13), 25, 26, 27})
 
 BULL_STATS = Stats(power=10, technique=6, agility=5, submission=8, grapple=9, strike=7)
 FAE_STATS = Stats(power=10, technique=7, agility=6, submission=9, grapple=5, strike=8)
+# The reference tournament_turnsim "vanilla" stat line (for the Bull-vs-vanilla parity).
+VANILLA_STATS = Stats(power=10, technique=8, agility=9, submission=7, grapple=6, strike=5)
 
 _FINISH_BONUS = {
     28: (Skill.STRIKE, 2),  # 28 % 3 == 1 -> Strike
@@ -120,6 +130,52 @@ def bull() -> Competitor:
 
 def fae() -> Competitor:
     return Competitor(db_uuid="c-fae", name="Fae Dragon", division="Worlds", stats=FAE_STATS)
+
+
+# -- turn-roll gimmicks (hand-authored IR mirroring tournament_turnsim; §11) ---
+
+
+def _comeback_step(gap: RollGapExactly | RollGapAtLeast, delta: int) -> Effect:
+    return Effect(
+        trigger=OnRoll(),  # any skill; keyed purely on the roll gap, outcome-agnostic
+        condition=gap,
+        actions=(ModifyRoll(who=Who.SELF, delta=delta, when=RollWhen.NEXT),),
+        source=EffectSource.GIMMICK,
+    )
+
+
+# The Bull: "When your turn roll is exactly 3 less than your target's turn roll,
+# your next turn roll is +1; 4 less -> +2; at least 5 less -> +3." Roll-value based
+# (fires whether the roll won or lost), so it BACKFIRES into Fae's lowest-wins.
+BULL_COMEBACK: tuple[Effect, ...] = (
+    _comeback_step(RollGapExactly(3), 1),
+    _comeback_step(RollGapExactly(4), 2),
+    _comeback_step(RollGapAtLeast(5), 3),
+)
+# Fae Dragon: while the gimmick is active, the lowest roll wins the turn roll.
+FAE_LOWEST_WINS: tuple[Effect, ...] = (
+    Effect(
+        trigger=Static(),
+        actions=(LowestRollWins(),),
+        duration=Duration.WHILE_GIMMICK_ACTIVE,
+        source=EffectSource.GIMMICK,
+    ),
+)
+
+
+def bull_gimmick() -> Competitor:
+    """The Bull with its gap-based comeback turn-roll gimmick (§11 parity)."""
+    return with_effects(bull(), BULL_COMEBACK)
+
+
+def fae_gimmick() -> Competitor:
+    """Fae Dragon with its lowest-wins turn-roll gimmick (§11 parity)."""
+    return with_effects(fae(), FAE_LOWEST_WINS)
+
+
+def vanilla() -> Competitor:
+    """A gimmick-free competitor with the reference's vanilla stat line."""
+    return Competitor(db_uuid="c-vanilla", name="Vanilla", division="Worlds", stats=VANILLA_STATS)
 
 
 def with_effects(competitor: Competitor, effects: tuple[Effect, ...]) -> Competitor:

@@ -39,6 +39,7 @@ from srg_sim.effects import (
     IRNode,
     LoseBy,
     LoseKind,
+    LowestRollWins,
     ModifyRoll,
     Not,
     OnHit,
@@ -125,6 +126,7 @@ SAMPLES: list[IRNode] = [
     FinishBonus(Skill.STRIKE, 2),
     FinishRollBonus(3),
     BreakoutModifier(1, attempts=2),
+    LowestRollWins(),
     # sentinels / meta
     Unsupported("some weird clause", "no grammar match"),
     FrequencyGuard(Frequency.N_PER_MATCH, 2),

@@ -83,8 +83,9 @@ triple. Everything below is `@dataclass(frozen=True)` and round-trips to JSON.
 **Trigger** — *when* an effect fires:
 ```
 OnPlay                       # when this card is played
-OnRoll(skill, who=SELF)      # when `who` rolls `skill` for a turn/finish roll
-OnWinTurn / OnLoseTurn(by=?) # after the turn roll resolves
+OnRoll(skill?, who=SELF)     # after `who` makes a turn roll (skill=None => any skill);
+                             #   outcome-agnostic — roll-value gimmicks (Bull) live here
+OnWinTurn / OnLoseTurn(by=?) # after the turn roll resolves (outcome-specific)
 OnStop(dir=YOURS|THEIRS)     # when a stop happens
 OnHit(keyword|name)          # when a matching card RESOLVES into play — see "hit" below
 StartOfTurn / StartOfMatch
@@ -130,6 +131,7 @@ Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_
 BlankText(card, until=END_OF_TURN)             LoseBy(kind=DISQUALIFICATION|PINFALL, who)
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
+LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
 `Bury(selector, count)` moves `count` cards from the **discard pile to the bottom of the
 deck**; `Flip(n)` moves the **top `n` cards of the deck to the discard pile** (there is no
@@ -415,9 +417,16 @@ Regression against the validated `fae_comp` tools:
 - Text-driven stops **engage** under skilled play: a demo Bull-vs-Fae heuristic batch spends
   stops contesting Finishes across the persistent board (regression against a null-defense sim).
 - Determinism: same seed + same decks + same policies → byte-identical log; replay verifies.
-- `tournament_turnsim` self-checks (Bull vs vanilla 54.1%, vs Fae 45.9%) — **deferred to the
-  turn-roll gimmick layer**: these numbers depend on modeling the Bull comeback and Fae
-  lowest-wins gimmicks, which need roll-context threading into `OnRoll`/`OnLoseTurn` firing.
+- `tournament_turnsim` self-checks — **reproduced** (todo #17/#31): Bull vs vanilla ≈54.1%,
+  vs Fae ≈45.9% within tolerance, mirror ≈50%. The turn-roll gimmick layer threads per-side
+  roll context (rolled skill + signed gap) into `OnRoll` firing. The **Bull** is roll-value
+  keyed — its card reads "when your turn roll is exactly 3 less than your target's turn roll,
+  your next roll is +1 (4 less → +2, 5+ less → +3)" — so it is three `OnRoll` effects gated by
+  `RollGapExactly/AtLeast` → `ModifyRoll(SELF, +N, NEXT)`, firing whether the roll won *or*
+  lost (**not** `OnLoseTurn`; the two coincide only when highest-wins). **Fae** carries a
+  `Static` `LowestRollWins` marker flipping the roll-off to lowest-wins, which makes the Bull's
+  own roll boost *backfire* — the mechanism behind the sub-50% result. An opt-in test guards
+  the reference's own self-check numbers when `fae_comp` is checked out.
 
 ---
 
@@ -440,10 +449,17 @@ Regression against the validated `fae_comp` tools:
 - ✅ Stops — **text-driven per printing** (a card's parsed `Stop` effects + conditions), not
   universal RPS; the 30-card number-map (§4) is the typical pattern. See §6.
 
+**Resolved (folded into the design):**
+- ✅ **Turn-roll gimmick layer** (todo #17/#31) — the engine threads per-side roll context
+  (rolled skill + signed `gap` = opponent − self, so positive = rolled lower) into `OnRoll`
+  firing, and the roll-off honours a `Static` `LowestRollWins`. Bull (gap comeback via `OnRoll`
+  + `RollGap*` → `ModifyRoll(NEXT)`) and Fae (lowest-wins) reproduce the `tournament_turnsim`
+  parity (§11). Pending roll bonuses apply to the first roll of a roll-off only — a bump is a
+  *new* roll and drops them, matching the reference. Pending-debuff gimmicks (Grump: "when your
+  opponent rolls 8/9…") reuse the same `OnRoll(who=OPP)` path but need a roll-*value* condition,
+  still to be added when that competitor lands.
+
 **Still open (confirm as we hit them):**
-- **Turn-roll gimmick layer** — thread roll context (rolled skill, gap) into `OnRoll` /
-  `OnLoseTurn` firing so gap-based comebacks (Bull), lowest-wins (Fae), and pending-debuff
-  gimmicks (Grump) model correctly; then reproduce the `tournament_turnsim` parity (§11).
 - Finish-bonus model — combo cards contributing to the finish via `BuffSkill`, plus flat
   "+N to your Finish rolls" (in progress).
 - Exact interaction of some gimmicks with multi-roll breakouts (buffs that change mid-breakout,
