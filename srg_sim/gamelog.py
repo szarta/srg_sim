@@ -202,13 +202,24 @@ class Stop(Event):
 
 @dataclass(frozen=True)
 class _CardMovement(Event):
-    """Shared shape for draw / bury / discard / search (``from`` is optional)."""
+    """Shared shape for draw / bury / discard / search (``from`` is optional).
+
+    ``hidden`` marks a move the opponent cannot follow card-for-card (DESIGN.md
+    §7/§8): true iff BOTH endpoints are private zones — hand or deck — so the
+    opponent sees only that *some* card(s) moved, not which. A move touching any
+    public zone (discard, in_play, competitor board) is diffable and stays false.
+    In practice only a deck→hand draw and a hand→deck bury are hidden; every
+    discard/mill/recycle has a public endpoint. The ground-truth card ids stay in
+    the log for deterministic replay; ``hidden`` gates what an observer projection
+    (:meth:`GameState.observable`) is allowed to reveal.
+    """
 
     _ALIASES: ClassVar[dict[str, str]] = {"source": "from"}
 
     player: str
     cards: list[str] = field(default_factory=list)
     source: str | None = None  # serialized as "from" (e.g. TOP | BOTTOM)
+    hidden: bool = False  # opponent cannot identify the moved cards (both ends private)
 
 
 @dataclass(frozen=True)

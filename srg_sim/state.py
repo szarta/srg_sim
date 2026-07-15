@@ -168,6 +168,45 @@ class GameState:
         """The single derived value for ``skill`` (convenience over :meth:`effective_stats`)."""
         return self.effective_stats(key, holds)[skill.value]
 
+    def observable(self, viewer: str) -> dict[str, Any]:
+        """What ``viewer`` may legitimately see (DESIGN.md §7 information model).
+
+        The redacted view a human at the table would have — feeds M4 imitation
+        learning so a policy trains on honest observations, not on hidden state.
+        Public everywhere: both competitors, entrances, ``in_play`` boards,
+        ``discard`` piles, and gimmick-blank status. Private: a player sees only
+        the *size* of the opponent's hand, and **every** deck is a size only —
+        deck order is hidden from everyone, owner included (the five-region model).
+        The viewer's own hand is fully visible. RNG, per-player ``flags``,
+        ``freq_counters``, and ``pending_roll_mods`` are engine bookkeeping, not
+        table-visible zones, so they are omitted. Unlike :meth:`to_dict` this is a
+        lossy projection — for replay/snapshots use ``to_dict``.
+        """
+        return {
+            "viewer": viewer,
+            "crowd_meter": self.crowd_meter,
+            "active": self.active,
+            "turn_no": self.turn_no,
+            "players": {k: self._observe_player(k, viewer) for k in self.players},
+        }
+
+    def _observe_player(self, key: str, viewer: str) -> dict[str, Any]:
+        """One player's zones as ``viewer`` sees them (see :meth:`observable`)."""
+        player = self.players[key]
+        view: dict[str, Any] = {
+            "competitor": player.competitor.to_dict(),
+            "entrance": player.entrance.to_dict(),
+            "in_play": _cards_to_list(player.in_play),
+            "discard": _cards_to_list(player.discard),
+            "gimmick_blanked": player.gimmick_blanked,
+            "deck_size": len(player.deck),  # order hidden from everyone, owner included
+        }
+        if key == viewer:
+            view["hand"] = _cards_to_list(player.hand)
+        else:
+            view["hand_size"] = len(player.hand)  # opponent hand: count only
+        return view
+
     def to_dict(self) -> dict[str, Any]:
         """Snapshot the position (players, crowd meter, turn, RNG). Excludes the log."""
         return {

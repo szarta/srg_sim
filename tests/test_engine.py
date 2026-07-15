@@ -166,6 +166,16 @@ def test_draw_effect_logs_a_draw_not_an_effect_event() -> None:
     assert types["draw"] > 0  # Draw is logged as its concrete event, not `effect`
 
 
+def test_movement_hidden_flag_tracks_private_endpoints() -> None:
+    # §8 information model: draws (deck->hand) are hidden; discards (->public
+    # pile) never are. A real game exercises both.
+    events = [json.loads(x) for x in _play(6).state.log.to_lines()[1:]]
+    draws = [e for e in events if e["type"] == "draw"]
+    discards = [e for e in events if e["type"] == "discard"]
+    assert draws and all(e["hidden"] for e in draws)  # every draw is hidden
+    assert all(not e["hidden"] for e in discards)  # discards land in a public pile
+
+
 def test_unsupported_action_is_logged_never_dropped() -> None:
     weird = fx.Effect(
         trigger=fx.OnWinTurn(),

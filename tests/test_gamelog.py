@@ -158,6 +158,24 @@ def test_event_from_dict_unknown_type_raises() -> None:
         event_from_dict({"t": 1, "type": "no_such_event"})
 
 
+def test_card_movement_hidden_defaults_false_and_is_omittable() -> None:
+    # A public move (discard) leaves hidden at its default; old logs without the
+    # key still parse (§8 backward-compatible field).
+    disc = Discard(t=3, player="A", cards=["m01"])
+    assert disc.hidden is False
+    assert event_from_dict({"t": 3, "type": "discard", "player": "A", "cards": ["m01"]}) == disc
+
+
+def test_card_movement_hidden_round_trips() -> None:
+    # A private->private move (deck->hand draw) carries hidden=True through JSONL.
+    draw = Draw(t=5, player="B", cards=["m07"], source="TOP", hidden=True)
+    restored = event_from_dict(json.loads(json.dumps(draw.to_dict())))
+    assert restored == draw
+    assert restored.hidden is True  # type: ignore[attr-defined]
+    bury = Bury(t=6, player="A", cards=["m02"], source="hand", hidden=True)
+    assert event_from_dict(json.loads(json.dumps(bury.to_dict()))) == bury
+
+
 # --- verification (replay support) -----------------------------------------
 
 

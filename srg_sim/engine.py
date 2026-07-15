@@ -148,6 +148,7 @@ class Engine:
                 player=key,
                 cards=[c.db_uuid for c in buried],
                 source="hand",
+                hidden=True,  # hand -> deck: both private, opponent can't track which
             )
         )
         self._draw(key, len(buried))
@@ -268,6 +269,7 @@ class Engine:
                     player=key,
                     cards=[c.db_uuid for c in drawn],
                     source=source.value,
+                    hidden=True,  # deck -> hand: both private, opponent sees only the count
                 )
             )
             # Hand cap is enforced IMMEDIATELY (DESIGN.md §6): any draw that puts a

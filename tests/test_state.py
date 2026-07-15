@@ -169,3 +169,76 @@ def test_condition_default_always_applies() -> None:
     )
     gs = _state(a_in_play=(_card(1, (eff,)),))
     assert gs.effective_stat("A", Skill.AGILITY) == 6
+
+
+# --- observation model (§7 / todo #34) -------------------------------------
+
+
+def _populated_state() -> GameState:
+    ent = EntranceCard("u-ent", "Entrance")
+    bull = Competitor("u-bull", "The Bull", "Worlds", BULL_STATS)
+    fae = Competitor("u-fae", "Fae Dragon", "Worlds", FAE_STATS)
+    a = PlayerState(
+        competitor=bull,
+        entrance=ent,
+        hand=[_card(1), _card(2)],
+        deck=[_card(3), _card(4), _card(5)],
+        discard=[_card(6)],
+        in_play=[_card(7)],
+    )
+    b = PlayerState(
+        competitor=fae,
+        entrance=ent,
+        hand=[_card(11), _card(12), _card(13)],
+        deck=[_card(14)],
+        discard=[_card(15), _card(16)],
+        in_play=[_card(17)],
+    )
+    gs = GameState(players={"A": a, "B": b}, rng=SeededRNG(1))
+    gs.crowd_meter, gs.active, gs.turn_no = 2, "B", 4
+    return gs
+
+
+def test_observable_reveals_own_hand_but_only_opponent_hand_size() -> None:
+    view = _populated_state().observable("A")
+    a_hand = [c["db_uuid"] for c in view["players"]["A"]["hand"]]
+    assert a_hand == ["u-1", "u-2"]  # own hand: full contents
+    assert "hand" not in view["players"]["B"]  # opponent hand: hidden
+    assert view["players"]["B"]["hand_size"] == 3  # only the count leaks
+
+
+def test_observable_hides_every_deck_to_a_size() -> None:
+    view = _populated_state().observable("A")
+    # Deck order is hidden from everyone, owner included: only sizes, no contents.
+    assert view["players"]["A"]["deck_size"] == 3
+    assert view["players"]["B"]["deck_size"] == 1
+    assert "deck" not in view["players"]["A"]
+    assert "deck" not in view["players"]["B"]
+
+
+def test_observable_exposes_public_zones_and_match_state() -> None:
+    view = _populated_state().observable("A")
+    for key in ("A", "B"):
+        seat = view["players"][key]
+        assert [c["db_uuid"] for c in seat["discard"]]  # discard piles public
+        assert [c["db_uuid"] for c in seat["in_play"]]  # boards public
+        assert "competitor" in seat and "entrance" in seat
+        assert seat["gimmick_blanked"] is False
+    assert (view["crowd_meter"], view["active"], view["turn_no"]) == (2, "B", 4)
+
+
+def test_observable_omits_engine_bookkeeping() -> None:
+    view = _populated_state().observable("B")
+    for key in ("A", "B"):
+        seat = view["players"][key]
+        for hidden in ("flags", "freq_counters", "pending_roll_mods"):
+            assert hidden not in seat
+    assert "rng" not in view
+
+
+def test_observable_is_symmetric_from_each_seat() -> None:
+    gs = _populated_state()
+    a_view, b_view = gs.observable("A"), gs.observable("B")
+    # Each seat sees its own hand, never the other's.
+    assert "hand" in a_view["players"]["A"] and "hand_size" in a_view["players"]["B"]
+    assert "hand" in b_view["players"]["B"] and "hand_size" in b_view["players"]["A"]

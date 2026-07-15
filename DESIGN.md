@@ -302,6 +302,16 @@ Ships `RandomPolicy` and `HeuristicPolicy` (M1). `LearnedPolicy` (M4) consumes e
 `(observable_state, legal_actions)` tuples the log already records → the training signal is
 free. Policies never see hidden info (opponent hand/deck order) unless an effect reveals it.
 
+**Observation model** (todo #34). `GameState.observable(viewer)` is the redacted view a
+player at the table actually has — the honest input for M4 imitation learning. Public to both
+sides: competitors, entrances, `in_play`, `discard`, gimmick-blank status, plus
+`crowd_meter`/`active`/`turn_no`. Private: the opponent's `hand` shows only its **size**, and
+**every** `deck` shows only its size (order is hidden from everyone, owner included — the
+five-region rule); the viewer's own `hand` is full. RNG, `flags`, `freq_counters`, and
+`pending_roll_mods` are engine bookkeeping, not table zones, so they are omitted. This gate
+pairs with the log's `hidden` flag (§8): the engine keeps ground-truth ids for deterministic
+replay, and `observable` is what decides what a given viewer is allowed to know.
+
 **Player-profile policies** (todo #32) subclass `HeuristicPolicy`, overriding only the
 decision points that differ, so a matchup can pit skill levels against each other:
 - `aggressive` (`AggressiveBuilder`) — the validated baseline; builds one chain greedily.
@@ -337,7 +347,11 @@ decision    {player, point:"turn_action|stop|finish|mulligan|target|optional|dis
              legal:[...], chosen:<idx|action>, policy}
 play        {player, card, order, atk_type}
 stop        {player, card, stopped, reason}
-draw|bury|discard|search {player, cards:[...], from?}
+draw|bury|discard|search {player, cards:[...], from?, hidden?}
+            // hidden=true iff both endpoints are private (hand/deck): a draw
+            // (deck->hand) or a bury (hand->deck). The opponent sees the count,
+            // not which cards. cards[] keeps ground-truth ids for replay; the
+            // observable projection redacts them per viewer.
 finish_attempt {player, finish, value, bonus:{...}, crowd_meter, auto_success}
 breakout    {defender, rolls:[{skill, value, penalty, success}], broke_out}
 crowd_meter {delta, value}
