@@ -50,6 +50,7 @@ from srg_sim.effects import (
     Condition,
     CrowdMeterCompare,
     Direction,
+    Discard,
     Draw,
     Duration,
     Effect,
@@ -172,6 +173,32 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect]]] = [
     _rule(
         r"Bury (\d+) cards?(?: in your discard pile)?",
         lambda m: _eff(OnHit(), [Bury(count=int(m[1]), who=Who.SELF)]),
+    ),
+    # Discard: opponent-forced (the owner still chooses which, unless random) and
+    # self-discard; random variants first so they win over the chosen forms.
+    _rule(
+        r"[Yy]our opponent randomly discards (\d+) cards?(?: (?:from|in) their hand)?",
+        lambda m: _eff(OnHit(), [Discard(count=int(m[1]), who=Who.OPP, random=True)]),
+    ),
+    _rule(
+        r"[Yy]our opponent discards (\d+) random cards?(?: (?:from|in) their hand)?",
+        lambda m: _eff(OnHit(), [Discard(count=int(m[1]), who=Who.OPP, random=True)]),
+    ),
+    _rule(
+        r"[Yy]our opponent discards (\d+) cards?(?: (?:from|in) their hand)?",
+        lambda m: _eff(OnHit(), [Discard(count=int(m[1]), who=Who.OPP)]),
+    ),
+    _rule(
+        r"[Rr]andomly discard (\d+) cards?(?: from your hand)?",
+        lambda m: _eff(OnHit(), [Discard(count=int(m[1]), who=Who.SELF, random=True)]),
+    ),
+    _rule(
+        r"[Dd]iscard (\d+) random cards?(?: from your hand)?",
+        lambda m: _eff(OnHit(), [Discard(count=int(m[1]), who=Who.SELF, random=True)]),
+    ),
+    _rule(
+        r"[Dd]iscard (\d+) cards?(?: from your hand)?",
+        lambda m: _eff(OnHit(), [Discard(count=int(m[1]), who=Who.SELF)]),
     ),
     _rule(
         r"Add (\d+) cards? from your discard pile to your hand",

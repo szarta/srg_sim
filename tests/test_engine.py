@@ -358,6 +358,41 @@ def test_breakout_clears_both_boards_and_bumps_crowd_meter() -> None:
     assert eng.state.crowd_meter == 1
 
 
+# -- discard: hand-cap + forced discards route through the owner (§6/§7) ------
+
+
+def test_hand_cap_discards_down_to_ten_by_owner_choice() -> None:
+    eng = _fresh()
+    hand = [next(c for c in eng.state.players["A"].deck if c.number == n) for n in range(1, 13)]
+    eng.state.players["A"].hand = list(hand)  # 12 > cap of 10
+    eng._hand_cap("A")
+    assert len(eng.state.players["A"].hand) == 10
+    assert len(eng.state.players["A"].discard) == 2  # exactly the excess shed
+
+
+def test_opponent_forced_discard_targets_and_lets_the_owner_choose() -> None:
+    eng = _fresh()
+    a_hand = [next(c for c in eng.state.players["A"].deck if c.number == 7)]
+    b_hand = [next(c for c in eng.state.players["B"].deck if c.number == n) for n in (7, 28)]
+    eng.state.players["A"].hand = list(a_hand)
+    eng.state.players["B"].hand = list(b_hand)
+    # A plays a card reading "your opponent discards 1": B (the owner) chooses.
+    eng._act_discard(fx.Discard(count=1, who=fx.Who.OPP), "A")
+    assert len(eng.state.players["B"].hand) == 1  # B shed one
+    assert eng.state.players["A"].hand == a_hand  # A's own hand untouched
+    # B's heuristic protects the Finish (28) and sheds the dead Lead (7).
+    assert eng.state.players["B"].hand[0].number == 28
+
+
+def test_random_discard_uses_the_seeded_rng_not_the_policy() -> None:
+    eng = _fresh()
+    hand = [next(c for c in eng.state.players["A"].deck if c.number == n) for n in (7, 28)]
+    eng.state.players["A"].hand = list(hand)
+    eng._discard_from_hand("A", 1, random=True)
+    assert len(eng.state.players["A"].hand) == 1
+    assert len(eng.state.players["A"].discard) == 1  # a card left the hand for the pile
+
+
 # -- snapshot mid-game -------------------------------------------------------
 
 

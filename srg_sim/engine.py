@@ -461,14 +461,10 @@ class Engine:
     # -- end of turn -------------------------------------------------------
 
     def _hand_cap(self, key: str) -> None:
-        hand = self.state.players[key].hand
-        excess = len(hand) - HAND_CAP
-        if excess <= 0:
-            return
-        dropped = hand[:excess]
-        del hand[:excess]
-        self.state.players[key].discard.extend(dropped)
-        self._log(gl.Discard(t=self.state.turn_no, player=key, cards=[c.db_uuid for c in dropped]))
+        # Over the max hand size: the owner chooses which to shed (DESIGN.md §6/§7).
+        excess = len(self.state.players[key].hand) - HAND_CAP
+        if excess > 0:
+            self._discard_from_hand(key, excess, random=False)
 
     def _discard_in_play(self, key: str) -> None:
         player = self.state.players[key]
@@ -543,7 +539,8 @@ class Engine:
             )
 
     def _act_discard(self, action: fx.Discard, key: str) -> None:
-        self._move_from_hand(key, action.count, "discard", gl.Discard)
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        self._discard_from_hand(target, action.count, action.random)
 
     def _act_crowd(self, action: fx.CrowdMeter, key: str) -> None:
         self.state.crowd_meter += action.delta
@@ -567,15 +564,38 @@ class Engine:
         self._pending_loss = (loser, action.kind.value.lower())
         self._log_effect(key, "LoseBy", loser, {"kind": action.kind.value})
 
-    def _move_from_hand(
-        self, key: str, count: int, zone: str, event: type[gl._CardMovement]
-    ) -> None:
+    def _discard_from_hand(self, key: str, count: int, random: bool) -> None:
+        """Discard ``count`` cards from ``key``'s hand. The hand's owner chooses which
+        (via the ``discard`` decision point) even when an opponent forced it; a
+        ``random`` discard draws from the seeded RNG instead (DESIGN.md §7)."""
         player = self.state.players[key]
-        moved = player.hand[:count]
-        del player.hand[:count]
-        getattr(player, zone).extend(moved)
-        if moved:
-            self._log(event(t=self.state.turn_no, player=key, cards=[c.db_uuid for c in moved]))
+        dropped: list[Card] = []
+        for _ in range(count):
+            if not player.hand:
+                break
+            card = self.state.rng.reveal(player.hand) if random else self._choose_discard(key)
+            player.hand.remove(card)
+            dropped.append(card)
+        if dropped:
+            player.discard.extend(dropped)
+            self._log(
+                gl.Discard(t=self.state.turn_no, player=key, cards=[c.db_uuid for c in dropped])
+            )
+
+    def _choose_discard(self, key: str) -> Card:
+        hand = self.state.players[key].hand
+        legal = [self._discard_option(c) for c in hand]
+        chosen = self._decide("discard", key, legal)
+        return next(c for c in hand if c.db_uuid == chosen["card"])
+
+    @staticmethod
+    def _discard_option(card: Card) -> Option:
+        return {
+            "kind": "discard",
+            "number": card.number,
+            "card": card.db_uuid,
+            "order": card.play_order.value,
+        }
 
     # -- frequency guards --------------------------------------------------
 

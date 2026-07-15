@@ -16,7 +16,7 @@ shipped policies:
   chain while hoarding stops; spend stops on Finishes); the M1 baseline to beat.
 
 Decision points (the skill surface): ``mulligan``, ``turn_action``, ``stop``,
-``bury``, ``optional``, ``target``.
+``bury``, ``discard``, ``optional``, ``target``.
 """
 
 from __future__ import annotations
@@ -103,6 +103,14 @@ class HeuristicPolicy(Policy):
         then a stop to re-defend, before dead cards."""
         return max(legal, key=lambda o: _recycle_value(_discard_card(state, key, o["card"])))
 
+    def _at_discard(self, legal: list[Option], state: GameState, key: str) -> Option:
+        """Shed the least valuable card (hand-cap or a forced discard): a dead card
+        before an offline stop before an online stop, and never a needed chain piece
+        or a Finish unless forced — then the least valuable Finish (§7, user notes)."""
+        return min(
+            legal, key=lambda o: _discard_keep_value(_hand_card(state, key, o["card"]), state, key)
+        )
+
     def _at_optional(self, legal: list[Option], state: GameState, key: str) -> Option:
         """Take optional edges (reroll / self-buff) when offered."""
         return _by_kind(legal, "yes") or legal[0]
@@ -149,6 +157,26 @@ def _play_value(card: Card, state: GameState, key: str) -> int:
     if not has_stop_effect(card):
         return 0
     return 2 if _stop_online(card, state, key) else 1
+
+
+def _discard_keep_value(card: Card, state: GameState, key: str) -> int:
+    """How reluctant we are to discard this hand card (higher = keep longer):
+    a Finish (win condition) > a chain piece the board still needs > an online stop
+    (ready defense) > an offline stop (might come online) > a dead card. So a forced
+    discard sheds dead cards first and protects the line being pushed."""
+    if card.play_order is PlayOrder.FINISH:
+        return 4
+    if _needed_piece(card, state, key):
+        return 3
+    if has_stop_effect(card):
+        return 2 if _stop_online(card, state, key) else 1
+    return 0
+
+
+def _needed_piece(card: Card, state: GameState, key: str) -> bool:
+    """A Lead / Follow Up whose order the player's persistent board still needs to
+    advance the chain (so we hold it rather than discard it)."""
+    return card.play_order.value == _next_build_order(state.players[key].in_play)
 
 
 def _recycle_value(card: Card) -> int:

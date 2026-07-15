@@ -18,6 +18,7 @@ from srg_sim.effects import (
     BuffSkill,
     Bury,
     CrowdMeterCompare,
+    Discard,
     Draw,
     EffectSource,
     FinishBonus,
@@ -101,6 +102,27 @@ def test_bury_self_and_opponent() -> None:
     assert isinstance(opp, Bury)
     assert opp.who is Who.OPP
     assert opp.count == 2
+
+
+def test_discard_self_and_opponent_chosen_and_random() -> None:
+    me = _one("Discard 2 cards from your hand.")
+    assert isinstance(me, Discard)
+    assert (me.who, me.count, me.random) == (Who.SELF, 2, False)
+
+    opp = _one("Your opponent discards 1 card from their hand.")
+    assert (opp.who, opp.random) == (Who.OPP, False)
+
+    opp_rand = _one("Your opponent randomly discards 2 cards from their hand.")
+    assert (opp_rand.who, opp_rand.count, opp_rand.random) == (Who.OPP, 2, True)
+
+    opp_rand2 = _one("Your opponent discards 1 random card from their hand.")
+    assert (opp_rand2.who, opp_rand2.random) == (Who.OPP, True)
+
+
+def test_discard_with_trailing_rider_stays_unsupported() -> None:
+    # "... for each Stop they have in play" isn't modeled -> never silently dropped.
+    act = _one("Your opponent discards 1 card from their hand for each Stop they have in play.")
+    assert type(act).__name__ == "Unsupported"
 
 
 def test_add_from_discard() -> None:

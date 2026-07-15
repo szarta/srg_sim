@@ -276,7 +276,14 @@ mulligan(hand)                         choose_turn_action(play-or-pass, which ca
 respond_with_stop(valid_stops | none)  commit_finish?(given CM / stop risk)
 choose_finish(which finish card)       use_optional?(reroll / self-buff / "you may")
 choose_target(for a targeted effect)   breakout_choices(if any optional)
+discard(which card to shed)            # hand-cap over 10, or a card-forced discard
 ```
+`discard` fires whenever a hand must shed a card — over the max hand size (10) at
+end of turn, or forced by an effect (`Discard N`, "your opponent discards N"). The
+hand's **owner** always chooses which card, even on an opponent-forced discard,
+*unless* the effect is random (`random=True` → seeded RNG picks). `HeuristicPolicy`
+sheds the least valuable card: dead card → offline stop → online stop → needed chain
+piece → Finish (protecting the line being pushed).
 Ships `RandomPolicy` and `HeuristicPolicy` (M1). `LearnedPolicy` (M4) consumes exactly the
 `(observable_state, legal_actions)` tuples the log already records → the training signal is
 free. Policies never see hidden info (opponent hand/deck order) unless an effect reveals it.
@@ -298,7 +305,7 @@ JSON Lines (one event per line) + a header. A recorded human match is the same s
 // then an ordered stream of events, each: {"t": turn_no, "type": ..., ...}
 roll        {player, skill, base, mods:[{src,delta}], value}
 turn_result {winner, tie_bumps}
-decision    {player, point:"turn_action|stop|finish|mulligan|target|optional",
+decision    {player, point:"turn_action|stop|finish|mulligan|target|optional|discard|bury",
              legal:[...], chosen:<idx|action>, policy}
 play        {player, card, order, atk_type}
 stop        {player, card, stopped, reason}

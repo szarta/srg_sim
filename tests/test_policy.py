@@ -107,6 +107,39 @@ def test_bury_prefers_a_stop_over_a_dead_card() -> None:
     assert POLICY._at_bury(legal, state, "A")["number"] == 1
 
 
+# --- discard: shed the least valuable, protect the line --------------------
+
+
+def _disc_opt(card) -> dict:  # type: ignore[no-untyped-def]
+    return {"kind": "discard", "number": card.number, "card": card.db_uuid}
+
+
+def test_discard_sheds_a_dead_card_before_a_stop_or_finish() -> None:
+    state = _state()
+    state.players["A"].in_play = [_card(7)]  # a Lead down -> the chain needs a Follow Up
+    dead, online_stop, finish = _card(8), _card(1), _card(28)
+    state.players["A"].hand = [dead, online_stop, finish]
+    legal = [_disc_opt(dead), _disc_opt(online_stop), _disc_opt(finish)]
+    assert POLICY._at_discard(legal, state, "A")["number"] == 8  # the dead card
+
+
+def test_discard_protects_a_finish_and_needed_piece_shedding_an_offline_stop() -> None:
+    state = _state()  # empty board -> the chain needs a Lead
+    needed_lead, offline_stop, finish = _card(7), _card(19), _card(28)
+    state.players["A"].hand = [needed_lead, offline_stop, finish]
+    legal = [_disc_opt(needed_lead), _disc_opt(offline_stop), _disc_opt(finish)]
+    assert POLICY._at_discard(legal, state, "A")["number"] == 19  # the offline see-1 stop
+
+
+def test_discard_prefers_an_offline_stop_over_an_online_one() -> None:
+    state = _state()
+    state.players["A"].in_play = [_card(7), _card(13)]  # Lead+Follow Up down: nothing is "needed"
+    online_stop, offline_stop = _card(1), _card(19)  # a Lead stop (online) vs a see-1 FU (offline)
+    state.players["A"].hand = [online_stop, offline_stop]
+    legal = [_disc_opt(online_stop), _disc_opt(offline_stop)]
+    assert POLICY._at_discard(legal, state, "A")["number"] == 19  # keep the ready defense
+
+
 # --- helper ----------------------------------------------------------------
 
 

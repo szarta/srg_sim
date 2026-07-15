@@ -403,8 +403,18 @@ class Flip(IRNode):
 
 @dataclass(frozen=True)
 class Discard(IRNode):
+    """Move ``count`` cards from a hand to its discard pile.
+
+    ``who`` picks whose hand (SELF, or the opponent's for "your opponent discards
+    N"). The hand's **owner** always chooses which cards to drop — even on an
+    opponent-forced discard — unless ``random``, when the RNG picks. Mirrors
+    :class:`Bury`'s who/random split.
+    """
+
     selector: CardFilter = CardFilter()
     count: int = 1
+    who: Who = Who.SELF
+    random: bool = False
 
 
 @dataclass(frozen=True)
