@@ -6,14 +6,25 @@ reproducible and order-independent, and logs are retained only on request.
 
 from __future__ import annotations
 
+import json
+
 import pytest
-from srg_sim.analysis import GameOutcome, Matchup, run_batch, run_game, seed_range
+from srg_sim.analysis import (
+    GameOutcome,
+    Matchup,
+    MatchupReport,
+    run_batch,
+    run_game,
+    seed_range,
+    wilson_interval,
+)
 from srg_sim.engine import GameResult
 from srg_sim.policy import HeuristicPolicy, RandomPolicy
 
 from tests.demo_decks import bull_vs_fae
 
 VALID_REASONS = {"finish", "count_out", "disqualification", "pinfall", "turn_cap"}
+VALID_ATK = {"Strike", "Grapple", "Submission", "None"}
 
 
 def _matchup(**kw: object) -> Matchup:
@@ -119,3 +130,91 @@ def test_seed_range_zero_is_empty() -> None:
 def test_seed_range_rejects_negative_count() -> None:
     with pytest.raises(ValueError, match="non-negative"):
         seed_range(-1)
+
+
+# --- MatchupReport ----------------------------------------------------------
+
+
+def _report(n: int = 24) -> MatchupReport:
+    outcomes = run_batch(_matchup(), seed_range(n), keep_logs=True)
+    return MatchupReport.from_outcomes(outcomes)
+
+
+def test_report_needs_logs() -> None:
+    outcomes = run_batch(_matchup(), seed_range(3))  # keep_logs defaults off
+    with pytest.raises(ValueError, match="keep_logs=True"):
+        MatchupReport.from_outcomes(outcomes)
+
+
+def test_report_win_and_reason_counts_partition_the_batch() -> None:
+    rep = _report()
+    assert rep.games == 24
+    assert rep.wins["A"] + rep.wins["B"] + rep.wins["draw"] == 24  # every game counted once
+    assert sum(rep.reasons.values()) == 24
+    assert all(reason in VALID_REASONS for reason in rep.reasons)
+
+
+def test_report_win_rate_and_wilson_ci_bracket_the_point_estimate() -> None:
+    rep = _report()
+    for side in ("A", "B"):
+        rate = rep.win_rate[side]
+        assert rate == pytest.approx(rep.wins[side] / rep.games)
+        lo, hi = rep.win_ci[side]
+        assert 0.0 <= lo <= rate <= hi <= 1.0
+
+
+def test_report_finish_types_account_for_every_finish_win() -> None:
+    rep = _report()
+    # Exactly one finishing card (hence one atk_type) per finish-reason game.
+    assert sum(rep.finish_types.values()) == rep.reasons.get("finish", 0)
+    assert all(atk in VALID_ATK for atk in rep.finish_types)
+
+
+def test_report_length_stats_are_ordered() -> None:
+    rep = _report()
+    lo, mean, hi, med = (rep.length[k] for k in ("min", "mean", "max", "median"))
+    assert lo <= mean <= hi
+    assert lo <= med <= hi
+
+
+def test_report_stop_rates_are_non_negative_means() -> None:
+    rep = _report()
+    assert set(rep.stops) == {"A", "B"}
+    assert all(rate >= 0.0 for rate in rep.stops.values())
+
+
+def test_report_crowd_meter_curve_spans_the_longest_game() -> None:
+    rep = _report()
+    assert len(rep.crowd_meter_curve) == int(rep.length["max"])
+    assert all(value >= 0.0 for value in rep.crowd_meter_curve)
+
+
+def test_report_to_dict_is_json_serializable_with_list_intervals() -> None:
+    rep = _report(8)
+    blob = rep.to_dict()
+    restored = json.loads(json.dumps(blob))  # round-trips through JSON
+    assert restored["games"] == 8
+    assert isinstance(restored["win_ci"]["A"], list) and len(restored["win_ci"]["A"]) == 2
+
+
+def test_report_is_deterministic_for_the_same_batch() -> None:
+    assert _report(6).to_dict() == _report(6).to_dict()
+
+
+# --- wilson_interval --------------------------------------------------------
+
+
+def test_wilson_interval_empty_sample_is_zero() -> None:
+    assert wilson_interval(0, 0) == (0.0, 0.0)
+
+
+def test_wilson_interval_brackets_the_proportion_and_stays_in_unit_range() -> None:
+    lo, hi = wilson_interval(5, 10)
+    assert lo < 0.5 < hi
+    assert lo >= 0.0 and hi <= 1.0
+
+
+def test_wilson_interval_clamps_at_the_extremes() -> None:
+    assert wilson_interval(0, 10)[0] == 0.0  # no successes -> lower bound clamps to 0
+    assert wilson_interval(10, 10)[1] == 1.0  # all successes -> upper bound clamps to 1
+    assert wilson_interval(10, 10)[0] < 1.0  # but the interval still has width
