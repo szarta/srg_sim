@@ -1,10 +1,15 @@
-"""CLI entry: ``srg-sim play | coverage | analyze | replay`` (DESIGN.md §9).
+"""CLI entry: ``srg-sim play | coverage | analyze | replay | review`` (DESIGN.md §9).
 
 The user-facing entry point that ties the pipeline together:
 
 * ``play A.yaml B.yaml`` — resolve two decklists against the card index, compile
   their rules to IR (:func:`~srg_sim.rules_parser.enrich_deck`), play one seeded
-  match, print the result, and optionally write the JSONL game log.
+  match, print the result, and optionally write the JSONL game log. With
+  ``--policy-a human`` (or ``-b``) a person plays that side from the terminal
+  against the engine; the log is marked ``kind:"real"`` for later ``review``.
+* ``review LOG.jsonl`` — replay a recorded match (sim or real) and reconstruct, at
+  each decision, both the player's observable view and the full oracle state, for
+  post-game critique (:mod:`~srg_sim.review`, DESIGN.md §7/§10 M4).
 * ``coverage`` — build the index and print the rules-parser coverage report
   (grammar / override / unsupported) over the whole DB and, with ``--top96``,
   over the top-96 competitive subset (DESIGN.md §4).
@@ -29,11 +34,13 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from srg_sim import review as rv
 from srg_sim import rules_parser as rp
 from srg_sim.analysis import Matchup, MatchupReport, run_batch, seed_range
 from srg_sim.cards import Deck
 from srg_sim.engine import Engine
-from srg_sim.gamelog import GameLog, PlayerInfo, diff
+from srg_sim.gamelog import GameLog, diff
+from srg_sim.interactive import HumanPolicy
 from srg_sim.loader import DEFAULT_CARDS_YAML, CardIndex, LoaderError, load_deck
 from srg_sim.policy import (
     AggressiveBuilder,
@@ -44,7 +51,7 @@ from srg_sim.policy import (
     SmartPasser,
 )
 
-_POLICY_NAMES = "random|heuristic|aggressive|smart|newbie"
+_POLICY_NAMES = "random|heuristic|aggressive|smart|newbie|human"
 
 _POLICIES: dict[str, Callable[[], Policy]] = {
     "random": RandomPolicy,
@@ -52,6 +59,7 @@ _POLICIES: dict[str, Callable[[], Policy]] = {
     "aggressive": AggressiveBuilder,
     "smart": SmartPasser,
     "newbie": Newbie,
+    "human": HumanPolicy,
 }
 
 Overrides = dict[str, list[dict[str, object]]]
@@ -90,6 +98,7 @@ def _cmd_play(args: argparse.Namespace) -> int:
     overrides = rp.load_overrides()
     deck_a = _load_playable(args.deck_a, index, overrides)
     deck_b = _load_playable(args.deck_b, index, overrides)
+    human = "human" in (args.policy_a, args.policy_b)
     engine = Engine(
         deck_a,
         deck_b,
@@ -97,6 +106,7 @@ def _cmd_play(args: argparse.Namespace) -> int:
         _make_policy(args.policy_b),
         seed=args.seed,
         created=args.created,
+        kind="real" if human else "sim",  # a human took at least one decision (§8)
     )
     result = engine.play()
     print(
@@ -242,9 +252,10 @@ def _cmd_replay(args: argparse.Namespace) -> int:
         raise SystemExit(f"replay supports only sim logs, got kind={header.kind!r}")
     index = _index(args.cards)
     overrides = rp.load_overrides()
+    decks = rv.rebuild_decks(header, index, overrides)
     engine = Engine(
-        _deck_from_header(header.players["A"], index, overrides),
-        _deck_from_header(header.players["B"], index, overrides),
+        decks["A"],
+        decks["B"],
         _make_policy(header.players["A"].policy),
         _make_policy(header.players["B"].policy),
         seed=header.seed,
@@ -263,15 +274,28 @@ def _cmd_replay(args: argparse.Namespace) -> int:
     return 1
 
 
-def _deck_from_header(info: PlayerInfo, index: CardIndex, overrides: Overrides) -> Deck:
-    """Rebuild a player's deck from the log header (competitor/entrance by name,
-    cards by db_uuid in recorded order), then compile its rules to IR."""
-    deck = Deck(
-        competitor=index.competitor(info.competitor),
-        entrance=index.entrance(info.entrance),
-        cards=tuple(index.main_card({"db_uuid": uuid}) for uuid in info.deck),
+# ---------------------------------------------------------------------------
+# review
+# ---------------------------------------------------------------------------
+
+
+def _cmd_review(args: argparse.Namespace) -> int:
+    log = GameLog.read(args.log)
+    index = _index(args.cards)
+    overrides = rp.load_overrides()
+    recon = rv.reconstruct(log, index, overrides)
+    records = recon.for_player(args.player) if args.player else recon.records
+    result = recon.result
+    print(
+        f"review: {log.header.kind} log, {len(log.events)} events — "
+        f"{result.winner} wins by {result.reason} in {result.turns} turns"
     )
-    return rp.enrich_deck(deck, overrides)
+    scope = f"player {args.player}" if args.player else "all players"
+    print(f"  {len(records)} decision(s) reconstructed ({scope})")
+    if args.ndjson:
+        Path(args.ndjson).write_text(rv.records_to_ndjson(records))
+        print(f"  ndjson: {args.ndjson}")
+    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -287,12 +311,8 @@ def _build_parser() -> argparse.ArgumentParser:
     play.add_argument("deck_a", help="decklist YAML for side A")
     play.add_argument("deck_b", help="decklist YAML for side B")
     play.add_argument("--seed", type=int, default=0)
-    play.add_argument(
-        "--policy-a", default="heuristic", help="random|heuristic|aggressive|smart|newbie"
-    )
-    play.add_argument(
-        "--policy-b", default="heuristic", help="random|heuristic|aggressive|smart|newbie"
-    )
+    play.add_argument("--policy-a", default="heuristic", help=_POLICY_NAMES)
+    play.add_argument("--policy-b", default="heuristic", help=_POLICY_NAMES)
     play.add_argument("--created", default="", help="header timestamp (kept out of the engine)")
     play.add_argument("--out", help="write the JSONL game log here")
     _add_cards_arg(play)
@@ -322,6 +342,15 @@ def _build_parser() -> argparse.ArgumentParser:
     replay.add_argument("log", help="recorded JSONL game log")
     _add_cards_arg(replay)
     replay.set_defaults(func=_cmd_replay)
+
+    review = sub.add_parser(
+        "review", help="reconstruct each decision's player-view + oracle truth (§7)"
+    )
+    review.add_argument("log", help="recorded JSONL game log (sim or real)")
+    review.add_argument("--player", help="restrict to one player's decisions (e.g. A)")
+    review.add_argument("--ndjson", help="write the review records as NDJSON here")
+    _add_cards_arg(review)
+    review.set_defaults(func=_cmd_review)
 
     return parser
 

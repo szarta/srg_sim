@@ -64,6 +64,50 @@ class RandomPolicy(Policy):
         return state.rng.reveal(legal)
 
 
+class ReplayPolicy(Policy):
+    """Replays one side's recorded decisions in order (DESIGN.md §8 replay).
+
+    A sim game replays from its seed because the engine's policies are pure
+    functions of ``(state, rng)``; a **human** game is not — the human's choices
+    live only in the log's ``decision`` events. This policy feeds those recorded
+    ``chosen`` options back in the order the engine consulted them, so *any*
+    recorded match (sim or real) reconstructs deterministically. It is the
+    substrate the post-game review runs on: replay the human's decisions against
+    the seeded RNG and the full oracle state falls out at each decision point.
+
+    ``decisions`` is this player's ``chosen`` options, already filtered to ``key``
+    and kept in log order (see :func:`srg_sim.review.reconstruct`). The engine only
+    consults a policy when more than one option is legal — the same predicate that
+    gates whether a ``decision`` event is logged — so the recorded list lines up
+    one-for-one with the calls. Returning the recorded dict reproduces a
+    byte-identical log; because the state is rebuilt identically, that dict is also
+    structurally present in ``legal``.
+    """
+
+    def __init__(self, decisions: list[Option], name: str = "replay") -> None:
+        super().__init__(name)
+        self._decisions = decisions
+        self._i = 0
+
+    def choose(self, point: str, legal: list[Option], state: GameState, key: str) -> Option:
+        if self._i >= len(self._decisions):
+            raise ReplayExhausted(
+                f"no recorded decision for {key} at {point!r} (call #{self._i + 1}); "
+                "the log is truncated or diverged from the engine"
+            )
+        chosen = self._decisions[self._i]
+        self._i += 1
+        return chosen
+
+
+class ReplayExhausted(RuntimeError):
+    """Raised when a :class:`ReplayPolicy` runs out of recorded decisions.
+
+    Signals that the recorded stream and the re-run engine have diverged (a
+    truncated log, or a card/rule whose behaviour changed since recording).
+    """
+
+
 class HeuristicPolicy(Policy):
     """A transparent, playstyle-aware baseline (SUPERSHOW_MECHANICS §3, user notes).
 

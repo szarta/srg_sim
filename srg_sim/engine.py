@@ -80,10 +80,12 @@ class Engine:
         policy_b: Policy,
         seed: int,
         created: str = "",
+        kind: str = "sim",
     ) -> None:
         rng = SeededRNG(seed)
         self.decks = {"A": deck_a, "B": deck_b}
         self.policies: dict[str, Policy] = {"A": policy_a, "B": policy_b}
+        self._kind = kind  # "sim" | "real" (a human took at least one decision)
         self.state = GameState(players=self._build_players(), rng=rng)
         self.state.log = gl.GameLog(header=self._header(seed, created))
         self.result: GameResult | None = None
@@ -106,7 +108,7 @@ class Engine:
     def _header(self, seed: int, created: str) -> gl.Header:
         return gl.Header(
             seed=seed,
-            kind="sim",
+            kind=self._kind,
             created=created,
             players={k: self._player_info(k) for k in ("A", "B")},
         )

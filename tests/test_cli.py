@@ -280,3 +280,64 @@ def test_replay_rejects_non_sim_log(tmp_path: Path, world: dict[str, Path]) -> N
     GameLog(header, [Result(t=1, winner="A", reason="pinfall", turns=1)]).write(log)
     with pytest.raises(SystemExit, match="only sim logs"):
         main(["replay", str(log), "--cards", str(world["cards"])])
+
+
+# --- review -----------------------------------------------------------------
+
+
+def test_review_reconstructs_and_reports(
+    world: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    log = tmp_path / "game.jsonl"
+    main(_play_args(world, seed="9", out=str(log)))
+    capsys.readouterr()
+    assert main(["review", str(log), "--cards", str(world["cards"])]) == 0
+    out = capsys.readouterr().out
+    assert "review:" in out and "decision(s) reconstructed" in out
+
+
+def test_review_writes_ndjson_of_both_views(
+    world: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    log = tmp_path / "game.jsonl"
+    main(_play_args(world, seed="4", out=str(log)))
+    capsys.readouterr()
+    ndjson = tmp_path / "review.ndjson"
+    main(
+        [
+            "review",
+            str(log),
+            "--player",
+            "A",
+            "--ndjson",
+            str(ndjson),
+            "--cards",
+            str(world["cards"]),
+        ]
+    )
+    rows = [json.loads(line) for line in ndjson.read_text().splitlines()]
+    assert rows, "expected at least one reviewed decision"
+    for row in rows:
+        assert row["player"] == "A"  # --player filter
+        opp = row["player_view"]["players"]["B"]
+        assert "hand_size" in opp and "hand" not in opp  # player-view redacts opponent hand
+        assert "hand" in row["oracle"]["players"]["B"]  # oracle keeps the truth
+
+
+def test_play_human_records_a_real_log(
+    world: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # A scripted stdin lets the human side (policy=human) play headlessly; every
+    # prompt just takes option 1.
+    monkeypatch.setattr("builtins.input", lambda _="": "1")
+    log = tmp_path / "human.jsonl"
+    args = _play_args(world, seed="5", out=str(log)) + ["--policy-a", "human"]
+    assert main(args) == 0
+    from srg_sim.gamelog import GameLog
+
+    parsed = GameLog.read(log)
+    assert parsed.header.kind == "real"
+    assert parsed.header.players["A"].policy == "human"
