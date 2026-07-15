@@ -14,7 +14,9 @@ B_STATS = Stats(power=10, technique=7, agility=6, submission=9, grapple=5, strik
 
 
 def _card(number: int, atk: AtkType = AtkType.STRIKE, order: PlayOrder = PlayOrder.LEAD) -> Card:
-    return Card(db_uuid=f"u{number}", name=f"C{number}", number=number, atk_type=atk, play_order=order)
+    return Card(
+        db_uuid=f"u{number}", name=f"C{number}", number=number, atk_type=atk, play_order=order
+    )
 
 
 def _state() -> GameState:
@@ -74,7 +76,14 @@ def test_skill_compare_reflects_active_buffs() -> None:
         duration=fx.Duration.WHILE_IN_PLAY,
     )
     s.players["A"].in_play.append(
-        Card(db_uuid="b", name="Buff", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD, effects=(buff,))
+        Card(
+            db_uuid="b",
+            name="Buff",
+            number=1,
+            atk_type=AtkType.STRIKE,
+            play_order=PlayOrder.LEAD,
+            effects=(buff,),
+        )
     )
     # A Grapple 9 +3 = 12 vs B Grapple 5.
     cond = fx.SkillCompare(Skill.GRAPPLE, fx.Comparator.GT, fx.Who.SELF, fx.Vs.OPP_SAME)

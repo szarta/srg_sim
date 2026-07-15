@@ -11,12 +11,13 @@ re-running reproduces a byte-identical log (DESIGN.md §8 replay).
 one *within-turn* combo (Lead → Followup* → optional Finish); the combo does not
 persist across turns, so cross-turn board state is out of scope (DESIGN.md §12).
 Rolls and breakouts use **actual seeded draws** (a face is drawn, its value is the
-derived stat), sharing the exact per-face rules ported into
-:mod:`srg_sim.finish`. Stops are RPS-by-attack-type, with the skill-stop Follow
-Ups (cards 13/14/15) additionally gated by :func:`srg_sim.stops.evaluate_stop`.
-The executor applies a focused action set; any effect it cannot apply — an
-``Unsupported`` node or an unhandled action — is emitted as an ``unsupported``
-log event, never dropped. Conditional ``Static`` buffs are not folded in yet.
+derived stat), sharing the exact per-face rules ported into :mod:`srg_sim.finish`.
+**Stops are text-driven**: a hand card can stop an attack iff one of its parsed
+``Stop`` effects matches the attack's order/type and that effect's condition holds
+(evaluated by :mod:`srg_sim.conditions` — so skill stops, see-1, and crowd-meter
+gates all fall out). A card with no Stop effect cannot stop. The executor applies
+a focused action set; any effect it cannot apply — an ``Unsupported`` node or an
+unhandled action — is emitted as an ``unsupported`` log event, never dropped.
 """
 
 from __future__ import annotations
@@ -32,7 +33,6 @@ from srg_sim.cards import AtkType, Card, Deck, PlayOrder, Skill
 from srg_sim.finish import is_auto_success, stat_breaks_out
 from srg_sim.rng import SeededRNG
 from srg_sim.state import GameState, PlayerState
-from srg_sim.stops import STOP_CARDS, evaluate_stop
 
 if TYPE_CHECKING:
     from srg_sim.policy import Option, Policy
@@ -43,13 +43,14 @@ BREAKOUT_ATTEMPTS = 3
 TURN_CAP = 400
 MAX_TIE_REROLLS = 64
 
-# RPS: a beats b. Strike ▷ Grapple ▷ Submission ▷ Strike (DESIGN.md §2).
+# RPS: a beats b. Strike ▷ Grapple ▷ Submission ▷ Strike (DESIGN.md §2). Stops are
+# text-driven (a card's parsed Stop effects), so this is a validation/analysis
+# utility — the RPS relationship is baked into each card's printed stop text.
 _BEATS = {
     AtkType.STRIKE: AtkType.GRAPPLE,
     AtkType.GRAPPLE: AtkType.SUBMISSION,
     AtkType.SUBMISSION: AtkType.STRIKE,
 }
-_SKILL_STOP_NUMBERS = {card for card, _ in STOP_CARDS.values()}
 
 
 def beats(attacker: AtkType, defender: AtkType) -> bool:
@@ -364,21 +365,22 @@ class Engine:
 
     def _legal_stops(self, defender: str, attacker: str, card: Card) -> list[Card]:
         return [
-            c
-            for c in self.state.players[defender].hand
-            if beats(card.atk_type, c.atk_type) and self._skill_stop_ok(defender, attacker, card, c)
+            c for c in self.state.players[defender].hand if self._card_can_stop(defender, c, card)
         ]
 
-    def _skill_stop_ok(self, defender: str, attacker: str, attack: Card, stop: Card) -> bool:
-        """Skill-stop Follow Ups (13/14/15) also need their stop to be online (§6)."""
-        if stop.number not in _SKILL_STOP_NUMBERS:
-            return True
-        result = evaluate_stop(
-            self._stats(defender),
-            attack.atk_type.value,
-            self._stats(attacker),
+    def _card_can_stop(self, defender: str, stopper: Card, attack: Card) -> bool:
+        """Text-driven stop (DESIGN.md §6): a card can stop ``attack`` iff one of its
+        parsed ``Stop`` effects matches the attack's order/type and that effect's
+        condition holds from the defender's view (skill stops, see-1, crowd-meter
+        gates all fall out of the condition). Cards with no Stop effect cannot stop.
+        """
+        return any(
+            isinstance(action, fx.Stop)
+            and _stop_matches(action, attack)
+            and conditions.holds(eff.condition, self.state, defender)
+            for eff in stopper.effects
+            for action in eff.actions
         )
-        return result["online"]
 
     def _apply_stop(self, active: str, defender: str, attack: Card, stop: Card) -> None:
         self.state.players[active].discard.append(attack)
@@ -664,6 +666,13 @@ class Engine:
         card = next(c for c in hand if c.number == number)
         hand.remove(card)
         return card
+
+
+def _stop_matches(stop: fx.Stop, attack: Card) -> bool:
+    """Whether a ``Stop`` action's order/type filter covers this attack (None = any)."""
+    if stop.order is not None and stop.order is not attack.play_order:
+        return False
+    return stop.atk_type is None or stop.atk_type is attack.atk_type
 
 
 def _playable(chain: list[Card], card: Card) -> bool:

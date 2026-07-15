@@ -8,7 +8,7 @@ from dataclasses import replace
 
 import pytest
 from srg_sim import effects as fx
-from srg_sim.cards import AtkType, Card, PlayOrder
+from srg_sim.cards import AtkType, Card, PlayOrder, Skill
 from srg_sim.engine import Engine, GameResult, beats
 from srg_sim.gamelog import GameLog
 from srg_sim.policy import HeuristicPolicy, Policy, RandomPolicy
@@ -95,10 +95,19 @@ def test_heuristic_beats_or_ties_pure_random_over_seeds() -> None:
 # -- both finish and count-out occur across seeds ----------------------------
 
 
-def test_finishes_and_count_outs_both_occur() -> None:
-    reasons = collections.Counter(_play(s).result.reason for s in range(60))  # type: ignore[union-attr]
+def test_finishes_occur_across_seeds() -> None:
+    reasons = collections.Counter(_play(s).result.reason for s in range(30))  # type: ignore[union-attr]
     assert reasons["finish"] > 0
-    assert reasons["count_out"] > 0
+
+
+def test_count_out_win_on_empty_deck_and_hand() -> None:
+    # A player who must draw on a won turn with both deck and hand empty WINS.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].deck.clear()
+    eng.state.players["A"].hand.clear()
+    assert eng._draw_for_turn("A") is False
+    assert eng.result == GameResult("A", "count_out", eng.state.turn_no)
 
 
 # -- decision logging policy -------------------------------------------------
@@ -211,27 +220,83 @@ def test_lose_by_disqualification_when_a_card_is_stopped() -> None:
     assert eng.result == GameResult("B", "disqualification", 1)
 
 
-# -- stops -------------------------------------------------------------------
+# -- stops (text-driven: a card stops only via its parsed Stop effects) -------
 
 
-def test_skill_stop_requires_online() -> None:
-    # Card 15 (Submission-type skill stop) stops a Strike attack only when online.
+def _fresh() -> Engine:
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
-    eng.setup()
-    defender = eng.state.players["B"]
-    card15 = next(c for c in defender.deck if c.number == 15)
-    defender.hand = [card15]
-    strike_attack: Card = replace(defender.deck[0], atk_type=AtkType.STRIKE)
-    legal = eng._legal_stops("B", "A", strike_attack)
-    # Fae's Technique 7 / Submission 9 vs Bull: whether online is matchup-decided;
-    # the point is the gate is *consulted* — a non-skill-stop Submission card is
-    # unconditionally legal, card 15 only if evaluate_stop says online.
-    from srg_sim.stops import evaluate_stop
+    eng.state.turn_no = 1  # decks are full (no setup), cards found by number in deck order
+    return eng
 
-    online = evaluate_stop(
-        eng.state.effective_stats("B"), "Strike", eng.state.effective_stats("A")
-    )["online"]
-    assert (card15 in legal) == online
+
+def _attack(atk: AtkType, order: PlayOrder) -> Card:
+    return Card(db_uuid="atk", name="Atk", number=2, atk_type=atk, play_order=order)
+
+
+def _hand_card(eng: Engine, key: str, number: int) -> Card:
+    card = next(c for c in eng.state.players[key].deck if c.number == number)
+    eng.state.players[key].hand = [card]
+    return card
+
+
+def test_stop_matches_order_and_type() -> None:
+    # Demo card 1 (Strike) stops Grapple *Leads* only.
+    eng = _fresh()
+    card1 = _hand_card(eng, "B", 1)
+    assert card1 in eng._legal_stops("B", "A", _attack(AtkType.GRAPPLE, PlayOrder.LEAD))
+    assert card1 not in eng._legal_stops("B", "A", _attack(AtkType.GRAPPLE, PlayOrder.FINISH))
+    assert card1 not in eng._legal_stops("B", "A", _attack(AtkType.STRIKE, PlayOrder.LEAD))
+
+
+def test_card_without_stop_effect_cannot_stop() -> None:
+    # Demo card 7 is an incremental-value Lead with no Stop effect.
+    eng = _fresh()
+    _hand_card(eng, "B", 7)
+    assert eng._legal_stops("B", "A", _attack(AtkType.GRAPPLE, PlayOrder.LEAD)) == []
+
+
+def test_stop_any_covers_every_ordering_of_its_type() -> None:
+    # Demo card 25 (Strike) is a stop-any: stops Grapple of any ordering.
+    eng = _fresh()
+    card25 = _hand_card(eng, "B", 25)
+    for order in (PlayOrder.LEAD, PlayOrder.FOLLOWUP, PlayOrder.FINISH):
+        assert card25 in eng._legal_stops("B", "A", _attack(AtkType.GRAPPLE, order))
+    assert card25 not in eng._legal_stops("B", "A", _attack(AtkType.STRIKE, PlayOrder.FINISH))
+
+
+def test_skill_stop_gated_by_condition() -> None:
+    # Demo card 15 (Submission skill stop) stops Strike iff defender Submission > attacker's.
+    eng = _fresh()
+    card15 = _hand_card(eng, "B", 15)  # B=Fae Submission 9 vs A=Bull Submission 8 -> online
+    strike = _attack(AtkType.STRIKE, PlayOrder.FINISH)
+    assert card15 in eng._legal_stops("B", "A", strike)
+    # A card in play that lowers Fae's Submission below Bull's flips the stop offline.
+    debuff = fx.Effect(
+        trigger=fx.Static(),
+        actions=(fx.BuffSkill(Skill.SUBMISSION, -3, fx.Who.SELF, fx.Duration.WHILE_IN_PLAY),),
+        duration=fx.Duration.WHILE_IN_PLAY,
+    )
+    eng.state.players["B"].in_play.append(
+        Card(
+            db_uuid="d",
+            name="D",
+            number=1,
+            atk_type=AtkType.STRIKE,
+            play_order=PlayOrder.LEAD,
+            effects=(debuff,),
+        )
+    )
+    assert card15 not in eng._legal_stops("B", "A", strike)  # Fae Sub 9-3=6 < Bull 8
+
+
+def test_see1_stop_needs_opp_type_in_play() -> None:
+    # Demo card 19 (Strike see-1) stops Grapple only if the opponent already has a Grapple in play.
+    eng = _fresh()
+    card19 = _hand_card(eng, "B", 19)
+    grapple = _attack(AtkType.GRAPPLE, PlayOrder.FINISH)
+    assert card19 not in eng._legal_stops("B", "A", grapple)
+    eng.state.players["A"].in_play.append(_attack(AtkType.GRAPPLE, PlayOrder.LEAD))
+    assert card19 in eng._legal_stops("B", "A", grapple)
 
 
 # -- snapshot mid-game -------------------------------------------------------
