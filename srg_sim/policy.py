@@ -15,6 +15,15 @@ shipped policies:
 * :class:`HeuristicPolicy` — small, transparent, playstyle-aware rules (build one
   chain while hoarding stops; spend stops on Finishes); the M1 baseline to beat.
 
+Player-profile policies (todo #32) subclass :class:`HeuristicPolicy`, each
+overriding only the decision points that differ, so a matchup can pit distinct
+skill levels/playstyles against each other for M4 training signal:
+
+* :class:`AggressiveBuilder` — the validated baseline (builds greedily).
+* :class:`SmartPasser` — hoards stops (pass+bury), building only when it holds a
+  Finish; the strongest self-play profile.
+* :class:`Newbie` — greedy, no pass/bury game, misplays stop/discard economy.
+
 Decision points (the skill surface): ``mulligan``, ``turn_action``, ``stop``,
 ``bury``, ``discard``, ``optional``, ``target``.
 """
@@ -126,6 +135,97 @@ class HeuristicPolicy(Policy):
             options, key=lambda o: _play_value(_hand_card(state, key, o["card"]), state, key)
         )
         return best if _play_value(_hand_card(state, key, best["card"]), state, key) < 2 else None
+
+
+class AggressiveBuilder(HeuristicPolicy):
+    """Player profile: the validated *aggressive builder* (== the M1 baseline).
+
+    Builds one chain greedily onto whatever board it has — the "play the cheap
+    non-stop Lead when the board needs a Lead" default the walkthrough tagged as a
+    decent-but-not-optimal aggressive line. Identical behaviour to
+    :class:`HeuristicPolicy`; named separately so it selects as a profile and reads
+    as a deliberate playstyle rather than "the baseline" (see
+    ``srg-strategy-heuristics``, todo #32)."""
+
+    def __init__(self, name: str = "aggressive") -> None:
+        super().__init__(name)
+
+
+class SmartPasser(HeuristicPolicy):
+    """Player profile: the *smart passer* — hoards stops via pass+bury.
+
+    Same peripheral skill as the aggressive builder (reserve stops for Finishes,
+    smart discard/bury), but on offense it **only builds when it holds a Finish**
+    (to set up that combo); otherwise it passes and buries to gather stops — the
+    validated attrition line (``srg-strategy-heuristics``). The "build anyway when
+    the matchup is stop-poor" exception needs an opponent model and is deferred
+    (todo #35)."""
+
+    def __init__(self, name: str = "smart") -> None:
+        super().__init__(name)
+
+    def _at_turn_action(self, legal: list[Option], state: GameState, key: str) -> Option:
+        plays = [o for o in legal if o.get("kind") == "play"]
+        finish = next((o for o in plays if o.get("order") == "Finish"), None)
+        if finish is not None:
+            return finish  # go for the win
+        holds_finish = any(c.play_order is PlayOrder.FINISH for c in state.players[key].hand)
+        if holds_finish:
+            need = _next_build_order(state.players[key].in_play)
+            if need is not None:
+                candidate = self._cheapest_builder(
+                    [o for o in plays if o.get("order") == need], state, key
+                )
+                if candidate is not None:
+                    return candidate  # build toward the Finish we're holding
+        return _by_kind(legal, "pass") or legal[0]  # no Finish in hand -> hoard stops
+
+
+class Newbie(HeuristicPolicy):
+    """Player profile: the *newbie* — greedy, no pass/bury game, misplays economy.
+
+    Plays a Finish the instant it can (even if a stronger player would wait), and
+    otherwise plays the first non-stop Lead/Follow Up just to advance — with no
+    regard to board state, see-1 lanes, or how a stop would advantage the opponent.
+    It never plays a stop offensively, but it misplays the periphery: it stops
+    **eagerly** (spends a stop on the first threat instead of saving it for a
+    Finish) and discards/buries **carelessly** (leftmost, not protecting the
+    Finish). Models a real weaker player for M4 signal (``srg-strategy-heuristics``,
+    todo #32)."""
+
+    def __init__(self, name: str = "newbie") -> None:
+        super().__init__(name)
+
+    def _at_turn_action(self, legal: list[Option], state: GameState, key: str) -> Option:
+        plays = [o for o in legal if o.get("kind") == "play"]
+        finish = next((o for o in plays if o.get("order") == "Finish"), None)
+        if finish is not None:
+            return finish  # greedy: throw the Finish whenever it is playable
+        need = _next_build_order(state.players[key].in_play)
+        if need is not None:
+            builder = self._first_nonstop([o for o in plays if o.get("order") == need], state, key)
+            if builder is not None:
+                return builder  # play a card just to play it — no board/see-1 read
+        return _by_kind(legal, "pass") or legal[0]  # won't burn a stop as a weak attack
+
+    def _at_stop(self, legal: list[Option], state: GameState, key: str) -> Option:
+        stops = [o for o in legal if o.get("kind") == "stop"]
+        return stops[0] if stops else legal[0]  # panics: stops the first threat, wastes it
+
+    def _at_discard(self, legal: list[Option], state: GameState, key: str) -> Option:
+        return legal[0]  # sheds carelessly (leftmost) — may even pitch a Finish
+
+    def _at_bury(self, legal: list[Option], state: GameState, key: str) -> Option:
+        return legal[0]  # recycles carelessly — no "push the stopped Finish" plan
+
+    @staticmethod
+    def _first_nonstop(options: list[Option], state: GameState, key: str) -> Option | None:
+        """The first playable builder that is NOT a stop (a newbie never plays a
+        stop offensively, but plays any non-stop card just to play it)."""
+        return next(
+            (o for o in options if not has_stop_effect(_hand_card(state, key, o["card"]))),
+            None,
+        )
 
 
 def _next_build_order(board: list[Card]) -> str | None:

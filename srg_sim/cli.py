@@ -27,9 +27,22 @@ from srg_sim.cards import Deck
 from srg_sim.engine import Engine
 from srg_sim.gamelog import GameLog, PlayerInfo, diff
 from srg_sim.loader import DEFAULT_CARDS_YAML, CardIndex, LoaderError, load_deck
-from srg_sim.policy import HeuristicPolicy, Policy, RandomPolicy
+from srg_sim.policy import (
+    AggressiveBuilder,
+    HeuristicPolicy,
+    Newbie,
+    Policy,
+    RandomPolicy,
+    SmartPasser,
+)
 
-_POLICIES: dict[str, Callable[[], Policy]] = {"random": RandomPolicy, "heuristic": HeuristicPolicy}
+_POLICIES: dict[str, Callable[[], Policy]] = {
+    "random": RandomPolicy,
+    "heuristic": HeuristicPolicy,
+    "aggressive": AggressiveBuilder,
+    "smart": SmartPasser,
+    "newbie": Newbie,
+}
 
 Overrides = dict[str, list[dict[str, object]]]
 
@@ -169,8 +182,12 @@ def _build_parser() -> argparse.ArgumentParser:
     play.add_argument("deck_a", help="decklist YAML for side A")
     play.add_argument("deck_b", help="decklist YAML for side B")
     play.add_argument("--seed", type=int, default=0)
-    play.add_argument("--policy-a", default="heuristic", help="random | heuristic")
-    play.add_argument("--policy-b", default="heuristic", help="random | heuristic")
+    play.add_argument(
+        "--policy-a", default="heuristic", help="random|heuristic|aggressive|smart|newbie"
+    )
+    play.add_argument(
+        "--policy-b", default="heuristic", help="random|heuristic|aggressive|smart|newbie"
+    )
     play.add_argument("--created", default="", help="header timestamp (kept out of the engine)")
     play.add_argument("--out", help="write the JSONL game log here")
     _add_cards_arg(play)

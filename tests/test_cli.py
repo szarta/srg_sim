@@ -131,6 +131,15 @@ def test_unknown_policy_exits(world: dict[str, Path]) -> None:
         main(_play_args(world, policy_a="wizard"))
 
 
+@pytest.mark.parametrize("profile", ["aggressive", "smart", "newbie"])
+def test_player_profiles_are_selectable_and_play(
+    world: dict[str, Path], profile: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Each player-profile policy (todo #32) is registered and runs a full match.
+    assert main(_play_args(world, seed="5", policy_a=profile, policy_b=profile)) == 0
+    assert "result:" in capsys.readouterr().out
+
+
 def test_missing_cards_file_exits(world: dict[str, Path]) -> None:
     with pytest.raises(SystemExit, match="card export not found"):
         main(["coverage", "--cards", "/no/such/cards.yaml"])

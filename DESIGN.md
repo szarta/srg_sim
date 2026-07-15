@@ -302,6 +302,20 @@ Ships `RandomPolicy` and `HeuristicPolicy` (M1). `LearnedPolicy` (M4) consumes e
 `(observable_state, legal_actions)` tuples the log already records → the training signal is
 free. Policies never see hidden info (opponent hand/deck order) unless an effect reveals it.
 
+**Player-profile policies** (todo #32) subclass `HeuristicPolicy`, overriding only the
+decision points that differ, so a matchup can pit skill levels against each other:
+- `aggressive` (`AggressiveBuilder`) — the validated baseline; builds one chain greedily.
+- `smart` (`SmartPasser`) — passes+buries to **hoard stops**, building only when it holds a
+  Finish (then toward that combo); the strongest self-play profile.
+- `newbie` (`Newbie`) — greedy (throws a Finish the moment it's playable, opens Leads/FUs
+  just to play them), never plays stops offensively, but misplays the economy: stops eagerly
+  (wastes a stop on the first threat) and discards/buries carelessly (leftmost).
+
+Advanced, opponent-model-dependent play — baiting signature cards (Apocalypse/Rejected!) out
+early, forcing a stop to land to arm a held see-1, see-1 type-avoidance, and the smart
+passer's "build anyway vs a stop-poor opponent" exception — is **deferred** to todo #35
+(needs an opponent-model input; profiles take it as an optional constructor arg then).
+
 ---
 
 ## 8. Game-log schema (`gamelog.py`) — one schema for SIM *and* REAL games
