@@ -196,6 +196,8 @@ class Engine:
             if forced is not None:
                 self._log(gl.TurnResult(t=self.state.turn_no, winner=forced, tie_bumps=bumps))
                 return forced
+            self._draw("A", 1)  # bump: both players draw, then re-roll (mechanics §2)
+            self._draw("B", 1)
             bumps += 1
             va = self._roll_for("A", use_pending=False)
             vb = self._roll_for("B", use_pending=False)
