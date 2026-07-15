@@ -494,6 +494,45 @@ def test_draw_over_cap_discards_immediately_not_at_end_of_turn() -> None:
     assert len(eng.state.players["A"].discard) == 1
 
 
+def _static_hand_mod(delta: int, who: fx.Who) -> fx.Effect:
+    return fx.Effect(
+        trigger=fx.Static(),
+        actions=(fx.MaxHandSize(delta, who),),
+        duration=fx.Duration.WHILE_IN_PLAY,
+    )
+
+
+def test_hand_cap_respects_a_raised_self_maximum() -> None:
+    # DESIGN.md §6 / todo #37: a Static MaxHandSize on your own board raises the cap,
+    # so a hand that would overflow the base 10 is kept intact.
+    eng = _fresh()
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(_static_hand_mod(2, fx.Who.SELF),)
+    )
+    hand = [next(c for c in eng.state.players["A"].deck if c.number == n) for n in range(1, 13)]
+    eng.state.players["A"].hand = list(hand)  # 12 cards, cap now 12
+    eng._hand_cap("A")
+    assert len(eng.state.players["A"].hand) == 12  # nothing shed
+    assert eng.state.players["A"].discard == []
+
+
+def test_opponent_card_lowering_max_forces_immediate_discard() -> None:
+    # DESIGN.md §6 / todo #37: the cap is continuous — a card entering A's play that
+    # lowers B's max hand size makes B discard down right then, with no draw of B's.
+    eng = _fresh()
+    b_hand = [next(c for c in eng.state.players["B"].deck if c.number == n) for n in range(1, 11)]
+    eng.state.players["B"].hand = list(b_hand)  # B sits at the base cap of 10
+    card = replace(
+        next(c for c in eng.state.players["A"].deck if c.number == 7),
+        effects=(_static_hand_mod(-2, fx.Who.OPP),),
+    )
+    eng.state.players["A"].in_play.append(card)  # B's max is now 8
+    eng._enforce_hand_caps()
+    assert len(eng.state.players["B"].hand) == 8  # B shed the excess with no draw
+    assert len(eng.state.players["B"].discard) == 2
+    assert eng.state.players["A"].hand == []  # A's own hand untouched
+
+
 def test_opponent_forced_discard_targets_and_lets_the_owner_choose() -> None:
     eng = _fresh()
     a_hand = [next(c for c in eng.state.players["A"].deck if c.number == 7)]

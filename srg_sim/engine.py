@@ -403,6 +403,7 @@ class Engine:
             return False
         self.state.players[active].in_play.append(card)
         self._run_effects(card.effects, fx.OnHit, active)
+        self._enforce_hand_caps()  # a new Static max-handsize mod may force a discard
         return not self._ended()
 
     def _offer_stop(self, defender: str, attacker: str, card: Card) -> Card | None:
@@ -543,11 +544,21 @@ class Engine:
     # -- end of turn -------------------------------------------------------
 
     def _hand_cap(self, key: str) -> None:
-        # Called immediately after any draw. Over the max hand size: the owner
-        # chooses which to shed (DESIGN.md §6/§7).
-        excess = len(self.state.players[key].hand) - HAND_CAP
+        # The cap is continuous (DESIGN.md §6): whenever a player sits above their
+        # maximum hand size — after a draw, or after an opponent's card lowers it —
+        # they discard down right now. The max is derived (base + Static MaxHandSize
+        # mods). Over it, the owner chooses which to shed (DESIGN.md §6/§7).
+        cap = self.state.effective_hand_cap(key, HAND_CAP, self._holds(key))
+        excess = len(self.state.players[key].hand) - cap
         if excess > 0:
             self._discard_from_hand(key, excess, random=False)
+
+    def _enforce_hand_caps(self) -> None:
+        # A card entering play can lower the *opponent's* max hand size, forcing them
+        # to discard down with no draw of their own — so re-check both sides whenever
+        # the board changes (DESIGN.md §6).
+        for key in self.state.players:
+            self._hand_cap(key)
 
     def _discard_in_play(self, key: str) -> None:
         player = self.state.players[key]
@@ -834,5 +845,6 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.WinTie: Engine._act_win_tie,
     fx.LoseBy: Engine._act_lose_by,
     fx.LowestRollWins: Engine._act_noop,
+    fx.MaxHandSize: Engine._act_noop,  # Static, read via effective_hand_cap; never executed
     fx.ShuffleDeck: Engine._act_shuffle_deck,
 }

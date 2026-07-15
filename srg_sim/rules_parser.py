@@ -64,6 +64,7 @@ from srg_sim.effects import (
     HasInPlay,
     LoseBy,
     LoseKind,
+    MaxHandSize,
     ModifyRoll,
     OnHit,
     OnPlay,
@@ -223,6 +224,30 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect | None]]] =
             Static(),
             [BuffSkill(_skill(m[1]), -int(m[2]), Who.OPP, Duration.WHILE_IN_PLAY)],
             duration=Duration.WHILE_IN_PLAY,
+        ),
+    ),
+    # Persistent maximum-hand-size modifiers (DESIGN.md §6): fold into the derived
+    # hand cap like a Static skill buff. Signed delta only — the bare-number
+    # absolute forms ("… is 3"), the "for each"/"equal to"/"halved" scalings, and
+    # the conditional "When …" forms fall through to Unsupported (anchored regex).
+    _rule(
+        r"Each player's maximum hand ?size is ([+-]\d+)",
+        lambda m: _eff(
+            Static(),
+            [MaxHandSize(int(m[1]), Who.SELF), MaxHandSize(int(m[1]), Who.OPP)],
+            duration=Duration.WHILE_IN_PLAY,
+        ),
+    ),
+    _rule(
+        r"(?:Your opponent's|Your target's|Their) maximum hand ?size is ([+-]\d+)",
+        lambda m: _eff(
+            Static(), [MaxHandSize(int(m[1]), Who.OPP)], duration=Duration.WHILE_IN_PLAY
+        ),
+    ),
+    _rule(
+        r"Your maximum hand ?size is ([+-]\d+)",
+        lambda m: _eff(
+            Static(), [MaxHandSize(int(m[1]), Who.SELF)], duration=Duration.WHILE_IN_PLAY
         ),
     ),
     _rule(

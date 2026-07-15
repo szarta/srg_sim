@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from srg_sim.cards import Card, Competitor, EntranceCard, Skill
-from srg_sim.effects import Always, BuffSkill, Condition, Effect, Static, Who
+from srg_sim.effects import Always, BuffSkill, Condition, Effect, MaxHandSize, Static, Who
 from srg_sim.rng import SeededRNG
 
 if TYPE_CHECKING:
@@ -112,6 +112,16 @@ def _iter_static_buffs(effects: Iterable[Effect]) -> Iterator[tuple[Effect, Buff
                     yield eff, action
 
 
+def _iter_static_hand_mods(effects: Iterable[Effect]) -> Iterator[tuple[Effect, MaxHandSize]]:
+    """Yield ``(effect, MaxHandSize)`` for every Static hand-cap modifier in
+    ``effects`` — the derived-hand-cap analogue of :func:`_iter_static_buffs`."""
+    for eff in effects:
+        if isinstance(eff.trigger, Static):
+            for action in eff.actions:
+                if isinstance(action, MaxHandSize):
+                    yield eff, action
+
+
 @dataclass
 class GameState:
     """Both players plus the shared match state (DESIGN.md §5).
@@ -167,6 +177,31 @@ class GameState:
     def effective_stat(self, key: str, skill: Skill, holds: ConditionHolds | None = None) -> int:
         """The single derived value for ``skill`` (convenience over :meth:`effective_stats`)."""
         return self.effective_stats(key, holds)[skill.value]
+
+    def effective_hand_cap(self, key: str, base: int, holds: ConditionHolds | None = None) -> int:
+        """Derived maximum hand size for ``key`` (``base`` + active Static hand mods).
+
+        Folds every :class:`MaxHandSize` the way :meth:`effective_stats` folds
+        Static buffs: a card raising your own cap or lowering your opponent's is
+        read here on demand (DESIGN.md §5/§6). ``holds`` resolves conditional mods;
+        without it only unconditional ones apply. Clamped at zero.
+        """
+        cap = base
+        for owner, player in self.players.items():
+            cap += self._owner_hand_mods(key, owner, player, holds)
+        return max(0, cap)
+
+    def _owner_hand_mods(
+        self, target: str, owner: str, player: PlayerState, holds: ConditionHolds | None
+    ) -> int:
+        total = 0
+        for effects, active in self._buff_sources(player):
+            if not active:
+                continue
+            for eff, mod in _iter_static_hand_mods(effects):
+                if _targets(owner, mod.who, target) and _condition_ok(eff.condition, holds):
+                    total += mod.delta
+        return total
 
     def observable(self, viewer: str) -> dict[str, Any]:
         """What ``viewer`` may legitimately see (DESIGN.md §7 information model).
@@ -228,9 +263,15 @@ class GameState:
         )
 
 
+def _targets(owner: str, who: Who, target: str) -> bool:
+    """True iff an effect owned by ``owner`` with ``who`` lands on ``target``
+    (SELF = owner, OPP = the other player)."""
+    return (who is Who.SELF) == (owner == target)
+
+
 def _buffs(owner: str, buff: BuffSkill, target: str) -> bool:
     """True iff a buff owned by ``owner`` lands on ``target`` (SELF=owner, OPP=other)."""
-    return (buff.who is Who.SELF) == (owner == target)
+    return _targets(owner, buff.who, target)
 
 
 def _condition_ok(condition: Condition, holds: ConditionHolds | None) -> bool:

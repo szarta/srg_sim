@@ -127,6 +127,7 @@ Flip(n)                       Search(filter, dest=HAND)     ShuffleIntoDeck(sele
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)
 ModifyRoll(who, delta, when=THIS|NEXT)     BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
+MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 Reroll(who, once=True)        WinTie(who)                   Bump(who)
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
 BlankText(card, until=END_OF_TURN)             LoseBy(kind=DISQUALIFICATION|PINFALL, who)
@@ -138,7 +139,10 @@ LowestRollWins                # Static marker (Fae): the roll-off is won by the 
 deck**; `Flip(n)` moves the **top `n` cards of the deck to the discard pile** (there is no
 "buried" zone — see §5). `BuffSkill` applies to the **unified derived-stats view** — i.e. it
 affects turn rolls, stops, *and* breakout rolls alike; there is no per-context scope, only
-`duration`. `LoseBy` is how
+`duration`. `MaxHandSize` is the derived-hand-cap analogue of a `Static` `BuffSkill`: it is
+read on demand (`GameState.effective_hand_cap` = base + active mods, clamped at 0), never
+stored, so raising your own cap or lowering an opponent's folds in and out with the card.
+`LoseBy` is how
 cards trigger the DQ / pinfall loss conditions (§6). Count-out is engine-driven, not an action.
 
 **Unsupported sentinel** — any clause the parser can't confidently map:
@@ -204,6 +208,9 @@ still present: cards in `in_play` (`WHILE_IN_PLAY`) and the competitor gimmick i
 `not gimmick_blanked` (`WHILE_GIMMICK_ACTIVE`). This single derived-stats view feeds turn
 rolls, stop checks, and breakout rolls, so buffs/blanks are always consistent and reversible
 (a card leaving play or a gimmick being blanked simply drops out of the recomputation).
+The **maximum hand size** is derived the same way (`effective_hand_cap` = base 10 + active
+`Static` `MaxHandSize` deltas, clamped at 0), so an opponent's cap-lowering card folds in and
+out with the same recomputation and is enforced continuously (§6).
 
 ---
 
@@ -244,9 +251,12 @@ loop until a player loses or a turn cap:
            Resolved cards PERSIST in `in_play` across turns (both sides); a Finish that
            resolves unstopped -> finish sequence. fire OnHit/OnStop effects.
   any LoseBy(DQ|Pinfall) triggered by a resolved/stopped card ends the game immediately
-  # hand cap 10 is enforced IMMEDIATELY inside every draw (turn draw, bump draws, effect
-  # draws) — not batched here — so a player over the max sheds by policy choice the moment
-  # they exceed it, e.g. before their play action or on a bump (§3, todo #28).
+  # the hand cap is CONTINUOUS (base 10 + Static MaxHandSize mods, per player) — enforced the
+  # moment a player exceeds it, never batched: after every draw (turn/bump/effect, todo #28)
+  # AND after any board change that lowers a cap. A card entering play that drops the
+  # opponent's max forces them to discard down right then, with no draw of their own
+  # (_enforce_hand_caps runs both sides after a play resolves). Over-cap sheds by policy
+  # choice (§3, todo #28/#37).
 finish sequence:
   finisher makes ONE finish roll = derived stat(rolled skill)                     # base + all-roll BuffSkills
                                   + SUM finish_bonus(rolled skill) over the WHOLE  # combo numbers, finish-only,

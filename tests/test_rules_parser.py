@@ -28,6 +28,7 @@ from srg_sim.effects import (
     Flip,
     Frequency,
     LoseBy,
+    MaxHandSize,
     ModifyRoll,
     RollWhen,
     ShuffleDeck,
@@ -99,6 +100,44 @@ def test_opponent_next_turn_roll_debuff() -> None:
     act = _one("Your opponent's next turn roll is -1.")
     assert act.who is Who.OPP
     assert act.delta == -1
+
+
+def test_self_max_hand_size_raise() -> None:
+    for clause in ("Your maximum handsize is +1.", "Your maximum hand size is +1."):
+        act = _one(clause)
+        assert isinstance(act, MaxHandSize), clause
+        assert (act.delta, act.who) == (1, Who.SELF)
+    assert isinstance(rp.parse_text("Your maximum handsize is +2.", CARD)[0].trigger, Static)
+
+
+def test_opponent_max_hand_size_lower() -> None:
+    for clause in (
+        "Your opponent's maximum handsize is -1.",
+        "Your target's maximum handsize is -2.",
+        "Their maximum handsize is -3.",
+    ):
+        act = _one(clause)
+        assert isinstance(act, MaxHandSize), clause
+        assert act.who is Who.OPP, clause
+    assert _one("Their maximum handsize is -3.").delta == -3
+
+
+def test_each_player_max_hand_size_hits_both_sides() -> None:
+    effects = rp.parse_text("Each player's maximum handsize is -1.", CARD)
+    acts = effects[0].actions
+    assert [a.who for a in acts] == [Who.SELF, Who.OPP]
+    assert all(isinstance(a, MaxHandSize) and a.delta == -1 for a in acts)
+
+
+def test_absolute_and_scaled_max_hand_size_decline_to_unsupported() -> None:
+    # Bare-number (absolute set) and "for each"/"equal to" scalings are not modelled
+    # as additive deltas, so they stay Unsupported rather than parse wrongly.
+    for clause in (
+        "Your opponent's maximum handsize is 3.",
+        "Your maximum handsize is +1 for each Lead you have in play.",
+        "Your opponent's maximum handsize is equal to your turn roll (Min 5).",
+    ):
+        assert isinstance(_one(clause), Unsupported), clause
 
 
 def test_opponent_skill_debuff() -> None:

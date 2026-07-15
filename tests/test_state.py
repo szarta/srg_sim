@@ -11,6 +11,7 @@ from srg_sim.effects import (
     Duration,
     Effect,
     EffectSource,
+    MaxHandSize,
     OnPlay,
     Static,
     Who,
@@ -113,6 +114,47 @@ def test_conditional_buff_needs_holds_evaluator() -> None:
 def test_unconditional_buff_ignores_holds() -> None:
     gs = _state(a_in_play=(_card(1, (_static_buff(Skill.POWER, 1, Who.SELF, EffectSource.CARD),)),))
     assert gs.effective_stat("A", Skill.POWER, holds=lambda c: False) == 11
+
+
+def _static_hand_mod(delta: int, who: Who) -> Effect:
+    return Effect(
+        trigger=Static(),
+        actions=(MaxHandSize(delta=delta, who=who),),
+        duration=Duration.WHILE_IN_PLAY,
+    )
+
+
+def test_hand_cap_is_base_with_no_modifiers() -> None:
+    gs = _state()
+    assert gs.effective_hand_cap("A", 10) == 10
+    assert gs.effective_hand_cap("B", 10) == 10
+
+
+def test_gimmick_self_raise_and_opp_lower_hand_cap() -> None:
+    # Bull's gimmick raises its own cap +1 and drops the opponent's -2.
+    gs = _state(a_comp_effects=(_static_hand_mod(1, Who.SELF), _static_hand_mod(-2, Who.OPP)))
+    assert gs.effective_hand_cap("A", 10) == 11
+    assert gs.effective_hand_cap("B", 10) == 8
+
+
+def test_hand_cap_mod_folds_in_and_out_with_card() -> None:
+    card = _card(1, (_static_hand_mod(2, Who.SELF),))
+    gs = _state(a_in_play=(card,))
+    assert gs.effective_hand_cap("A", 10) == 12
+    gs.players["A"].in_play.clear()  # card leaves play -> cap back to base
+    assert gs.effective_hand_cap("A", 10) == 10
+
+
+def test_blanked_gimmick_drops_its_hand_cap_mod() -> None:
+    gs = _state(a_comp_effects=(_static_hand_mod(-3, Who.OPP),))
+    assert gs.effective_hand_cap("B", 10) == 7
+    gs.players["A"].gimmick_blanked = True
+    assert gs.effective_hand_cap("B", 10) == 10
+
+
+def test_hand_cap_never_goes_below_zero() -> None:
+    gs = _state(a_comp_effects=(_static_hand_mod(-20, Who.OPP),))
+    assert gs.effective_hand_cap("B", 10) == 0
 
 
 def test_draw_moves_top_of_deck_to_hand() -> None:

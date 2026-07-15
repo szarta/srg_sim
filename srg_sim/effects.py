@@ -462,6 +462,23 @@ class BuffSkill(IRNode):
 
 
 @dataclass(frozen=True)
+class MaxHandSize(IRNode):
+    """Modify a player's maximum hand size (DESIGN.md §3/§6).
+
+    As a ``Static`` action it folds into the *derived* hand cap — parallel to a
+    ``Static`` :class:`BuffSkill` folding into effective stats — so it is read on
+    demand, never stored. ``delta`` is signed (``+`` raises the owner's cap, ``-``
+    lowers it); ``who`` targets ``SELF`` (owner) or ``OPP``. The cap is enforced
+    continuously: any time a player sits above it — after a draw, or after an
+    opponent's card lowers it — they discard down to it.
+    """
+
+    delta: int
+    who: Who = Who.SELF
+    duration: Duration = Duration.WHILE_IN_PLAY
+
+
+@dataclass(frozen=True)
 class Reroll(IRNode):
     who: Who
     once: bool = True
@@ -623,6 +640,7 @@ Action = (
     | AddFromDiscard
     | ModifyRoll
     | BuffSkill
+    | MaxHandSize
     | Reroll
     | WinTie
     | Bump
