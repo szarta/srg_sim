@@ -380,6 +380,7 @@ srg_sim/
   rng.py          # seeded RNG wrapper; roll(), shuffle(), reveal()
   policy.py       # Policy ABC + RandomPolicy, HeuristicPolicy
   gamelog.py      # event dataclasses, JSONL read/write, replay/verify
+  analysis.py     # M2: batch N seeded games for a matchup -> outcomes; aggregation
   cli.py          # `srg-sim play|coverage|replay`
 decks/            # example decklists (yaml)
 overrides.yaml    # hand-authored IR for cards the grammar can't parse
