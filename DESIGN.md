@@ -381,7 +381,7 @@ srg_sim/
   policy.py       # Policy ABC + RandomPolicy, HeuristicPolicy
   gamelog.py      # event dataclasses, JSONL read/write, replay/verify
   analysis.py     # M2: batch N seeded games for a matchup -> outcomes; aggregation
-  cli.py          # `srg-sim play|coverage|replay`
+  cli.py          # `srg-sim play|coverage|analyze|replay`
 decks/            # example decklists (yaml)
 overrides.yaml    # hand-authored IR for cards the grammar can't parse
 tests/            # parity + regression (see §10)

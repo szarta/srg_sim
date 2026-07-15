@@ -1,4 +1,4 @@
-"""CLI entry: ``srg-sim play | coverage | replay`` (DESIGN.md §9).
+"""CLI entry: ``srg-sim play | coverage | analyze | replay`` (DESIGN.md §9).
 
 The user-facing entry point that ties the pipeline together:
 
@@ -8,6 +8,10 @@ The user-facing entry point that ties the pipeline together:
 * ``coverage`` — build the index and print the rules-parser coverage report
   (grammar / override / unsupported) over the whole DB and, with ``--top96``,
   over the top-96 competitive subset (DESIGN.md §4).
+* ``analyze A.yaml B.yaml --games N`` — batch N seeded games for the matchup
+  (:mod:`~srg_sim.analysis`), print the aggregate :class:`MatchupReport`, and
+  optionally export it as JSON (``--json``) or long-format CSV (``--csv``) for a
+  downstream notebook (DESIGN.md §10 M2).
 * ``replay LOG.jsonl`` — re-run a recorded *sim* log from its ``header.seed`` and
   decks/policies, then diff the produced stream against the recording to verify
   determinism (DESIGN.md §8).
@@ -19,10 +23,14 @@ command runs against any ``cards.yaml`` — real or a test fixture.
 from __future__ import annotations
 
 import argparse
+import csv
+import json
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from srg_sim import rules_parser as rp
+from srg_sim.analysis import Matchup, MatchupReport, run_batch, seed_range
 from srg_sim.cards import Deck
 from srg_sim.engine import Engine
 from srg_sim.gamelog import GameLog, PlayerInfo, diff
@@ -36,6 +44,8 @@ from srg_sim.policy import (
     SmartPasser,
 )
 
+_POLICY_NAMES = "random|heuristic|aggressive|smart|newbie"
+
 _POLICIES: dict[str, Callable[[], Policy]] = {
     "random": RandomPolicy,
     "heuristic": HeuristicPolicy,
@@ -47,10 +57,14 @@ _POLICIES: dict[str, Callable[[], Policy]] = {
 Overrides = dict[str, list[dict[str, object]]]
 
 
-def _make_policy(name: str) -> Policy:
+def _policy_factory(name: str) -> Callable[[], Policy]:
     if name not in _POLICIES:
         raise SystemExit(f"unknown policy {name!r}; choose from {sorted(_POLICIES)}")
-    return _POLICIES[name]()
+    return _POLICIES[name]
+
+
+def _make_policy(name: str) -> Policy:
+    return _policy_factory(name)()
 
 
 def _index(path: str) -> CardIndex:
@@ -126,6 +140,97 @@ def _print_coverage(label: str, report: rp.CoverageReport) -> None:
 
 
 # ---------------------------------------------------------------------------
+# analyze
+# ---------------------------------------------------------------------------
+
+
+def _cmd_analyze(args: argparse.Namespace) -> int:
+    index = _index(args.cards)
+    overrides = rp.load_overrides()
+    deck_a = _load_playable(args.deck_a, index, overrides)
+    deck_b = _load_playable(args.deck_b, index, overrides)
+    matchup = Matchup(
+        deck_a,
+        deck_b,
+        _policy_factory(args.policy_a),
+        _policy_factory(args.policy_b),
+        created=args.created,
+    )
+    outcomes = run_batch(matchup, seed_range(args.games, args.seed_start), keep_logs=True)
+    report = MatchupReport.from_outcomes(outcomes)
+    _print_analysis(report, deck_a, deck_b, args)
+    if args.json:
+        Path(args.json).write_text(json.dumps(report.to_dict(), indent=2) + "\n")
+        print(f"json: {args.json}")
+    if args.csv:
+        _write_report_csv(args.csv, report)
+        print(f"csv: {args.csv}")
+    return 0
+
+
+def _print_analysis(
+    report: MatchupReport, deck_a: Deck, deck_b: Deck, args: argparse.Namespace
+) -> None:
+    header = (
+        f"analyze: {deck_a.competitor.name} ({args.policy_a}) vs "
+        f"{deck_b.competitor.name} ({args.policy_b}) — {report.games} games"
+    )
+    if report.games:
+        header += f" (seeds {args.seed_start}-{args.seed_start + report.games - 1})"
+    print(header)
+    print(_wins_line(report))
+    print(f"  reasons: {_counts(report.reasons)}")
+    if report.finish_types:
+        print(f"  finish types: {_counts(report.finish_types)}")
+    length = report.length
+    print(
+        f"  length (turns): min {length['min']:.0f}  mean {length['mean']:.1f}  "
+        f"median {length['median']:.0f}  max {length['max']:.0f}"
+    )
+    print(f"  stops/game: A {report.stops['A']:.2f}  B {report.stops['B']:.2f}")
+
+
+def _wins_line(report: MatchupReport) -> str:
+    parts = []
+    for side in ("A", "B"):
+        lo, hi = report.win_ci[side]
+        parts.append(
+            f"{side} {report.wins[side]} ({report.win_rate[side]:.1%}, CI {lo:.1%}-{hi:.1%})"
+        )
+    return f"  wins: {'  '.join(parts)}  draw {report.wins['draw']}"
+
+
+def _counts(counter: dict[str, int]) -> str:
+    """Render a count map as ``k n, ...`` ordered by count (desc), then name."""
+    ordered = sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))
+    return ", ".join(f"{name} {count}" for name, count in ordered) or "(none)"
+
+
+def _write_report_csv(path: str, report: MatchupReport) -> None:
+    """Long-format ``metric,value`` CSV: nested keys dot-joined, list indices too.
+
+    Long format keeps the ragged crowd-meter curve and nested maps tidy for a
+    notebook (``pd.read_csv(...).set_index("metric")``)."""
+    with Path(path).open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["metric", "value"])
+        writer.writerows(_flatten(report.to_dict()))
+
+
+def _flatten(data: dict[str, Any], prefix: str = "") -> list[tuple[str, Any]]:
+    rows: list[tuple[str, Any]] = []
+    for key, value in data.items():
+        dotted = f"{prefix}{key}"
+        if isinstance(value, dict):
+            rows.extend(_flatten(value, f"{dotted}."))
+        elif isinstance(value, list):
+            rows.extend((f"{dotted}.{i}", item) for i, item in enumerate(value))
+        else:
+            rows.append((dotted, value))
+    return rows
+
+
+# ---------------------------------------------------------------------------
 # replay
 # ---------------------------------------------------------------------------
 
@@ -197,6 +302,21 @@ def _build_parser() -> argparse.ArgumentParser:
     coverage.add_argument("--top96", action="store_true", help="also report the top-96 subset")
     _add_cards_arg(coverage)
     coverage.set_defaults(func=_cmd_coverage)
+
+    analyze = sub.add_parser("analyze", help="batch N seeded games and report matchup metrics")
+    analyze.add_argument("deck_a", help="decklist YAML for side A")
+    analyze.add_argument("deck_b", help="decklist YAML for side B")
+    analyze.add_argument("--games", type=int, default=100, help="number of games to run")
+    analyze.add_argument(
+        "--seed-start", type=int, default=0, help="first seed (games use S..S+N-1)"
+    )
+    analyze.add_argument("--policy-a", default="heuristic", help=_POLICY_NAMES)
+    analyze.add_argument("--policy-b", default="heuristic", help=_POLICY_NAMES)
+    analyze.add_argument("--created", default="", help="header timestamp (kept out of the engine)")
+    analyze.add_argument("--json", help="write the report as JSON here")
+    analyze.add_argument("--csv", help="write the report as long-format CSV here")
+    _add_cards_arg(analyze)
+    analyze.set_defaults(func=_cmd_analyze)
 
     replay = sub.add_parser("replay", help="re-run a sim log and verify it reproduces")
     replay.add_argument("log", help="recorded JSONL game log")

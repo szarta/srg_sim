@@ -6,6 +6,7 @@ so no card DB is required.
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 from typing import Any
@@ -143,6 +144,70 @@ def test_player_profiles_are_selectable_and_play(
 def test_missing_cards_file_exits(world: dict[str, Path]) -> None:
     with pytest.raises(SystemExit, match="card export not found"):
         main(["coverage", "--cards", "/no/such/cards.yaml"])
+
+
+# --- analyze ----------------------------------------------------------------
+
+
+def _analyze_args(world: dict[str, Path], **extra: str) -> list[str]:
+    args = ["analyze", str(world["a"]), str(world["b"]), "--cards", str(world["cards"])]
+    for key, value in extra.items():
+        args += [f"--{key.replace('_', '-')}", value]
+    return args
+
+
+def test_analyze_prints_report_summary(
+    world: dict[str, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(_analyze_args(world, games="6", seed_start="0")) == 0
+    out = capsys.readouterr().out
+    assert "analyze:" in out and "6 games" in out and "seeds 0-5" in out
+    assert "wins:" in out and "reasons:" in out
+    assert "length (turns):" in out and "stops/game:" in out
+
+
+def test_analyze_respects_seed_start(
+    world: dict[str, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(_analyze_args(world, games="4", seed_start="10"))
+    assert "seeds 10-13" in capsys.readouterr().out
+
+
+def test_analyze_writes_json(
+    world: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "report.json"
+    main(_analyze_args(world, games="5", json=str(out)))
+    blob = json.loads(out.read_text())
+    assert blob["games"] == 5
+    assert blob["wins"]["A"] + blob["wins"]["B"] + blob["wins"]["draw"] == 5
+    assert isinstance(blob["win_ci"]["A"], list) and len(blob["win_ci"]["A"]) == 2
+
+
+def test_analyze_writes_long_format_csv(
+    world: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "report.csv"
+    main(_analyze_args(world, games="5", csv=str(out)))
+    rows = list(csv.reader(out.read_text().splitlines()))
+    assert rows[0] == ["metric", "value"]
+    flat = dict(rows[1:])
+    assert flat["games"] == "5"
+    assert "win_rate.A" in flat and "reasons.finish" in " ".join(flat)  # nested keys dot-joined
+
+
+def test_analyze_is_deterministic(
+    world: dict[str, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(_analyze_args(world, games="8", seed_start="3"))
+    first = capsys.readouterr().out
+    main(_analyze_args(world, games="8", seed_start="3"))
+    assert capsys.readouterr().out == first
+
+
+def test_analyze_unknown_policy_exits(world: dict[str, Path]) -> None:
+    with pytest.raises(SystemExit, match="unknown policy"):
+        main(_analyze_args(world, games="2", policy_a="wizard"))
 
 
 def test_bad_deck_ref_exits(world: dict[str, Path], tmp_path: Path) -> None:
