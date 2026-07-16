@@ -324,6 +324,39 @@ def test_review_writes_ndjson_of_both_views(
         assert "hand" in row["oracle"]["players"]["B"]  # oracle keeps the truth
 
 
+# --- report -----------------------------------------------------------------
+
+
+def test_report_writes_a_sphinx_project(
+    world: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # --no-html skips the Sphinx build, so this stays fast and offline: it just
+    # resolves the competitors and writes the report's index.rst + conf.py.
+    out = tmp_path / "reports"
+    rc = main(
+        [
+            "report",
+            "Comp A",
+            "Comp B",
+            "--cards",
+            str(world["cards"]),
+            "--out",
+            str(out),
+            "--no-html",
+        ]
+    )
+    assert rc == 0
+    proj = out / "comp-a-vs-comp-b"
+    assert (proj / "index.rst").exists() and (proj / "conf.py").exists()
+    text = (proj / "index.rst").read_text()
+    assert "Comp A" in text and "Turn roll:" in text and "Finish odds (CM1" in text
+
+
+def test_report_unknown_competitor_exits(world: dict[str, Path], tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="could not build report"):
+        main(["report", "Nobody", "Comp B", "--cards", str(world["cards"]), "--out", str(tmp_path)])
+
+
 # --- export -----------------------------------------------------------------
 
 

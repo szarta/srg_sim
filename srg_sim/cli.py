@@ -1,4 +1,4 @@
-"""CLI entry: ``srg-sim play | coverage | analyze | replay | review | export`` (DESIGN.md §9).
+"""CLI entry: ``srg-sim play|coverage|analyze|replay|review|export|report`` (DESIGN.md §9).
 
 The user-facing entry point that ties the pipeline together:
 
@@ -23,6 +23,9 @@ The user-facing entry point that ties the pipeline together:
 * ``export LOG.jsonl…`` — flatten one or more logs' ``decision`` events to
   imitation-learning NDJSON (``{observable_state, legal, chosen, policy, point}``),
   the honest per-seat training signal ``LearnedPolicy`` consumes (DESIGN.md §10 M4).
+* ``report A B`` — build a 2-competitor matchup report (turn-roll odds, CM1–5 finish
+  odds with card art, skill stops, skill-requirement payoffs) as a self-contained
+  Sphinx project rendered to HTML and, with ``--pdf``, a xelatex PDF.
 
 ``--cards`` overrides the card-export path (defaults to the snapshot), so every
 command runs against any ``cards.yaml`` — real or a test fixture.
@@ -304,6 +307,45 @@ def _cmd_review(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# report
+# ---------------------------------------------------------------------------
+
+
+def _cmd_report(args: argparse.Namespace) -> int:
+    from srg_sim.loader import LoaderError
+    from srg_sim.report.build import build_report
+
+    try:
+        out = build_report(
+            args.comp_a,
+            args.comp_b,
+            cards_path=args.cards,
+            cms=_parse_cms(args.cm),
+            mc_games=args.mc,
+            seed=args.seed,
+            out_root=args.out,
+            html=not args.no_html,
+            pdf=args.pdf,
+        )
+    except LoaderError as exc:
+        raise SystemExit(f"could not build report: {exc}") from exc
+    print(f"report: {out}")
+    if not args.no_html:
+        print(f"  html: {out / '_build' / 'html' / 'index.html'}")
+    if args.pdf:
+        print(f"  pdf:  {out / '_build' / 'latex' / 'matchup.pdf'}")
+    return 0
+
+
+def _parse_cms(spec: str) -> tuple[int, ...]:
+    """Parse a Crowd-Meter spec: ``"1-5"`` range or ``"1,3,5"`` list."""
+    if "-" in spec:
+        lo, hi = (int(x) for x in spec.split("-", 1))
+        return tuple(range(lo, hi + 1))
+    return tuple(int(x) for x in spec.split(","))
+
+
+# ---------------------------------------------------------------------------
 # export
 # ---------------------------------------------------------------------------
 
@@ -385,6 +427,20 @@ def _build_parser() -> argparse.ArgumentParser:
     review.add_argument("--ndjson", help="write the review records as NDJSON here")
     _add_cards_arg(review)
     review.set_defaults(func=_cmd_review)
+
+    report = sub.add_parser(
+        "report", help="build a 2-competitor matchup report (Sphinx HTML + xelatex PDF)"
+    )
+    report.add_argument("comp_a", help="first competitor (name, substring, or db_uuid)")
+    report.add_argument("comp_b", help="second competitor (name, substring, or db_uuid)")
+    report.add_argument("--cm", default="1-5", help="Crowd-Meter range/list for finish odds")
+    report.add_argument("--mc", type=int, default=50000, help="Monte-Carlo rolls for turn odds")
+    report.add_argument("--seed", type=int, default=11, help="turn-odds MC seed")
+    report.add_argument("--out", default="docs/reports", help="output root dir")
+    report.add_argument("--pdf", action="store_true", help="also build the xelatex PDF")
+    report.add_argument("--no-html", action="store_true", help="skip the HTML build")
+    _add_cards_arg(report)
+    report.set_defaults(func=_cmd_report)
 
     export = sub.add_parser(
         "export", help="flatten one or more logs to imitation-learning NDJSON (§10 M4)"

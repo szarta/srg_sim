@@ -1,0 +1,11 @@
+# Report curation overrides (Phase 2), keyed by competitor name or db_uuid.
+#
+# Each entry may carry:
+#   type:          override the auto comp-type label (e.g. "turn-advantage")
+#   also:          [secondary, labels]
+#   notes:         free-form matchup notes (rendered verbatim)
+#   notable_cards: ["Card Name", ...]
+#   sample_decklist: path or inline list (deferred — see the plan)
+#
+# Empty for now; the classifier falls back to heuristics over the compiled gimmick.
+{}

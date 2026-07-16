@@ -14,7 +14,9 @@ autosectionlabel_prefix_document = True
 todo_include_todos = True
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+# ``reports/`` holds generated, self-contained per-matchup Sphinx projects
+# (``srg-sim report``); the developer-docs build must not descend into them.
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "reports"]
 
 html_theme = "alabaster"
 html_static_path = ["_static"]

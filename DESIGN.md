@@ -427,7 +427,10 @@ srg_sim/
   gamelog.py      # event dataclasses, JSONL read/write, replay/verify
   analysis.py     # M2: batch N seeded games for a matchup -> outcomes; aggregation;
                   #     Matchup/GameOutcome/MatchupReport, run_batch(jobs=N) parallel fan-out
-  cli.py          # `srg-sim play|coverage|analyze|replay|review|export`
+  report/         # 2-competitor matchup scorecard -> Sphinx HTML + xelatex PDF:
+                  #   carddb, images, turn (exact|MC), finishes, skillreqs, classify,
+                  #   model, render (RST), build. Reuses finish.py/stops.py/engine.py.
+  cli.py          # `srg-sim play|coverage|analyze|replay|review|export|report`
 decks/            # example decklists (yaml)
 overrides.yaml    # hand-authored IR for cards the grammar can't parse
 tests/            # parity + regression (see §10)

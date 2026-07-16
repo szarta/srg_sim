@@ -10,4 +10,5 @@ How to set up, work in, and contribute to |project|.
    workflow
    playing
    analysis
+   reports
    claude

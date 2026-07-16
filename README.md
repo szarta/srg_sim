@@ -36,14 +36,18 @@ srg-sim replay game.jsonl          # re-run from the header seed; verify it matc
 srg-sim coverage --top96           # grammar / override / unsupported clause tally
 srg-sim analyze decks/bull.yaml decks/fae.yaml --games 500 --jobs 4 --json report.json
 srg-sim export game.jsonl --out decisions.ndjson   # imitation-learning training data
+srg-sim report "Soborno" "Mrs. Apocalypse" --pdf   # matchup scorecard (HTML + xelatex PDF)
 ```
 
 `--policy-a` / `--policy-b` select `random`, `heuristic`, `aggressive`, `smart`,
 or `newbie`. A decklist names a competitor, an entrance, and 30 cards (see
 [`decks/`](decks/) and DESIGN.md §2). `analyze` batches N seeded games into a
 win-rate/finish/length report (`--jobs` fans them across processes, seed-ordered);
-`export` flattens a log's decisions to per-seat NDJSON training examples. See the
-[analysis docs](docs/development/analysis.rst) and [playing/review docs](docs/development/playing.rst).
+`export` flattens a log's decisions to per-seat NDJSON training examples; `report`
+builds a two-competitor matchup scorecard (turn-roll odds, CM1–5 finish odds with
+card art, skill stops, skill-requirement payoffs) as a Sphinx HTML page and, with
+`--pdf`, a xelatex PDF. See the [analysis](docs/development/analysis.rst),
+[report](docs/development/reports.rst), and [playing/review](docs/development/playing.rst) docs.
 
 ## Getting started
 

@@ -30,3 +30,7 @@ coverage.xml
 *.jsonl
 !tests/**/*.jsonl
 out/
+
+# Generated matchup reports: self-contained Sphinx projects with converted card
+# art (not vendored — see CLAUDE.md). Regenerate with `srg-sim report A B`.
+docs/reports/

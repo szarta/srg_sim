@@ -130,6 +130,22 @@ def docs(c, open_browser=False):
         print("Docs built: docs/_build/html/index.html")
 
 
+@task(
+    help={
+        "a": "first competitor (name, substring, or db_uuid)",
+        "b": "second competitor (name, substring, or db_uuid)",
+        "pdf": "also build the xelatex PDF",
+    }
+)
+def report(c, a, b, pdf=False):
+    """Build a 2-competitor matchup report (Sphinx HTML, optional PDF).
+
+    Example: ``invoke report --a Soborno --b "Mrs. Apocalypse" --pdf``
+    """
+    flag = " --pdf" if pdf else ""
+    c.run(f'{PY} -m srg_sim.cli report "{a}" "{b}"{flag}', pty=True)
+
+
 @task
 def clean(c):
     """Remove build and test artifacts."""
