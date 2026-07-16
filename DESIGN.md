@@ -254,6 +254,10 @@ loop until a player loses or a turn cap:
            stops, feed combo/finish bonuses, and even enable a later Finish off the FU.
            Resolved cards PERSIST in `in_play` across turns (both sides); a Finish that
            resolves unstopped -> finish sequence. fire OnHit/OnStop effects.
+           ORDER IS STRICT: the stop window opens BEFORE any of the attack's own text —
+           a STOPPED card fires NONE of its text (no OnPlay, no OnHit). So OnPlay/OnHit
+           resolve only for an unstopped attack (OnPlay as it resolves, before it lands
+           on the board; OnHit once it is in play). See srg-rules-confirmed.
   any LoseBy(DQ|Pinfall) triggered by a resolved/stopped card ends the game immediately
   # the hand cap is CONTINUOUS (base 10 + Static MaxHandSize mods, per player) — enforced the
   # moment a player exceeds it, never batched: after every draw (turn/bump/effect, todo #28)

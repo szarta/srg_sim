@@ -494,6 +494,48 @@ def test_bump_makes_both_players_draw(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(eng.state.players["B"].deck) == b0 - 1
 
 
+def test_stopped_card_fires_none_of_its_text() -> None:
+    # srg-rules-confirmed / #45: the stop window precedes a card's OnPlay text, so a
+    # stopped card's effect (here a Draw) must NOT resolve — only the attack is discarded.
+    class StopFirst(Policy):
+        def __init__(self) -> None:
+            super().__init__("stop-first")
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            return next((o for o in legal if o["kind"] == "stop"), legal[0])
+
+    draw2 = fx.Effect(
+        trigger=fx.OnPlay(),
+        actions=(fx.Draw(n=2),),
+        raw_clause="on play draw 2",
+        source=fx.EffectSource.CARD,
+    )
+    attack = replace(
+        _attack(AtkType.GRAPPLE, PlayOrder.LEAD), effects=(draw2,), db_uuid="atk", number=2
+    )
+
+    # Stopped: demo card 25 (Strike stop-any) answers the Grapple Lead -> no draw.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), StopFirst(), seed=1, created="x")
+    eng.setup()
+    eng.state.turn_no = 1
+    a, b = eng.state.players["A"], eng.state.players["B"]
+    b.hand = [next(c for c in b.deck if c.number == 25)]
+    deck_before = len(a.deck)
+    assert eng._resolve_play("A", "B", attack) is False
+    assert len(a.deck) == deck_before  # OnPlay Draw(2) was cancelled by the stop
+    assert attack in a.discard
+
+    # Unstopped (empty defender hand): the same card's OnPlay Draw(2) DOES fire.
+    eng2 = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng2.setup()
+    eng2.state.turn_no = 1
+    a2 = eng2.state.players["A"]
+    eng2.state.players["B"].hand = []
+    hand_before = len(a2.hand)
+    assert eng2._resolve_play("A", "B", replace(attack, db_uuid="atk2")) is True
+    assert len(a2.hand) == hand_before + 2  # drew 2, card resolved into play
+
+
 def test_heuristic_actually_plays_stops() -> None:
     # Regression: stop options must be tagged so the heuristic defender uses them
     # (the persistent board exposed a kind-mismatch that made it never stop).

@@ -404,12 +404,16 @@ class Engine:
                 atk_type=card.atk_type.value,
             )
         )
-        self._run_effects(card.effects, fx.OnPlay, active)
-        if self._ended():
-            return False
+        # The stop window comes FIRST: a stopped card fires NONE of its text
+        # (srg-rules-confirmed; DESIGN.md §6). So OnPlay/OnHit resolve only for an
+        # unstopped card. OnPlay fires as the card resolves (before it lands on the
+        # board); OnHit after it enters play (for text that reads its own board slot).
         stop = self._offer_stop(defender, active, card)
         if stop is not None:
             self._apply_stop(active, defender, card, stop)
+            return False
+        self._run_effects(card.effects, fx.OnPlay, active)
+        if self._ended():
             return False
         self.state.players[active].in_play.append(card)
         self._run_effects(card.effects, fx.OnHit, active)
