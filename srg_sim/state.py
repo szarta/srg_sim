@@ -22,6 +22,7 @@ from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from srg_sim import conditions
 from srg_sim.cards import Card, Competitor, EntranceCard, Skill
 from srg_sim.effects import (
     Always,
@@ -165,22 +166,32 @@ class GameState:
         """Whether ``key``'s competitor gimmick is currently suppressed — by the
         stored flag (a one-shot / StartOfMatch blank set via the BlankGimmick
         handler) OR by any active BlankGimmick that targets ``key`` from an
-        entrance or an in-play card (e.g. Savor the Moment; DESIGN.md §3/§5). The
-        blank is derived like a Static buff, so a WHILE_IN_PLAY blank clears the
-        moment its source leaves play (breakout). A gimmick never blanks itself, so
-        competitor effects are not scanned here — no recursion with _buff_sources."""
+        entrance or an in-play card, WHOSE CONDITION HOLDS (e.g. Savor the Moment:
+        "if you have Enjoy Everything in play, your opponent's Gimmick is blank";
+        DESIGN.md §3/§5). Derived like a Static buff, so a WHILE_IN_PLAY blank clears
+        the moment its source leaves play or its condition stops holding. A gimmick
+        never blanks itself, so competitor effects are not scanned. The re-entrancy
+        guard defends the pathological case of a blank gated on a stat comparison
+        (whose evaluation reads effective_stats -> _buff_sources -> here again)."""
         if self.players[key].gimmick_blanked:
             return True
-        for owner, player in self.players.items():
-            sources = [player.entrance.effects, *(c.effects for c in player.in_play)]
-            for effects in sources:
-                for eff in effects:
-                    if any(
-                        isinstance(a, BlankGimmick)
-                        and (owner if a.who is Who.SELF else self.opponent_of(owner)) == key
-                        for a in eff.actions
-                    ):
-                        return True
+        guard: set[str] = self.__dict__.setdefault("_blank_guard", set())
+        if key in guard:
+            return False  # re-entrant stat-gated blank: fall back to no blank
+        guard.add(key)
+        try:
+            for owner, player in self.players.items():
+                for effects in (player.entrance.effects, *(c.effects for c in player.in_play)):
+                    for eff in effects:
+                        targets = any(
+                            isinstance(a, BlankGimmick)
+                            and (owner if a.who is Who.SELF else self.opponent_of(owner)) == key
+                            for a in eff.actions
+                        )
+                        if targets and conditions.holds(eff.condition, self, owner):
+                            return True
+        finally:
+            guard.discard(key)
         return False
 
     def effective_stats(self, key: str, holds: ConditionHolds | None = None) -> dict[str, int]:

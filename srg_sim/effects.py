@@ -497,6 +497,8 @@ class ModifyRoll(IRNode):
     who: Who
     delta: int
     when: RollWhen = RollWhen.THIS
+    per: CardFilter | None = None  # if set, delta scales by the count of matching cards...
+    per_who: Who = Who.OPP  # ...in `per_who`'s in-play board ("+1 for each Lead your opp has")
 
 
 @dataclass(frozen=True)

@@ -262,6 +262,64 @@ def test_blank_gimmick_suppresses_opponent_competitor_gimmick_and_clears() -> No
     assert not eng.state.is_gimmick_blanked("A")  # blank clears
 
 
+def test_conditional_blank_gimmick_honors_its_condition() -> None:
+    # Savor the Moment: the opponent's gimmick is blank ONLY while "Enjoy Everything"
+    # is in play — is_gimmick_blanked must evaluate the effect's condition, not just
+    # its presence. Clears when the enabling card leaves play.
+    enjoy = Card(
+        db_uuid="enjoy",
+        name="Enjoy Everything",
+        number=10,
+        atk_type=AtkType.STRIKE,
+        play_order=PlayOrder.LEAD,
+    )
+    savor = Card(
+        db_uuid="savor",
+        name="Savor",
+        number=16,
+        atk_type=AtkType.STRIKE,
+        play_order=PlayOrder.FOLLOWUP,
+        effects=(
+            fx.Effect(
+                trigger=fx.Static(),
+                condition=fx.HasInPlay(
+                    who=fx.Who.SELF, filter=fx.CardFilter(name="Enjoy Everything")
+                ),
+                actions=(fx.BlankGimmick(who=fx.Who.OPP),),
+            ),
+        ),
+    )
+    eng = _fresh()
+    a = eng.state.players["A"]
+    a.in_play.append(savor)
+    assert not eng.state.is_gimmick_blanked("B")  # Enjoy Everything not in play yet
+    a.in_play.append(enjoy)
+    assert eng.state.is_gimmick_blanked("B")  # condition now holds -> blanked
+    a.in_play.remove(enjoy)
+    assert not eng.state.is_gimmick_blanked("B")  # condition no longer holds
+
+
+def test_modify_roll_per_count_scales_with_matching_cards() -> None:
+    # Enjoy Everything: next turn roll +1 for EACH Lead the opponent has in play.
+    eng = _fresh()
+    eng.state.players["B"].in_play = [
+        _attack(AtkType.STRIKE, PlayOrder.LEAD),
+        _attack(AtkType.GRAPPLE, PlayOrder.LEAD),
+        _attack(AtkType.STRIKE, PlayOrder.FOLLOWUP),  # not a Lead -> not counted
+    ]
+    eng._act_modify_roll(
+        fx.ModifyRoll(
+            who=fx.Who.SELF,
+            delta=1,
+            when=fx.RollWhen.NEXT,
+            per=fx.CardFilter(play_order=PlayOrder.LEAD),
+            per_who=fx.Who.OPP,
+        ),
+        "A",
+    )
+    assert eng.state.players["A"].pending_roll_mods["next"] == 2  # two opponent Leads -> +2
+
+
 def test_blank_gimmick_action_latches_the_stored_flag() -> None:
     # A one-shot/executed BlankGimmick (not the Static/derived path) latches the flag.
     eng = _fresh()

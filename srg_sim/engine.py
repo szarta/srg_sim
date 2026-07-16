@@ -863,8 +863,14 @@ class Engine:
     def _act_modify_roll(self, action: fx.ModifyRoll, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         slot = "this" if action.when is fx.RollWhen.THIS else "next"
-        self.state.players[target].pending_roll_mods[slot] += action.delta
-        self._log_effect(key, "ModifyRoll", target, {"delta": action.delta, "when": slot})
+        delta = action.delta
+        if action.per is not None:
+            # "+delta for each matching card in per_who's play" (Enjoy Everything).
+            counter = key if action.per_who is fx.Who.SELF else self.state.opponent_of(key)
+            board = self.state.players[counter].in_play
+            delta *= sum(1 for c in board if conditions.card_matches(c, action.per))
+        self.state.players[target].pending_roll_mods[slot] += delta
+        self._log_effect(key, "ModifyRoll", target, {"delta": delta, "when": slot})
 
     def _act_blank_gimmick(self, action: fx.BlankGimmick, key: str) -> None:
         # Executed (one-shot / non-Static) blank: latch the stored flag on the

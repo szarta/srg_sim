@@ -757,3 +757,91 @@ ba63df8e2ef842928c6007da934a2b9a:
     n: null
   raw_clause: if another Follow Up or Finish Grapple in play, your Agility is +1
   source: card
+
+# --- updated Mastermind (decks/mastermind-updated.yaml): the D2-counter line ---
+# Savor the Moment + Enjoy Everything blank D2's draw-2 gimmick (the user's key
+# rematch idea). BlankGimmick is CONDITIONAL (only while Enjoy Everything is in
+# play), read by GameState.is_gimmick_blanked which now evaluates the condition.
+
+# #10 Enjoy Everything: next turn roll +1 for each Lead the opponent has in play
+b3966e9db8ec46b3abd0921f281b77c0:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Lead
+      tag: null
+      name: null
+      raw: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your next turn roll is +1 for each Lead your opponent has in play
+  source: card
+
+# #16 Savor the Moment: tutor Enjoy Everything; blank opp gimmick while it's in play
+1f53f71e434a426ba97e1626b44449c3:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: Enjoy Everything
+      raw: null
+    dest: HAND
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: search your deck for "Enjoy Everything" and add it to your hand (discard-source
+    + play-as-additional-card alt simplified)
+  source: card
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: Enjoy Everything
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': BlankGimmick
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if you have "Enjoy Everything" in play, your opponent's Gimmick is blank
+  source: card

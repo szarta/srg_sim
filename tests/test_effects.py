@@ -233,6 +233,12 @@ def test_complex_nested_effect_round_trips() -> None:
     assert from_json(to_json(effect)) == effect
 
 
+def test_modify_roll_per_count_round_trips() -> None:
+    m = ModifyRoll(Who.SELF, 1, RollWhen.NEXT, CardFilter(play_order=PlayOrder.LEAD), Who.OPP)
+    assert from_dict(m.to_dict()) == m
+    assert ModifyRoll(Who.SELF, 1).per is None  # default: a plain fixed-delta roll mod
+
+
 def test_optional_flag_round_trips_and_defaults_false() -> None:
     assert Effect(trigger=OnHit()).optional is False  # default
     opt = Effect(trigger=OnHit(), actions=(Flip(1, Who.OPP),), optional=True)

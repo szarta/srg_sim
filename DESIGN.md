@@ -131,7 +131,8 @@ Flip(n, who=SELF)             Search(filter, dest=HAND)     ShuffleIntoDeck(sele
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
-ModifyRoll(who, delta, when=THIS|NEXT)     BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
+ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP)  # delta scales by count of `per` cards in play
+BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 Reroll(who, once=True)        WinTie(who)                   Bump(who)
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
