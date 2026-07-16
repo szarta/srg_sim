@@ -124,6 +124,11 @@ def _h_in_play(c: fx.HasInPlay, s: GameState, o: str, r: RollContext | None) -> 
     return _CMP[c.cmp](n, c.count)
 
 
+def _h_in_hand(c: fx.HasInHand, s: GameState, o: str, r: RollContext | None) -> bool:
+    n = sum(card_matches(card, c.filter) for card in s.players[_who(s, o, c.who)].hand)
+    return n >= c.count
+
+
 def _h_in_discard(c: fx.HasInDiscard, s: GameState, o: str, r: RollContext | None) -> bool:
     return any(card_matches(card, c.filter) for card in s.players[_who(s, o, c.who)].discard)
 
@@ -149,6 +154,7 @@ _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]]
     fx.HandSizeCompare: _h_handsize,
     fx.CrowdMeterCompare: _h_crowd,
     fx.HasInPlay: _h_in_play,
+    fx.HasInHand: _h_in_hand,
     fx.HasInDiscard: _h_in_discard,
     fx.RollWasSkill: _h_roll_was,
     fx.RollGapExactly: _h_gap_exact,

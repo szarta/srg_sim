@@ -251,6 +251,20 @@ class OnRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class OnRollBoost(IRNode):
+    """Offered DURING the owner's roll-off — right after they roll ``skill`` and
+    *before* the winner is decided — an optional, cost-paying boost that adds
+    ``delta`` to THIS roll (Soborno: "when you roll Strike/Grapple/Submission, you may
+    discard a card of that move type and your turn roll is +1"). Unlike :class:`OnRoll`
+    (which fires *after* the roll for a NEXT-roll comeback), this can flip the current
+    roll's outcome. The effect's ``condition`` gates payability (only offered when the
+    cost can be paid) and its ``actions`` are the cost; ``optional`` makes it a "may"."""
+
+    skill: Skill | None = None
+    delta: int = 1
+
+
+@dataclass(frozen=True)
 class OnWinTurn(IRNode):
     """After the turn roll resolves in the owner's favor."""
 
@@ -360,6 +374,16 @@ class HasInPlay(IRNode):
     filter: CardFilter = CardFilter()
     count: int = 1
     cmp: Comparator = Comparator.GE
+
+
+@dataclass(frozen=True)
+class HasInHand(IRNode):
+    """The player holds at least ``count`` cards matching ``filter`` in hand — the
+    payability gate for a cost (Soborno: "a card of that move type")."""
+
+    who: Who
+    filter: CardFilter = CardFilter()
+    count: int = 1
 
 
 @dataclass(frozen=True)
@@ -699,6 +723,7 @@ class Effect(IRNode):
 Trigger = (
     OnPlay
     | OnRoll
+    | OnRollBoost
     | OnWinTurn
     | OnLoseTurn
     | OnStop
@@ -718,6 +743,7 @@ Condition = (
     | HandSizeCompare
     | CrowdMeterCompare
     | HasInPlay
+    | HasInHand
     | HasInDiscard
     | RollWasSkill
     | RollGapExactly

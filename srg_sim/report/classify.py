@@ -35,7 +35,7 @@ class CompType:
 # Priority-ordered signal -> label rules (first match is the primary label).
 def _is_turn(eff: fx.Effect) -> bool:
     turn_actions = (fx.ModifyRoll, fx.LowestRollWins, fx.WinTie, fx.Bump, fx.Reroll)
-    return isinstance(eff.trigger, (fx.OnRoll, fx.OnBump)) or any(
+    return isinstance(eff.trigger, (fx.OnRoll, fx.OnRollBoost, fx.OnBump)) or any(
         isinstance(a, turn_actions) for a in eff.actions
     )
 

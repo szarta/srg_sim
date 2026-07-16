@@ -23,7 +23,7 @@ from srg_sim.policy import RandomPolicy
 # Effect shapes that make a turn roll depend on more than the base stat line, so
 # the exact enumeration no longer applies and the engine MC must decide it.
 _ROLL_ACTIONS = (fx.ModifyRoll, fx.BuffSkill, fx.LowestRollWins, fx.WinTie, fx.Bump, fx.Reroll)
-_ROLL_TRIGGERS = (fx.OnRoll, fx.OnLoseTurn, fx.OnWinTurn, fx.OnBump)
+_ROLL_TRIGGERS = (fx.OnRoll, fx.OnRollBoost, fx.OnLoseTurn, fx.OnWinTurn, fx.OnBump)
 
 
 @dataclass(frozen=True)

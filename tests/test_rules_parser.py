@@ -518,6 +518,23 @@ def test_choice_gimmick_override_is_modeled() -> None:
 
 
 @requires_db
+def test_in_roll_boost_gimmick_override_is_modeled() -> None:
+    # Soborno (overrides.yaml, todo #54): one OnRollBoost per S/G/Su, each an optional
+    # HasInHand-gated discard-for-+1 (the in-roll boost).
+    from srg_sim.effects import Discard, HasInHand, OnRollBoost
+    from srg_sim.report.carddb import ReportCardDB
+
+    soborno = ReportCardDB.from_yaml().resolve_competitor("Soborno")
+    assert len(soborno.effects) == 3
+    skills = {e.trigger.skill for e in soborno.effects}
+    assert skills == {Skill.STRIKE, Skill.GRAPPLE, Skill.SUBMISSION}
+    for eff in soborno.effects:
+        assert isinstance(eff.trigger, OnRollBoost) and eff.optional
+        assert isinstance(eff.condition, HasInHand)
+        assert any(isinstance(a, Discard) for a in eff.actions)
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck

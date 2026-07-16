@@ -256,6 +256,61 @@ def test_choice_action_resolves_exactly_one_branch() -> None:
     assert eng.state.players["B"].pending_roll_mods["next"] == 0  # the other branch was skipped
 
 
+def test_discard_action_honors_its_type_selector() -> None:
+    # Discard(selector=atk_type=X) removes only a matching card (Soborno's cost, #54).
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1)
+    eng.setup()
+    strike = Card("s1", "Strike", 1, AtkType.STRIKE, PlayOrder.LEAD)
+    grapple = Card("g1", "Grapple", 2, AtkType.GRAPPLE, PlayOrder.LEAD)
+    eng.state.players["A"].hand = [grapple, strike]
+    eng.state.players["A"].discard = []
+    eng._act_discard(
+        fx.Discard(count=1, who=fx.Who.SELF, selector=fx.CardFilter(atk_type=AtkType.STRIKE)), "A"
+    )
+    assert [c.name for c in eng.state.players["A"].discard] == ["Strike"]  # only the Strike type
+    assert eng.state.players["A"].hand == [grapple]
+
+
+def test_in_roll_boost_pays_only_when_payable_and_discards_the_typed_cost() -> None:
+    # Soborno (#54): "roll Strike -> you MAY discard a Strike card and this roll is +1."
+    # OnRollBoost fires in the roll-off (can flip the outcome); HasInHand gates payability.
+    boost = fx.Effect(
+        trigger=fx.OnRollBoost(skill=Skill.STRIKE, delta=1),
+        condition=fx.HasInHand(fx.Who.SELF, fx.CardFilter(atk_type=AtkType.STRIKE)),
+        actions=(
+            fx.Discard(count=1, who=fx.Who.SELF, selector=fx.CardFilter(atk_type=AtkType.STRIKE)),
+        ),
+        optional=True,
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="roll Strike -> discard a Strike for +1",
+    )
+    strike = Card("s1", "Strike", 1, AtkType.STRIKE, PlayOrder.LEAD)
+    grapple = Card("g1", "Grapple", 2, AtkType.GRAPPLE, PlayOrder.LEAD)
+
+    def eng_with(hand: list[Card]) -> Engine:
+        eng = Engine(
+            make_deck("A", with_effects(vanilla(), (boost,))),
+            make_deck("B", vanilla()),
+            HeuristicPolicy(),
+            HeuristicPolicy(),
+            seed=1,
+        )
+        eng.setup()
+        eng.state.turn_no = 1
+        eng.state.players["A"].hand = list(hand)
+        eng.state.players["A"].discard = []
+        return eng
+
+    # Payable: rolled Strike 6, holds a Strike -> +1 (a winning 7) and the Strike is the cost.
+    payable = eng_with([strike, grapple])
+    assert payable._offer_roll_boost("A", Skill.STRIKE, 6) == 7
+    assert [c.name for c in payable.state.players["A"].discard] == ["Strike"]  # not the Grapple
+    # Cost only if payable: rolled Strike but holds no Strike -> no boost, no discard.
+    broke = eng_with([grapple])
+    assert broke._offer_roll_boost("A", Skill.STRIKE, 6) == 6
+    assert broke.state.players["A"].discard == []
+
+
 def test_on_bump_trigger_penalizes_the_opponents_next_roll() -> None:
     # Mastermind's gimmick: OnBump -> the opponent's NEXT turn roll is -2.
     gimmick = fx.Effect(

@@ -272,6 +272,11 @@ class Engine:
         self._promote_pending()  # last turn's `when=NEXT` mods become THIS roll's (#50)
         sa, va = self._roll_for("A", use_pending=True)
         sb, vb = self._roll_for("B", use_pending=True)
+        # In-roll boosts (Soborno): after the skill is known, before the winner is
+        # decided, a player may pay a cost for +delta to THIS roll — so it can flip
+        # the outcome or break a tie. A no-op for competitors without such a gimmick.
+        va = self._offer_roll_boost("A", sa, va)
+        vb = self._offer_roll_boost("B", sb, vb)
         self._consume_pending()
         bumps = 0
         while va == vb and bumps < MAX_TIE_REROLLS:
@@ -290,6 +295,27 @@ class Engine:
         self._record_roll_ctx(sa, va, sb, vb)
         self._log(gl.TurnResult(t=self.state.turn_no, winner=winner, tie_bumps=bumps))
         return winner
+
+    def _offer_roll_boost(self, key: str, skill: Skill, value: int) -> int:
+        """Offer ``key``'s in-roll boosts for a roll of ``skill`` and return the (maybe
+        boosted) value. Each matching :class:`~srg_sim.effects.OnRollBoost` effect whose
+        cost is payable (condition holds) is offered; taking it pays the cost (its
+        actions, e.g. a type-matched discard) and adds ``delta`` to this roll."""
+        for eff in self._standing_effects(key):
+            trig = eff.trigger
+            if not isinstance(trig, fx.OnRollBoost):
+                continue
+            if trig.skill is not None and trig.skill is not skill:
+                continue
+            if not (self._may_fire(eff, key) and conditions.holds(eff.condition, self.state, key)):
+                continue
+            if eff.optional and not self._take_optional(eff, key):
+                continue
+            self._mark_fired(eff, key)
+            self._apply_actions(eff, key)  # pay the cost (e.g. discard a matching card)
+            value += trig.delta
+            self._log_effect(key, "RollBoost", key, {"skill": skill.value, "delta": trig.delta})
+        return value
 
     @staticmethod
     def _roll_winner(va: int, vb: int, lowest: bool) -> str:
@@ -899,7 +925,7 @@ class Engine:
 
     def _act_discard(self, action: fx.Discard, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
-        self._discard_from_hand(target, action.count, action.random)
+        self._discard_from_hand(target, action.count, action.random, action.selector)
 
     def _act_crowd(self, action: fx.CrowdMeter, key: str) -> None:
         self.state.crowd_meter += action.delta
@@ -968,16 +994,21 @@ class Engine:
         self._pending_loss = (loser, action.kind.value.lower())
         self._log_effect(key, "LoseBy", loser, {"kind": action.kind.value})
 
-    def _discard_from_hand(self, key: str, count: int, random: bool) -> None:
-        """Discard ``count`` cards from ``key``'s hand. The hand's owner chooses which
-        (via the ``discard`` decision point) even when an opponent forced it; a
-        ``random`` discard draws from the seeded RNG instead (DESIGN.md §7)."""
+    def _discard_from_hand(
+        self, key: str, count: int, random: bool, selector: fx.CardFilter | None = None
+    ) -> None:
+        """Discard ``count`` cards from ``key``'s hand matching ``selector`` (``None`` =
+        any). The hand's owner chooses which (via the ``discard`` decision point) even
+        when an opponent forced it; a ``random`` discard draws from the seeded RNG
+        instead. Runs out early if fewer than ``count`` matching cards exist (DESIGN.md §7)."""
+        filt = selector if selector is not None else fx.CardFilter()
         player = self.state.players[key]
         dropped: list[Card] = []
         for _ in range(count):
-            if not player.hand:
+            pool = [c for c in player.hand if conditions.card_matches(c, filt)]
+            if not pool:
                 break
-            card = self.state.rng.reveal(player.hand) if random else self._choose_discard(key)
+            card = self.state.rng.reveal(pool) if random else self._choose_discard(key, pool)
             player.hand.remove(card)
             dropped.append(card)
         if dropped:
@@ -986,11 +1017,10 @@ class Engine:
                 gl.Discard(t=self.state.turn_no, player=key, cards=[c.db_uuid for c in dropped])
             )
 
-    def _choose_discard(self, key: str) -> Card:
-        hand = self.state.players[key].hand
-        legal = [self._discard_option(c) for c in hand]
+    def _choose_discard(self, key: str, pool: list[Card]) -> Card:
+        legal = [self._discard_option(c) for c in pool]
         chosen = self._decide("discard", key, legal)
-        return next(c for c in hand if c.db_uuid == chosen["card"])
+        return next(c for c in pool if c.db_uuid == chosen["card"])
 
     @staticmethod
     def _discard_option(card: Card) -> Option:

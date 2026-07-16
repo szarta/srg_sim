@@ -1218,3 +1218,125 @@ c7c67bea6ff64c3b81cc812363c23ac4:
   raw_clause: roll Power for turn roll -> opponent next roll -2 OR draw 1 card
   source: gimmick
   optional: false
+
+
+# --- In-roll boost gimmick (matchup roster, todo #54) ---
+# Soborno: "When you roll Strike, Grapple, or Submission for your turn roll, you may
+# discard a card of that move type and your turn roll is +1." One OnRollBoost per
+# skill (offered DURING the roll-off, can flip the outcome); HasInHand gates payability
+# (cost only if you hold a matching-type card), Discard(selector) pays it.
+aebe9e8baa0046ddbde13690b7c18455:
+- '@type': Effect
+  trigger:
+    '@type': OnRollBoost
+    skill: Strike
+    delta: 1
+  condition:
+    '@type': HasInHand
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Strike
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+  actions:
+  - '@type': Discard
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: Strike
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    who: SELF
+    random: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: roll Strike -> may discard a Strike card for +1 to this roll
+  source: gimmick
+  optional: true
+- '@type': Effect
+  trigger:
+    '@type': OnRollBoost
+    skill: Grapple
+    delta: 1
+  condition:
+    '@type': HasInHand
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Grapple
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+  actions:
+  - '@type': Discard
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: Grapple
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    who: SELF
+    random: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: roll Grapple -> may discard a Grapple card for +1 to this roll
+  source: gimmick
+  optional: true
+- '@type': Effect
+  trigger:
+    '@type': OnRollBoost
+    skill: Submission
+    delta: 1
+  condition:
+    '@type': HasInHand
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+  actions:
+  - '@type': Discard
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    who: SELF
+    random: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: roll Submission -> may discard a Submission card for +1 to this roll
+  source: gimmick
+  optional: true
