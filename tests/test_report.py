@@ -221,7 +221,13 @@ def test_skillreq_parsing_and_ranking(db: ReportCardDB) -> None:
 def test_render_emits_expected_sections(db: ReportCardDB) -> None:
     data = build_matchup(db, "Test Alpha", "Test Beta")
     rst = render_report(data, {})
-    tokens = (".. role::", "Turn roll:", "Finish odds (CM1", "Key skill-requirement", ".. list-table")
+    tokens = (
+        ".. role::",
+        "Turn roll:",
+        "Finish odds (CM1",
+        "Key skill-requirement",
+        ".. list-table",
+    )
     for token in tokens:
         assert token in rst, token
     assert "Better logoless alternatives" in rst  # Grapple logoless beats signature

@@ -475,6 +475,23 @@ def test_real_main_deck_coverage_is_healthy() -> None:
 
 
 @requires_db
+def test_gap_comeback_gimmick_overrides_are_modeled() -> None:
+    # The Bull and Johnny Korea competitor gimmicks (overrides.yaml, todo #52/#53)
+    # compile to OnRoll + RollGap -> ModifyRoll(SELF, +N, NEXT), not Unsupported.
+    from srg_sim.report.carddb import ReportCardDB
+
+    db = ReportCardDB.from_yaml()
+    bull = db.resolve_competitor("The Bull")
+    assert sorted(e.condition.k for e in bull.effects) == [3, 4, 5]  # 3-less, 4-less, 5+-less
+    johnny = db.resolve_competitor("Johnny Korea")
+    (act,) = johnny.effects[0].actions
+    assert isinstance(act, ModifyRoll) and act.who is Who.SELF and act.when is RollWhen.NEXT
+    for comp in (bull, johnny):
+        actions = [a for e in comp.effects for a in e.actions]
+        assert actions and not any(isinstance(a, Unsupported) for a in actions)
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck

@@ -48,9 +48,7 @@ def _is_recursion(eff: fx.Effect) -> bool:
 
 
 def _is_discard(eff: fx.Effect) -> bool:
-    return any(
-        isinstance(a, (fx.Discard, fx.Bury)) and a.who is fx.Who.OPP for a in eff.actions
-    )
+    return any(isinstance(a, (fx.Discard, fx.Bury)) and a.who is fx.Who.OPP for a in eff.actions)
 
 
 def _is_keyword(eff: fx.Effect) -> bool:

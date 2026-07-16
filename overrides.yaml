@@ -1038,3 +1038,108 @@ ef2967fc07044d958f64372afacbb95e:
     '@type': OnHit
     keyword: null
     name: null
+
+
+# --- Turn-roll gap-comeback competitor gimmicks (matchup roster, todo #52/#53) ---
+# Same validated IR as the Bull parity fixture (tests/demo_decks.BULL_COMEBACK):
+# OnRoll (outcome-agnostic) gated by the signed roll gap -> ModifyRoll(SELF, +N, NEXT).
+# The Bull's cascade spans clauses ("exactly 3 less" / "+1" on separate lines), so it
+# cannot be grammar-parsed; Johnny Korea's DB text also has a typo ("opopnent's").
+
+# The Bull: exactly 3 less -> next +1; exactly 4 less -> +2; at least 5 less -> +3
+894c9965da684adb8ab5f532bafbff59:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapExactly
+    k: 3
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: turn roll exactly 3 less than target -> next roll +1
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapExactly
+    k: 4
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 2
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: turn roll exactly 4 less than target -> next roll +2
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapAtLeast
+    k: 5
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 3
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: turn roll at least 5 less than target -> next roll +3
+  source: gimmick
+  optional: false
+
+# Johnny Korea: at least 2 less than opponent -> next roll +1 (single-effect Bull-like)
+c7c67bea6ff64c3b81cc812363c23ac4:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapAtLeast
+    k: 2
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: turn roll at least 2 less than opponent -> next roll +1
+  source: gimmick
+  optional: false

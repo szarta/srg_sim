@@ -13,9 +13,7 @@ import subprocess
 from pathlib import Path
 
 # The card-DB image root (not vendored; every dev has the card-search repo).
-IMAGES_ROOT = Path(
-    "/home/brandon/data/srg_card_search_website/backend/app/images"
-).expanduser()
+IMAGES_ROOT = Path("/home/brandon/data/srg_card_search_website/backend/app/images").expanduser()
 
 _SIZES = ("fullsize", "mobile", "thumbnails")
 
