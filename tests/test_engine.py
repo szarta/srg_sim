@@ -13,7 +13,7 @@ from srg_sim.engine import Engine, GameResult, beats
 from srg_sim.gamelog import GameLog
 from srg_sim.policy import HeuristicPolicy, Policy, RandomPolicy
 
-from tests.demo_decks import bull, bull_vs_fae, fae, make_deck, with_effects
+from tests.demo_decks import bull, bull_vs_fae, fae, make_deck, vanilla, with_effects
 
 VALID_REASONS = {"finish", "count_out", "disqualification", "pinfall", "turn_cap"}
 
@@ -197,6 +197,42 @@ def test_shuffle_deck_action_reorders_without_losing_cards() -> None:
     after = eng.state.players["A"].deck
     assert sorted(c.db_uuid for c in after) == sorted(c.db_uuid for c in before)  # same multiset
     assert len(after) == len(before)
+
+
+def test_on_roll_skill_trigger_fires_its_actions_only_on_that_skill() -> None:
+    # "When you roll Agility for your turn roll, draw 1 and your opponent's next turn
+    # roll is -1" (Adrianna Dee, #56) = OnRoll(skill=Agility) -> [Draw, ModifyRoll(OPP)].
+    gimmick = fx.Effect(
+        trigger=fx.OnRoll(skill=Skill.AGILITY),
+        actions=(fx.Draw(n=1), fx.ModifyRoll(who=fx.Who.OPP, delta=-1, when=fx.RollWhen.NEXT)),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="roll Agility -> draw 1 and opp next roll -1",
+    )
+
+    def _roll(a_skill: Skill) -> Engine:
+        eng = Engine(
+            make_deck("A", with_effects(vanilla(), (gimmick,))),
+            make_deck("B", vanilla()),
+            HeuristicPolicy(),
+            HeuristicPolicy(),
+            seed=1,
+        )
+        eng.setup()
+        eng.state.turn_no = 1
+        eng._roll_for = lambda key, use_pending: (a_skill, 9) if key == "A" else (Skill.POWER, 5)  # type: ignore[method-assign]
+        return eng
+
+    on = _roll(Skill.AGILITY)
+    before = len(on.state.players["A"].hand)
+    on._turn_roll()
+    assert len(on.state.players["A"].hand) == before + 1  # drew on the Agility roll
+    assert on.state.players["B"].pending_roll_mods["next"] == -1  # opponent's next roll -1
+
+    off = _roll(Skill.POWER)  # a non-Agility roll fires nothing
+    off_before = len(off.state.players["A"].hand)
+    off._turn_roll()
+    assert len(off.state.players["A"].hand) == off_before
+    assert off.state.players["B"].pending_roll_mods["next"] == 0
 
 
 def test_on_bump_trigger_penalizes_the_opponents_next_roll() -> None:

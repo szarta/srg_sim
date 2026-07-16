@@ -492,6 +492,19 @@ def test_gap_comeback_gimmick_overrides_are_modeled() -> None:
 
 
 @requires_db
+def test_roll_skill_trigger_gimmick_override_is_modeled() -> None:
+    # Adrianna Dee (overrides.yaml, todo #56): OnRoll(skill=Agility) -> draw + opp debuff.
+    from srg_sim.effects import Draw, OnRoll
+    from srg_sim.report.carddb import ReportCardDB
+
+    adrianna = ReportCardDB.from_yaml().resolve_competitor("The Queen of Cheer Adrianna Dee")
+    (eff,) = adrianna.effects
+    assert isinstance(eff.trigger, OnRoll) and eff.trigger.skill is Skill.AGILITY
+    kinds = {type(a) for a in eff.actions}
+    assert Draw in kinds and ModifyRoll in kinds and Unsupported not in kinds
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck

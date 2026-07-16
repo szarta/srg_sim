@@ -1143,3 +1143,39 @@ c7c67bea6ff64c3b81cc812363c23ac4:
   raw_clause: turn roll at least 2 less than opponent -> next roll +1
   source: gimmick
   optional: false
+
+
+# --- Roll-skill-trigger competitor gimmicks (matchup roster, todo #56...) ---
+# "When you roll <skill> for your turn roll, <effect>." = OnRoll(skill=<skill>)
+# (matched by the deciding roll's skill in engine._run_on_roll) -> the effect's
+# actions. The whole roll-skill machinery (OnRoll skill filter + RollContext) already
+# exists from the Bull/Fae parity work.
+
+# Adrianna Dee: roll Agility -> draw 1 and opponent's next turn roll -1
+7b1af704863e498b8b473e44c8d42ed4:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Agility
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  - '@type': ModifyRoll
+    who: OPP
+    delta: -1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: roll Agility for turn roll -> draw 1 and opponent next turn roll -1
+  source: gimmick
+  optional: false
