@@ -123,40 +123,71 @@ class Engine:
         )
 
     def setup(self) -> None:
-        """Match setup: StartOfMatch effects, shuffle, opening hands, mulligans."""
+        """Match setup: StartOfMatch effects, shuffle, opening hands.
+
+        The first-turn redraw is NOT done here — it belongs to each player's own
+        first won turn (DESIGN.md §6, srg-rules-confirmed), fired from the turn loop.
+        """
         for key in ("A", "B"):
             self._run_effects(self._standing_effects(key), fx.StartOfMatch, key)
         for key in ("A", "B"):
             self.state.rng.shuffle(self.state.players[key].deck)
         for key in ("A", "B"):
             self._draw(key, OPENING_HAND)
-        for key in ("A", "B"):
-            self._mulligan(key)
+
+    def _first_turn_option(self, key: str) -> None:
+        """Offer the first-turn redraw once per player, on the first won turn they
+        would take an action (DESIGN.md §6). Marked spent whether or not it fires,
+        so a player who bumps/loses the early rolls still gets it exactly once."""
+        player = self.state.players[key]
+        if player.flags.get("had_first_turn"):
+            return
+        player.flags["had_first_turn"] = True
+        self._mulligan(key)
 
     def _mulligan(self, key: str) -> None:
-        # First-turn option (DESIGN.md §6): only with NO Leads in hand, a player
-        # may randomly bury the hand to the bottom of the deck and redraw the same
-        # number. With a Lead in hand the option is not offered.
+        # First-turn redraw (DESIGN.md §6): only with NO Leads in hand, a player MAY
+        # reveal the whole hand, bury it to the bottom of the deck IN AN ORDER THEY
+        # CHOOSE, then draw UP TO that many. With a Lead in hand it is not offered.
         player = self.state.players[key]
         if not player.hand or any(c.play_order is PlayOrder.LEAD for c in player.hand):
             return
         legal: list[Option] = [{"kind": "redraw"}, {"kind": "keep"}]
         if self._decide("mulligan", key, legal)["kind"] != "redraw":
             return
-        buried = list(player.hand)
-        self.state.rng.shuffle(buried)  # randomly buried
+        revealed = list(player.hand)
         player.hand.clear()
-        player.deck.extend(buried)  # to the bottom of the deck
+        ordered = self._order_bury(key, revealed)  # player picks the bury order
+        player.deck.extend(ordered)  # to the bottom of the deck, in that order
         self._log(
             gl.Bury(
                 t=self.state.turn_no,
                 player=key,
-                cards=[c.db_uuid for c in buried],
+                cards=[c.db_uuid for c in ordered],
                 source="hand",
-                hidden=True,  # hand -> deck: both private, opponent can't track which
+                hidden=False,  # the hand was REVEALED, so the moved cards are public
             )
         )
-        self._draw(key, len(buried))
+        self._draw(key, self._mulligan_draw_count(key, len(revealed)))  # draw UP TO N
+
+    def _order_bury(self, key: str, cards: list[Card]) -> list[Card]:
+        """Return ``cards`` in the owner's chosen bury order (last card forced)."""
+        remaining = list(cards)
+        ordered: list[Card] = []
+        while len(remaining) > 1:
+            chosen = self._decide(
+                "mulligan_bury", key, [self._discard_option(c) for c in remaining]
+            )
+            card = next(c for c in remaining if c.db_uuid == chosen["card"])
+            remaining.remove(card)
+            ordered.append(card)
+        ordered.extend(remaining)
+        return ordered
+
+    def _mulligan_draw_count(self, key: str, n: int) -> int:
+        """How many to redraw: up to ``n`` (default policy takes the max — listed first)."""
+        legal: list[Option] = [{"kind": "draw", "n": i} for i in range(n, -1, -1)]
+        return int(self._decide("mulligan_draw", key, legal)["n"])
 
     # -- main loop ---------------------------------------------------------
 
@@ -183,6 +214,7 @@ class Engine:
         winner = self._turn_roll()
         if self._ended() or not self._draw_for_turn(winner):
             return
+        self._first_turn_option(winner)  # the once-per-player first-turn redraw (§6)
         self._take_turn_action(winner)  # play ONE card (or pass+bury); the board persists
         while not self._ended() and self._consume_extra_play(winner):
             self._take_turn_action(winner)  # a PlayExtraCard granted another action

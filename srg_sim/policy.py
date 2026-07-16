@@ -24,8 +24,9 @@ skill levels/playstyles against each other for M4 training signal:
   Finish; the strongest self-play profile.
 * :class:`Newbie` — greedy, no pass/bury game, misplays stop/discard economy.
 
-Decision points (the skill surface): ``mulligan``, ``turn_action``, ``stop``,
-``bury``, ``discard``, ``optional``, ``target``.
+Decision points (the skill surface): ``mulligan``, ``mulligan_bury`` (first-turn
+redraw: which card to bury next), ``mulligan_draw`` (how many to redraw, up to N),
+``turn_action``, ``stop``, ``bury``, ``discard``, ``optional``, ``target``.
 """
 
 from __future__ import annotations

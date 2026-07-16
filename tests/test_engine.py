@@ -513,6 +513,79 @@ def test_start_of_match_crowd_effect_fires_at_setup() -> None:
 # -- LoseBy win conditions ---------------------------------------------------
 
 
+# -- first-turn redraw (#44: per-player, first won turn, ordered bury, up to N) ---
+
+
+def _leadless_hand(eng: Engine, key: str, numbers: tuple[int, ...]) -> list[Card]:
+    player = eng.state.players[key]
+    hand = [next(c for c in player.deck if c.number == n) for n in numbers]
+    for c in hand:
+        player.deck.remove(c)
+    player.hand = list(hand)
+    return hand
+
+
+def test_setup_no_longer_runs_the_first_turn_redraw() -> None:
+    # #44: the redraw is NOT a setup step — nobody is flagged and nothing is buried.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    assert not any(p.flags.get("had_first_turn") for p in eng.state.players.values())
+    assert all(json.loads(line)["type"] != "bury" for line in eng.state.log.to_lines()[1:])
+
+
+def test_first_turn_option_fires_at_most_once_per_player() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    _leadless_hand(eng, "A", (13, 14, 15))  # no Lead -> heuristic redraws
+    eng._first_turn_option("A")
+    assert a.flags["had_first_turn"]
+    hand_after = list(a.hand)
+    eng._first_turn_option("A")  # spent — a no-op now
+    assert a.hand == hand_after
+
+
+def test_first_turn_redraw_orders_the_bury_and_draws_up_to_n() -> None:
+    # #44: player buries the revealed hand in a CHOSEN order (not random) and draws
+    # UP TO that many (here 2 of 3). The reveal makes the moved cards public.
+    class Mull(Policy):
+        def __init__(self) -> None:
+            super().__init__("mull")
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            if point == "mulligan":
+                return next(o for o in legal if o["kind"] == "redraw")
+            if point == "mulligan_bury":
+                return min(legal, key=lambda o: o["number"])  # bury in ascending order
+            if point == "mulligan_draw":
+                return next(o for o in legal if o["n"] == 2)  # draw only 2 of the 3
+            return legal[0]
+
+    eng = Engine(*bull_vs_fae(), Mull(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    _leadless_hand(eng, "A", (15, 13, 14))
+    eng._first_turn_option("A")
+    assert [c.number for c in a.deck[-3:]] == [13, 14, 15]  # buried ascending, bottom
+    assert len(a.hand) == 2  # drew up to 2, not all 3
+    events = [json.loads(line) for line in eng.state.log.to_lines()[1:]]
+    bury = next(e for e in events if e["type"] == "bury")
+    assert bury["from"] == "hand" and bury["hidden"] is False  # revealed -> public
+
+
+def test_first_turn_redraw_not_offered_with_a_lead_in_hand() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    hand = _leadless_hand(eng, "A", (13, 14))
+    lead = next(c for c in a.deck if c.number == 1)  # a Lead
+    a.deck.remove(lead)
+    a.hand = [*hand, lead]
+    before = list(a.hand)
+    eng._first_turn_option("A")  # has a Lead -> option not offered, hand kept
+    assert a.hand == before and a.flags["had_first_turn"]
+
+
 def test_lose_by_disqualification_when_a_card_is_stopped() -> None:
     dq = fx.Effect(
         trigger=fx.OnStop(dir=fx.Direction.YOURS),

@@ -233,9 +233,12 @@ out with the same recomputation and is enforced continuously (§6).
 ```
 setup: build both decks; apply StartOfMatch effects (incl. Entrance/gimmick);
        shuffle (seeded); each player draws 3 (opening hand) before the first roll.
-       First-turn mulligan: a player with NO Leads in hand MAY randomly bury the
-       hand to the bottom of the deck and redraw the same number (policy decides).
 loop until a player loses or a turn cap:
+  # first-turn redraw (per player, ONCE): on the first won turn a player would take
+  #   an action, if they have NO Leads in hand they MAY reveal the whole hand
+  #   (public), bury it to the bottom of the deck IN AN ORDER THEY CHOOSE, then draw
+  #   UP TO that many. Marked spent whether taken or not — a player who bumps/loses
+  #   the early rolls still gets it exactly once (NOT a setup step).
   # --- turn roll ---
   rollA = roll(playerA); rollB = roll(playerB)      # roll = uniform skill face -> derived stat
   apply pending_roll_mods, static buffs, OnRoll effects
