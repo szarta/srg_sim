@@ -111,7 +111,7 @@ SAMPLES: list[IRNode] = [
     # actions
     Draw(2, DeckEnd.BOTTOM),
     Bury(CardFilter(number=1), 2),
-    Flip(2),
+    Flip(2, Who.OPP),
     Discard(CardFilter(play_order=PlayOrder.FINISH), 1),
     Search(CardFilter(name="Colossal Smash"), Dest.HAND),
     ShuffleDeck(Who.SELF),
@@ -229,6 +229,13 @@ def test_complex_nested_effect_round_trips() -> None:
         source=EffectSource.CARD,
     )
     assert from_json(to_json(effect)) == effect
+
+
+def test_optional_flag_round_trips_and_defaults_false() -> None:
+    assert Effect(trigger=OnHit()).optional is False  # default
+    opt = Effect(trigger=OnHit(), actions=(Flip(1, Who.OPP),), optional=True)
+    assert from_dict(opt.to_dict()) == opt
+    assert from_dict(opt.to_dict()).optional is True
 
 
 def test_unknown_type_raises() -> None:

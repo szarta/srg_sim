@@ -127,7 +127,7 @@ Always
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
 Draw(n, from=TOP|BOTTOM, who) Bury(selector, count)         Discard(selector, count)
-Flip(n)                       Search(filter, dest=HAND)     ShuffleIntoDeck(selector)
+Flip(n, who=SELF)             Search(filter, dest=HAND)     ShuffleIntoDeck(selector)
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
 ModifyRoll(who, delta, when=THIS|NEXT)     BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
@@ -159,7 +159,9 @@ Unsupported(raw_text, reason)      # engine ignores it BUT logs a `unsupported` 
 So coverage is always measurable and no gimmick is ever silently mis-played.
 
 `Effect = {trigger, condition: Condition = Always, actions: [Action|Unsupported],
-raw_clause: str, source: card|gimmick|entrance}`.
+raw_clause: str, source: card|gimmick|entrance, optional: bool = False}`. `optional`
+marks a "you may" effect: when it would fire, the card controller is offered an
+`optional` decision (take it / skip); declining leaves the frequency guard unspent.
 
 **Executor** (in `engine.py`): at each trigger point the engine collects every active
 `Effect` whose `trigger` matches and `condition` holds, respecting frequency guards, and

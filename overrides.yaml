@@ -57,7 +57,7 @@ bd04b23708fe49728541a20e689cae61:
   raw_clause: stop any Lead Strike (draw-bottom alt simplified)
   source: card
 
-# #6 stop any Follow Up Strike
+# #6 Big Body Block: stop any Follow Up Strike + opponent may flip their top card
 30a1a508143640d0bae1ebaa3e108ad9:
 - '@type': Effect
   trigger:
@@ -74,7 +74,25 @@ bd04b23708fe49728541a20e689cae61:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
-  raw_clause: stop any Follow Up Strike ('or Apocalypse' + reveal rider dropped)
+  raw_clause: stop any Follow Up Strike ('or Apocalypse' alt simplified)
+  source: card
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Flip
+    n: 1
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: true
+  raw_clause: your opponent reveals the top card of their deck, they may flip it (owner decides
+    the optional flip — a close simplification)
   source: card
 
 # #20 see-1 stop any Submission

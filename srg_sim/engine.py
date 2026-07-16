@@ -616,9 +616,24 @@ class Engine:
         """Fire one effect if its frequency guard permits and its condition holds
         (the trigger is matched by the caller). Shared by trigger dispatch and the
         skill/who-matched OnRoll path so both honour condition + frequency alike."""
-        if self._may_fire(eff, key) and conditions.holds(eff.condition, self.state, key, roll):
-            self._mark_fired(eff, key)
-            self._apply_actions(eff, key)
+        if not (
+            self._may_fire(eff, key) and conditions.holds(eff.condition, self.state, key, roll)
+        ):
+            return
+        if eff.optional and not self._take_optional(eff, key):
+            return  # declined "you may" — leaves the freq guard unspent
+        self._mark_fired(eff, key)
+        self._apply_actions(eff, key)
+
+    def _take_optional(self, eff: fx.Effect, key: str) -> bool:
+        """Offer a "you may" effect to its owner (DESIGN.md §3 ``Effect.optional``).
+        The card controller decides — a close approximation for the rare rider whose
+        text lets the *opponent* decide (e.g. Big Body Block), noted in its clause."""
+        legal: list[Option] = [
+            {"kind": "yes", "clause": eff.raw_clause},
+            {"kind": "no", "clause": eff.raw_clause},
+        ]
+        return self._decide("optional", key, legal)["kind"] == "yes"
 
     def _apply_actions(self, eff: fx.Effect, key: str) -> None:
         for action in eff.actions:
@@ -739,7 +754,8 @@ class Engine:
             )
 
     def _act_flip(self, action: fx.Flip, key: str) -> None:
-        player = self.state.players[key]
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        player = self.state.players[target]
         flipped = player.deck[: action.n]
         del player.deck[: action.n]
         player.discard.extend(flipped)
@@ -747,7 +763,7 @@ class Engine:
             self._log(
                 gl.Discard(
                     t=self.state.turn_no,
-                    player=key,
+                    player=target,  # whose deck was flipped (SELF or, e.g. Big Body Block, OPP)
                     cards=[c.db_uuid for c in flipped],
                     source="deck",  # flip: top of deck -> discard
                 )

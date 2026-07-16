@@ -413,9 +413,14 @@ class Bury(IRNode):
 
 @dataclass(frozen=True)
 class Flip(IRNode):
-    """Move the top ``n`` cards of the deck to the discard pile (§5)."""
+    """Move the top ``n`` cards of a deck to its discard pile (§5).
+
+    ``who`` picks whose deck: ``SELF`` (your own top-``n``) or ``OPP`` (e.g. Big
+    Body Block, "your opponent reveals the top card of their deck, they may flip
+    it" — an opponent-decided flip, so pair it with ``Effect.optional``)."""
 
     n: int = 1
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)
@@ -632,6 +637,7 @@ class Effect(IRNode):
     frequency: FrequencyGuard = FrequencyGuard()
     raw_clause: str = ""
     source: EffectSource = EffectSource.CARD
+    optional: bool = False  # a "you may" effect: the decider chooses whether it resolves
 
 
 # ---------------------------------------------------------------------------

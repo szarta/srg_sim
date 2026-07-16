@@ -348,6 +348,33 @@ def test_shuffle_into_deck_recurs_one_card_from_discard_to_deck() -> None:
     assert len(a.deck) == deck_before + 2
 
 
+def test_optional_effect_is_gated_and_can_flip_the_opponents_deck() -> None:
+    # #45: a "you may" effect (Effect.optional) resolves only when the owner takes
+    # it; Big Body Block's rider flips the OPPONENT's top card (Flip who=OPP).
+    class Decide(Policy):
+        def __init__(self, take: bool) -> None:
+            super().__init__("decide")
+            self.take = take
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            if point == "optional":
+                return next(o for o in legal if o["kind"] == ("yes" if self.take else "no"))
+            return legal[0]
+
+    rider = fx.Effect(
+        trigger=fx.OnHit(),
+        actions=(fx.Flip(n=1, who=fx.Who.OPP),),
+        optional=True,
+        raw_clause="opp may flip their top card",
+    )
+    for take, delta in ((True, 1), (False, 0)):
+        eng = Engine(*bull_vs_fae(), Decide(take), HeuristicPolicy(), seed=1, created="x")
+        eng.setup()
+        b_deck = len(eng.state.players["B"].deck)
+        eng._run_effects((rider,), fx.OnHit, "A")  # A owns the rider -> flips B's deck
+        assert len(eng.state.players["B"].deck) == b_deck - delta  # flipped iff taken
+
+
 def test_remove_from_play_sends_a_chosen_opponent_board_card_to_discard() -> None:
     # #46: board disruption — the ACTOR discards a card the OPPONENT has in play,
     # aimed by the selector; non-matching board cards are untouched.
