@@ -1,0 +1,40 @@
+# D2 (V1) — Drew Madsen's AC-online-title-winning build vs Chibi.
+# Source: get-diced.com/decks/d2  (articles/d2.md).
+# Entrance is "Never Give Up With Tia Lupita" (named in the writeup, not the deck
+# block). Card #7 "Elbow Shot" is named twice in the writeup prose but omitted
+# from the article's deck block; restored here to complete the 30-card deck.
+# DB names differ from the article for three cards: Psychocidal -> "Psychocidal (D2)",
+# Pineapple for Sheep -> "Pineapple for Sheep?", Once More, With Feeling! -> no "!".
+competitor: "D2 (V1)"
+entrance: "Never Give Up With Tia Lupita"
+cards:
+  - {number: 1,  name: "Cosmic Smash"}
+  - {number: 2,  name: "Pineapple for Sheep?"}
+  - {number: 3,  name: "Lockjaw"}
+  - {number: 4,  name: "Snap Kick"}
+  - {number: 5,  name: "Sidewind Wonder-Plex"}
+  - {number: 6,  name: "Big Body Block"}
+  - {number: 7,  name: "Elbow Shot"}
+  - {number: 8,  name: "Once More, With Feeling"}
+  - {number: 9,  name: "Spit Fire Chariot"}
+  - {number: 10, name: "Unamerican Elbow Smash"}
+  - {number: 11, name: "Double Throw"}
+  - {number: 12, name: "Gathering the Sledgehammer"}
+  - {number: 13, name: "Banhammer Block"}
+  - {number: 14, name: "Wave-Breaking Kendo Stick"}
+  - {number: 15, name: "Spinning Hammer Hold"}
+  - {number: 16, name: "Flying Coast to Coast"}
+  - {number: 17, name: "American Dragon Drop"}
+  - {number: 18, name: "Turn the Tension into Power"}
+  - {number: 19, name: "Blindside Smash"}
+  - {number: 20, name: "Fire Hammer Slam"}
+  - {number: 21, name: "Reverse the Pressure"}
+  - {number: 22, name: "Thunderous Dropkick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Pin to the Wall"}
+  - {number: 25, name: "Hammering Tackle"}
+  - {number: 26, name: "It's Not the Size of the Dog in the Fight"}
+  - {number: 27, name: "Sky-High Choke (Submission)"}
+  - {number: 28, name: "Thud!"}
+  - {number: 29, name: "Psychocidal (D2)"}
+  - {number: 30, name: "Test Your Might"}

@@ -6,21 +6,411 @@
 # the grammar. Top-96 gimmicks land here first; the coverage report tracks the
 # shrinking `unsupported` tail toward zero (M3).
 #
-# Example (a competitor gimmick "+1 to Power" while the gimmick is active):
-#
-#   "0123456789abcdef0123456789abcdef":
-#     - "@type": Effect
-#       trigger: {"@type": Static}
-#       condition: {"@type": Always}
-#       actions:
-#         - "@type": BuffSkill
-#           skill: Power
-#           delta: 1
-#           who: SELF
-#           duration: WHILE_GIMMICK_ACTIVE
-#       duration: WHILE_GIMMICK_ACTIVE
-#       frequency: {"@type": FrequencyGuard, kind: UNLIMITED, n: null}
-#       raw_clause: "+1 to Power"
-#       source: gimmick
-#
-# (No active overrides yet.)
+# --- D2 (V1) deck (decks/d2.yaml), for the human-vs-D2 playtest (todo #42/#43) ---
+# Faithful-enough IR for cards the grammar leaves Unsupported. Where a card reads
+# "A or B", we model the executable, generally-best mode and note the simplification
+# in each raw_clause. Selector-actions (Search / ShuffleIntoDeck / AddFromDiscard)
+# move ONE matching card; "shuffle 2 / up to 3" is authored as repeated actions, so
+# no Effect-IR node changed (DESIGN.md §3 review gate).
+
+
+# D2 gimmick: draw 2 on a roll exactly 2 less
+bd04b23708fe49728541a20e689cae61:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapExactly
+    k: 2
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: draw 2 when your turn roll is exactly 2 less (draw mode; hammer-recur alt simplified)
+  source: gimmick
+
+# #3 stop any Lead Strike
+30249467b3ff48dcb6b971e9b5d7182f:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Stop
+    order: Lead
+    atk_type: Strike
+    source_is_skillreq: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: stop any Lead Strike (draw-bottom alt simplified)
+  source: card
+
+# #6 stop any Follow Up Strike
+30a1a508143640d0bae1ebaa3e108ad9:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Stop
+    order: Followup
+    atk_type: Strike
+    source_is_skillreq: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: stop any Follow Up Strike ('or Apocalypse' + reveal rider dropped)
+  source: card
+
+# #20 see-1 stop any Submission
+94c2903feafa44089dc0a3af51d7569e:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: OPP
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': Stop
+    order: null
+    atk_type: Submission
+    source_is_skillreq: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if opponent has another Submission in play, stop any Submission (CM-1 rider dropped)
+  source: card
+
+# #21 see-1 stop any Strike
+ff72e21de1a143d88e1c8b24b06e99f5:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: OPP
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Strike
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': Stop
+    order: null
+    atk_type: Strike
+    source_is_skillreq: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if opponent has another Strike in play, stop any Strike (draw-bottom alt simplified)
+  source: card
+
+# #14 power-gated stop any Submission
+9b60d08fe9914e6990c6f10d86c11d96:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': SkillCompare
+    skill: Power
+    cmp: '>'
+    who: SELF
+    vs: OPP_SAME
+    value: null
+  actions:
+  - '@type': Stop
+    order: null
+    atk_type: Submission
+    source_is_skillreq: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if your Power > opponent's Power, stop any Submission (flip alt simplified)
+  source: card
+
+# #10 draw bottom card if another Lead in play
+09edf17fc41849f0b0fec783384e8339:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Lead
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': Draw
+    n: 1
+    source: BOTTOM
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if you have another Lead in play, draw the bottom card of your deck
+  source: card
+
+# #7 draw 1
+e4809829f15e4232937e72b281f75edc:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: draw 1 (or shuffle-up-to-3-recur alt simplified to the draw mode)
+  source: card
+
+# #8 add a Grapple from discard to hand
+89cd851ecd554ff9947dc12e66e241f4:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Grapple
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: add 1 Grapple from your discard pile to your hand (reveal rider dropped)
+  source: card
+
+# #11 tutor a Grapple if another Grapple in play
+99a46111b1a94182b1aa132ba02a7076:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Grapple
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Grapple
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    dest: HAND
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if another Grapple in play, search your deck for a Grapple (to hand ~ 'on top')
+  source: card
+
+# #12 recur a Submission from discard
+2e71ea7abb184e6cba90d56f9173dec6:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: shuffle a Submission from discard into deck (per-Sledgehammer count simplified to 1)
+  source: card
+
+# #18 recur a Submission + draw if another Submission
+df576122c28f481f998634973945e334:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if another Submission in play, recur a Submission and draw 1 (Reverse Hold finish rider
+    dropped)
+  source: card
+
+# #22 recur 2 cards from discard
+74d34bbeb78140aea7590c6a8f2d7d5a:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'shuffle 2 cards from discard into deck (draw-3 rider dropped: cross-skill compare unsupported)'
+  source: card
+
+# #23 recur 2 from discard + draw
+5538bdae8345481ca3d414396a7dc766:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: shuffle 2 from discard into deck, draw 1 (discard-opponent's-in-play rider dropped)
+  source: card

@@ -640,6 +640,62 @@ class Engine:
         if cards:
             self._bury_cards(target, cards)
 
+    def _act_search(self, action: fx.Search, key: str) -> None:
+        # Tutor: pull the first deck card matching the filter into hand, then
+        # shuffle the deck (you looked through it). dest is HAND (the only Dest);
+        # "put it on top" tutors are modelled as into-hand — a close, stronger
+        # approximation. A no-match search just shuffles.
+        player = self.state.players[key]
+        match = next((c for c in player.deck if conditions.card_matches(c, action.filter)), None)
+        if match is not None:
+            player.deck.remove(match)
+            player.hand.append(match)
+            self._log(
+                gl.Search(
+                    t=self.state.turn_no,
+                    player=key,
+                    cards=[match.db_uuid],
+                    source="deck",
+                    hidden=True,  # deck -> hand: both private, opponent sees only counts
+                )
+            )
+        self.state.rng.shuffle(player.deck)
+        self._hand_cap(key)
+
+    def _act_shuffle_into_deck(self, action: fx.ShuffleIntoDeck, key: str) -> None:
+        # Recur ONE matching card from discard into the deck, then shuffle. The IR
+        # node has no count, so "shuffle 2 / up to 3 cards" is authored as repeated
+        # ShuffleIntoDeck actions (no IR change; DESIGN.md §3 review gate).
+        player = self.state.players[key]
+        match = next(
+            (c for c in player.discard if conditions.card_matches(c, action.selector)), None
+        )
+        if match is not None:
+            player.discard.remove(match)
+            player.deck.append(match)
+            self._log(
+                gl.Bury(  # discard -> deck movement (the shuffle rides the RNG state)
+                    t=self.state.turn_no, player=key, cards=[match.db_uuid], source="discard"
+                )
+            )
+        self.state.rng.shuffle(player.deck)
+
+    def _act_add_from_discard(self, action: fx.AddFromDiscard, key: str) -> None:
+        # Recur ONE matching card from discard straight to hand ("add 1 <type>
+        # from your discard pile to your hand").
+        player = self.state.players[key]
+        match = next((c for c in player.discard if conditions.card_matches(c, action.filter)), None)
+        if match is None:
+            return
+        player.discard.remove(match)
+        player.hand.append(match)
+        self._log(
+            gl.Search(  # discard (public) -> hand: which card left discard is visible
+                t=self.state.turn_no, player=key, cards=[match.db_uuid], source="discard"
+            )
+        )
+        self._hand_cap(key)
+
     def _act_flip(self, action: fx.Flip, key: str) -> None:
         player = self.state.players[key]
         flipped = player.deck[: action.n]
@@ -849,4 +905,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.LowestRollWins: Engine._act_noop,
     fx.MaxHandSize: Engine._act_noop,  # Static, read via effective_hand_cap; never executed
     fx.ShuffleDeck: Engine._act_shuffle_deck,
+    fx.Search: Engine._act_search,
+    fx.ShuffleIntoDeck: Engine._act_shuffle_into_deck,
+    fx.AddFromDiscard: Engine._act_add_from_discard,
 }

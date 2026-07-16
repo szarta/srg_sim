@@ -75,7 +75,7 @@ def test_replay_policy_raises_when_exhausted() -> None:
 @pytest.mark.parametrize("seed", range(6))
 def test_reconstruct_captures_one_record_per_decision(seed: int) -> None:
     log = _record(seed)
-    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae())))
+    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae(), strict=True)))
     n_decisions = sum(1 for e in log.events if isinstance(e, Decision))
     assert len(recon.records) == n_decisions
     assert recon.result.winner == next(
@@ -85,7 +85,7 @@ def test_reconstruct_captures_one_record_per_decision(seed: int) -> None:
 
 def test_reconstruct_player_view_hides_opponent_hand_and_deck_order() -> None:
     log = _record(1)
-    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae())))
+    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae(), strict=True)))
     assert recon.records, "expected at least one decision"
     for rec in recon.records:
         opp = "B" if rec.player == "A" else "A"
@@ -98,7 +98,7 @@ def test_reconstruct_player_view_hides_opponent_hand_and_deck_order() -> None:
 
 def test_reconstruct_oracle_has_full_hidden_state() -> None:
     log = _record(1)
-    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae())))
+    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae(), strict=True)))
     rec = recon.records[0]
     for key in ("A", "B"):
         oracle_player = rec.oracle["players"][key]
@@ -108,7 +108,7 @@ def test_reconstruct_oracle_has_full_hidden_state() -> None:
 
 def test_for_player_filters_to_one_side() -> None:
     log = _record(2)
-    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae())))
+    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae(), strict=True)))
     just_a = recon.for_player("A")
     assert just_a == [r for r in recon.records if r.player == "A"]
     assert all(r.player == "A" for r in just_a)
@@ -116,11 +116,11 @@ def test_for_player_filters_to_one_side() -> None:
 
 def test_records_to_ndjson_is_one_json_object_per_line() -> None:
     log = _record(3)
-    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae())))
+    recon = reconstruct_with_decks(log, dict(zip(("A", "B"), bull_vs_fae(), strict=True)))
     text = records_to_ndjson(recon.records)
     lines = text.splitlines()
     assert len(lines) == len(recon.records)
-    for line, rec in zip(lines, recon.records):
+    for line, rec in zip(lines, recon.records, strict=True):
         obj = json.loads(line)
         assert obj["turn"] == rec.turn and obj["point"] == rec.point
         assert obj["player"] == rec.player

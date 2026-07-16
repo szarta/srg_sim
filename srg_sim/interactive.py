@@ -76,8 +76,7 @@ def render_view(state: GameState, viewer: str) -> list[str]:
     view = state.observable(viewer)
     opp = state.opponent_of(viewer)
     lines = [
-        f"── turn {view['turn_no']}  ·  crowd meter {view['crowd_meter']}  ·  "
-        f"you are {viewer} ──"
+        f"── turn {view['turn_no']}  ·  crowd meter {view['crowd_meter']}  ·  you are {viewer} ──"
     ]
     lines += _opponent_lines(view["players"][opp], opp)
     lines += _self_lines(view["players"][viewer], viewer)

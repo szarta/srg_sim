@@ -336,7 +336,16 @@ def test_override_wins_over_grammar() -> None:
 
 
 def test_shipped_overrides_file_loads() -> None:
-    assert rp.load_overrides() == {}  # documented example is commented out
+    # The shipped overrides (D2 deck, todo #43) must be structurally valid: keyed by
+    # db_uuid, each value a list of effect dicts that rebuild into real Effect IR.
+    from srg_sim import effects as fx
+
+    overrides = rp.load_overrides()
+    assert overrides, "expected shipped overrides"
+    for uuid, effects in overrides.items():
+        assert isinstance(uuid, str) and effects
+        for raw in effects:
+            assert isinstance(fx.from_dict(raw), fx.Effect)
 
 
 # --- enrichment (loader bridge) --------------------------------------------

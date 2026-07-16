@@ -186,6 +186,60 @@ def test_shuffle_deck_action_reorders_without_losing_cards() -> None:
     assert len(after) == len(before)
 
 
+def test_search_tutors_a_matching_card_from_deck_to_hand() -> None:
+    # Search pulls the first deck card matching the filter into hand and shuffles.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    want = next(c for c in a.deck if c.play_order is PlayOrder.FINISH)
+    hand_before = len(a.hand)
+    eng._act_search(fx.Search(filter=fx.CardFilter(play_order=PlayOrder.FINISH)), "A")
+    assert want in a.hand and want not in a.deck
+    assert len(a.hand) == hand_before + 1
+
+
+def test_search_with_no_match_only_shuffles() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    a.deck = [c for c in a.deck if c.number != 99]  # (no card #99 exists)
+    hand_before, deck_len = len(a.hand), len(a.deck)
+    eng._act_search(fx.Search(filter=fx.CardFilter(number=99)), "A")
+    assert len(a.hand) == hand_before and len(a.deck) == deck_len  # nothing tutored
+
+
+def test_add_from_discard_recurs_a_matching_card_to_hand() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    card = next(c for c in a.deck if c.atk_type is AtkType.GRAPPLE)
+    a.deck.remove(card)
+    a.discard.append(card)
+    eng._act_add_from_discard(
+        fx.AddFromDiscard(filter=fx.CardFilter(atk_type=AtkType.GRAPPLE)), "A"
+    )
+    assert card in a.hand and card not in a.discard
+
+
+def test_shuffle_into_deck_recurs_one_card_from_discard_to_deck() -> None:
+    # ShuffleIntoDeck moves ONE matching discard card back into the deck; "2 cards"
+    # is authored as two actions, so two calls move two.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    subs = [c for c in a.deck if c.atk_type is AtkType.SUBMISSION][:2]
+    for c in subs:
+        a.deck.remove(c)
+        a.discard.append(c)
+    deck_before = len(a.deck)
+    sel = fx.ShuffleIntoDeck(selector=fx.CardFilter(atk_type=AtkType.SUBMISSION))
+    eng._act_shuffle_into_deck(sel, "A")
+    eng._act_shuffle_into_deck(sel, "A")
+    assert all(c in a.deck for c in subs)
+    assert all(c not in a.discard for c in subs)
+    assert len(a.deck) == deck_before + 2
+
+
 def test_movement_hidden_flag_tracks_private_endpoints() -> None:
     # §8 information model: draws (deck->hand) are hidden; discards (->public
     # pile) never are. A real game exercises both.

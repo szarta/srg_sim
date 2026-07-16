@@ -110,9 +110,7 @@ class _CapturingReplay(ReplayPolicy):
         return chosen
 
 
-def rebuild_decks(
-    header: Header, index: CardIndex, overrides: Overrides
-) -> dict[str, Deck]:
+def rebuild_decks(header: Header, index: CardIndex, overrides: Overrides) -> dict[str, Deck]:
     """Rebuild both players' compiled decks from a log header (§8 replay).
 
     Competitor/entrance by name, main cards by ``db_uuid`` in recorded order, then
