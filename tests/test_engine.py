@@ -267,6 +267,29 @@ def test_add_from_discard_recurs_a_matching_card_to_hand() -> None:
     assert card in a.hand and card not in a.discard
 
 
+def test_add_from_discard_lets_the_owner_choose_which_match() -> None:
+    # Recursion is a player choice (DESIGN.md §7): with >1 match the owner picks via
+    # the "target" decision point, not the engine auto-taking the first.
+    class PickHighest(Policy):
+        def __init__(self) -> None:
+            super().__init__("pick-highest")
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            assert point == "target"  # engine routed the recur choice to the owner
+            return max(legal, key=lambda o: o["number"])
+
+    eng = Engine(*bull_vs_fae(), PickHighest(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    subs = [c for c in a.deck if c.atk_type is AtkType.SUBMISSION][:3]
+    for c in subs:
+        a.deck.remove(c)
+        a.discard.append(c)
+    want = max(subs, key=lambda c: c.number)
+    eng._act_add_from_discard(fx.AddFromDiscard(filter=fx.CardFilter(atk_type=AtkType.SUBMISSION)), "A")
+    assert want in a.hand and want not in a.discard  # the chosen match, not the first
+
+
 def test_shuffle_into_deck_recurs_one_card_from_discard_to_deck() -> None:
     # ShuffleIntoDeck moves ONE matching discard card back into the deck; "2 cards"
     # is authored as two actions, so two calls move two.

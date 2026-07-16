@@ -648,21 +648,31 @@ class Engine:
         if cards:
             self._bury_cards(target, cards)
 
+    def _pick_from(self, key: str, cards: list[Card], point: str) -> Card:
+        """Let ``key``'s policy pick one of ``cards`` for a recur/tutor selection —
+        the card's owner chooses which to recover/search (DESIGN.md §7), not the
+        engine. Auto-taken (and unlogged) when only one card matches."""
+        if len(cards) == 1:
+            return cards[0]
+        legal = [self._discard_option(c) for c in cards]
+        chosen = self._decide(point, key, legal)
+        return next(c for c in cards if c.db_uuid == chosen["card"])
+
     def _act_search(self, action: fx.Search, key: str) -> None:
-        # Tutor: pull the first deck card matching the filter into hand, then
-        # shuffle the deck (you looked through it). dest is HAND (the only Dest);
-        # "put it on top" tutors are modelled as into-hand — a close, stronger
-        # approximation. A no-match search just shuffles.
+        # Tutor: the searcher picks a matching deck card into hand, then shuffles
+        # the deck (you looked through it). dest is HAND (the only Dest); "put it on
+        # top" tutors are modelled as into-hand — a close, stronger approximation.
         player = self.state.players[key]
-        match = next((c for c in player.deck if conditions.card_matches(c, action.filter)), None)
-        if match is not None:
-            player.deck.remove(match)
-            player.hand.append(match)
+        matches = [c for c in player.deck if conditions.card_matches(c, action.filter)]
+        if matches:
+            card = self._pick_from(key, matches, "target")
+            player.deck.remove(card)
+            player.hand.append(card)
             self._log(
                 gl.Search(
                     t=self.state.turn_no,
                     player=key,
-                    cards=[match.db_uuid],
+                    cards=[card.db_uuid],
                     source="deck",
                     hidden=True,  # deck -> hand: both private, opponent sees only counts
                 )
@@ -675,31 +685,31 @@ class Engine:
         # node has no count, so "shuffle 2 / up to 3 cards" is authored as repeated
         # ShuffleIntoDeck actions (no IR change; DESIGN.md §3 review gate).
         player = self.state.players[key]
-        match = next(
-            (c for c in player.discard if conditions.card_matches(c, action.selector)), None
-        )
-        if match is not None:
-            player.discard.remove(match)
-            player.deck.append(match)
+        matches = [c for c in player.discard if conditions.card_matches(c, action.selector)]
+        if matches:
+            card = self._pick_from(key, matches, "target")
+            player.discard.remove(card)
+            player.deck.append(card)
             self._log(
                 gl.Bury(  # discard -> deck movement (the shuffle rides the RNG state)
-                    t=self.state.turn_no, player=key, cards=[match.db_uuid], source="discard"
+                    t=self.state.turn_no, player=key, cards=[card.db_uuid], source="discard"
                 )
             )
         self.state.rng.shuffle(player.deck)
 
     def _act_add_from_discard(self, action: fx.AddFromDiscard, key: str) -> None:
-        # Recur ONE matching card from discard straight to hand ("add 1 <type>
-        # from your discard pile to your hand").
+        # Recur a matching card from discard to hand ("add 1 <type> from your
+        # discard pile to your hand"); the owner chooses which (DESIGN.md §7).
         player = self.state.players[key]
-        match = next((c for c in player.discard if conditions.card_matches(c, action.filter)), None)
-        if match is None:
+        matches = [c for c in player.discard if conditions.card_matches(c, action.filter)]
+        if not matches:
             return
-        player.discard.remove(match)
-        player.hand.append(match)
+        card = self._pick_from(key, matches, "target")
+        player.discard.remove(card)
+        player.hand.append(card)
         self._log(
             gl.Search(  # discard (public) -> hand: which card left discard is visible
-                t=self.state.turn_no, player=key, cards=[match.db_uuid], source="discard"
+                t=self.state.turn_no, player=key, cards=[card.db_uuid], source="discard"
             )
         )
         self._hand_cap(key)
