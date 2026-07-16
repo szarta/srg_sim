@@ -502,9 +502,24 @@ class Engine:
         if self._ended():
             return False
         self.state.players[active].in_play.append(card)
-        self._run_effects(card.effects, fx.OnHit, active)
+        self._run_effects(card.effects, fx.OnHit, active)  # the card's own "when this hits"
+        self._run_hit_gimmicks(card, active)  # owner gimmick "when you hit a <type>" (D1)
         self._enforce_hand_caps()  # a new Static max-handsize mod may force a discard
         return not self._ended()
+
+    def _run_hit_gimmicks(self, card: Card, key: str) -> None:
+        """Fire ``key``'s standing type-gated ``OnHit`` gimmicks for a card of ``card``'s
+        attack type that just hit (D1: "when you hit a Submission, draw 1"). Only
+        ``atk_type``-scoped OnHit effects fire here; a card's own untyped OnHit already
+        resolved via :meth:`_run_effects`, so it is not re-fired."""
+        for eff in self._standing_effects(key):
+            trig = eff.trigger
+            if (
+                isinstance(trig, fx.OnHit)
+                and trig.atk_type is not None
+                and trig.atk_type is card.atk_type
+            ):
+                self._fire_if_ready(eff, key, None)
 
     def _offer_stop(self, defender: str, attacker: str, card: Card) -> Card | None:
         stops = self._legal_stops(defender, attacker, card)
@@ -570,6 +585,7 @@ class Engine:
             )
         )
         self._run_effects(stop.effects, fx.OnHit, defender)
+        self._run_hit_gimmicks(stop, defender)  # a stop entering play is itself a hit
         self._run_effects(attack.effects, fx.OnStop, active)
         self._run_effects(stop.effects, fx.OnStop, defender)
 

@@ -311,6 +311,34 @@ def test_in_roll_boost_pays_only_when_payable_and_discards_the_typed_cost() -> N
     assert broke.state.players["A"].discard == []
 
 
+def test_hit_a_type_gimmick_fires_only_for_that_attack_type() -> None:
+    # D1 (#57): "When you hit a Submission draw 1 card" = a gimmick OnHit(atk_type=
+    # Submission) -> Draw, fired by _run_hit_gimmicks when the owner hits that type.
+    gimmick = fx.Effect(
+        trigger=fx.OnHit(atk_type=AtkType.SUBMISSION),
+        actions=(fx.Draw(n=1),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="hit Submission -> draw 1",
+    )
+    eng = Engine(
+        make_deck("A", with_effects(vanilla(), (gimmick,))),
+        make_deck("B", vanilla()),
+        HeuristicPolicy(),
+        HeuristicPolicy(),
+        seed=1,
+    )
+    eng.setup()
+    eng.state.turn_no = 1
+    sub = Card("u1", "Sub", 30, AtkType.SUBMISSION, PlayOrder.FINISH)
+    strike = Card("u2", "Str", 28, AtkType.STRIKE, PlayOrder.FINISH)
+    before = len(eng.state.players["A"].hand)
+    eng._run_hit_gimmicks(sub, "A")
+    assert len(eng.state.players["A"].hand) == before + 1  # drew on the Submission hit
+    mid = len(eng.state.players["A"].hand)
+    eng._run_hit_gimmicks(strike, "A")
+    assert len(eng.state.players["A"].hand) == mid  # a Strike hit does nothing
+
+
 def test_on_bump_trigger_penalizes_the_opponents_next_roll() -> None:
     # Mastermind's gimmick: OnBump -> the opponent's NEXT turn roll is -2.
     gimmick = fx.Effect(

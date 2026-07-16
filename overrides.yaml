@@ -1340,3 +1340,31 @@ aebe9e8baa0046ddbde13690b7c18455:
   raw_clause: roll Submission -> may discard a Submission card for +1 to this roll
   source: gimmick
   optional: true
+
+
+# --- Hit-a-type gimmick (matchup roster, todo #57) ---
+# D1 (V1) = the 'Draw on Sub' variant: "When you hit a Submission draw 1 card."
+# OnHit(atk_type=Submission) on the gimmick -> Draw(1), fired by _run_hit_gimmicks
+# whenever the owner hits a Submission (a played attack OR a stop entering play).
+51537506696946a2ad10662229ccd96f:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    keyword: null
+    name: null
+    atk_type: Submission
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you hit a Submission, draw 1
+  source: gimmick
+  optional: false

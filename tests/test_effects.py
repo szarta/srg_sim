@@ -98,6 +98,7 @@ SAMPLES: list[IRNode] = [
     OnLoseTurn(by=2),
     OnStop(Direction.YOURS),
     OnHit(keyword="Signature", name=None),
+    OnHit(atk_type=AtkType.SUBMISSION),  # gimmick "when you hit a Submission"
     OnBump(),
     StartOfTurn(),
     StartOfMatch(),

@@ -535,6 +535,19 @@ def test_in_roll_boost_gimmick_override_is_modeled() -> None:
 
 
 @requires_db
+def test_hit_a_type_gimmick_override_is_modeled() -> None:
+    # D1 (V1) (overrides.yaml, todo #57): OnHit(atk_type=Submission) -> Draw.
+    from srg_sim.cards import AtkType
+    from srg_sim.effects import Draw, OnHit
+    from srg_sim.report.carddb import ReportCardDB
+
+    d1 = ReportCardDB.from_yaml().resolve_competitor("D1 (V1)")
+    (eff,) = d1.effects
+    assert isinstance(eff.trigger, OnHit) and eff.trigger.atk_type is AtkType.SUBMISSION
+    assert any(isinstance(a, Draw) for a in eff.actions)
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck
