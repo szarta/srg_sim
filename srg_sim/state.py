@@ -23,7 +23,16 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from srg_sim.cards import Card, Competitor, EntranceCard, Skill
-from srg_sim.effects import Always, BuffSkill, Condition, Effect, MaxHandSize, Static, Who
+from srg_sim.effects import (
+    Always,
+    BlankGimmick,
+    BuffSkill,
+    Condition,
+    Effect,
+    MaxHandSize,
+    Static,
+    Who,
+)
 from srg_sim.rng import SeededRNG
 
 if TYPE_CHECKING:
@@ -141,12 +150,38 @@ class GameState:
         """The other player's key (two-player game)."""
         return next(k for k in self.players if k != key)
 
-    def _buff_sources(self, player: PlayerState) -> Iterator[tuple[Iterable[Effect], bool]]:
-        """(effects, active?) for each of a player's Static-buff sources."""
-        yield player.competitor.effects, not player.gimmick_blanked
+    def _buff_sources(
+        self, owner: str, player: PlayerState
+    ) -> Iterator[tuple[Iterable[Effect], bool]]:
+        """(effects, active?) for each of a player's Static-buff sources. The
+        competitor gimmick drops out while blanked (derived, so a WHILE_IN_PLAY
+        blank ends when the blanking card leaves play)."""
+        yield player.competitor.effects, not self.is_gimmick_blanked(owner)
         yield player.entrance.effects, True
         for card in player.in_play:
             yield card.effects, True
+
+    def is_gimmick_blanked(self, key: str) -> bool:
+        """Whether ``key``'s competitor gimmick is currently suppressed — by the
+        stored flag (a one-shot / StartOfMatch blank set via the BlankGimmick
+        handler) OR by any active BlankGimmick that targets ``key`` from an
+        entrance or an in-play card (e.g. Savor the Moment; DESIGN.md §3/§5). The
+        blank is derived like a Static buff, so a WHILE_IN_PLAY blank clears the
+        moment its source leaves play (breakout). A gimmick never blanks itself, so
+        competitor effects are not scanned here — no recursion with _buff_sources."""
+        if self.players[key].gimmick_blanked:
+            return True
+        for owner, player in self.players.items():
+            sources = [player.entrance.effects, *(c.effects for c in player.in_play)]
+            for effects in sources:
+                for eff in effects:
+                    if any(
+                        isinstance(a, BlankGimmick)
+                        and (owner if a.who is Who.SELF else self.opponent_of(owner)) == key
+                        for a in eff.actions
+                    ):
+                        return True
+        return False
 
     def effective_stats(self, key: str, holds: ConditionHolds | None = None) -> dict[str, int]:
         """Derived ``{skill: value}`` for ``key`` (base + active Static buffs).
@@ -167,7 +202,7 @@ class GameState:
         player: PlayerState,
         holds: ConditionHolds | None,
     ) -> None:
-        for effects, active in self._buff_sources(player):
+        for effects, active in self._buff_sources(owner, player):
             if not active:
                 continue
             for eff, buff in _iter_static_buffs(effects):
@@ -195,7 +230,7 @@ class GameState:
         self, target: str, owner: str, player: PlayerState, holds: ConditionHolds | None
     ) -> int:
         total = 0
-        for effects, active in self._buff_sources(player):
+        for effects, active in self._buff_sources(owner, player):
             if not active:
                 continue
             for eff, mod in _iter_static_hand_mods(effects):
@@ -233,7 +268,7 @@ class GameState:
             "entrance": player.entrance.to_dict(),
             "in_play": _cards_to_list(player.in_play),
             "discard": _cards_to_list(player.discard),
-            "gimmick_blanked": player.gimmick_blanked,
+            "gimmick_blanked": self.is_gimmick_blanked(key),  # derived: stored flag or active blank
             "deck_size": len(player.deck),  # order hidden from everyone, owner included
         }
         if key == viewer:

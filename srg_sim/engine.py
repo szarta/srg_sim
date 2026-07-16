@@ -590,7 +590,7 @@ class Engine:
         entrance, and in-play cards."""
         player = self.state.players[key]
         out: list[fx.Effect] = []
-        if not player.gimmick_blanked:
+        if not self.state.is_gimmick_blanked(key):
             out.extend(player.competitor.effects)
         out.extend(player.entrance.effects)
         for card in player.in_play:
@@ -748,6 +748,15 @@ class Engine:
         slot = "this" if action.when is fx.RollWhen.THIS else "next"
         self.state.players[target].pending_roll_mods[slot] += action.delta
         self._log_effect(key, "ModifyRoll", target, {"delta": action.delta, "when": slot})
+
+    def _act_blank_gimmick(self, action: fx.BlankGimmick, key: str) -> None:
+        # Executed (one-shot / non-Static) blank: latch the stored flag on the
+        # target. A WHILE_IN_PLAY blank is normally authored as a Static effect and
+        # read derived via GameState.is_gimmick_blanked (clears on breakout); this
+        # path covers an OnHit "blank the gimmick" that fires once.
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        self.state.players[target].gimmick_blanked = True
+        self._log_effect(key, "BlankGimmick", target, {"duration": action.duration.value})
 
     def _act_win_tie(self, action: fx.WinTie, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
@@ -923,6 +932,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.CrowdMeter: Engine._act_crowd,
     fx.ModifyRoll: Engine._act_modify_roll,
     fx.WinTie: Engine._act_win_tie,
+    fx.BlankGimmick: Engine._act_blank_gimmick,
     fx.LoseBy: Engine._act_lose_by,
     fx.LowestRollWins: Engine._act_noop,
     fx.MaxHandSize: Engine._act_noop,  # Static, read via effective_hand_cap; never executed

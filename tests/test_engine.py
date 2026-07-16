@@ -232,6 +232,43 @@ def test_on_bump_gimmick_fires_only_once_per_turn() -> None:
     assert eng.state.players["B"].pending_roll_mods["next"] == -2  # still only -2
 
 
+def test_blank_gimmick_suppresses_opponent_competitor_gimmick_and_clears() -> None:
+    # #47: a WHILE_IN_PLAY BlankGimmick on an in-play card drops the OPPONENT's
+    # competitor gimmick out of their standing effects (derived, so it clears when
+    # the blanking card leaves play on breakout) — the Savor-the-Moment counter.
+    gim = fx.Effect(
+        trigger=fx.OnRoll(),
+        actions=(fx.Draw(n=2),),
+        raw_clause="draw 2 on roll",
+        source=fx.EffectSource.GIMMICK,
+    )
+    da = make_deck("A", with_effects(bull(), (gim,)))
+    eng = Engine(
+        da, make_deck("B", fae()), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x"
+    )
+    eng.setup()
+    assert gim in eng._standing_effects("A") and not eng.state.is_gimmick_blanked("A")
+
+    blanker = replace(
+        _attack(AtkType.STRIKE, PlayOrder.LEAD),
+        db_uuid="savor",
+        effects=(fx.Effect(trigger=fx.Static(), actions=(fx.BlankGimmick(who=fx.Who.OPP),)),),
+    )
+    eng.state.players["B"].in_play.append(blanker)  # B blanks A (its opponent)
+    assert eng.state.is_gimmick_blanked("A")
+    assert gim not in eng._standing_effects("A")  # gimmick suppressed while blanked
+
+    eng.state.players["B"].in_play.remove(blanker)  # source leaves play
+    assert not eng.state.is_gimmick_blanked("A")  # blank clears
+
+
+def test_blank_gimmick_action_latches_the_stored_flag() -> None:
+    # A one-shot/executed BlankGimmick (not the Static/derived path) latches the flag.
+    eng = _fresh()
+    eng._act_blank_gimmick(fx.BlankGimmick(who=fx.Who.OPP), "A")  # A blanks B
+    assert eng.state.players["B"].gimmick_blanked and eng.state.is_gimmick_blanked("B")
+
+
 def test_search_tutors_a_matching_card_from_deck_to_hand() -> None:
     # Search pulls the first deck card matching the filter into hand and shuffles.
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
@@ -286,7 +323,9 @@ def test_add_from_discard_lets_the_owner_choose_which_match() -> None:
         a.deck.remove(c)
         a.discard.append(c)
     want = max(subs, key=lambda c: c.number)
-    eng._act_add_from_discard(fx.AddFromDiscard(filter=fx.CardFilter(atk_type=AtkType.SUBMISSION)), "A")
+    eng._act_add_from_discard(
+        fx.AddFromDiscard(filter=fx.CardFilter(atk_type=AtkType.SUBMISSION)), "A"
+    )
     assert want in a.hand and want not in a.discard  # the chosen match, not the first
 
 
