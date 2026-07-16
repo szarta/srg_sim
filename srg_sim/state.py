@@ -258,7 +258,9 @@ class GameState:
         ``discard`` piles, and gimmick-blank status. Private: a player sees only
         the *size* of the opponent's hand, and **every** deck is a size only —
         deck order is hidden from everyone, owner included (the five-region model).
-        The viewer's own hand is fully visible. RNG, per-player ``flags``,
+        The viewer's own hand is fully visible; an opponent's hand is also revealed
+        while an active :class:`~srg_sim.effects.Peek` ("Look at your opponent's
+        hand") grants ``viewer`` a look this turn (:meth:`_peeked`). RNG, per-player ``flags``,
         ``freq_counters``, and ``pending_roll_mods`` are engine bookkeeping, not
         table-visible zones, so they are omitted. Unlike :meth:`to_dict` this is a
         lossy projection — for replay/snapshots use ``to_dict``.
@@ -282,11 +284,23 @@ class GameState:
             "gimmick_blanked": self.is_gimmick_blanked(key),  # derived: stored flag or active blank
             "deck_size": len(player.deck),  # order hidden from everyone, owner included
         }
-        if key == viewer:
+        # Own hand always full; an opponent's hand is a count only unless a Peek
+        # ("Look at your opponent's hand") is revealing it this turn (info model #38).
+        if key == viewer or self._peeked(viewer, key):
             view["hand"] = _cards_to_list(player.hand)
         else:
             view["hand_size"] = len(player.hand)  # opponent hand: count only
         return view
+
+    def _peeked(self, viewer: str, key: str) -> bool:
+        """Whether ``viewer`` has an active peek on ``key``'s hand: a :class:`Peek`
+        action ("Look at your opponent's hand") grants a look for the rest of the
+        peeker's turn, so a stored peek expires automatically once ``turn_no``
+        advances past it (DESIGN.md §7). ``viewer`` never peeks their own hand."""
+        if viewer == key:
+            return False
+        peek = self.players[viewer].flags.get("peek")
+        return isinstance(peek, dict) and peek.get(key) == self.turn_no
 
     def to_dict(self) -> dict[str, Any]:
         """Snapshot the position (players, crowd meter, turn, RNG). Excludes the log."""

@@ -495,6 +495,21 @@ class RemoveFromPlay(IRNode):
 
 
 @dataclass(frozen=True)
+class Peek(IRNode):
+    """Look at an otherwise-hidden hand ("Look at your opponent's hand"; §3/§7).
+
+    A pure *information* action — it moves no card. It grants the acting player
+    temporary observability of ``who``'s hand (normally ``OPP``, whose hand is
+    otherwise a size-only zone): the engine records the peek on the viewer so
+    :meth:`GameState.observable` reveals that hand's contents for the rest of the
+    peeker's turn. That reveal is the decision-time hook a policy reads to act on
+    the seen cards. ``SELF`` (your own, already-visible hand) is a no-op.
+    """
+
+    who: Who = Who.OPP
+
+
+@dataclass(frozen=True)
 class ModifyRoll(IRNode):
     who: Who
     delta: int
@@ -700,6 +715,7 @@ Action = (
     | AddFromDiscard
     | RecurToDeckTop
     | RemoveFromPlay
+    | Peek
     | ModifyRoll
     | BuffSkill
     | MaxHandSize

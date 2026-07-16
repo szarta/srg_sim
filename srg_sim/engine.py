@@ -928,6 +928,16 @@ class Engine:
         self.state.players[target].gimmick_blanked = True
         self._log_effect(key, "BlankGimmick", target, {"duration": action.duration.value})
 
+    def _act_peek(self, action: fx.Peek, key: str) -> None:
+        # Pure information: grant `key` a look at `target`'s hand for the rest of
+        # this turn. No zone changes — observable() reads the peek flag to reveal
+        # the hand (info model, #34/#38). Looking at your own hand is a no-op.
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        if target == key:
+            return
+        self.state.players[key].flags["peek"] = {target: self.state.turn_no}
+        self._log_effect(key, "Peek", target, {"hand_size": len(self.state.players[target].hand)})
+
     def _act_win_tie(self, action: fx.WinTie, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         self.state.players[target].flags["win_tie"] = True
@@ -1113,4 +1123,5 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.RecurToDeckTop: Engine._act_recur_to_deck_top,
     fx.RemoveFromPlay: Engine._act_remove_from_play,
     fx.PlayExtraCard: Engine._act_play_extra_card,
+    fx.Peek: Engine._act_peek,
 }

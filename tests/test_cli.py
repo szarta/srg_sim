@@ -324,6 +324,55 @@ def test_review_writes_ndjson_of_both_views(
         assert "hand" in row["oracle"]["players"]["B"]  # oracle keeps the truth
 
 
+# --- export -----------------------------------------------------------------
+
+
+def test_export_writes_training_ndjson_without_leaking_hidden_state(
+    world: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    log = tmp_path / "game.jsonl"
+    main(_play_args(world, seed="4", out=str(log)))
+    capsys.readouterr()
+    out = tmp_path / "decisions.ndjson"
+    assert main(["export", str(log), "--out", str(out), "--cards", str(world["cards"])]) == 0
+    rows = [json.loads(line) for line in out.read_text().splitlines()]
+    assert rows, "expected at least one decision example"
+    for row in rows:
+        assert set(row) == {
+            "observable_state",
+            "legal",
+            "chosen",
+            "policy",
+            "point",
+            "player",
+            "turn",
+        }
+        assert "oracle" not in row  # a training example must never carry the oracle view
+        seat = row["observable_state"]["players"]
+        opp = "B" if row["player"] == "A" else "A"
+        # The exported state is the honest per-seat view: the opponent hand is a
+        # size only (unless a peek revealed it that turn), never leaked wholesale.
+        assert "hand" not in seat[opp] or "hand_size" not in seat[opp]
+
+
+def test_export_batches_multiple_logs_and_can_filter_by_player(
+    world: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    logs = []
+    for seed in ("1", "2"):
+        log = tmp_path / f"g{seed}.jsonl"
+        main(_play_args(world, seed=seed, out=str(log)))
+        logs.append(str(log))
+    capsys.readouterr()
+    out = tmp_path / "both.ndjson"
+    assert (
+        main(["export", *logs, "--player", "A", "--out", str(out), "--cards", str(world["cards"])])
+        == 0
+    )
+    rows = [json.loads(line) for line in out.read_text().splitlines()]
+    assert rows and all(row["player"] == "A" for row in rows)  # both logs, A-only
+
+
 def test_play_human_records_a_real_log(
     world: dict[str, Path],
     tmp_path: Path,

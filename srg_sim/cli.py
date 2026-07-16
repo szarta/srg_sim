@@ -1,4 +1,4 @@
-"""CLI entry: ``srg-sim play | coverage | analyze | replay | review`` (DESIGN.md §9).
+"""CLI entry: ``srg-sim play | coverage | analyze | replay | review | export`` (DESIGN.md §9).
 
 The user-facing entry point that ties the pipeline together:
 
@@ -20,6 +20,9 @@ The user-facing entry point that ties the pipeline together:
 * ``replay LOG.jsonl`` — re-run a recorded *sim* log from its ``header.seed`` and
   decks/policies, then diff the produced stream against the recording to verify
   determinism (DESIGN.md §8).
+* ``export LOG.jsonl…`` — flatten one or more logs' ``decision`` events to
+  imitation-learning NDJSON (``{observable_state, legal, chosen, policy, point}``),
+  the honest per-seat training signal ``LearnedPolicy`` consumes (DESIGN.md §10 M4).
 
 ``--cards`` overrides the card-export path (defaults to the snapshot), so every
 command runs against any ``cards.yaml`` — real or a test fixture.
@@ -166,7 +169,9 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
         _policy_factory(args.policy_b),
         created=args.created,
     )
-    outcomes = run_batch(matchup, seed_range(args.games, args.seed_start), keep_logs=True)
+    outcomes = run_batch(
+        matchup, seed_range(args.games, args.seed_start), keep_logs=True, jobs=args.jobs
+    )
     report = MatchupReport.from_outcomes(outcomes)
     _print_analysis(report, deck_a, deck_b, args)
     if args.json:
@@ -299,6 +304,29 @@ def _cmd_review(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# export
+# ---------------------------------------------------------------------------
+
+
+def _cmd_export(args: argparse.Namespace) -> int:
+    index = _index(args.cards)
+    overrides = rp.load_overrides()
+    lines: list[str] = []
+    for path in args.logs:
+        recon = rv.reconstruct(GameLog.read(path), index, overrides)
+        records = recon.for_player(args.player) if args.player else recon.records
+        lines.append(rv.records_to_training_ndjson(records))
+    ndjson = "".join(lines)
+    count = ndjson.count("\n")
+    if args.out:
+        Path(args.out).write_text(ndjson)
+        print(f"export: {count} decision(s) from {len(args.logs)} log(s) -> {args.out}")
+    else:
+        print(ndjson, end="")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # argument parsing
 # ---------------------------------------------------------------------------
 
@@ -330,6 +358,12 @@ def _build_parser() -> argparse.ArgumentParser:
     analyze.add_argument(
         "--seed-start", type=int, default=0, help="first seed (games use S..S+N-1)"
     )
+    analyze.add_argument(
+        "--jobs",
+        type=int,
+        default=1,
+        help="parallel worker processes (>1 fans games out; results stay seed-ordered)",
+    )
     analyze.add_argument("--policy-a", default="heuristic", help=_POLICY_NAMES)
     analyze.add_argument("--policy-b", default="heuristic", help=_POLICY_NAMES)
     analyze.add_argument("--created", default="", help="header timestamp (kept out of the engine)")
@@ -351,6 +385,15 @@ def _build_parser() -> argparse.ArgumentParser:
     review.add_argument("--ndjson", help="write the review records as NDJSON here")
     _add_cards_arg(review)
     review.set_defaults(func=_cmd_review)
+
+    export = sub.add_parser(
+        "export", help="flatten one or more logs to imitation-learning NDJSON (§10 M4)"
+    )
+    export.add_argument("logs", nargs="+", help="recorded JSONL game log(s) to flatten")
+    export.add_argument("--player", help="restrict to one player's decisions (e.g. A)")
+    export.add_argument("--out", help="write decisions.ndjson here (default: stdout)")
+    _add_cards_arg(export)
+    export.set_defaults(func=_cmd_export)
 
     return parser
 

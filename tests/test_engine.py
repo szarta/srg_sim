@@ -175,6 +175,19 @@ def test_opponent_draw_action_draws_for_the_opponent() -> None:
     assert len(eng.state.players["B"].hand) == before + 2
 
 
+def test_peek_action_reveals_opponent_hand_in_the_actors_observable_view() -> None:
+    # Peek ("Look at your opponent's hand") moves no card but grants A a look at B's
+    # hand for the rest of the turn — surfaced through observable(), not to_dict.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    b_hand = [c.db_uuid for c in eng.state.players["B"].hand]
+    assert "hand" not in eng.state.observable("A")["players"]["B"]  # redacted before
+    eng._act_peek(fx.Peek(who=fx.Who.OPP), "A")
+    revealed = eng.state.observable("A")["players"]["B"]
+    assert [c["db_uuid"] for c in revealed["hand"]] == b_hand  # A now sees B's hand
+    assert "hand" not in eng.state.observable("B")["players"]["A"]  # B still can't see A
+
+
 def test_shuffle_deck_action_reorders_without_losing_cards() -> None:
     # ShuffleDeck permutes the deck in place (#27 "Shuffle your deck").
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=4, created="x")

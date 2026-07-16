@@ -32,6 +32,8 @@ from srg_sim.effects import (
     LoseBy,
     MaxHandSize,
     ModifyRoll,
+    OnHit,
+    Peek,
     RollWhen,
     ShuffleDeck,
     ShuffleIntoDeck,
@@ -88,6 +90,14 @@ def test_draw() -> None:
     act = _one("Draw 3 cards.")
     assert isinstance(act, Draw)
     assert act.n == 3
+
+
+def test_look_at_opponent_hand_compiles_to_a_peek() -> None:
+    for clause in ("Look at your opponent's hand.", "Look at your opponents hand"):
+        effect = rp.parse_text(clause, CARD)[0]
+        assert isinstance(effect.actions[0], Peek), clause
+        assert effect.actions[0].who is Who.OPP
+        assert isinstance(effect.trigger, OnHit)  # fires when the card resolves into play
 
 
 def test_next_turn_roll_buff() -> None:

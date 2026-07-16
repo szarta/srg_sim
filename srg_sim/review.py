@@ -67,6 +67,26 @@ class ReviewRecord:
             "oracle": self.oracle,
         }
 
+    def to_training_example(self) -> dict[str, Any]:
+        """The honest imitation-learning example for this decision (#36).
+
+        Exactly the ``(observable_state, legal, chosen)`` tuple DESIGN.md §7/§8
+        promises as the free training signal, tagged with ``policy`` and the
+        decision ``point``. Deliberately **omits** ``oracle`` — a training example
+        must never leak hidden zones (the opponent's hand/deck order), so the state
+        is only the honest per-seat :meth:`GameState.observable` view. ``player`` and
+        ``turn`` come along as public grouping keys.
+        """
+        return {
+            "observable_state": self.player_view,
+            "legal": self.legal,
+            "chosen": self.chosen,
+            "policy": self.policy,
+            "point": self.point,
+            "player": self.player,
+            "turn": self.turn,
+        }
+
 
 @dataclass(frozen=True)
 class Reconstruction:
@@ -179,7 +199,20 @@ def reconstruct_with_decks(log: GameLog, decks: dict[str, Deck]) -> Reconstructi
 
 
 def records_to_ndjson(records: Iterable[ReviewRecord]) -> str:
-    """One review record per line as JSON (NDJSON) — feeds the #36 training export."""
+    """One full review record per line as JSON (NDJSON), oracle view included — the
+    critique artifact. For the honest training export use :func:`records_to_training_ndjson`."""
     import json
 
     return "".join(json.dumps(r.to_dict()) + "\n" for r in records)
+
+
+def records_to_training_ndjson(records: Iterable[ReviewRecord]) -> str:
+    """One imitation-learning example per line as NDJSON (#36, DESIGN.md §10 M4).
+
+    Each line is :meth:`ReviewRecord.to_training_example` — the observable state,
+    legal set, and chosen action, with **no** oracle leak. This is the dataset
+    ``LearnedPolicy`` consumes; batch several logs by concatenating their output.
+    """
+    import json
+
+    return "".join(json.dumps(r.to_training_example()) + "\n" for r in records)

@@ -425,8 +425,9 @@ srg_sim/
   rng.py          # seeded RNG wrapper; roll(), shuffle(), reveal()
   policy.py       # Policy ABC + RandomPolicy, HeuristicPolicy
   gamelog.py      # event dataclasses, JSONL read/write, replay/verify
-  analysis.py     # M2: batch N seeded games for a matchup -> outcomes; aggregation
-  cli.py          # `srg-sim play|coverage|analyze|replay`
+  analysis.py     # M2: batch N seeded games for a matchup -> outcomes; aggregation;
+                  #     Matchup/GameOutcome/MatchupReport, run_batch(jobs=N) parallel fan-out
+  cli.py          # `srg-sim play|coverage|analyze|replay|review|export`
 decks/            # example decklists (yaml)
 overrides.yaml    # hand-authored IR for cards the grammar can't parse
 tests/            # parity + regression (see §10)
@@ -442,7 +443,10 @@ DESIGN.md README.md pyproject.toml
   verifies. Effect IR + executor cover cards actually in the two demo decks; everything else
   flags `Unsupported`. Validation suite green.
 - **M2 — analysis harness.** Batch N seeded games for a matchup; aggregate win-rate, finish
-  type/rate, stop usage, crowd-meter curves, game length; A/B deck diff.
+  type/rate, stop usage, crowd-meter curves, game length; A/B deck diff. *As built:*
+  `analysis.run_batch` fans games across processes (`jobs=N`, seed-ordered, serial fallback);
+  `MatchupReport.from_outcomes` computes the aggregates; `srg-sim analyze A.yaml B.yaml
+  --games N [--jobs J] [--json|--csv]` prints and exports the report (`docs/development/analysis`).
 - **M3 — coverage.** Grow grammar + overrides until `Unsupported == 0` over the top-96;
   coverage report tracked in CI.
 - **M4 — player data.** Ingest recorded real matches (same schema); fit `LearnedPolicy`;

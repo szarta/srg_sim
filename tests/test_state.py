@@ -284,3 +284,24 @@ def test_observable_is_symmetric_from_each_seat() -> None:
     # Each seat sees its own hand, never the other's.
     assert "hand" in a_view["players"]["A"] and "hand_size" in a_view["players"]["B"]
     assert "hand" in b_view["players"]["B"] and "hand_size" in b_view["players"]["A"]
+
+
+def test_active_peek_reveals_opponent_hand_this_turn_only() -> None:
+    gs = _populated_state()  # turn_no == 4
+    gs.players["A"].flags["peek"] = {"B": 4}
+    revealed = gs.observable("A")["players"]["B"]
+    assert [c["db_uuid"] for c in revealed["hand"]] == ["u-11", "u-12", "u-13"]
+    assert "hand_size" not in revealed  # full contents, not the count
+    # The peek is scoped to the turn it was taken: a later turn redacts again.
+    gs.turn_no = 5
+    later = gs.observable("A")["players"]["B"]
+    assert "hand" not in later and later["hand_size"] == 3
+
+
+def test_peek_is_one_directional_and_never_self() -> None:
+    gs = _populated_state()
+    gs.players["A"].flags["peek"] = {"B": 4}
+    # B did not peek A, so B's view of A stays redacted.
+    assert "hand" not in gs.observable("B")["players"]["A"]
+    # A never "peeks" its own already-visible hand.
+    assert gs._peeked("A", "A") is False

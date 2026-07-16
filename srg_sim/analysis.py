@@ -16,6 +16,7 @@ import statistics
 from collections import Counter
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
+from multiprocessing import Pool
 from typing import Any
 
 from srg_sim.cards import Deck
@@ -79,14 +80,44 @@ def run_game(matchup: Matchup, seed: int, *, keep_log: bool = False) -> GameOutc
 
 
 def run_batch(
-    matchup: Matchup, seeds: Iterable[int], *, keep_logs: bool = False
+    matchup: Matchup, seeds: Iterable[int], *, keep_logs: bool = False, jobs: int = 1
 ) -> list[GameOutcome]:
     """Play one game per seed in ``seeds``; return outcomes in iteration order.
 
     ``seeds`` is any iterable of ints (commonly :func:`seed_range`). Games are
-    independent, so the outcome for a given seed does not depend on batch order.
+    independent and each is a pure function of ``(matchup, seed)``, so the outcome
+    for a given seed does not depend on batch order *or* on how the work is spread
+    across processes. ``jobs`` > 1 fans the games out over a process pool; the
+    results are still returned ordered by ``seeds`` (``Pool.map`` preserves input
+    order), so a parallel run reproduces the serial one exactly. ``jobs`` <= 1
+    stays in-process (no pool overhead, the default).
     """
+    if jobs > 1:
+        return _run_batch_parallel(matchup, list(seeds), keep_logs, jobs)
     return [run_game(matchup, seed, keep_log=keep_logs) for seed in seeds]
+
+
+# Per-worker state, set once by the pool initializer so the (heavy) matchup is
+# pickled once per process rather than re-sent with every seed.
+_WORKER: tuple[Matchup, bool] | None = None
+
+
+def _init_worker(matchup: Matchup, keep_logs: bool) -> None:
+    global _WORKER
+    _WORKER = (matchup, keep_logs)
+
+
+def _worker_game(seed: int) -> GameOutcome:
+    assert _WORKER is not None  # set by _init_worker in every pool process
+    matchup, keep_logs = _WORKER
+    return run_game(matchup, seed, keep_log=keep_logs)
+
+
+def _run_batch_parallel(
+    matchup: Matchup, seeds: Sequence[int], keep_logs: bool, jobs: int
+) -> list[GameOutcome]:
+    with Pool(jobs, initializer=_init_worker, initargs=(matchup, keep_logs)) as pool:
+        return pool.map(_worker_game, seeds)
 
 
 def seed_range(count: int, start: int = 0) -> range:

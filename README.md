@@ -34,10 +34,16 @@ It resolves cards against the DB export (`--cards`, defaulting to the snapshot):
 srg-sim play decks/bull.yaml decks/fae.yaml --seed 7 --out game.jsonl
 srg-sim replay game.jsonl          # re-run from the header seed; verify it matches
 srg-sim coverage --top96           # grammar / override / unsupported clause tally
+srg-sim analyze decks/bull.yaml decks/fae.yaml --games 500 --jobs 4 --json report.json
+srg-sim export game.jsonl --out decisions.ndjson   # imitation-learning training data
 ```
 
-`--policy-a` / `--policy-b` select `random` or `heuristic`. A decklist names a
-competitor, an entrance, and 30 cards (see [`decks/`](decks/) and DESIGN.md §2).
+`--policy-a` / `--policy-b` select `random`, `heuristic`, `aggressive`, `smart`,
+or `newbie`. A decklist names a competitor, an entrance, and 30 cards (see
+[`decks/`](decks/) and DESIGN.md §2). `analyze` batches N seeded games into a
+win-rate/finish/length report (`--jobs` fans them across processes, seed-ordered);
+`export` flattens a log's decisions to per-seat NDJSON training examples. See the
+[analysis docs](docs/development/analysis.rst) and [playing/review docs](docs/development/playing.rst).
 
 ## Getting started
 

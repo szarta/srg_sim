@@ -100,6 +100,24 @@ def test_run_batch_over_seed_range_covers_the_whole_range() -> None:
     assert [o.seed for o in outcomes] == list(range(100, 110))
 
 
+def test_run_batch_parallel_matches_serial_exactly() -> None:
+    # jobs>1 fans games across processes; because each game is pure in its seed and
+    # Pool.map preserves order, the parallel run reproduces the serial one exactly.
+    matchup = _matchup()
+    seeds = seed_range(8)
+    serial = run_batch(matchup, seeds)
+    parallel = run_batch(matchup, seeds, jobs=2)
+    assert [o.seed for o in parallel] == [o.seed for o in serial]
+    assert [o.result for o in parallel] == [o.result for o in serial]
+
+
+def test_run_batch_parallel_keeps_logs_when_asked() -> None:
+    with_logs = run_batch(_matchup(), seed_range(4), keep_logs=True, jobs=2)
+    assert all(o.log is not None for o in with_logs)
+    report = MatchupReport.from_outcomes(with_logs)  # log-derived metrics still build
+    assert report.games == 4
+
+
 # --- policies + matchup defaults --------------------------------------------
 
 

@@ -69,6 +69,7 @@ from srg_sim.effects import (
     OnHit,
     OnPlay,
     OnStop,
+    Peek,
     RollWhen,
     ShuffleDeck,
     ShuffleIntoDeck,
@@ -202,6 +203,12 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect | None]]] =
         lambda m: _eff(OnHit(), [Draw(n=int(m[1]), source=DeckEnd.BOTTOM)]),
     ),
     _rule(r"Shuffle your deck", lambda m: _eff(OnHit(), [ShuffleDeck()])),
+    # Information: "Look at your opponent's hand" — grants a temporary reveal of the
+    # opponent's (otherwise size-only) hand for the rest of the turn (info model #34).
+    _rule(
+        r"Look at your opponent'?s hand",
+        lambda m: _eff(OnHit(), [Peek(who=Who.OPP)]),
+    ),
     _rule(
         r"Your next turn roll is \+(\d+)",
         lambda m: _eff(OnHit(), [ModifyRoll(Who.SELF, int(m[1]), RollWhen.NEXT)]),
