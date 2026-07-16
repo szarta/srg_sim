@@ -433,7 +433,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     report.add_argument("comp_a", help="first competitor (name, substring, or db_uuid)")
     report.add_argument("comp_b", help="second competitor (name, substring, or db_uuid)")
-    report.add_argument("--cm", default="1-5", help="Crowd-Meter range/list for finish odds")
+    report.add_argument("--cm", default="0-5", help="Crowd-Meter range/list for finish odds")
     report.add_argument("--mc", type=int, default=50000, help="Monte-Carlo rolls for turn odds")
     report.add_argument("--seed", type=int, default=11, help="turn-odds MC seed")
     report.add_argument("--out", default="docs/reports", help="output root dir")

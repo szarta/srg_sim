@@ -28,7 +28,7 @@ def build_report(
     name_b: str,
     *,
     cards_path: str | Path = DEFAULT_CARDS_YAML,
-    cms: tuple[int, ...] = (1, 2, 3, 4, 5),
+    cms: tuple[int, ...] = (0, 1, 2, 3, 4, 5),
     mc_games: int = 50_000,
     seed: int = 11,
     out_root: str | Path = Path("docs/reports"),

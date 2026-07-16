@@ -349,7 +349,7 @@ def test_report_writes_a_sphinx_project(
     proj = out / "comp-a-vs-comp-b"
     assert (proj / "index.rst").exists() and (proj / "conf.py").exists()
     text = (proj / "index.rst").read_text()
-    assert "Comp A" in text and "Turn roll:" in text and "Finish odds (CM1" in text
+    assert "Comp A" in text and "Turn roll:" in text and "Key skill-requirement cards" in text
 
 
 def test_report_unknown_competitor_exits(world: dict[str, Path], tmp_path: Path) -> None:

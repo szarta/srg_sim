@@ -202,17 +202,25 @@ def test_classify_override_wins(db: ReportCardDB) -> None:
 # --- skill requirements ------------------------------------------------------
 
 
-def test_skillreq_parsing_and_ranking(db: ReportCardDB) -> None:
+def test_skillreq_parsing() -> None:
     assert skillreqs.parse_requirements("Skill Requirement: Strike 10+, Agility 9+") == (
         ("Strike", 10),
         ("Agility", 9),
     )
-    alpha = db.resolve_competitor("Test Alpha")  # Agility 10, Power 5, Technique 9
-    cards = skillreqs.top_for(db, alpha)
+
+
+def test_priority_cards_rank_by_tier_and_liveness(db: ReportCardDB) -> None:
+    # Alpha = Po5 Ag10 Te9 Su6 Gr7 St8; priority eval uses the curated skill_cards.yaml.
+    alpha, beta = db.resolve_competitor("Test Alpha"), db.resolve_competitor("Test Beta")
+    cards = skillreqs.top_for(alpha, beta)
     names = [c.name for c in cards]
-    assert "Nimble One" in names and "Nimble Two" in names  # Agility 8+ satisfied
-    assert "Power Wall" not in names  # Power 10+ not satisfied (Alpha P5)
-    assert "Tech Gate" not in names  # Technique 10+ not satisfied (Alpha T9)
+    assert any("Springboard Lion Splash" in n for n in names)  # Strike 8 -> runnable
+    spring = next(c for c in cards if "Springboard" in c.name)
+    assert spring.live is True  # online: Agility 10 > Strike 8
+    assert not any("Poison Stars" in n for n in names)  # needs Strike 9+, Alpha has 8
+    ranks = [{"auto": 0, "equal8": 1}[c.tier] for c in cards]
+    assert ranks == sorted(ranks)  # auto-includes ranked before Equal-8 stops
+    assert "Apocalypse" in skillreqs.personal_choice()  # standing no-requirement note
 
 
 # --- render + build ----------------------------------------------------------
@@ -224,7 +232,7 @@ def test_render_emits_expected_sections(db: ReportCardDB) -> None:
     tokens = (
         ".. role::",
         "Turn roll:",
-        "Finish odds (CM1",
+        "Finish odds (CM0",
         "Key skill-requirement",
         ".. list-table",
     )

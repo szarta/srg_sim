@@ -1,37 +1,44 @@
-"""Skill-requirement payoff cards a competitor can run.
+"""Curated priority for the skill-requirement "tech" cards a competitor should run.
 
-Some main-deck cards are gated behind a printed ``Skill Requirement: <Skill> N+``
-(a deck-build constraint, recognized as metadata by the rules parser). A
-competitor with a high skill unlocks the exclusive, high-requirement payoffs; this
-surfaces the top few such cards a competitor *satisfies*, ranked by how demanding
-the requirement is (the more exclusive, the more it defines a build).
+Deckbuilding allows only two skill-requirement cards, so rather than list every
+card with a ``Skill Requirement:`` line, the report ranks a hand-curated set of
+high-impact cards (``skill_cards.yaml``): auto-include payoffs first, then the
+Equal-8 skill stops (critical in the equal-stat matchups). For each, it reports
+whether the competitor can *run* it (meets the requirement) and whether its stop is
+*live* for this competitor's stat line / this matchup.
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import yaml
 
 from srg_sim.cards import Competitor
-from srg_sim.report.carddb import ReportCardDB
+
+SKILL_CARDS_YAML = Path(__file__).resolve().parent / "skill_cards.yaml"
 
 _REQ_MARKER = re.compile(r"Skill Requirement:\s*(.+)", re.I)
 _REQ_PART = re.compile(r"(Power|Technique|Agility|Submission|Grapple|Strike)\s*(\d+)\+", re.I)
+_TIER_RANK = {"auto": 0, "equal8": 1}
+MAX_SKILL_REQ_CARDS = 2  # deckbuilding limit
 
 
 @dataclass(frozen=True)
-class SkillReqCard:
-    """A main card with its parsed skill requirement(s)."""
+class PriorityCard:
+    """A curated tech card the competitor can run, with its live/priority status."""
 
     name: str
-    atk_type: str
-    play_order: str
-    requirements: tuple[tuple[str, int], ...]  # (skill, threshold)
-    db_uuid: str
+    tier: str  # "auto" | "equal8"
+    requirements: tuple[tuple[str, int], ...]
+    live: bool | None  # stop online for this comp/matchup; None = situational
 
     @property
-    def max_req(self) -> int:
-        return max(n for _, n in self.requirements)
+    def req_str(self) -> str:
+        return ", ".join(f"{skill} {n}+" for skill, n in self.requirements)
 
 
 def parse_requirements(text: str) -> tuple[tuple[str, int], ...]:
@@ -45,45 +52,51 @@ def parse_requirements(text: str) -> tuple[tuple[str, int], ...]:
     return tuple(reqs)
 
 
-def all_skill_req_cards(db: ReportCardDB) -> list[SkillReqCard]:
-    """Every main-deck card carrying a skill requirement (parsed from its text)."""
-    out: list[SkillReqCard] = []
-    for rec in db.index.records:
-        if rec.get("card_type") != "MainDeckCard":
-            continue
-        reqs = parse_requirements(str(rec.get("rules_text") or ""))
-        if reqs:
-            out.append(
-                SkillReqCard(
-                    name=str(rec.get("name") or ""),
-                    atk_type=str(rec.get("atk_type") or ""),
-                    play_order=str(rec.get("play_order") or ""),
-                    requirements=reqs,
-                    db_uuid=str(rec.get("db_uuid") or ""),
-                )
-            )
+def load_priority(path: str | Path = SKILL_CARDS_YAML) -> dict[str, Any]:
+    """Load the curated priority table (``priority`` list + ``personal_choice``)."""
+    return yaml.safe_load(Path(path).read_text()) or {}
+
+
+def _stat_of(token: str, me: dict[str, int], opp: dict[str, int]) -> int:
+    return opp[token[4:]] if token.startswith("opp:") else me[token]
+
+
+def _online_holds(online: list[Any], me: dict[str, int], opp: dict[str, int]) -> bool:
+    left, op, right = online
+    lv, rv = _stat_of(left, me, opp), _stat_of(right, me, opp)
+    return lv >= rv if op == "ge" else lv > rv
+
+
+def priority_cards(
+    me: Competitor, opp: Competitor, entries: list[dict[str, Any]]
+) -> list[PriorityCard]:
+    """Runnable curated cards for ``me`` vs ``opp``, ranked by tier then live-ness."""
+    ms, os_ = me.stats.to_dict(), opp.stats.to_dict()
+    out: list[PriorityCard] = []
+    for entry in entries:
+        reqs = tuple((k, int(v)) for k, v in (entry.get("requires") or {}).items())
+        if not all(ms[skill] >= n for skill, n in reqs):
+            continue  # can't run it
+        online = entry.get("online")
+        live = _online_holds(online, ms, os_) if online else None
+        out.append(PriorityCard(str(entry["name"]), str(entry.get("tier", "")), reqs, live))
+    out.sort(key=lambda c: (_TIER_RANK.get(c.tier, 9), _live_rank(c.live), -_req_height(c), c.name))
     return out
 
 
-def top_for(db: ReportCardDB, comp: Competitor, limit: int = 5) -> list[SkillReqCard]:
-    """The skill-requirement payoffs ``comp`` most wants to run (top ``limit``).
+def _live_rank(live: bool | None) -> int:
+    return {True: 0, None: 1, False: 2}[live]
 
-    Playable = the competitor meets every requirement. Ranked to lean into the
-    competitor's identity: cards gated on a skill the competitor is *strong* in come
-    first (by their value in the required skill), then by how demanding the
-    requirement is (exclusivity), then gated-skill count, then name."""
-    stats = comp.stats.to_dict()
-    playable = [
-        card
-        for card in all_skill_req_cards(db)
-        if all(stats[skill] >= n for skill, n in card.requirements)
-    ]
-    playable.sort(
-        key=lambda c: (
-            -max(stats[skill] for skill, _ in c.requirements),  # leverages a top skill
-            -c.max_req,  # more exclusive requirement
-            -len(c.requirements),
-            c.name,
-        )
-    )
-    return playable[:limit]
+
+def _req_height(card: PriorityCard) -> int:
+    return max((n for _, n in card.requirements), default=0)
+
+
+def top_for(me: Competitor, opp: Competitor, limit: int = 6) -> list[PriorityCard]:
+    """The competitor's best runnable curated tech cards vs ``opp`` (top ``limit``)."""
+    return priority_cards(me, opp, load_priority().get("priority", []))[:limit]
+
+
+def personal_choice(table: dict[str, Any] | None = None) -> tuple[str, ...]:
+    """The no-requirement disruption Leads (Apocalypse / Rejected), a standing note."""
+    return tuple((table or load_priority()).get("personal_choice", []))

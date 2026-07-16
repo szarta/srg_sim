@@ -62,16 +62,22 @@ What each section reports
   either does (a lowest-wins flip, a persistent skill buff, a comeback), it falls
   back to a seeded engine Monte-Carlo (``Engine._turn_roll``) so every gimmick is
   honored.
-- **Finish odds (CM1–5)** — for each signature finish, the success probability at
-  each Crowd Meter from :func:`srg_sim.finish.finish_odds`, alongside the finish's
-  card image and combo bonus. A **better logoless alternative** is listed only when
-  a generic ``Logoless`` finish beats the signature across the whole CM curve.
+- **Finish odds (CM0–5)** — for **every** signature finish, the success probability
+  at each Crowd Meter from :func:`srg_sim.finish.finish_odds`, alongside the finish's
+  card image and combo bonus. A **better logoless alternative** is listed only when a
+  generic ``Logoless`` finish beats the signature over the **early** Crowd Meter
+  (CM0–2), where finishes are actually contested — past CM2 everything saturates.
+  The competitor's stats and gimmick text are *not* printed (they're on the card image).
 - **Skill stops / most-open line** — whether the *defender* can skill-stop each
   attack type (:func:`srg_sim.stops.evaluate_stop`), and the strongest line to throw
-  (best odds among open lanes).
-- **Key skill-requirement cards** — the payoff cards gated behind a
-  ``Skill Requirement:`` the competitor satisfies, ranked to lean into its standout
-  skills.
+  (best odds among open lanes, at the contested Crowd Meter).
+- **Key skill-requirement cards** — a hand-curated priority set
+  (``srg_sim/report/skill_cards.yaml``): auto-include payoffs first, then the Equal-8
+  skill stops (critical in the equal-stat matchups). For each the report shows the
+  requirement, whether the competitor can run it, and whether its stop is **live** for
+  this stat line / matchup. Deckbuilding allows only two such cards, so only the top
+  few are shown; the no-requirement disruption Leads (Apocalypse / Rejected!) are a
+  standing note.
 
 Honesty about coverage
 -----------------------

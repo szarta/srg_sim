@@ -12,7 +12,7 @@ from collections.abc import Mapping
 
 from srg_sim.report.finishes import FinishOption
 from srg_sim.report.model import CompetitorReport, MatchupData
-from srg_sim.report.skillreqs import SkillReqCard
+from srg_sim.report.skillreqs import MAX_SKILL_REQ_CARDS, PriorityCard
 
 _ROLES = ("fav", "lean", "even", "unfav")
 
@@ -76,16 +76,16 @@ def _gimmick_caveat(data: MatchupData) -> list[str]:
     return [
         f".. warning:: {who}'s gimmick is not yet modeled by the rules parser, so the "
         "turn-roll odds and comp-type below reflect the **base stat line only** — the "
-        "gimmick's effect is not counted. The raw gimmick text is shown in each section.",
+        "gimmick's effect is not counted (its text is on the card image).",
         "",
     ]
 
 
 def _competitor_block(cr: CompetitorReport, images: Mapping[str, str]) -> list[str]:
-    stat = _statline(cr)
-    lines = _heading(f"{cr.comp.name} — {stat}", "-")
+    # Stats + gimmick text are omitted on purpose — they're on the card image below.
+    lines = _heading(cr.comp.name, "-")
     lines += _picture(cr.image_uuid, images)
-    lines += _type_and_gimmick(cr)
+    lines += _type_line(cr)
     lines += _turn_line(cr)
     lines += _open_line(cr)
     lines += _stops_block(cr)
@@ -95,29 +95,22 @@ def _competitor_block(cr: CompetitorReport, images: Mapping[str, str]) -> list[s
     return lines
 
 
-def _statline(cr: CompetitorReport) -> str:
-    s = cr.comp.stats
-    return (
-        f"P{s.power} A{s.agility} T{s.technique} "
-        f"Su{s.submission} G{s.grapple} St{s.strike}  ·  {cr.comp.division}"
-    )
-
-
 def _picture(uuid: str, images: Mapping[str, str]) -> list[str]:
     rel = images.get(uuid)
     if not rel:
         return []
-    return [f".. image:: {rel}", "   :height: 260px", "   :align: left", ""]
+    return [f".. image:: {rel}", "   :height: 300px", "   :align: left", ""]
 
 
-def _type_and_gimmick(cr: CompetitorReport) -> list[str]:
+def _type_line(cr: CompetitorReport) -> list[str]:
     also = f" (also {', '.join(cr.comp_type.also)})" if cr.comp_type.also else ""
     src = "curated" if cr.comp_type.source == "override" else "auto"
     out = [f"**Type:** {cr.comp_type.label}{also} *({src})*", ""]
-    if cr.comp.gimmick_text:
-        out += ["**Gimmick:**", "", f"   {cr.comp.gimmick_text.strip()}", ""]
     if not cr.gimmick_modeled:
-        out += ["*(gimmick not yet modeled — odds below are base-stat only)*", ""]
+        out += [
+            "*(gimmick not yet modeled — turn odds & type reflect the base stat line only)*",
+            "",
+        ]
     return out
 
 
@@ -143,11 +136,18 @@ def _open_line(cr: CompetitorReport) -> list[str]:
     lane = "open lane" if ml.open_lane else "contested"
     best = ml.best
     tag = " *(logoless)*" if not best.is_signature else ""
+    cm = _contested_cap(best)  # a representative early Crowd Meter, not the saturated ceiling
     return [
         f"**Most open finish line:** {ml.atk_type} — **{best.finish.name}**{tag} "
-        f"({lane}), {best.odds_at(max(best.curve)):.0%} at CM{max(best.curve)}.",
+        f"({lane}), {best.odds_at(cm):.0%} at CM{cm}.",
         "",
     ]
+
+
+def _contested_cap(opt: FinishOption) -> int:
+    """The top of the contested Crowd-Meter window (highest CM <= 2 in the curve)."""
+    early = [cm for cm in opt.curve if cm <= 2]
+    return max(early) if early else max(opt.curve)
 
 
 def _stops_block(cr: CompetitorReport) -> list[str]:
@@ -159,9 +159,10 @@ def _stops_block(cr: CompetitorReport) -> list[str]:
 
 
 def _finish_odds_section(cr: CompetitorReport, images: Mapping[str, str]) -> list[str]:
-    lines = _heading("Finish odds (CM1–5)", "~")
     if not cr.signature_finishes:
-        return lines + ["*(no signature finishes on record.)*", ""]
+        return _heading("Finish odds", "~") + ["*(no signature finishes on record.)*", ""]
+    cms = sorted(cr.signature_finishes[0].curve)
+    lines = _heading(f"Finish odds (CM{cms[0]}–{cms[-1]})", "~")
     lines += _finish_table(cr, images)
     logo = _logoless_notes(cr)
     return lines + logo
@@ -200,33 +201,61 @@ def _logoless_notes(cr: CompetitorReport) -> list[str]:
     better = [ln for ln in cr.finish_lines if ln.logoless is not None]
     if not better:
         return []
-    out = ["**Better logoless alternatives:**", ""]
+    # Judged on the early Crowd Meter (CM0-2), where finishes are actually contested;
+    # show the CM where the logoless card most out-performs the signature.
+    out = ["**Better logoless alternatives** (early Crowd Meter):", ""]
     for ln in better:
         logo, sig = ln.logoless, ln.signature
         assert logo is not None
-        ref = max(logo.curve)
-        base = f" (vs signature {sig.odds_at(ref):.0%})" if sig else ""
+        cm = _best_gap_cm(logo, sig)
+        base = f" vs {sig.finish.name} {sig.odds_at(cm):.0%}" if sig else ""
         out.append(
-            f"* {ln.atk_type}: **{logo.finish.name}** {logo.odds_at(ref):.0%} at CM{ref}{base}."
+            f"* {ln.atk_type}: **{logo.finish.name}** {logo.odds_at(cm):.0%} at CM{cm}{base}."
         )
     return out + [""]
 
 
+def _best_gap_cm(logo: FinishOption, sig: FinishOption | None) -> int:
+    """The early Crowd Meter (CM<=2) where ``logo`` most out-performs ``sig``."""
+    early = [cm for cm in sorted(logo.curve) if cm <= 2] or sorted(logo.curve)
+    if sig is None:
+        return early[0]
+    return max(early, key=lambda cm: logo.odds_at(cm) - sig.odds_at(cm))
+
+
+_TIER_LABEL = {"auto": "auto-include", "equal8": "Equal-8 stop"}
+_LIVE_LABEL = {True: "yes", False: "no", None: "situational"}
+
+
 def _skillreq_section(cr: CompetitorReport) -> list[str]:
     lines = _heading("Key skill-requirement cards", "~")
-    if not cr.skill_req_cards:
-        return lines + ["*(none this competitor uniquely enables.)*", ""]
-    lines += [".. list-table::", "   :header-rows: 1", "   :widths: 40 20 40", ""]
-    lines += ["   * - Card", "     - Type", "     - Requirement"]
-    for card in cr.skill_req_cards:
-        lines += _skillreq_row(card)
-    return lines + [""]
+    lines += [
+        f"Run at most **{MAX_SKILL_REQ_CARDS}**; ranked by priority (auto-includes, then "
+        "Equal-8 stops). *Live* = the card's stop is online for this stat line / matchup.",
+        "",
+    ]
+    if cr.skill_req_cards:
+        lines += [".. list-table::", "   :header-rows: 1", "   :widths: 42 16 26 12", ""]
+        lines += ["   * - Card", "     - Tier", "     - Requirement", "     - Live?"]
+        for card in cr.skill_req_cards:
+            lines += _skillreq_row(card)
+        lines += [""]
+    else:
+        lines += ["*(no priority tech cards are runnable on this stat line.)*", ""]
+    if cr.personal_cards:
+        joined = ", ".join(cr.personal_cards)
+        lines += [f"**Personal-choice Leads** (no requirement): {joined}.", ""]
+    return lines
 
 
-def _skillreq_row(card: SkillReqCard) -> list[str]:
-    req = ", ".join(f"{skill} {n}+" for skill, n in card.requirements)
-    kind = f"{card.atk_type} {card.play_order}".strip()
-    return [f"   * - {card.name}", f"     - {kind}", f"     - {req}"]
+def _skillreq_row(card: PriorityCard) -> list[str]:
+    tier = _TIER_LABEL.get(card.tier, card.tier)
+    return [
+        f"   * - {card.name}",
+        f"     - {tier}",
+        f"     - {card.req_str}",
+        f"     - {_LIVE_LABEL[card.live]}",
+    ]
 
 
 def _notes_section(cr: CompetitorReport) -> list[str]:

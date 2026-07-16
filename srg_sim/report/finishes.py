@@ -69,10 +69,17 @@ def signature_curves(
     return [_option(db, my, their, fr, cms, True) for fr in db.finishes_for(me)]
 
 
+# The early Crowd Meter (0-2) is where finishes are actually contested; past CM2 the
+# match "starts favoring nearly anything", so odds saturate and stop discriminating.
+_EARLY_CM = 2
+
+
 def _score(opt: FinishOption) -> float:
-    """Total success odds across the CM curve — distinguishes finishes that both
-    saturate to 100% at high Crowd Meter by how they do at low CM (where it matters)."""
-    return sum(opt.curve.values())
+    """Success odds over the EARLY Crowd Meter (CM<=2) — the window where finishes are
+    contested. Past CM2 everything saturates toward 100%, so ranking there is noise.
+    Falls back to the full curve if the requested CMs are all above the early window."""
+    early = [v for cm, v in opt.curve.items() if cm <= _EARLY_CM]
+    return sum(early) if early else sum(opt.curve.values())
 
 
 def _best(
@@ -92,7 +99,7 @@ def _best(
 
 
 def finish_lines(
-    db: ReportCardDB, me: Competitor, opp: Competitor, cms: tuple[int, ...] = (1, 2, 3, 4, 5)
+    db: ReportCardDB, me: Competitor, opp: Competitor, cms: tuple[int, ...] = (0, 1, 2, 3, 4, 5)
 ) -> list[FinishLine]:
     """Per-attack-type best line vs ``opp``: signature, a better logoless, and stop."""
     my, their = stat_dict(me), stat_dict(opp)

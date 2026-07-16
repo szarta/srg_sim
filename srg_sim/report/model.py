@@ -17,7 +17,7 @@ from srg_sim.report import classify, finishes, skillreqs
 from srg_sim.report.carddb import ReportCardDB
 from srg_sim.report.classify import CompType
 from srg_sim.report.finishes import FinishLine, FinishOption
-from srg_sim.report.skillreqs import SkillReqCard
+from srg_sim.report.skillreqs import PriorityCard
 from srg_sim.report.turn import TurnOdds, turn_odds
 
 
@@ -31,7 +31,8 @@ class CompetitorReport:
     signature_finishes: list[FinishOption]  # each with its CM curve (section 8)
     finish_lines: list[FinishLine]  # per-type signature + logoless-if-better + stop
     most_open: FinishLine | None
-    skill_req_cards: list[SkillReqCard]
+    skill_req_cards: list[PriorityCard]  # curated tech cards this comp can run (ranked)
+    personal_cards: tuple[str, ...] = ()  # no-requirement disruption Leads (standing note)
     unsupported_gimmick: tuple[str, ...] = ()  # gimmick clauses the parser can't yet model
     notes: str = ""
     notable_cards: tuple[str, ...] = ()
@@ -67,7 +68,7 @@ def build_matchup(
     name_a: str,
     name_b: str,
     *,
-    cms: tuple[int, ...] = (1, 2, 3, 4, 5),
+    cms: tuple[int, ...] = (0, 1, 2, 3, 4, 5),
     mc_games: int = 50_000,
     seed: int = 11,
 ) -> MatchupData:
@@ -98,7 +99,8 @@ def _side(
         signature_finishes=finishes.signature_curves(db, me, opp, cms),
         finish_lines=lines,
         most_open=finishes.most_open_line(lines),
-        skill_req_cards=skillreqs.top_for(db, me),
+        skill_req_cards=skillreqs.top_for(me, opp),
+        personal_cards=skillreqs.personal_choice(),
         unsupported_gimmick=_unsupported_clauses(me),
         notes=str(entry.get("notes") or ""),
         notable_cards=tuple(entry.get("notable_cards") or ()),
