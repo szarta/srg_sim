@@ -246,6 +246,13 @@ def test_optional_flag_round_trips_and_defaults_false() -> None:
     assert from_dict(opt.to_dict()).optional is True
 
 
+def test_search_to_discard_round_trips_and_defaults() -> None:
+    assert Search().dest is Dest.HAND and Search().count == 1  # defaults unchanged
+    s = Search(CardFilter(), Dest.DISCARD, count=4)  # #49 mill-to-discard
+    assert from_dict(s.to_dict()) == s
+    assert s.to_dict()["dest"] == "DISCARD"
+
+
 def test_unknown_type_raises() -> None:
     with pytest.raises(KeyError):
         from_dict({"@type": "NoSuchNode"})

@@ -349,6 +349,52 @@ def test_search_with_no_match_only_shuffles() -> None:
     assert len(a.hand) == hand_before and len(a.deck) == deck_len  # nothing tutored
 
 
+def test_search_to_discard_bins_owner_chosen_cards_and_logs_them_public() -> None:
+    # "Search your deck for up to N cards and put them into your discard" (#49,
+    # Dest.DISCARD): the owner chooses which/how many; a trailing "none" stops early.
+    # The binned cards land in the (public) discard, so the move is logged openly.
+    from srg_sim import gamelog as gl
+
+    class BinTwoThenStop(Policy):
+        def __init__(self) -> None:
+            super().__init__("bin-two")
+            self.taken = 0
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            assert point == "search"  # routed to the owner, per card
+            if self.taken < 2 and legal[0]["kind"] != "none":
+                self.taken += 1
+                return legal[0]
+            return next(o for o in legal if o["kind"] == "none")  # decline the rest
+
+    eng = Engine(*bull_vs_fae(), BinTwoThenStop(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    deck_before = len(a.deck)
+    eng._act_search(fx.Search(dest=fx.Dest.DISCARD, count=4), "A")  # up to 4, take 2
+    assert len(a.discard) == 2
+    assert len(a.deck) == deck_before - 2
+    assert all(c not in a.deck for c in a.discard)
+    binned = [e for e in eng.state.log.events if isinstance(e, gl.Discard) and e.source == "deck"]
+    assert len(binned) == 2 and all(e.hidden is False for e in binned)  # public in discard
+
+
+def test_search_to_discard_caps_at_count() -> None:
+    # A greedy owner (always bins the first offered) is still capped at `count`.
+    class BinGreedy(Policy):
+        def __init__(self) -> None:
+            super().__init__("greedy")
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            return legal[0]  # never reaches the trailing "none"
+
+    eng = Engine(*bull_vs_fae(), BinGreedy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    eng._act_search(fx.Search(dest=fx.Dest.DISCARD, count=3), "A")
+    assert len(a.discard) == 3  # capped, not the whole deck
+
+
 def test_add_from_discard_recurs_a_matching_card_to_hand() -> None:
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
     eng.setup()

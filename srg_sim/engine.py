@@ -733,8 +733,12 @@ class Engine:
 
     def _act_search(self, action: fx.Search, key: str) -> None:
         # Tutor: the searcher picks a matching deck card into hand, then shuffles
-        # the deck (you looked through it). dest is HAND (the only Dest); "put it on
-        # top" tutors are modelled as into-hand — a close, stronger approximation.
+        # the deck (you looked through it). "put it on top" tutors are modelled as
+        # into-hand — a close, stronger approximation. dest=DISCARD is a separate
+        # mill-to-discard line (Destiny's Call V2; DESIGN.md §3, #49).
+        if action.dest is fx.Dest.DISCARD:
+            self._search_to_discard(action, key)
+            return
         player = self.state.players[key]
         matches = [c for c in player.deck if conditions.card_matches(c, action.filter)]
         if matches:
@@ -752,6 +756,33 @@ class Engine:
             )
         self.state.rng.shuffle(player.deck)
         self._hand_cap(key)
+
+    def _search_to_discard(self, action: fx.Search, key: str) -> None:
+        # "Search your deck for up to N cards and put them into your discard pile."
+        # The owner looks through the deck and chooses which (and how many, up to N)
+        # to bin — a setup line for discard-fuelled recursion (DESIGN.md §7). The
+        # binned cards are face-up in the (public) discard, so the move is logged
+        # openly. Searching disturbs the deck, so it shuffles afterwards.
+        player = self.state.players[key]
+        for _ in range(action.count):
+            matches = [c for c in player.deck if conditions.card_matches(c, action.filter)]
+            if not matches:
+                break
+            card = self._pick_optional_from(key, matches, "search")
+            if card is None:
+                break  # "up to" — the owner may stop early
+            player.deck.remove(card)
+            player.discard.append(card)
+            self._log(
+                gl.Discard(
+                    t=self.state.turn_no,
+                    player=key,
+                    cards=[card.db_uuid],
+                    source="deck",
+                    hidden=False,  # deck -> discard: the binned card is public in discard
+                )
+            )
+        self.state.rng.shuffle(player.deck)
 
     def _act_shuffle_into_deck(self, action: fx.ShuffleIntoDeck, key: str) -> None:
         # Recur ONE matching card from discard into the deck, then shuffle. The IR

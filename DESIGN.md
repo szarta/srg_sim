@@ -127,7 +127,9 @@ Always
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
 Draw(n, from=TOP|BOTTOM, who) Bury(selector, count)         Discard(selector, count)
-Flip(n, who=SELF)             Search(filter, dest=HAND)     ShuffleIntoDeck(selector)
+Flip(n, who=SELF)             Search(filter, dest=HAND|DISCARD, count=1)  ShuffleIntoDeck(selector)
+                              # dest=DISCARD: "search your deck for up to `count` cards, put them in
+                              # discard" — owner chooses which/how many (a `search` decision), then shuffles
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
@@ -330,8 +332,10 @@ mulligan(hand)                         choose_turn_action(play-or-pass, which ca
 respond_with_stop(valid_stops | none)  commit_finish?(given CM / stop risk)
 choose_finish(which finish card)       use_optional?(reroll / self-buff / "you may")
 choose_target(for a targeted effect)   breakout_choices(if any optional)
-discard(which card to shed)            # hand-cap over 10, or a card-forced discard
+discard(which card to shed)            search(which deck card to bin next, "up to N" -> discard)
 ```
+The `search` point fires per card of a `Search(dest=DISCARD)` "up to N": the owner
+picks a deck card to bin (a trailing `none` stops early), then the deck shuffles.
 `discard` fires whenever a hand must shed a card — over the max hand size (10),
 enforced immediately on the draw that exceeds it, or forced by an effect
 (`Discard N`, "your opponent discards N"). The

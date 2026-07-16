@@ -986,3 +986,55 @@ ef2967fc07044d958f64372afacbb95e:
     n: null
   raw_clause: cannot be stopped by Follow Ups (unstoppable IR gap)
   source: card
+
+# Destiny's Call (V2) #24 — search-to-discard (#49): mill up to 4 chosen cards,
+# then draw 2 (the search shuffles). Was Unsupported OnPlay; now modeled via Dest.DISCARD.
+6aa7c08a48ba49c3baca127d5880cd0b:
+- '@type': Effect
+  actions:
+  - '@type': Search
+    count: 4
+    dest: DISCARD
+    filter:
+      '@type': CardFilter
+      atk_type: null
+      name: null
+      number: null
+      play_order: null
+      raw: null
+      tag: null
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Search your deck for up to 4 cards and put them into your discard pile.
+    Shuffle your deck. (shuffle rides the search)
+  source: card
+  trigger:
+    '@type': OnHit
+    keyword: null
+    name: null
+- '@type': Effect
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Draw 2 cards.
+  source: card
+  trigger:
+    '@type': OnHit
+    keyword: null
+    name: null

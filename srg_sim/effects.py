@@ -194,6 +194,7 @@ class LoseKind(Enum):
 
 class Dest(Enum):
     HAND = "HAND"
+    DISCARD = "DISCARD"
 
 
 class Until(Enum):
@@ -443,6 +444,7 @@ class Discard(IRNode):
 class Search(IRNode):
     filter: CardFilter = CardFilter()
     dest: Dest = Dest.HAND
+    count: int = 1  # "up to N" — a DISCARD search bins up to this many chosen cards
 
 
 @dataclass(frozen=True)

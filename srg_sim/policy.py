@@ -26,7 +26,9 @@ skill levels/playstyles against each other for M4 training signal:
 
 Decision points (the skill surface): ``mulligan``, ``mulligan_bury`` (first-turn
 redraw: which card to bury next), ``mulligan_draw`` (how many to redraw, up to N),
-``turn_action``, ``stop``, ``bury``, ``discard``, ``optional``, ``target``.
+``turn_action``, ``stop``, ``bury``, ``discard``, ``optional``, ``target``,
+``search`` (which deck card to bin next in an "up to N" search-to-discard; a
+trailing ``none`` lets the owner stop early).
 """
 
 from __future__ import annotations
