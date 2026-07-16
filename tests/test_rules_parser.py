@@ -17,6 +17,7 @@ from srg_sim.effects import (
     AddFromDiscard,
     BuffSkill,
     Bury,
+    Comparator,
     CrowdMeterCompare,
     DeckEnd,
     Discard,
@@ -27,6 +28,7 @@ from srg_sim.effects import (
     FinishRollBonus,
     Flip,
     Frequency,
+    HasInPlay,
     LoseBy,
     MaxHandSize,
     ModifyRoll,
@@ -226,6 +228,43 @@ def test_conditional_stop_crowd_meter() -> None:
     ]
     assert isinstance(effect.condition, CrowdMeterCompare)
     assert effect.condition.value == 2
+
+
+def test_conditional_stop_another_in_play() -> None:
+    # "another <type>" -> a >=1 count gate (the default HasInPlay shape).
+    effect = rp.parse_text("If your opponent has another Grapple in play, stop any Grapple.", CARD)[
+        0
+    ]
+    cond = effect.condition
+    assert isinstance(cond, HasInPlay)
+    assert cond.who is Who.OPP
+    assert cond.filter.atk_type is AtkType.GRAPPLE
+    assert cond.count == 1 and cond.cmp is Comparator.GE
+    assert effect.actions == (Stop(atk_type=AtkType.GRAPPLE),)
+
+
+def test_conditional_stop_count_in_play() -> None:
+    # #40: "N other <type>s in play" -> a >=N count gate on HasInPlay.
+    effect = rp.parse_text(
+        "If your opponent has 2 other Grapples in play, stop any Grapple.", CARD
+    )[0]
+    cond = effect.condition
+    assert isinstance(cond, HasInPlay)
+    assert cond.who is Who.OPP
+    assert cond.filter.atk_type is AtkType.GRAPPLE
+    assert cond.count == 2 and cond.cmp is Comparator.GE
+    assert effect.actions == (Stop(atk_type=AtkType.GRAPPLE),)
+
+
+def test_conditional_stop_count_in_play_missing_comma() -> None:
+    # Some printings drop the comma: "...in play stop any Submission."
+    effect = rp.parse_text(
+        "If your opponent has 2 other Submissions in play stop any Submission.", CARD
+    )[0]
+    cond = effect.condition
+    assert isinstance(cond, HasInPlay)
+    assert cond.count == 2
+    assert effect.actions == (Stop(atk_type=AtkType.SUBMISSION),)
 
 
 # --- #27 coverage cleanup: metadata, skill-stop printings, draws, shuffle ----

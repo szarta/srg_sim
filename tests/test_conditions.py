@@ -121,6 +121,23 @@ def test_has_in_play_by_type() -> None:
     assert not holds(fx.HasInPlay(fx.Who.OPP, fx.CardFilter(atk_type=AtkType.STRIKE)), s, "A")
 
 
+def test_has_in_play_count_gated() -> None:
+    s = _state()
+    # "opponent has 2 other Grapples in play" -> a >=2 count gate from A's view.
+    cond = fx.HasInPlay(
+        fx.Who.OPP, fx.CardFilter(atk_type=AtkType.GRAPPLE), count=2, cmp=fx.Comparator.GE
+    )
+    assert not holds(cond, s, "A")  # zero grapples
+    s.players["B"].in_play.append(_card(2, atk=AtkType.GRAPPLE))
+    assert not holds(cond, s, "A")  # one is not enough
+    s.players["B"].in_play.append(_card(3, atk=AtkType.GRAPPLE))
+    assert holds(cond, s, "A")  # two clears the gate
+    # Non-matching cards do not count toward the tally.
+    assert not holds(
+        fx.HasInPlay(fx.Who.OPP, fx.CardFilter(atk_type=AtkType.STRIKE), count=2), s, "A"
+    )
+
+
 def test_has_in_discard() -> None:
     s = _state()
     s.players["A"].discard.append(_card(28, order=PlayOrder.FINISH))

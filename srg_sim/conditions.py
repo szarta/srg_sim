@@ -120,7 +120,8 @@ def _h_crowd(c: fx.CrowdMeterCompare, s: GameState, o: str, r: RollContext | Non
 
 
 def _h_in_play(c: fx.HasInPlay, s: GameState, o: str, r: RollContext | None) -> bool:
-    return any(card_matches(card, c.filter) for card in s.players[_who(s, o, c.who)].in_play)
+    n = sum(card_matches(card, c.filter) for card in s.players[_who(s, o, c.who)].in_play)
+    return _CMP[c.cmp](n, c.count)
 
 
 def _h_in_discard(c: fx.HasInDiscard, s: GameState, o: str, r: RollContext | None) -> bool:

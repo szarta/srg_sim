@@ -119,7 +119,7 @@ its buffs return. Blanked gimmicks contribute no effects (incl. no `Static` buff
 SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?)
 HandSizeCompare(cmp, vs=OPP|VALUE, value?)
 CrowdMeterCompare(cmp, value)
-HasInPlay(who, filter) / HasInDiscard(...)
+HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
 RollWasSkill(skill) / RollGapExactly(k) / RollGapAtLeast(k)
 Always
 ```

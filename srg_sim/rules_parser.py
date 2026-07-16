@@ -321,6 +321,16 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect | None]]] =
         rf"If your opponent has another {_ATK} in play, stop any (.+)",
         lambda m: _stop_eff(m[2], HasInPlay(Who.OPP, CardFilter(atk_type=_atk(m[1])))),
     ),
+    # Count-gated variant: "N other <type>s in play" -> HasInPlay with a >=N count
+    # (the attacking card isn't in play yet when the stop is offered, so every
+    # matching card in the opponent's in-play is genuinely "other"). Comma before
+    # "stop" is optional across printings.
+    _rule(
+        rf"If your opponent has (\d+) other {_ATK}s in play,? stop any (.+)",
+        lambda m: _stop_eff(
+            m[3], HasInPlay(Who.OPP, CardFilter(atk_type=_atk(m[2])), count=int(m[1]))
+        ),
+    ),
     _rule(
         r"If the [Cc]rowd [Mm]eter is (\d+) or greater, stop any (.+)",
         lambda m: _stop_eff(m[2], CrowdMeterCompare(Comparator.GE, int(m[1]))),
