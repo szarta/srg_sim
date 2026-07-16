@@ -377,7 +377,7 @@ df576122c28f481f998634973945e334:
   raw_clause: 'shuffle 2 cards from discard into deck (draw-3 rider dropped: cross-skill compare unsupported)'
   source: card
 
-# #23 recur 2 from discard + draw
+# #23 Jackhammer: discard 1 opponent in-play card, recur 2 from discard, draw 1
 5538bdae8345481ca3d414396a7dc766:
 - '@type': Effect
   trigger:
@@ -385,6 +385,17 @@ df576122c28f481f998634973945e334:
   condition:
     '@type': Always
   actions:
+  - '@type': RemoveFromPlay
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    who: OPP
+    count: 1
   - '@type': ShuffleIntoDeck
     selector:
       '@type': CardFilter
@@ -412,7 +423,7 @@ df576122c28f481f998634973945e334:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
-  raw_clause: shuffle 2 from discard into deck, draw 1 (discard-opponent's-in-play rider dropped)
+  raw_clause: discard 1 card your opponent has in play, shuffle 2 from discard into deck, draw 1
   source: card
 
 # --- Mastermind deck (decks/mastermind.yaml), side A for the playtest (todo #42) ---
@@ -441,6 +452,55 @@ df576122c28f481f998634973945e334:
     n: null
   raw_clause: when you bump, your opponent's next turn roll is -2
   source: gimmick
+
+# #22 Muay Thai Strikes: discard 1 opponent in-play card, recur 2 from discard, draw 1
+7fe08b677c684e6990c0a5b9ac7033c4:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': RemoveFromPlay
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    who: OPP
+    count: 1
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: discard 1 card your opponent has in play, shuffle 2 from discard into deck, draw 1
+  source: card
 
 # #7 add a Finish from discard to hand
 3985ce9c65644441becdde562788868a:

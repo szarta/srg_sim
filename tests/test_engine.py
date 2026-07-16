@@ -348,6 +348,31 @@ def test_shuffle_into_deck_recurs_one_card_from_discard_to_deck() -> None:
     assert len(a.deck) == deck_before + 2
 
 
+def test_remove_from_play_sends_a_chosen_opponent_board_card_to_discard() -> None:
+    # #46: board disruption — the ACTOR discards a card the OPPONENT has in play,
+    # aimed by the selector; non-matching board cards are untouched.
+    eng = _fresh()
+    b = eng.state.players["B"]
+    lead = replace(_attack(AtkType.STRIKE, PlayOrder.LEAD), db_uuid="lead")
+    fu = replace(_attack(AtkType.GRAPPLE, PlayOrder.FOLLOWUP), db_uuid="fu")
+    b.in_play = [lead, fu]
+    eng._act_remove_from_play(
+        fx.RemoveFromPlay(selector=fx.CardFilter(play_order=PlayOrder.FOLLOWUP), who=fx.Who.OPP),
+        "A",  # A is the actor; OPP = B
+    )
+    assert fu in b.discard and fu not in b.in_play  # the aimed card was discarded
+    assert lead in b.in_play  # the non-matching Lead stayed on the board
+    ev = json.loads(eng.state.log.to_lines()[-1])
+    assert ev["type"] == "discard" and ev["from"] == "in_play" and ev["player"] == "B"
+
+
+def test_remove_from_play_on_empty_board_is_a_noop() -> None:
+    eng = _fresh()
+    eng.state.players["B"].in_play = []
+    eng._act_remove_from_play(fx.RemoveFromPlay(who=fx.Who.OPP), "A")  # nothing to remove
+    assert eng.state.players["B"].discard == []
+
+
 def test_movement_hidden_flag_tracks_private_endpoints() -> None:
     # §8 information model: draws (deck->hand) are hidden; discards (->public
     # pile) never are. A real game exercises both.

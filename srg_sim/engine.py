@@ -718,6 +718,26 @@ class Engine:
         )
         self._hand_cap(key)
 
+    def _act_remove_from_play(self, action: fx.RemoveFromPlay, key: str) -> None:
+        # Board disruption: the ACTOR (key) sends up to `count` cards the target has
+        # in play to the target's discard ("Discard 1 card your opponent has in
+        # play" — Muay Thai Strikes / Jackhammer). The actor aims it via the
+        # "target" decision point; both endpoints are public so the move is visible.
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        board = self.state.players[target].in_play
+        for _ in range(action.count):
+            matches = [c for c in board if conditions.card_matches(c, action.selector)]
+            if not matches:
+                return
+            card = self._pick_from(key, matches, "target")
+            board.remove(card)
+            self.state.players[target].discard.append(card)
+            self._log(
+                gl.Discard(  # in_play (public) -> discard (public): a visible removal
+                    t=self.state.turn_no, player=target, cards=[card.db_uuid], source="in_play"
+                )
+            )
+
     def _act_flip(self, action: fx.Flip, key: str) -> None:
         player = self.state.players[key]
         flipped = player.deck[: action.n]
@@ -940,4 +960,5 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.Search: Engine._act_search,
     fx.ShuffleIntoDeck: Engine._act_shuffle_into_deck,
     fx.AddFromDiscard: Engine._act_add_from_discard,
+    fx.RemoveFromPlay: Engine._act_remove_from_play,
 }

@@ -357,6 +357,8 @@ class CrowdMeterCompare(IRNode):
 class HasInPlay(IRNode):
     who: Who
     filter: CardFilter = CardFilter()
+    count: int = 1
+    cmp: Comparator = Comparator.GE
 
 
 @dataclass(frozen=True)
@@ -454,6 +456,22 @@ class ShuffleIntoDeck(IRNode):
 @dataclass(frozen=True)
 class AddFromDiscard(IRNode):
     filter: CardFilter = CardFilter()
+
+
+@dataclass(frozen=True)
+class RemoveFromPlay(IRNode):
+    """Board disruption: move up to ``count`` cards a player has in play to their
+    discard ("Discard 1 card your opponent has in play"; DESIGN.md §3).
+
+    ``who`` picks whose board is hit (``OPP`` for the common opponent-disruption
+    case, ``SELF`` for self-sacrifice). The **acting** player — the one resolving
+    the effect — chooses which matching in-play card(s) to remove, so a disruptive
+    attack is aimed, not random. A no-match board is a no-op.
+    """
+
+    selector: CardFilter = CardFilter()
+    who: Who = Who.OPP
+    count: int = 1
 
 
 @dataclass(frozen=True)
@@ -657,6 +675,7 @@ Action = (
     | ShuffleDeck
     | ShuffleIntoDeck
     | AddFromDiscard
+    | RemoveFromPlay
     | ModifyRoll
     | BuffSkill
     | MaxHandSize

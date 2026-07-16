@@ -129,7 +129,7 @@ Always
 Draw(n, from=TOP|BOTTOM, who) Bury(selector, count)         Discard(selector, count)
 Flip(n)                       Search(filter, dest=HAND)     ShuffleIntoDeck(selector)
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
-AddFromDiscard(filter)
+AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
 ModifyRoll(who, delta, when=THIS|NEXT)     BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 Reroll(who, once=True)        WinTie(who)                   Bump(who)
@@ -141,7 +141,10 @@ LowestRollWins                # Static marker (Fae): the roll-off is won by the 
 ```
 `Bury(selector, count)` moves `count` cards from the **discard pile to the bottom of the
 deck**; `Flip(n)` moves the **top `n` cards of the deck to the discard pile** (there is no
-"buried" zone — see §5). `BuffSkill` applies to the **unified derived-stats view** — i.e. it
+"buried" zone — see §5). `RemoveFromPlay(selector, who, count)` moves up to `count` cards from
+a player's **`in_play` board to their discard** ("Discard 1 card your opponent has in play");
+the **acting** player chooses which matching card(s) — an aimed disruption, not random — and a
+no-match board is a no-op. `BuffSkill` applies to the **unified derived-stats view** — i.e. it
 affects turn rolls, stops, *and* breakout rolls alike; there is no per-context scope, only
 `duration`. `MaxHandSize` is the derived-hand-cap analogue of a `Static` `BuffSkill`: it is
 read on demand (`GameState.effective_hand_cap` = base + active mods, clamped at 0), never
