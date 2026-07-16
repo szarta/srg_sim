@@ -845,3 +845,144 @@ b3966e9db8ec46b3abd0921f281b77c0:
     n: null
   raw_clause: if you have "Enjoy Everything" in play, your opponent's Gimmick is blank
   source: card
+
+# #17 Powerbomb Into the Corner: Strike +1 if another FU/Finish Grapple in play
+6ecc1c7f012c48cc9403fffcedb33a1b:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Or
+    items:
+    - '@type': HasInPlay
+      who: SELF
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Grapple
+        play_order: Followup
+        tag: null
+        name: null
+        raw: null
+      count: 1
+      cmp: '>='
+    - '@type': HasInPlay
+      who: SELF
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Grapple
+        play_order: Finish
+        tag: null
+        name: null
+        raw: null
+      count: 1
+      cmp: '>='
+  actions:
+  - '@type': BuffSkill
+    skill: Strike
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if another Follow Up or Finish Grapple in play, your Strike is +1 ('another'
+    approximated as any, matching the #16/#17 pattern)
+  source: card
+
+# #18 Cat Scratch: if another Submission in play, put 1 discard card on top of deck
+e8d2328e6e114b2ead86a2e97a6b4abc:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': RecurToDeckTop
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+  - '@type': Unsupported
+    raw_text: If this is a Steel Cage match, flip 3 cards.
+    reason: match-type (Steel Cage) conditions are out of scope
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if another Submission in play, put 1 card from discard on top of deck (Steel
+    Cage rider unsupported)
+  source: card
+
+# #11 Double Wrist Twist: if another Grapple in play, draw 1 + next roll +1
+ef2967fc07044d958f64372afacbb95e:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Grapple
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if another Grapple in play, draw 1 and your next turn roll is +1
+  source: card
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Unsupported
+    raw_text: Cannot be stopped by Follow Ups.
+    reason: stop-immunity (unstoppable-by-order) has no IR action
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: cannot be stopped by Follow Ups (unstoppable IR gap)
+  source: card
