@@ -88,6 +88,10 @@ OnRoll(skill?, who=SELF)     # after `who` makes a turn roll (skill=None => any 
 OnWinTurn / OnLoseTurn(by=?) # after the turn roll resolves (outcome-specific)
 OnStop(dir=YOURS|THEIRS)     # when a stop happens
 OnHit(keyword|name)          # when a matching card RESOLVES into play — see "hit" below
+OnBump                       # when the owner bumps (a tied roll: both draw + re-roll).
+                             #   Both sides bump on a tie, so each owner's OnBump fires;
+                             #   bump-punish gimmicks (Mastermind: "opp next roll -2") live
+                             #   here. Gate repeats with a once-per-turn frequency.
 StartOfTurn / StartOfMatch
 Static                       # always-on passive (e.g. "+1 to Power"); duration-scoped, see below
 ```

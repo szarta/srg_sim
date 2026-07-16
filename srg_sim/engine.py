@@ -202,6 +202,13 @@ class Engine:
         self._run_on_roll("B")
         return winner
 
+    def _run_on_bump(self) -> None:
+        """Fire both players' ``OnBump`` effects for a bump just taken (both sides
+        bump on a tie). A once-per-turn frequency guard keeps a bump-punish gimmick
+        firing only once even when a roll ties repeatedly in one turn."""
+        for key in ("A", "B"):
+            self._run_effects(self._standing_effects(key), fx.OnBump, key)
+
     def _run_on_roll(self, key: str) -> None:
         """Fire ``key``'s ``OnRoll`` effects for the deciding turn roll: matched by
         the roller's skill (``None`` = any) and gated by the roller's roll context."""
@@ -231,6 +238,7 @@ class Engine:
             self._draw("A", 1)  # bump: both players draw, then re-roll (mechanics §2)
             self._draw("B", 1)
             bumps += 1
+            self._run_on_bump()  # bump-punish gimmicks (Mastermind: opp next roll -2)
             sa, va = self._roll_for("A", use_pending=False)
             sb, vb = self._roll_for("B", use_pending=False)
         winner = self._roll_winner(va, vb, lowest)

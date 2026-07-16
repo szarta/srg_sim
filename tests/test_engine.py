@@ -186,6 +186,52 @@ def test_shuffle_deck_action_reorders_without_losing_cards() -> None:
     assert len(after) == len(before)
 
 
+def test_on_bump_trigger_penalizes_the_opponents_next_roll() -> None:
+    # Mastermind's gimmick: OnBump -> the opponent's NEXT turn roll is -2.
+    gimmick = fx.Effect(
+        trigger=fx.OnBump(),
+        actions=(fx.ModifyRoll(who=fx.Who.OPP, delta=-2, when=fx.RollWhen.NEXT),),
+        frequency=fx.FrequencyGuard(kind=fx.Frequency.ONCE_PER_TURN),
+        raw_clause="bump -> opp next roll -2",
+        source=fx.EffectSource.GIMMICK,
+    )
+    eng = Engine(
+        make_deck("A", with_effects(bull(), (gimmick,))),
+        make_deck("B", fae()),
+        HeuristicPolicy(),
+        HeuristicPolicy(),
+        seed=1,
+        created="x",
+    )
+    eng.setup()
+    eng._run_on_bump()
+    assert eng.state.players["B"].pending_roll_mods["next"] == -2  # opponent penalized
+    assert eng.state.players["A"].pending_roll_mods["next"] == 0  # self untouched
+
+
+def test_on_bump_gimmick_fires_only_once_per_turn() -> None:
+    # A once-per-turn guard means repeated bumps in one turn punish only once.
+    gimmick = fx.Effect(
+        trigger=fx.OnBump(),
+        actions=(fx.ModifyRoll(who=fx.Who.OPP, delta=-2, when=fx.RollWhen.NEXT),),
+        frequency=fx.FrequencyGuard(kind=fx.Frequency.ONCE_PER_TURN),
+        raw_clause="bump -> opp next roll -2",
+        source=fx.EffectSource.GIMMICK,
+    )
+    eng = Engine(
+        make_deck("A", with_effects(bull(), (gimmick,))),
+        make_deck("B", fae()),
+        HeuristicPolicy(),
+        HeuristicPolicy(),
+        seed=1,
+        created="x",
+    )
+    eng.setup()
+    eng._run_on_bump()
+    eng._run_on_bump()  # a second bump the same turn
+    assert eng.state.players["B"].pending_roll_mods["next"] == -2  # still only -2
+
+
 def test_search_tutors_a_matching_card_from_deck_to_hand() -> None:
     # Search pulls the first deck card matching the filter into hand and shuffles.
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")

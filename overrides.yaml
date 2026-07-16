@@ -414,3 +414,224 @@ df576122c28f481f998634973945e334:
     n: null
   raw_clause: shuffle 2 from discard into deck, draw 1 (discard-opponent's-in-play rider dropped)
   source: card
+
+# --- Mastermind deck (decks/mastermind.yaml), side A for the playtest (todo #42) ---
+# The bump gimmick uses the OnBump trigger (DESIGN.md §3). Conditional buffs use an
+# Or of two HasInPlay filters (Follow Up / Finish). Remaining gaps stay Unsupported:
+# #10 roll +1 per opponent Lead (dynamic count), #11 'cannot be stopped by Follow Ups'
+# (no unstoppable IR), #24 search-to-discard (Search dest is HAND only), the entrance,
+# and the #28/#29/#30 finish riders (add-from-discard / copy-spotlight / bump-double).
+
+# Mastermind gimmick: bump -> opp next roll -2
+31b5d4f1aa0743b4bc3d0622d81b0d92:
+- '@type': Effect
+  trigger:
+    '@type': OnBump
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: OPP
+    delta: -2
+    when: NEXT
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: when you bump, your opponent's next turn roll is -2
+  source: gimmick
+
+# #7 add a Finish from discard to hand
+3985ce9c65644441becdde562788868a:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Finish
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: add 1 Finish from your discard pile to your hand (next-roll-10 rider dropped)
+  source: card
+
+# #12 draw 2 if another Lead in play
+62cf9e40d92c4d0da09cb4185c8540f0:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Lead
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if you have another Lead in play, draw 2 cards
+  source: card
+
+# #13 skill-gated stop any Grapple + draws
+ba63df8e2ef842928c6007da934a2b9a:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': SkillCompare
+    skill: Strike
+    cmp: '>'
+    who: SELF
+    vs: OPP_SAME
+    value: null
+  actions:
+  - '@type': Stop
+    order: null
+    atk_type: Grapple
+    source_is_skillreq: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if your Strike > opponent's Strike, stop any Grapple
+  source: card
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: each player draws 1 card
+  source: card
+
+# #16 Power +1 if another FU/Finish Strike in play
+7f95a0203e0744ea9ad4c79d51fda577:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Or
+    items:
+    - '@type': HasInPlay
+      who: SELF
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Strike
+        play_order: Followup
+        tag: null
+        name: null
+        raw: null
+      count: 1
+      cmp: '>='
+    - '@type': HasInPlay
+      who: SELF
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Strike
+        play_order: Finish
+        tag: null
+        name: null
+        raw: null
+      count: 1
+      cmp: '>='
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if another Follow Up or Finish Strike in play, your Power is +1
+  source: card
+
+# #17 Agility +1 if another FU/Finish Grapple in play
+40b360f65c3e40c692b6ae670f1478a1:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Or
+    items:
+    - '@type': HasInPlay
+      who: SELF
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Grapple
+        play_order: Followup
+        tag: null
+        name: null
+        raw: null
+      count: 1
+      cmp: '>='
+    - '@type': HasInPlay
+      who: SELF
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Grapple
+        play_order: Finish
+        tag: null
+        name: null
+        raw: null
+      count: 1
+      cmp: '>='
+  actions:
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if another Follow Up or Finish Grapple in play, your Agility is +1
+  source: card

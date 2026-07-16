@@ -291,6 +291,16 @@ class StartOfMatch(IRNode):
 
 
 @dataclass(frozen=True)
+class OnBump(IRNode):
+    """When the owner **bumps** — a tied turn roll that forces both players to draw
+    one and re-roll (SUPERSHOW_MECHANICS §2). Both sides bump on a tie, so each
+    owner's ``OnBump`` fires; a bump-punish gimmick (Mastermind's "when you bump,
+    your opponent's next turn roll is -2") lives here. Fires once per bump, so gate
+    it with a once-per-turn frequency to punish only once when rolls tie repeatedly.
+    """
+
+
+@dataclass(frozen=True)
 class Static(IRNode):
     """Always-on passive; scoped by the effect's ``duration``."""
 
@@ -611,7 +621,16 @@ class Effect(IRNode):
 # ---------------------------------------------------------------------------
 
 Trigger = (
-    OnPlay | OnRoll | OnWinTurn | OnLoseTurn | OnStop | OnHit | StartOfTurn | StartOfMatch | Static
+    OnPlay
+    | OnRoll
+    | OnWinTurn
+    | OnLoseTurn
+    | OnStop
+    | OnHit
+    | OnBump
+    | StartOfTurn
+    | StartOfMatch
+    | Static
 )
 
 Condition = (
