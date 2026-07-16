@@ -269,6 +269,7 @@ class Engine:
 
     def _roll_off(self) -> str:
         lowest = self._lowest_wins()
+        self._promote_pending()  # last turn's `when=NEXT` mods become THIS roll's (#50)
         sa, va = self._roll_for("A", use_pending=True)
         sb, vb = self._roll_for("B", use_pending=True)
         self._consume_pending()
@@ -351,10 +352,25 @@ class Engine:
         )
         return skill, value
 
-    def _consume_pending(self) -> None:
+    def _promote_pending(self) -> None:
+        """Fold a queued ``when=NEXT`` roll mod into the imminent roll (#50).
+
+        A ``when=NEXT`` mod (Enjoy Everything, the Bull's comeback, Mastermind's
+        ``OnBump`` opp-penalty) is queued into ``next`` during a turn's *action /
+        OnRoll* phase — i.e. AFTER that turn's roll-off already ran. Promoting
+        ``next -> this`` here, at the START of the following roll-off, makes such a
+        mod land on the immediately-following roll, not the turn after (the old
+        promote-right-after-the-roll ordering delayed it one full turn)."""
         for player in self.state.players.values():
             mods = player.pending_roll_mods
-            mods["this"], mods["next"] = mods["next"], 0
+            mods["this"] += mods["next"]
+            mods["next"] = 0
+
+    def _consume_pending(self) -> None:
+        """The initial roll spent ``this``; clear it so a pending mod applies once
+        (bump re-rolls run with ``use_pending=False``, so they never re-read it)."""
+        for player in self.state.players.values():
+            player.pending_roll_mods["this"] = 0
 
     def _tie_winner(self) -> str | None:
         holders = [k for k, p in self.state.players.items() if p.flags.pop("win_tie", False)]

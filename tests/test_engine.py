@@ -232,6 +232,29 @@ def test_on_bump_gimmick_fires_only_once_per_turn() -> None:
     assert eng.state.players["B"].pending_roll_mods["next"] == -2  # still only -2
 
 
+def test_pending_next_roll_mod_lands_on_the_immediately_following_roll() -> None:
+    # #50: a `when=NEXT` roll mod is queued during a turn's action / OnRoll phase,
+    # i.e. AFTER that turn's roll-off ran. It must apply to the very NEXT roll-off,
+    # not the turn after (the old promote-right-after-the-roll ordering delayed it a
+    # full turn, e.g. Enjoy Everything's +2 played on T9 landed on T11 not T10).
+    from srg_sim import gamelog as gl
+
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    # Queue "+3 to your next roll" the way an OnHit/OnRoll effect would, post roll-off.
+    eng._act_modify_roll(fx.ModifyRoll(who=fx.Who.SELF, delta=3, when=fx.RollWhen.NEXT), "A")
+    assert eng.state.players["A"].pending_roll_mods == {"this": 0, "next": 3}
+    eng.state.turn_no = 1
+    eng._roll_off()  # the immediately following roll-off
+    eng.state.turn_no = 2
+    eng._roll_off()  # the one after that
+    a_rolls = [e for e in eng.state.log.events if isinstance(e, gl.Roll) and e.player == "A"]
+    t1 = [e for e in a_rolls if e.t == 1]
+    t2 = [e for e in a_rolls if e.t == 2]
+    assert t1[0].value - t1[0].base == 3  # the +3 lands on the next roll (was 0 pre-#50)
+    assert all(e.value - e.base == 0 for e in t2)  # applied exactly once, gone the turn after
+
+
 def test_blank_gimmick_suppresses_opponent_competitor_gimmick_and_clears() -> None:
     # #47: a WHILE_IN_PLAY BlankGimmick on an in-play card drops the OPPONENT's
     # competitor gimmick out of their standing effects (derived, so it clears when
