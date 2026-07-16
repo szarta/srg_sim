@@ -178,10 +178,22 @@ class Engine:
     def _turn(self) -> None:
         self.state.turn_no += 1
         self._clear_turn_freq()
+        for player in self.state.players.values():
+            player.flags.pop("extra_plays", 0)  # "additional card this turn" is per-turn
         winner = self._turn_roll()
         if self._ended() or not self._draw_for_turn(winner):
             return
         self._take_turn_action(winner)  # play ONE card (or pass+bury); the board persists
+        while not self._ended() and self._consume_extra_play(winner):
+            self._take_turn_action(winner)  # a PlayExtraCard granted another action
+
+    def _consume_extra_play(self, key: str) -> bool:
+        """Spend one pending "additional card this turn" grant, if any."""
+        flags = self.state.players[key].flags
+        if flags.get("extra_plays", 0) <= 0:
+            return False
+        flags["extra_plays"] -= 1
+        return True
 
     def _turn_roll(self) -> str:
         """Resolve the roll-off and fire the turn-roll gimmicks (DESIGN.md §6/§11).
@@ -677,6 +689,16 @@ class Engine:
         chosen = self._decide(point, key, legal)
         return next(c for c in cards if c.db_uuid == chosen["card"])
 
+    def _pick_optional_from(self, key: str, cards: list[Card], point: str) -> Card | None:
+        """Like :meth:`_pick_from` but for an "up to" selection: the owner may stop
+        early (a trailing ``none`` option). ``None`` = decline. The default policy
+        takes the first card (``legal[0]``), so the ``none`` option comes last."""
+        legal = [self._discard_option(c) for c in cards] + [{"kind": "none"}]
+        chosen = self._decide(point, key, legal)
+        if chosen["kind"] == "none":
+            return None
+        return next(c for c in cards if c.db_uuid == chosen["card"])
+
     def _act_search(self, action: fx.Search, key: str) -> None:
         # Tutor: the searcher picks a matching deck card into hand, then shuffles
         # the deck (you looked through it). dest is HAND (the only Dest); "put it on
@@ -732,6 +754,33 @@ class Engine:
             )
         )
         self._hand_cap(key)
+
+    def _act_recur_to_deck_top(self, action: fx.RecurToDeckTop, key: str) -> None:
+        # Put up to `count` matching cards from discard ON TOP of the deck ("Put up
+        # to 3 Finishes from your discard pile on top of your deck"). The owner
+        # picks how many and which; discard->deck is logged like other recur moves.
+        player = self.state.players[key]
+        for _ in range(action.count):
+            matches = [c for c in player.discard if conditions.card_matches(c, action.selector)]
+            if not matches:
+                return
+            card = self._pick_optional_from(key, matches, "target")
+            if card is None:
+                return  # owner declined to recur more ("up to")
+            player.discard.remove(card)
+            player.deck.insert(0, card)  # top of deck (redraw next turn)
+            self._log(
+                gl.Bury(  # discard (public) -> deck: which card left discard is visible
+                    t=self.state.turn_no, player=key, cards=[card.db_uuid], source="discard"
+                )
+            )
+
+    def _act_play_extra_card(self, action: fx.PlayExtraCard, key: str) -> None:
+        # Grant one more turn action this turn ("you may play an additional card").
+        # Consumed by the turn loop; reset each turn. `order` (which kind) is not
+        # enforced — the added action offers the normal playable set.
+        player = self.state.players[key]
+        player.flags["extra_plays"] = player.flags.get("extra_plays", 0) + 1
 
     def _act_remove_from_play(self, action: fx.RemoveFromPlay, key: str) -> None:
         # Board disruption: the ACTOR (key) sends up to `count` cards the target has
@@ -976,5 +1025,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.Search: Engine._act_search,
     fx.ShuffleIntoDeck: Engine._act_shuffle_into_deck,
     fx.AddFromDiscard: Engine._act_add_from_discard,
+    fx.RecurToDeckTop: Engine._act_recur_to_deck_top,
     fx.RemoveFromPlay: Engine._act_remove_from_play,
+    fx.PlayExtraCard: Engine._act_play_extra_card,
 }

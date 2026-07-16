@@ -464,6 +464,19 @@ class AddFromDiscard(IRNode):
 
 
 @dataclass(frozen=True)
+class RecurToDeckTop(IRNode):
+    """Put up to ``count`` matching cards from the discard pile ON TOP of the deck
+    (Chug-Chug-Chug: "Put up to 3 Finishes from your discard pile on top of your
+    deck"; DESIGN.md §3). The owner chooses how many (0..``count``) and which — an
+    "up to" recycle that reloads a stopped Finish to redraw next turn. Distinct
+    from :class:`ShuffleIntoDeck`, which returns a card to the *bottom* and
+    reshuffles; the on-top placement is the tempo that matters."""
+
+    selector: CardFilter = CardFilter()
+    count: int = 1
+
+
+@dataclass(frozen=True)
 class RemoveFromPlay(IRNode):
     """Board disruption: move up to ``count`` cards a player has in play to their
     discard ("Discard 1 card your opponent has in play"; DESIGN.md §3).
@@ -681,6 +694,7 @@ Action = (
     | ShuffleDeck
     | ShuffleIntoDeck
     | AddFromDiscard
+    | RecurToDeckTop
     | RemoveFromPlay
     | ModifyRoll
     | BuffSkill

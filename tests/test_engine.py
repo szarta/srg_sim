@@ -348,6 +348,72 @@ def test_shuffle_into_deck_recurs_one_card_from_discard_to_deck() -> None:
     assert len(a.deck) == deck_before + 2
 
 
+def test_recur_to_deck_top_puts_chosen_discards_on_top_of_deck() -> None:
+    # #45 Chug-Chug: "up to 3 Finishes from discard on top of deck". The default
+    # policy takes matches until they run out; the recurred card lands on TOP.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    fins = [c for c in a.deck if c.play_order is PlayOrder.FINISH][:2]
+    for c in fins:
+        a.deck.remove(c)
+        a.discard.append(c)
+    eng._act_recur_to_deck_top(
+        fx.RecurToDeckTop(selector=fx.CardFilter(play_order=PlayOrder.FINISH), count=3), "A"
+    )
+    assert all(c not in a.discard for c in fins)  # both recurred (fewer than the cap)
+    assert a.deck[0] in fins and a.deck[1] in fins  # placed on top, ready to redraw
+
+
+def test_recur_to_deck_top_owner_can_stop_early() -> None:
+    class DeclineTarget(Policy):
+        def __init__(self) -> None:
+            super().__init__("decline")
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            return next((o for o in legal if o["kind"] == "none"), legal[0])  # stop at once
+
+    eng = Engine(*bull_vs_fae(), DeclineTarget(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    a = eng.state.players["A"]
+    fins = [c for c in a.deck if c.play_order is PlayOrder.FINISH][:2]
+    for c in fins:
+        a.deck.remove(c)
+        a.discard.append(c)
+    eng._act_recur_to_deck_top(
+        fx.RecurToDeckTop(selector=fx.CardFilter(play_order=PlayOrder.FINISH), count=3), "A"
+    )
+    assert all(c in a.discard for c in fins)  # declined -> nothing recurred
+
+
+def test_play_extra_card_grant_is_counted_and_consumed() -> None:
+    # #45 Chug-Chug: PlayExtraCard banks a per-turn grant; _consume_extra_play spends it.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng._act_play_extra_card(fx.PlayExtraCard(), "A")
+    eng._act_play_extra_card(fx.PlayExtraCard(), "A")
+    assert eng.state.players["A"].flags["extra_plays"] == 2
+    assert eng._consume_extra_play("A") and eng._consume_extra_play("A")  # spends both
+    assert eng._consume_extra_play("A") is False  # none left
+    assert eng.state.players["A"].flags["extra_plays"] == 0
+
+
+def test_turn_loop_runs_an_extra_action_when_granted() -> None:
+    # The turn loop takes a second action when the first grants a PlayExtraCard.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=3, created="x")
+    eng.setup()
+    seen: list[str] = []
+
+    def fake(key: str) -> None:
+        seen.append(key)
+        if len(seen) == 1:
+            eng._act_play_extra_card(fx.PlayExtraCard(), key)  # first action grants +1
+
+    eng._take_turn_action = fake  # type: ignore[method-assign]
+    eng._turn()
+    assert len(seen) == 2  # base action + exactly one granted extra
+
+
 def test_optional_effect_is_gated_and_can_flip_the_opponents_deck() -> None:
     # #45: a "you may" effect (Effect.optional) resolves only when the owner takes
     # it; Big Body Block's rider flips the OPPONENT's top card (Flip who=OPP).

@@ -471,6 +471,50 @@ df576122c28f481f998634973945e334:
   raw_clause: when you bump, your opponent's next turn roll is -2
   source: gimmick
 
+# #8 Chug-Chug-Chug!: put up to 3 Finishes from discard on top of deck; CM>=2 -> extra card
+93766c996abf4f4c94d3479e78232e3b:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': RecurToDeckTop
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Finish
+      tag: null
+      name: null
+      raw: null
+    count: 3
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: put up to 3 Finishes from your discard pile on top of your deck
+  source: card
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': CrowdMeterCompare
+    cmp: '>='
+    value: 2
+  actions:
+  - '@type': PlayExtraCard
+    order: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: true
+  raw_clause: if the Crowd Meter is 2 or greater, you may play an additional card this turn
+  source: card
+
 # #22 Muay Thai Strikes: discard 1 opponent in-play card, recur 2 from discard, draw 1
 7fe08b677c684e6990c0a5b9ac7033c4:
 - '@type': Effect
