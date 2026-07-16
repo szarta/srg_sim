@@ -505,6 +505,19 @@ def test_roll_skill_trigger_gimmick_override_is_modeled() -> None:
 
 
 @requires_db
+def test_choice_gimmick_override_is_modeled() -> None:
+    # Little Guido (overrides.yaml, todo #55): OnRoll(Power) -> Choice(draw | opp -2).
+    from srg_sim.effects import Choice, OnRoll
+    from srg_sim.report.carddb import ReportCardDB
+
+    guido = ReportCardDB.from_yaml().resolve_competitor("Little Guido")
+    (eff,) = guido.effects
+    assert isinstance(eff.trigger, OnRoll) and eff.trigger.skill is Skill.POWER
+    (choice,) = eff.actions
+    assert isinstance(choice, Choice) and len(choice.options) == 2
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck

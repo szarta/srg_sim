@@ -235,6 +235,27 @@ def test_on_roll_skill_trigger_fires_its_actions_only_on_that_skill() -> None:
     assert off.state.players["B"].pending_roll_mods["next"] == 0
 
 
+def test_choice_action_resolves_exactly_one_branch() -> None:
+    # "A or B" effect (Little Guido, #55): Choice resolves ONE branch, chosen by the
+    # acting player. The default policy takes legal[0] — here the draw branch — and
+    # the other branch (opponent roll debuff) must NOT apply.
+    choice = fx.Choice(
+        options=(
+            fx.ChoiceOption("draw 2", (fx.Draw(n=2),)),
+            fx.ChoiceOption(
+                "opp -2 next", (fx.ModifyRoll(who=fx.Who.OPP, delta=-2, when=fx.RollWhen.NEXT),)
+            ),
+        )
+    )
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1)
+    eng.setup()
+    eng.state.turn_no = 1
+    before = len(eng.state.players["A"].hand)
+    eng._act_choice(choice, "A")
+    assert len(eng.state.players["A"].hand) == before + 2  # legal[0] = the draw branch
+    assert eng.state.players["B"].pending_roll_mods["next"] == 0  # the other branch was skipped
+
+
 def test_on_bump_trigger_penalizes_the_opponents_next_roll() -> None:
     # Mastermind's gimmick: OnBump -> the opponent's NEXT turn roll is -2.
     gimmick = fx.Effect(

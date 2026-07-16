@@ -18,6 +18,8 @@ from srg_sim.effects import (
     Bump,
     Bury,
     CardFilter,
+    Choice,
+    ChoiceOption,
     Comparator,
     CrowdMeter,
     CrowdMeterCompare,
@@ -139,6 +141,13 @@ SAMPLES: list[IRNode] = [
     FinishRollBonus(3),
     BreakoutModifier(1, attempts=2),
     LowestRollWins(),
+    ChoiceOption("draw", (Draw(n=1),)),
+    Choice(
+        options=(
+            ChoiceOption("draw 1", (Draw(n=1),)),
+            ChoiceOption("opp next roll -2", (ModifyRoll(Who.OPP, -2, RollWhen.NEXT),)),
+        )
+    ),
     # sentinels / meta
     Unsupported("some weird clause", "no grammar match"),
     FrequencyGuard(Frequency.N_PER_MATCH, 2),

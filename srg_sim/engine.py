@@ -938,6 +938,21 @@ class Engine:
         self.state.players[key].flags["peek"] = {target: self.state.turn_no}
         self._log_effect(key, "Peek", target, {"hand_size": len(self.state.players[target].hand)})
 
+    def _act_choice(self, action: fx.Choice, key: str) -> None:
+        # Pick exactly ONE branch of an "A or B" effect; the acting player decides
+        # (a `choice` decision point), then that branch's actions resolve in order.
+        options = action.options
+        if not options:
+            return
+        legal = [
+            {"kind": "choice", "index": i, "label": opt.label} for i, opt in enumerate(options)
+        ]
+        chosen = self._decide("choice", key, legal)
+        for act in options[int(chosen["index"])].actions:
+            self._apply_action(act, key)
+            if self._resolve_pending():
+                return
+
     def _act_win_tie(self, action: fx.WinTie, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         self.state.players[target].flags["win_tie"] = True
@@ -1124,4 +1139,5 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.RemoveFromPlay: Engine._act_remove_from_play,
     fx.PlayExtraCard: Engine._act_play_extra_card,
     fx.Peek: Engine._act_peek,
+    fx.Choice: Engine._act_choice,
 }

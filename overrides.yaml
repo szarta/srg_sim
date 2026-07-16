@@ -1179,3 +1179,42 @@ c7c67bea6ff64c3b81cc812363c23ac4:
   raw_clause: roll Agility for turn roll -> draw 1 and opponent next turn roll -1
   source: gimmick
   optional: false
+
+# Little Guido: roll Power -> (opponent's next turn roll -2) OR (draw 1 card).
+# An "A or B" gimmick -> Choice; the acting player picks a branch. Debuff ordered
+# first so the heuristic default leans into tempo.
+1cf1f13bf01a404ea9117d3483eb2984:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: opponent's next turn roll is -2
+      actions:
+      - '@type': ModifyRoll
+        who: OPP
+        delta: -2
+        when: NEXT
+        per: null
+        per_who: OPP
+    - '@type': ChoiceOption
+      label: draw 1 card
+      actions:
+      - '@type': Draw
+        n: 1
+        source: TOP
+        who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: roll Power for turn roll -> opponent next roll -2 OR draw 1 card
+  source: gimmick
+  optional: false

@@ -635,6 +635,26 @@ class LowestRollWins(IRNode):
     :class:`BuffSkill`), never executed as a mutation."""
 
 
+@dataclass(frozen=True)
+class ChoiceOption(IRNode):
+    """One branch of a :class:`Choice`: a human-readable ``label`` plus the actions
+    taken if this branch is picked."""
+
+    label: str = ""
+    actions: tuple[Action, ...] = ()
+
+
+@dataclass(frozen=True)
+class Choice(IRNode):
+    """Pick exactly ONE branch of actions — an "A or B" effect (Little Guido: "Draw 1
+    card OR your opponent's next turn roll is -2"). The acting player chooses which
+    branch resolves at execution time (a ``choice`` decision point), so it is where a
+    policy's read of the position matters. Distinct from :class:`Effect.optional`,
+    which is a single-branch yes/no."""
+
+    options: tuple[ChoiceOption, ...] = ()
+
+
 # ---------------------------------------------------------------------------
 # Unsupported sentinel + the Effect itself
 # ---------------------------------------------------------------------------
@@ -733,6 +753,7 @@ Action = (
     | FinishRollBonus
     | BreakoutModifier
     | LowestRollWins
+    | Choice
 )
 
 ActionOrUnsupported = Action | Unsupported
