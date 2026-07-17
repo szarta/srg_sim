@@ -4,7 +4,7 @@
 # block). Card #7 "Elbow Shot" is named twice in the writeup prose but omitted
 # from the article's deck block; restored here to complete the 30-card deck.
 # DB names differ from the article for three cards: Psychocidal -> "Psychocidal (D2)",
-# Pineapple for Sheep -> "Pineapple for Sheep?", Once More, With Feeling! -> no "!".
+# Pineapple for Sheep -> "Pineapple for Sheep?", Once More, With Feeling -> keeps its "!".
 competitor: "D2 (V1)"
 entrance: "Never Give Up With Tia Lupita"
 cards:
@@ -15,7 +15,7 @@ cards:
   - {number: 5,  name: "Sidewind Wonder-Plex"}
   - {number: 6,  name: "Big Body Block"}
   - {number: 7,  name: "Elbow Shot"}
-  - {number: 8,  name: "Once More, With Feeling"}
+  - {number: 8,  name: "Once More, With Feeling!"}
   - {number: 9,  name: "Spit Fire Chariot"}
   - {number: 10, name: "Unamerican Elbow Smash"}
   - {number: 11, name: "Double Throw"}
