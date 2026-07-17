@@ -62,6 +62,7 @@ class PlayerState:
     pending_roll_mods: dict[str, int] = field(default_factory=lambda: {"this": 0, "next": 0})
     freq_counters: dict[str, int] = field(default_factory=dict)
     gimmick_blanked: bool = False
+    gimmick_flipped: bool = False  # competitor card turned to its back side (Copy Kat V2)
     flags: dict[str, Any] = field(default_factory=dict)
 
     def draw(self, n: int = 1) -> list[Card]:
@@ -82,6 +83,7 @@ class PlayerState:
             "pending_roll_mods": dict(self.pending_roll_mods),
             "freq_counters": dict(self.freq_counters),
             "gimmick_blanked": self.gimmick_blanked,
+            "gimmick_flipped": self.gimmick_flipped,
             "flags": dict(self.flags),
         }
 
@@ -97,6 +99,7 @@ class PlayerState:
             pending_roll_mods=dict(data["pending_roll_mods"]),
             freq_counters=dict(data["freq_counters"]),
             gimmick_blanked=data["gimmick_blanked"],
+            gimmick_flipped=data.get("gimmick_flipped", False),
             flags=dict(data["flags"]),
         )
 
@@ -218,7 +221,24 @@ class GameState:
                 continue
             for eff, buff in _iter_static_buffs(effects):
                 if _buffs(owner, buff, target) and _condition_ok(eff.condition, holds):
-                    stats[buff.skill.value] += buff.delta
+                    skill_key, delta = self._resolve_buff(buff, target)
+                    stats[skill_key] += delta
+
+    def _resolve_buff(self, buff: BuffSkill, target: str) -> tuple[str, int]:
+        """The ``(skill-key, delta)`` a buff contributes, expanding Copy Kat's dynamic
+        variants: ``target_highest`` retargets to the target's highest base skill (ties
+        broken by stat order, deterministically); ``per_crowd`` uses the Crowd Meter as
+        the delta, clamped to ``cap`` when set. A plain buff returns ``(skill, delta)``."""
+        if buff.target_highest:
+            base = self.players[target].competitor.stats.to_dict()
+            skill_key = max(base, key=lambda k: base[k])
+        else:
+            skill_key = buff.skill.value
+        if buff.per_crowd:
+            delta = self.crowd_meter if buff.cap is None else min(self.crowd_meter, buff.cap)
+        else:
+            delta = buff.delta
+        return skill_key, delta
 
     def effective_stat(self, key: str, skill: Skill, holds: ConditionHolds | None = None) -> int:
         """The single derived value for ``skill`` (convenience over :meth:`effective_stats`)."""

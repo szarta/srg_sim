@@ -592,6 +592,23 @@ def test_roll_value_gated_blank_gimmick_override_is_modeled() -> None:
 
 
 @requires_db
+def test_two_sided_transform_gimmick_override_is_modeled() -> None:
+    # Copy Kat (V2) (overrides.yaml, todo #60): OnBreakout -> FlipGimmick, a front
+    # target_highest debuff and a back per_crowd (cap 5) buff, gated by GimmickFlipped.
+    from srg_sim.effects import BuffSkill, FlipGimmick, OnBreakout
+    from srg_sim.report.carddb import ReportCardDB
+
+    copykat = ReportCardDB.from_yaml().resolve_competitor("Copy Kat (V2)")
+    assert len(copykat.effects) == 3
+    flip = next(e for e in copykat.effects if any(isinstance(a, FlipGimmick) for a in e.actions))
+    assert isinstance(flip.trigger, OnBreakout)
+    buffs = [a for e in copykat.effects for a in e.actions if isinstance(a, BuffSkill)]
+    assert any(b.target_highest for b in buffs)  # front: opponent's highest -1
+    assert any(b.per_crowd and b.cap == 5 for b in buffs)  # back: grapple + CM (max 5)
+    assert not any(isinstance(a, Unsupported) for e in copykat.effects for a in e.actions)
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck

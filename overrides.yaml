@@ -1502,3 +1502,94 @@ dfa3e0991ea3426197f4ded552575d61:
     opponent's roll is -1 instead.
   source: gimmick
   optional: false
+
+
+# --- Two-sided transform gimmick (matchup roster, todo #60) ---
+# Copy Kat (V2), the Eddy Fury double-sided flip variant:
+#   FRONT: "Your opponent's highest skill is -1 during their turn and turn rolls.
+#           After a breakout, turn this card over."
+#   BACK:  "During your opponent's turn and turn rolls: Your Grapple skill is + the
+#           Crowd Meter (Max +5)."
+# Modeled with a one-way transform: FlipGimmick(SELF) fired by OnBreakout flips a
+# persistent gimmick_flipped flag; front effects are gated Not(GimmickFlipped), back
+# effects GimmickFlipped, so the sides switch cleanly. Front debuff = a BuffSkill with
+# target_highest (retargets to the opponent's highest base skill); back buff = a
+# BuffSkill with per_crowd + cap=5 (delta = min(Crowd Meter, 5)).
+# TWO documented approximations:
+#  (1) The "during your opponent's turn and turn rolls" temporal scope is modeled as
+#      always-on. The turn roll (the dominant interaction) is captured exactly; the
+#      over-application is a defender's breakout roll / Copy Kat's own finish.
+#  (2) The front debuff is an OPP-targeting static buff, so the stat fold evaluates its
+#      condition from the TARGET's (opponent's) perspective -- hence the front-active
+#      gate reads Not(GimmickFlipped(OPP)) (OPP names Copy Kat here), while the owner-
+#      fired flip and the SELF-targeting back buff use Who.SELF.
+9e57cd60fb34451bbf7426fb315033ca:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Not
+    item:
+      '@type': GimmickFlipped
+      who: OPP
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: -1
+    who: OPP
+    duration: WHILE_IN_PLAY
+    target_highest: true
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'FRONT: your opponent''s highest skill is -1 during their turn and turn rolls (temporal
+    scope approximated as always-on).'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnBreakout
+  condition:
+    '@type': Not
+    item:
+      '@type': GimmickFlipped
+      who: SELF
+  actions:
+  - '@type': FlipGimmick
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'FRONT: after a breakout, turn this card over.'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': GimmickFlipped
+    who: SELF
+  actions:
+  - '@type': BuffSkill
+    skill: Grapple
+    delta: 0
+    who: SELF
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: true
+    cap: 5
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'BACK: during your opponents turn and turn rolls, your Grapple is + the Crowd Meter (Max
+    +5) (temporal scope approximated as always-on).'
+  source: gimmick
+  optional: false

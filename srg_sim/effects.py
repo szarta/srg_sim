@@ -331,6 +331,15 @@ class OnBump(IRNode):
 
 
 @dataclass(frozen=True)
+class OnBreakout(IRNode):
+    """After a breakout resolves — the shared match event that clears both boards and
+    bumps the Crowd Meter (SUPERSHOW_MECHANICS §5). Fires for both players regardless
+    of who finished or who broke out, so a "after a breakout, ..." gimmick (Copy Kat:
+    "turn this card over") lives here. Gate with :class:`GimmickFlipped` so a one-way
+    transform fires only while still on its front."""
+
+
+@dataclass(frozen=True)
 class Static(IRNode):
     """Always-on passive; scoped by the effect's ``duration``."""
 
@@ -420,6 +429,15 @@ class RollGapExactly(IRNode):
 @dataclass(frozen=True)
 class RollGapAtLeast(IRNode):
     k: int
+
+
+@dataclass(frozen=True)
+class GimmickFlipped(IRNode):
+    """True iff ``who``'s competitor card has been turned over to its back side (by
+    :class:`FlipGimmick`). Gates a two-sided gimmick's front effects (``Not(...)``)
+    against its back effects (Copy Kat V2)."""
+
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)
@@ -571,10 +589,20 @@ class ModifyRoll(IRNode):
 
 @dataclass(frozen=True)
 class BuffSkill(IRNode):
+    """A persistent ``+delta`` (or ``-delta``) to ``who``'s ``skill``, folded into the
+    derived stats (DESIGN.md §5). Two dynamic variants (Copy Kat V2): ``target_highest``
+    retargets from the fixed ``skill`` to whichever of the target's skills is highest
+    (its base line — "your opponent's highest skill is -1"); ``per_crowd`` replaces
+    ``delta`` with the current Crowd Meter, clamped to ``cap`` when set ("your Grapple
+    is + the Crowd Meter (Max +5)"). Both default off, so a plain buff is unchanged."""
+
     skill: Skill
     delta: int
     who: Who = Who.SELF
     duration: Duration = Duration.WHILE_IN_PLAY
+    target_highest: bool = False
+    per_crowd: bool = False
+    cap: int | None = None
 
 
 @dataclass(frozen=True)
@@ -621,6 +649,17 @@ class Stop(IRNode):
 class BlankGimmick(IRNode):
     who: Who
     duration: Duration = Duration.WHILE_IN_PLAY
+
+
+@dataclass(frozen=True)
+class FlipGimmick(IRNode):
+    """Turn ``who``'s competitor card over — a one-way transform to its back side
+    (Copy Kat V2). Sets a persistent flip flag read by :class:`GimmickFlipped`, so the
+    front's effects (gated ``Not(GimmickFlipped)``) switch off and the back's
+    (gated ``GimmickFlipped``) switch on. Idempotent: flipping an already-flipped
+    gimmick is a no-op, so re-firing on a later breakout does not flip back."""
+
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)
@@ -808,6 +847,7 @@ Trigger = (
     | OnBump
     | StartOfTurn
     | StartOfMatch
+    | OnBreakout
     | Static
 )
 
@@ -826,6 +866,7 @@ Condition = (
     | RollGapExactly
     | RollGapAtLeast
     | RollValue
+    | GimmickFlipped
 )
 
 Action = (
@@ -848,6 +889,7 @@ Action = (
     | Bump
     | Stop
     | BlankGimmick
+    | FlipGimmick
     | BlankText
     | LoseBy
     | CrowdMeter

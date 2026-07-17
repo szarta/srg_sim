@@ -459,6 +459,64 @@ def test_mrs_apocalypse_blanks_the_opponent_gimmick_only_on_a_low_roll() -> None
     assert run(8) is False  # opp rolled 8 -> not blanked (LE 7 fails)
 
 
+def test_copy_kat_transforms_on_breakout_and_swaps_its_two_sides() -> None:
+    # Copy Kat V2 (#60): a one-way transform. FRONT debuffs the opponent's highest
+    # skill -1; a breakout fires OnBreakout -> FlipGimmick(SELF); BACK then buffs Copy
+    # Kat's Grapple by the Crowd Meter (capped +5) and the front debuff switches off.
+    front_debuff = fx.Effect(
+        trigger=fx.Static(),
+        condition=fx.Not(fx.GimmickFlipped(fx.Who.OPP)),  # OPP names Copy Kat (fold view)
+        actions=(fx.BuffSkill(Skill.POWER, -1, fx.Who.OPP, target_highest=True),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="front: opp highest -1",
+    )
+    front_flip = fx.Effect(
+        trigger=fx.OnBreakout(),
+        condition=fx.Not(fx.GimmickFlipped(fx.Who.SELF)),
+        actions=(fx.FlipGimmick(fx.Who.SELF),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="front: after a breakout, turn over",
+    )
+    back_buff = fx.Effect(
+        trigger=fx.Static(),
+        condition=fx.GimmickFlipped(fx.Who.SELF),
+        actions=(fx.BuffSkill(Skill.GRAPPLE, 0, fx.Who.SELF, per_crowd=True, cap=5),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="back: grapple + crowd meter (max 5)",
+    )
+    eng = Engine(
+        make_deck("A", with_effects(vanilla(), (front_debuff, front_flip, back_buff))),
+        make_deck("B", vanilla()),
+        HeuristicPolicy(),
+        HeuristicPolicy(),
+        seed=1,
+    )
+    eng.setup()
+    h_b, h_a = eng._holds("B"), eng._holds("A")
+    base_b = eng.state.players["B"].competitor.stats.to_dict()
+    highest = max(base_b, key=lambda k: base_b[k])
+
+    # FRONT: opponent's highest skill is -1; Copy Kat's Grapple is not yet buffed.
+    assert eng.state.effective_stats("B", h_b)[highest] == base_b[highest] - 1
+    gr_front = eng.state.effective_stat("A", Skill.GRAPPLE, h_a)
+    assert not eng.state.players["A"].gimmick_flipped
+
+    # A breakout turns the card over (OnBreakout fires for both sides; CM +1 -> 4).
+    eng.state.crowd_meter = 3
+    eng._on_broken_out("A")
+    assert eng.state.players["A"].gimmick_flipped and eng.state.crowd_meter == 4
+
+    # BACK: front debuff is gone; Grapple gains min(CrowdMeter, 5).
+    assert eng.state.effective_stats("B", h_b)[highest] == base_b[highest]  # debuff off
+    assert eng.state.effective_stat("A", Skill.GRAPPLE, h_a) == gr_front + 4
+    eng.state.crowd_meter = 10
+    assert eng.state.effective_stat("A", Skill.GRAPPLE, h_a) == gr_front + 5  # capped at +5
+
+    # The flip is one-way: a second breakout does not turn it back to the front.
+    eng._on_broken_out("A")
+    assert eng.state.players["A"].gimmick_flipped
+
+
 def test_hit_a_type_gimmick_fires_only_for_that_attack_type() -> None:
     # D1 (#57): "When you hit a Submission draw 1 card" = a gimmick OnHit(atk_type=
     # Submission) -> Draw, fired by _run_hit_gimmicks when the owner hits that type.

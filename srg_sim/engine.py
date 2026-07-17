@@ -667,6 +667,9 @@ class Engine:
             self._discard_in_play(key)
         self.state.crowd_meter += 1
         self._log(gl.CrowdMeter(t=self.state.turn_no, delta=1, value=self.state.crowd_meter))
+        # "After a breakout, ..." gimmicks fire for both players (Copy Kat: turn over).
+        for key in ("A", "B"):
+            self._run_effects(self._standing_effects(key), fx.OnBreakout, key)
 
     # -- end of turn -------------------------------------------------------
 
@@ -998,6 +1001,17 @@ class Engine:
         self.state.players[target].gimmick_blanked = True
         self._log_effect(key, "BlankGimmick", target, {"duration": action.duration.value})
 
+    def _act_flip_gimmick(self, action: fx.FlipGimmick, key: str) -> None:
+        # Turn a competitor card to its back side (Copy Kat V2). One-way and
+        # idempotent: latch the flip flag so the front's effects switch off and the
+        # back's switch on (GimmickFlipped); re-firing on a later breakout is a no-op.
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        player = self.state.players[target]
+        if player.gimmick_flipped:
+            return
+        player.gimmick_flipped = True
+        self._log_effect(key, "FlipGimmick", target, None)
+
     def _act_peek(self, action: fx.Peek, key: str) -> None:
         # Pure information: grant `key` a look at `target`'s hand for the rest of
         # this turn. No zone changes — observable() reads the peek flag to reveal
@@ -1202,6 +1216,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.ModifyRoll: Engine._act_modify_roll,
     fx.WinTie: Engine._act_win_tie,
     fx.BlankGimmick: Engine._act_blank_gimmick,
+    fx.FlipGimmick: Engine._act_flip_gimmick,
     fx.LoseBy: Engine._act_lose_by,
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
