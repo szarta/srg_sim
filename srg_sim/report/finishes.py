@@ -10,6 +10,8 @@ logoless finish if it's better" rule from the reference tooling.
 
 from __future__ import annotations
 
+import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from srg_sim.cards import Competitor
@@ -19,18 +21,67 @@ from srg_sim.stops import StopEvaluation, evaluate_stop
 
 _FINISH_TYPES = ("Strike", "Grapple", "Submission")
 
+# A conditional finish is really a *vector* of possible outcomes (which conditions
+# are met); for the report only the weakest (no conditions) and strongest (all met)
+# bounds matter. Two robust patterns lift a finish from its floor to its ceiling:
+_REROLL_RE = re.compile(r"re-?roll your finish roll", re.I)  # -> allow_reroll=True
+_DOUBLE_RE = re.compile(r"double these bonuses", re.I)  # -> the printed bonuses x2
+
 
 @dataclass(frozen=True)
 class FinishOption:
-    """One finish candidate with its per-Crowd-Meter success odds."""
+    """One finish candidate with its per-Crowd-Meter success odds. ``curve`` is the
+    floor (no conditions met); ``strong_curve`` is the ceiling (all met), set only when
+    the finish has conditional power, with ``condition`` naming what enables it."""
 
     finish: FinishRecord
     bonus: dict[str, int]
     is_signature: bool
-    curve: dict[int, float]  # crowd_meter -> P(finish succeeds)
+    curve: dict[int, float]  # crowd_meter -> P(finish succeeds), conditions UNMET (floor)
+    strong_curve: dict[int, float] | None = None  # conditions MET (ceiling), or None
+    condition: str = ""  # human note of what unlocks the ceiling
 
     def odds_at(self, cm: int) -> float:
         return self.curve[cm]
+
+    def strong_at(self, cm: int) -> float:
+        return (self.strong_curve or self.curve)[cm]
+
+    @property
+    def has_ceiling(self) -> bool:
+        """The finish has conditional power — a ceiling distinct from its floor."""
+        return self.strong_curve is not None
+
+
+def finish_variant(
+    fr: FinishRecord, base_bonus: dict[str, int]
+) -> tuple[dict[str, int], bool, str]:
+    """The ceiling parameters for a finish: ``(strong_bonus, allow_reroll, condition)``.
+    Detects the two conditional patterns — "double these bonuses" (Mastermind T-Virus)
+    and "re-roll your Finish roll" (Tomato Tornado). No pattern -> floor == ceiling."""
+    text = fr.rules_text or ""
+    strong = dict(base_bonus)
+    reroll = False
+    notes: list[str] = []
+    if _DOUBLE_RE.search(text):
+        strong = {skill: n * 2 for skill, n in strong.items()}
+        cond = _if_clause(text, _DOUBLE_RE)
+        notes.append(f"2× bonuses if {cond}" if cond else "2× bonuses")
+    if _REROLL_RE.search(text):
+        reroll = True
+        cond = _if_clause(text, _REROLL_RE)
+        notes.append(f"re-roll if {cond}" if cond else "may re-roll the Finish roll")
+    return strong, reroll, "; ".join(notes)
+
+
+def _if_clause(text: str, keyword: re.Pattern[str]) -> str:
+    """The ``If <…>,`` condition of the sentence that contains ``keyword`` (else "")."""
+    for sentence in re.split(r"(?<=[.!])\s+", text):
+        if keyword.search(sentence):
+            m = re.search(r"\bIf\b\s+(.+?),", sentence, re.I)
+            if m:
+                return m.group(1).strip()
+    return ""
 
 
 @dataclass(frozen=True)
@@ -45,7 +96,16 @@ class FinishLine:
 
     @property
     def best(self) -> FinishOption | None:
+        """The best FLOOR option (a strictly-better logoless, else the signature)."""
         return self.logoless or self.signature
+
+    @property
+    def ceiling_best(self) -> FinishOption | None:
+        """The best CEILING option — the signature's conditions-met case weighed against
+        a better logoless (which has no ceiling), so a conditional bomb can win here even
+        when its floor lost to the logoless."""
+        cands = [o for o in (self.signature, self.logoless) if o is not None]
+        return max(cands, key=_score_strong) if cands else None
 
 
 def _option(
@@ -58,7 +118,23 @@ def _option(
 ) -> FinishOption:
     bonus = db.finish_bonus(fr)
     curve = {cm: float(finish_odds(me, opp, finish_bonus=bonus, crowd_meter=cm)) for cm in cms}
-    return FinishOption(finish=fr, bonus=bonus, is_signature=signature, curve=curve)
+    strong_bonus, reroll, condition = finish_variant(fr, bonus)
+    strong_curve = None
+    if reroll or strong_bonus != bonus:  # the finish has a distinct ceiling
+        strong_curve = {
+            cm: float(
+                finish_odds(me, opp, finish_bonus=strong_bonus, crowd_meter=cm, allow_reroll=reroll)
+            )
+            for cm in cms
+        }
+    return FinishOption(
+        finish=fr,
+        bonus=bonus,
+        is_signature=signature,
+        curve=curve,
+        strong_curve=strong_curve,
+        condition=condition,
+    )
 
 
 def signature_curves(
@@ -80,6 +156,13 @@ def _score(opt: FinishOption) -> float:
     Falls back to the full curve if the requested CMs are all above the early window."""
     early = [v for cm, v in opt.curve.items() if cm <= _EARLY_CM]
     return sum(early) if early else sum(opt.curve.values())
+
+
+def _score_strong(opt: FinishOption) -> float:
+    """Like :func:`_score` but over the CEILING curve (conditions met) — used to rank
+    the best conditional finish; equals :func:`_score` for a finish with no ceiling."""
+    early = [opt.strong_at(cm) for cm in opt.curve if cm <= _EARLY_CM]
+    return sum(early) if early else sum(opt.strong_at(cm) for cm in opt.curve)
 
 
 def _best(
@@ -121,11 +204,20 @@ def finish_lines(
     return lines
 
 
-def most_open_line(lines: list[FinishLine]) -> FinishLine | None:
-    """The strongest line to throw: best odds among open lanes, else best overall."""
+def _best_line(lines: list[FinishLine], score: Callable[[FinishLine], float]) -> FinishLine | None:
+    """The strongest line by ``score``, preferring open lanes (else best overall)."""
     scored = [ln for ln in lines if ln.best is not None]
     if not scored:
         return None
-    open_lanes = [ln for ln in scored if ln.open_lane]
-    pool = open_lanes or scored
-    return max(pool, key=lambda ln: _score(ln.best))  # type: ignore[arg-type]
+    pool = [ln for ln in scored if ln.open_lane] or scored
+    return max(pool, key=score)
+
+
+def most_open_line(lines: list[FinishLine]) -> FinishLine | None:
+    """The strongest line to throw by its FLOOR (conditions unmet) — the guaranteed best."""
+    return _best_line(lines, lambda ln: _score(ln.best) if ln.best else 0.0)
+
+
+def best_ceiling_line(lines: list[FinishLine]) -> FinishLine | None:
+    """The strongest line by its CEILING (conditions met) — the best conditional bomb."""
+    return _best_line(lines, lambda ln: _score_strong(ln.ceiling_best) if ln.ceiling_best else 0.0)

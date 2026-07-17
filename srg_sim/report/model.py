@@ -30,7 +30,8 @@ class CompetitorReport:
     turn_win: float  # this competitor's chance to win a turn roll vs the opponent
     signature_finishes: list[FinishOption]  # each with its CM curve (section 8)
     finish_lines: list[FinishLine]  # per-type signature + logoless-if-better + stop
-    most_open: FinishLine | None
+    most_open: FinishLine | None  # best line by its FLOOR (conditions unmet)
+    best_ceiling: FinishLine | None  # best line by its CEILING (conditions met)
     skill_req_cards: list[PriorityCard]  # curated tech cards this comp can run (ranked)
     personal_cards: tuple[str, ...] = ()  # no-requirement disruption Leads (standing note)
     unsupported_gimmick: tuple[str, ...] = ()  # gimmick clauses the parser can't yet model
@@ -116,6 +117,7 @@ def _side(
         signature_finishes=finishes.signature_curves(db, me, opp, cms),
         finish_lines=lines,
         most_open=finishes.most_open_line(lines),
+        best_ceiling=finishes.best_ceiling_line(lines),
         skill_req_cards=skillreqs.top_for(me, opp),
         personal_cards=skillreqs.personal_choice(),
         unsupported_gimmick=_unsupported_clauses(me),

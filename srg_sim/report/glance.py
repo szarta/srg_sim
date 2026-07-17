@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from srg_sim.report.finishes import FinishOption
 from srg_sim.report.model import CompetitorReport, MatchupData
 from srg_sim.report.render import _verdict_role
 from srg_sim.report.skillreqs import GlanceStops, StopAccess, glance_stops
@@ -105,7 +106,7 @@ def _table(
     lines += _row("", f"**{data.a.comp.name}**", f"**{data.b.comp.name}**")
     lines += _row("", _image(data.a.image_uuid, images), _image(data.b.image_uuid, images))
     lines += _row("Turn roll", _turn(data.a), _turn(data.b))
-    lines += _row("Best finish", _best_finish(data.a), _best_finish(data.b))
+    lines += _finish_rows(data.a, data.b)
     lines += _row("Open lanes", _open_lanes(data.a), _open_lanes(data.b))
     lines += _row("Big skill stops", _big_stops(a_stops), _big_stops(b_stops))
     lines += _row("Equal-8 stop", _equal8(a_stops), _equal8(b_stops))
@@ -131,17 +132,49 @@ def _turn(cr: CompetitorReport) -> str:
     return f":{_verdict_role(cr.turn_win)}:`{cr.turn_win:.0%}`"
 
 
-def _best_finish(cr: CompetitorReport) -> str:
+def _finish_rows(a: CompetitorReport, b: CompetitorReport) -> list[str]:
+    """One "Best finish" row, or a "Best (floor)" + "Best (ceiling)" pair when either
+    side has a conditional finish (a weak base that a met condition lifts)."""
+    if not (_has_ceiling(a) or _has_ceiling(b)):
+        return _row("Best finish", _floor_cell(a), _floor_cell(b))
+    return _row("Best (floor)", _floor_cell(a), _floor_cell(b)) + _row(
+        "Best (ceiling)", _ceiling_cell(a), _ceiling_cell(b)
+    )
+
+
+def _has_ceiling(cr: CompetitorReport) -> bool:
+    fl = cr.best_ceiling
+    return fl is not None and fl.ceiling_best is not None and fl.ceiling_best.has_ceiling
+
+
+def _floor_cell(cr: CompetitorReport) -> str:
     ml = cr.most_open
     if ml is None or ml.best is None:
         return "walled — nothing lands cleanly"
-    best = ml.best
-    tag = " *(logoless)*" if not best.is_signature else ""
-    lane = "open" if ml.open_lane else "contested"
+    return _finish_str(ml.atk_type, ml.best, ml.open_lane, strong=False)
+
+
+def _ceiling_cell(cr: CompetitorReport) -> str:
+    fl = cr.best_ceiling
+    if fl is None or fl.ceiling_best is None or not fl.ceiling_best.has_ceiling:
+        return "— *(no conditional finish)*"
+    opt = fl.ceiling_best
+    note = f"\n*needs: {opt.condition}*" if opt.condition else ""
+    return _finish_str(fl.atk_type, opt, fl.open_lane, strong=True) + note
+
+
+def _finish_str(atk_type: str, opt: FinishOption, open_lane: bool, *, strong: bool) -> str:
+    tag = " *(logoless)*" if not opt.is_signature else ""
+    lane = "open" if open_lane else "contested"
     odds = " · ".join(
-        f"CM{cm} :{_verdict_role(best.odds_at(cm))}:`{best.odds_at(cm):.0%}`" for cm in _GLANCE_CMS
+        f"CM{cm} :{_verdict_role(_odds(opt, cm, strong))}:`{_odds(opt, cm, strong):.0%}`"
+        for cm in _GLANCE_CMS
     )
-    return f"**{best.finish.name}** ({ml.atk_type}, {lane}){tag}\n{odds}"
+    return f"**{opt.finish.name}** ({atk_type}, {lane}){tag}\n{odds}"
+
+
+def _odds(opt: FinishOption, cm: int, strong: bool) -> float:
+    return opt.strong_at(cm) if strong else opt.odds_at(cm)
 
 
 def _open_lanes(cr: CompetitorReport) -> str:

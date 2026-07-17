@@ -242,6 +242,70 @@ def test_render_emits_expected_sections(db: ReportCardDB) -> None:
     assert "Better logoless alternatives" in rst  # Grapple logoless beats signature
 
 
+def test_finish_variant_detects_reroll_and_double_bonus() -> None:
+    from srg_sim.report.carddb import FinishRecord
+    from srg_sim.report.finishes import finish_variant
+
+    def fr(text: str) -> FinishRecord:
+        return FinishRecord("u", "F", "Grapple", 29, text, (), None)
+
+    # Re-roll clause -> allow_reroll, same bonus.
+    reroll = fr(
+        "+1 to Grapple\nIf you rolled Agility or Strike for your Finish roll, you may "
+        "draw 1 card to re-roll your Finish roll."
+    )
+    bonus, allow, cond = finish_variant(reroll, {"Grapple": 1})
+    assert allow is True and bonus == {"Grapple": 1} and "Agility or Strike" in cond
+    # "double these bonuses" -> 2x bonus, no reroll.
+    dbl = fr(
+        "+1 to Power\n+2 to Grapple\nIf you bumped on the last turn roll, double these bonuses."
+    )
+    bonus2, allow2, cond2 = finish_variant(dbl, {"Power": 1, "Grapple": 2})
+    assert allow2 is False and bonus2 == {"Power": 2, "Grapple": 4} and "bumped" in cond2
+    # No conditional text -> floor == ceiling (empty).
+    plain = fr("+2 to Grapple")
+    assert finish_variant(plain, {"Grapple": 2}) == ({"Grapple": 2}, False, "")
+
+
+def test_conditional_finish_gets_a_distinct_ceiling_and_selects_it() -> None:
+    # End-to-end: a signature finish whose text grants a re-roll gets a strong_curve
+    # strictly above its floor, and best_ceiling_line surfaces it while most_open_line
+    # (floor) does not. A plain finish stays ceiling-less.
+    from srg_sim.report import finishes
+
+    records = [
+        _comp("u-x", "Xavier", _ALPHA, ("xf29", "xf30")),
+        _comp("u-y", "Yolanda", _BETA, ()),
+        _finish("xf29", "Plain Slam", "Grapple", 29, "+2 to Grapple"),
+        _finish(
+            "xf30",
+            "Reroll Bomb",
+            "Submission",
+            30,
+            "+2 to Submission\nIf you rolled Agility for your Finish roll, you may re-roll "
+            "your Finish roll.",
+        ),
+    ]
+    db = ReportCardDB(CardIndex(records))
+    x, y = db.resolve_competitor("Xavier"), db.resolve_competitor("Yolanda")
+    lines = finishes.finish_lines(db, x, y, (0, 1, 2))
+    sig = {ln.signature.finish.name: ln.signature for ln in lines if ln.signature}
+    # The reroll finish carries a ceiling strictly above its floor; the plain one doesn't.
+    assert sig["Reroll Bomb"].has_ceiling and sig["Reroll Bomb"].strong_at(1) > sig[
+        "Reroll Bomb"
+    ].odds_at(1)
+    assert not sig["Plain Slam"].has_ceiling and sig["Plain Slam"].strong_at(1) == sig[
+        "Plain Slam"
+    ].odds_at(1)
+    # best_ceiling_line ranks by the ceiling (conditions-met) score, not the floor.
+    from srg_sim.report.finishes import _score_strong
+
+    ceiling = finishes.best_ceiling_line(lines)
+    assert _score_strong(ceiling.ceiling_best) == max(
+        _score_strong(ln.ceiling_best) for ln in lines if ln.open_lane and ln.ceiling_best
+    )
+
+
 def test_turn_odds_mc_reapplies_a_once_per_turn_gimmick_every_turn() -> None:
     # Regression: the roll-only MC must reset once-per-turn frequency guards each
     # simulated turn. Without it, a bump-punish gimmick fires on the FIRST bump then
