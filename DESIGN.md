@@ -141,6 +141,7 @@ ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP)  # delta scales by cou
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 Reroll(who, once=True)        WinTie(who)                   Bump(who)
+ElectBumpOnSameSkill(uses=2)  # Static roll-off grant: owner MAY bump on a same-skill roll, N times/match
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
 Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)
 AlsoLead(condition)           # Static self-decl: also playable as a Lead while `condition` holds

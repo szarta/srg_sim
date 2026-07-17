@@ -33,6 +33,7 @@ from srg_sim.effects import (
     Draw,
     Effect,
     EffectSource,
+    ElectBumpOnSameSkill,
     FinishBonus,
     FinishRollBonus,
     Flip,
@@ -160,6 +161,7 @@ SAMPLES: list[IRNode] = [
     Reroll(Who.OPP, once=False),
     WinTie(Who.SELF),
     Bump(Who.OPP),
+    ElectBumpOnSameSkill(uses=2),  # Ringside Ruckus entrance: elective same-skill bump
     Stop(PlayOrder.LEAD, AtkType.GRAPPLE, source_is_skillreq=True),
     BlankGimmick(Who.OPP),
     FlipGimmick(Who.SELF),

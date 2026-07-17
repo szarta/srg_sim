@@ -1739,3 +1739,23 @@ cc0f951e80054c7997e07eb2be71ac35:
   raw_clause: if you have "Ready to Rumble" in play, your opponent's Gimmick is blank
   source: card
   optional: false
+
+# Entrance 'Ringside Ruckus With The Floats' (mastermind-v3): twice per match, on a
+# same-skill turn roll the owner MAY bump (ElectBumpOnSameSkill) — key T-Virus/gimmick combo.
+2e6547672591482e9af2b5369fc7ca67:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ElectBumpOnSameSkill
+    uses: 2
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: twice per match, when you roll the same skill as your target, you may bump
+  source: entrance
+  optional: false

@@ -1551,6 +1551,23 @@ def test_per_count_draw_scales_with_the_board() -> None:
     assert len(eng.state.players["A"].hand) == before + 3  # one per Lead in play
 
 
+def test_elective_same_skill_bump_grant_charges_and_election() -> None:
+    from dataclasses import replace
+
+    eng = _fresh()
+    grant = fx.Effect(trigger=fx.Static(), actions=(fx.ElectBumpOnSameSkill(uses=2),))
+    ent = eng.state.players["A"].entrance
+    eng.state.players["A"].entrance = replace(ent, effects=(grant,))
+    assert eng._elective_bump_owner() == "A"  # A holds a charged grant, B does not
+    # HeuristicPolicy elects the bump only when behind on the roll
+    assert eng._elect_bump("A", 3, 5) is True  # losing -> bump into a re-roll
+    assert eng.state.players["A"].freq_counters["match:elect_bump"] == 1  # a charge spent
+    assert eng._elect_bump("A", 6, 2) is False  # winning -> keep the win, no bump
+    assert eng.state.players["A"].freq_counters["match:elect_bump"] == 1  # unchanged
+    eng.state.players["A"].freq_counters["match:elect_bump"] = 2
+    assert eng._elective_bump_owner() is None  # both charges exhausted
+
+
 def test_also_lead_makes_a_finish_playable_when_hand_holds_only_it() -> None:
     also_lead = _bare(
         28,

@@ -676,6 +676,19 @@ class Bump(IRNode):
 
 
 @dataclass(frozen=True)
+class ElectBumpOnSameSkill(IRNode):
+    """A static roll-off grant (Mastermind's "Ringside Ruckus With The Floats"
+    entrance): when the owner and target roll the **same skill** for the turn roll
+    but different values, the owner MAY elect to bump instead of resolving —
+    ``uses`` times per match. A normal value tie already bumps for free, so this
+    only adds the value-differs case. Read structurally in the roll-off (a no-op to
+    execute); the per-match budget is tracked in the owner's freq counters. Electing
+    a bump both fires the owner's OnBump punish and arms a bumped finish (T-Virus)."""
+
+    uses: int = 2
+
+
+@dataclass(frozen=True)
 class Stop(IRNode):
     order: PlayOrder | None = None
     atk_type: AtkType | None = None
@@ -972,6 +985,7 @@ Action = (
     | Reroll
     | WinTie
     | Bump
+    | ElectBumpOnSameSkill
     | Stop
     | BlankGimmick
     | FlipGimmick

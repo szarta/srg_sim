@@ -283,7 +283,18 @@ class Engine:
         va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # Tomato: roll-skill debuff
         self._consume_pending()
         bumps = 0
-        while va == vb and bumps < MAX_TIE_REROLLS:
+        while bumps < MAX_TIE_REROLLS:
+            # Elective same-skill bump (Mastermind's "Ringside Ruckus" entrance): both
+            # rolled the SAME skill but different values, so the owner MAY spend a
+            # per-match charge to bump instead of resolving. A value tie bumps for free
+            # below, so this only adds the value-differs case.
+            if va != vb and sa == sb:
+                owner = self._elective_bump_owner()
+                if owner is not None and self._elect_bump(owner, va, vb):
+                    sa, va, sb, vb, bumps = self._do_bump(bumps)
+                    continue
+            if va != vb:
+                break  # a decided roll: no value tie and no elected bump
             forced = self._tie_winner()
             if forced is not None:
                 self._record_roll_ctx(sa, va, sb, vb)
@@ -297,18 +308,54 @@ class Engine:
             vb = self._offer_roll_boost("B", sb, vb, on_bump=True)
             if va != vb:
                 break
-            self._draw("A", 1)  # bump: both players draw, then re-roll (mechanics §2)
-            self._draw("B", 1)
-            bumps += 1
-            self._run_on_bump()  # bump-punish gimmicks (Mastermind: opp next roll -2)
-            sa, va = self._roll_for("A", use_pending=False)
-            sb, vb = self._roll_for("B", use_pending=False)
-            va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # debuff re-rolls too
+            sa, va, sb, vb, bumps = self._do_bump(bumps)
         winner = self._roll_winner(va, vb, lowest)
         self._record_roll_ctx(sa, va, sb, vb)
         self._turn_bumped = bumps > 0
         self._log(gl.TurnResult(t=self.state.turn_no, winner=winner, tie_bumps=bumps))
         return winner
+
+    def _do_bump(self, bumps: int) -> tuple[Skill, int, Skill, int, int]:
+        """Perform a bump: both players draw 1, fire OnBump punishes, and re-roll
+        (pending mods are dropped on a bump re-roll). Returns the fresh
+        ``(sa, va, sb, vb, bumps+1)`` for the roll-off loop."""
+        self._draw("A", 1)
+        self._draw("B", 1)
+        bumps += 1
+        self._run_on_bump()  # bump-punish gimmicks (Mastermind: opp next roll -2)
+        sa, va = self._roll_for("A", use_pending=False)
+        sb, vb = self._roll_for("B", use_pending=False)
+        va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # debuff re-rolls too
+        return sa, va, sb, vb, bumps
+
+    def _elective_bump_owner(self) -> str | None:
+        """A player who holds an ``ElectBumpOnSameSkill`` grant with a per-match charge
+        still available (else ``None``) — the roll-off consults this on a same-skill,
+        value-differs roll to offer an elective bump."""
+        for key in ("A", "B"):
+            for eff in self._standing_effects(key):
+                for a in eff.actions:
+                    if isinstance(a, fx.ElectBumpOnSameSkill):
+                        used = self.state.players[key].freq_counters.get("match:elect_bump", 0)
+                        if used < a.uses:
+                            return key
+        return None
+
+    def _elect_bump(self, owner: str, va: int, vb: int) -> bool:
+        """Offer ``owner`` the elective same-skill bump and spend a charge if taken.
+        The options carry a ``losing`` hint (is the owner behind on this roll?) so a
+        policy can bump a loss into a re-roll and pass on a win."""
+        mine, theirs = (va, vb) if owner == "A" else (vb, va)
+        losing = mine < theirs
+        legal: list[Option] = [
+            {"kind": "yes", "point": "elect_bump", "losing": losing},
+            {"kind": "no", "point": "elect_bump", "losing": losing},
+        ]
+        if self._decide("elect_bump", owner, legal)["kind"] != "yes":
+            return False
+        fc = self.state.players[owner].freq_counters
+        fc["match:elect_bump"] = fc.get("match:elect_bump", 0) + 1
+        return True
 
     def _offer_roll_boost(self, key: str, skill: Skill, value: int, on_bump: bool = False) -> int:
         """Offer ``key``'s in-roll boosts for a roll of ``skill`` and return the (maybe
@@ -1350,6 +1397,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
+    fx.ElectBumpOnSameSkill: Engine._act_noop,  # Static, read in the roll-off; never executed
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed
     fx.DoubleFinishIfBumped: Engine._act_noop,  # Static, read in the finish sequence

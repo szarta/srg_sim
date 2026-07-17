@@ -171,6 +171,12 @@ class HeuristicPolicy(Policy):
         """Take optional edges (reroll / self-buff) when offered."""
         return _by_kind(legal, "yes") or legal[0]
 
+    def _at_elect_bump(self, legal: list[Option], state: GameState, key: str) -> Option:
+        """Spend an elective same-skill bump only when behind on the roll — turning a
+        loss into a re-roll (plus the OnBump punish); pass when already ahead."""
+        losing = any(o.get("kind") == "yes" and o.get("losing") for o in legal)
+        return _by_kind(legal, "yes" if losing else "no") or legal[0]
+
     @staticmethod
     def _cheapest_builder(options: list[Option], state: GameState, key: str) -> Option | None:
         """The card we'd most willingly commit to build a chain: the least valuable
