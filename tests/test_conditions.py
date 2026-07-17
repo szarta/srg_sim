@@ -67,6 +67,19 @@ def test_skill_compare_vs_value() -> None:
     assert holds(cond, s, "A")
 
 
+def test_skill_compare_cross_skill_vs_a_different_opponent_skill() -> None:
+    # "your Strike > opponent's Agility" (Thunderous Dropkick): A Strike 7 vs B Agility 6.
+    s = _state()
+    beats = fx.SkillCompare(
+        Skill.STRIKE, fx.Comparator.GT, fx.Who.SELF, fx.Vs.OPP_SAME, vs_skill=Skill.AGILITY
+    )
+    assert holds(beats, s, "A")  # 7 > 6
+    loses = fx.SkillCompare(
+        Skill.STRIKE, fx.Comparator.GT, fx.Who.SELF, fx.Vs.OPP_SAME, vs_skill=Skill.SUBMISSION
+    )
+    assert not holds(loses, s, "A")  # A Strike 7 is not > B Submission 9
+
+
 def test_skill_compare_reflects_active_buffs() -> None:
     # A card buffing A's Strike can flip a Strike-keyed stop online (mechanics §6).
     s = _state()

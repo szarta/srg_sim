@@ -142,8 +142,8 @@ def _h_skill(c: fx.SkillCompare, s: GameState, o: str, r: RollContext | None) ->
     left = _skill_value(s, subject, c.skill)
     if c.vs is fx.Vs.VALUE:
         right = c.value or 0
-    else:  # OPP_SAME: the subject's opponent, same skill
-        right = _skill_value(s, s.opponent_of(subject), c.skill)
+    else:  # OPP_SAME: the subject's opponent — the same skill, or `vs_skill` if set
+        right = _skill_value(s, s.opponent_of(subject), c.vs_skill or c.skill)
     return _CMP[c.cmp](left, right)
 
 

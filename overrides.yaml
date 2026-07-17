@@ -361,39 +361,7 @@ df576122c28f481f998634973945e334:
     dropped)
   source: card
 
-# #22 recur 2 cards from discard
-74d34bbeb78140aea7590c6a8f2d7d5a:
-- '@type': Effect
-  trigger:
-    '@type': OnPlay
-  condition:
-    '@type': Always
-  actions:
-  - '@type': ShuffleIntoDeck
-    selector:
-      '@type': CardFilter
-      number: null
-      atk_type: null
-      play_order: null
-      tag: null
-      name: null
-      raw: null
-  - '@type': ShuffleIntoDeck
-    selector:
-      '@type': CardFilter
-      number: null
-      atk_type: null
-      play_order: null
-      tag: null
-      name: null
-      raw: null
-  duration: INSTANT
-  frequency:
-    '@type': FrequencyGuard
-    kind: UNLIMITED
-    n: null
-  raw_clause: 'shuffle 2 cards from discard into deck (draw-3 rider dropped: cross-skill compare unsupported)'
-  source: card
+# #22 Thunderous Dropkick moved below (now includes the draw-3 cross-skill rider).
 
 # #23 Jackhammer: discard 1 opponent in-play card, recur 2 from discard, draw 1
 5538bdae8345481ca3d414396a7dc766:
@@ -1758,4 +1726,185 @@ cc0f951e80054c7997e07eb2be71ac35:
     n: null
   raw_clause: twice per match, when you roll the same skill as your target, you may bump
   source: entrance
+  optional: false
+
+# #22 Thunderous Dropkick: shuffle 2 from discard + draw 3 if Strike > opp Agility (cross-skill)
+74d34bbeb78140aea7590c6a8f2d7d5a:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: shuffle 2 cards from your discard pile into your deck
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': SkillCompare
+    skill: Strike
+    cmp: '>'
+    who: SELF
+    vs: OPP_SAME
+    value: null
+    vs_skill: Agility
+  actions:
+  - '@type': Draw
+    n: 3
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if your Strike > your opponent's Agility, draw 3 cards
+  source: card
+  optional: false
+
+# #16 Flying Coast to Coast: Agility +1 if another FU/Finish Strike in play
+cea70654cccb4cd5be8e127a5bf6090e:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Or
+    items:
+    - '@type': HasInPlay
+      who: SELF
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Strike
+        play_order: Followup
+        tag: null
+        name: null
+        raw: null
+      count: 2
+      cmp: '>='
+    - '@type': HasInPlay
+      who: SELF
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Strike
+        play_order: Finish
+        tag: null
+        name: null
+        raw: null
+      count: 1
+      cmp: '>='
+  actions:
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if you have another Follow Up or Finish Strike in play, your Agility is +1
+  source: card
+  optional: false
+
+# #24 Pin to the Wall: opponent -1 (choose-skill simplified to Agility)
+da0099e73b9344f9a3197a13652623ec:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Agility
+    delta: -1
+    who: OPP
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'choose a skill: opponent''s skill is -1 (choice simplified to Agility; ''next roll draw
+    1'' rider dropped)'
+  source: card
+  optional: false
+
+# #9 Spit Fire Chariot: draw 1 OR recur up to 4 from discard to deck top
+0be595fb7e6e4f96a766d8bbdbb28f10:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    keyword: null
+    name: null
+    atk_type: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: draw 1
+      actions:
+      - '@type': Draw
+        n: 1
+        source: TOP
+        who: SELF
+        per: null
+        per_who: SELF
+    - '@type': ChoiceOption
+      label: recur up to 4 from discard to top of deck
+      actions:
+      - '@type': RecurToDeckTop
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+        count: 4
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: draw 1 card OR take up to 4 cards from your discard pile and put them on top of your deck
+  source: card
   optional: false

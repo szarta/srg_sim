@@ -393,6 +393,9 @@ class SkillCompare(IRNode):
     who: Who = Who.SELF
     vs: Vs = Vs.OPP_SAME
     value: int | None = None
+    vs_skill: Skill | None = (
+        None  # OPP_SAME vs a DIFFERENT opponent skill ("your Strike > opp Agility")
+    )
 
 
 @dataclass(frozen=True)

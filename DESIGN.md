@@ -116,7 +116,7 @@ its buffs return. Blanked gimmicks contribute no effects (incl. no `Static` buff
 
 **Condition** — a predicate on `GameState` (composable via And/Or/Not):
 ```
-SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?)
+SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?, vs_skill?)  # vs_skill: compare to a DIFFERENT opponent skill ("your Strike > opp Agility")
 HandSizeCompare(cmp, vs=OPP|VALUE, value?)
 CrowdMeterCompare(cmp, value)
 HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)

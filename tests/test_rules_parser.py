@@ -386,6 +386,30 @@ def test_also_lead_when_hand_empty() -> None:
     assert isinstance(eff.trigger, Static)
 
 
+def test_each_player_reveal_top_is_a_mutual_draw() -> None:
+    eff = rp.parse_text(
+        "Each player reveals the top card of their deck and adds it to their hand", CARD
+    )[0]
+    draws = [a for a in eff.actions if isinstance(a, Draw)]
+    assert len(draws) == 2
+    assert {d.who for d in draws} == {Who.SELF, Who.OPP}  # both sides draw 1 from the top
+
+
+def test_each_player_buries_in_opponent_discard_is_symmetric() -> None:
+    eff = rp.parse_text("Each player buries 2 cards in their opponent's discard pile", CARD)[0]
+    buries = [a for a in eff.actions if isinstance(a, Bury)]
+    assert len(buries) == 2
+    assert {b.who for b in buries} == {Who.SELF, Who.OPP}
+    assert all(b.count == 2 for b in buries)
+
+
+def test_bury_accepts_up_to_n() -> None:
+    act = _one("Bury up to 3 cards in your opponent's discard pile")
+    assert isinstance(act, Bury)
+    assert act.who is Who.OPP
+    assert act.count == 3
+
+
 # --- #27 coverage cleanup: metadata, skill-stop printings, draws, shuffle ----
 
 

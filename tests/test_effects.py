@@ -124,6 +124,9 @@ SAMPLES: list[IRNode] = [
     Or((Always(), CrowdMeterCompare(Comparator.EQ, 0))),
     Not(Always()),
     SkillCompare(Skill.POWER, Comparator.GT, Who.SELF, Vs.OPP_SAME, None),
+    SkillCompare(  # cross-skill: "your Strike > opponent's Agility" (Thunderous Dropkick)
+        Skill.STRIKE, Comparator.GT, Who.SELF, Vs.OPP_SAME, None, vs_skill=Skill.AGILITY
+    ),
     HandSizeCompare(Comparator.GE, Vs.VALUE, 3, Who.OPP),
     CrowdMeterCompare(Comparator.LT, 4),
     HasInPlay(Who.SELF, CardFilter(tag="Championship")),

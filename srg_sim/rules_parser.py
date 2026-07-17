@@ -246,6 +246,21 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect | None]]] =
         r"Each player draws? (\d+) cards?",
         lambda m: _eff(OnHit(), [Draw(n=int(m[1])), Draw(n=int(m[1]), who=Who.OPP)]),
     ),
+    # "Each player reveals the top card of their deck and adds it to their hand" — a
+    # symmetric top-of-deck draw for both sides (Cosmic Smash / Pineapple for Sheep).
+    _rule(
+        r"Each player reveals the top card of their deck and adds it to their hand",
+        lambda m: _eff(OnHit(), [Draw(n=1), Draw(n=1, who=Who.OPP)]),
+    ),
+    # "Each player buries N cards in their opponent's discard pile" — symmetric bury
+    # (Sidewind Wonder-Plex / Spinning Hammer Hold): each side buries in the other's.
+    _rule(
+        r"Each player buries (\d+) cards? in their opponent'?s discard pile",
+        lambda m: _eff(
+            OnHit(),
+            [Bury(count=int(m[1]), who=Who.OPP), Bury(count=int(m[1]), who=Who.SELF)],
+        ),
+    ),
     _rule(
         r"Your opponent draws? (\d+) cards?",
         lambda m: _eff(OnHit(), [Draw(n=int(m[1]), who=Who.OPP)]),
@@ -320,11 +335,11 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect | None]]] =
     ),
     _rule(r"Flip (\d+) cards?", lambda m: _eff(OnHit(), [Flip(n=int(m[1]))])),
     _rule(
-        r"Bury (\d+) cards? in your opponent's discard pile",
+        r"Bury (?:up to )?(\d+) cards? in your opponent's discard pile",
         lambda m: _eff(OnHit(), [Bury(count=int(m[1]), who=Who.OPP)]),
     ),
     _rule(
-        r"Bury (\d+) cards?(?: in your discard pile)?",
+        r"Bury (?:up to )?(\d+) cards?(?: in your discard pile)?",
         lambda m: _eff(OnHit(), [Bury(count=int(m[1]), who=Who.SELF)]),
     ),
     # Discard: opponent-forced (the owner still chooses which, unless random) and
