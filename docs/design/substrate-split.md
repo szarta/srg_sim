@@ -283,8 +283,14 @@ Each phase ends green (conformance for engine phases; a working consumer for the
   validate against — *done*: generated from the frozen dataclasses by
   `srg_sim/schema.py`, committed under `schemas/v1/`, with a drift-guard + conformance
   test (`tests/test_schema.py`) that fails on any un-versioned §3/§8 change. Swap Python
-  `rng.py` to splitmix64 and regenerate golden logs. (No consumers depend on Python, so
-  this needs no deprecation runway — the only cost is reseeding fixtures.)
+  `rng.py` to splitmix64 — *done*: canonical splitmix64 (matches the published reference
+  vectors), the cross-engine draw-stream contract. Seed the conformance corpus — *done*:
+  `srg_sim/conformance.py` + `tests/conformance_corpus.py` generate self-contained
+  `(seed, decks, decisions[]) → canonical log` fixtures under `fixtures/conformance/`
+  (Heuristic-family policies so replay is byte-exact), guarded by `tests/test_conformance.py`
+  (byte-identical replay + a golden-log drift guard). This is the exact target the Rust
+  engine (M-R1) must reproduce. (No consumers depend on Python, so no deprecation runway —
+  the only cost is reseeding fixtures.)
 - **M-R1 — Rust core + parity (console + MCP).** Port `ir`, `state`, `finish`,
   `stops`, `rng`, `gamelog`, `engine` (as the resumable state machine), `parser`,
   and the `policy` trait. Stand up the **conformance harness** (§6). Ship the **Rust

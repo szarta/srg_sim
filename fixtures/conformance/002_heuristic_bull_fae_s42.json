@@ -1,0 +1,5716 @@
+{
+  "decisions": {
+    "A": [
+      {
+        "atk_type": "Strike",
+        "card": "A-07",
+        "kind": "play",
+        "number": 7,
+        "order": "Lead"
+      },
+      {
+        "atk_type": "Grapple",
+        "card": "A-17",
+        "kind": "play",
+        "number": 17,
+        "order": "Followup"
+      },
+      {
+        "kind": "pass"
+      },
+      {
+        "kind": "pass"
+      },
+      {
+        "kind": "none",
+        "vs_order": "Lead",
+        "vs_type": "Strike"
+      },
+      {
+        "atk_type": "Strike",
+        "card": "A-10",
+        "kind": "play",
+        "number": 10,
+        "order": "Lead"
+      },
+      {
+        "kind": "none",
+        "vs_order": "Followup",
+        "vs_type": "Strike"
+      },
+      {
+        "card": "A-09",
+        "kind": "discard",
+        "number": 9,
+        "order": "Lead"
+      },
+      {
+        "card": "A-12",
+        "kind": "discard",
+        "number": 12,
+        "order": "Lead"
+      },
+      {
+        "atk_type": "Submission",
+        "card": "A-18",
+        "kind": "play",
+        "number": 18,
+        "order": "Followup"
+      },
+      {
+        "atk_type": "Grapple",
+        "card": "A-29",
+        "kind": "play",
+        "number": 29,
+        "order": "Finish"
+      },
+      {
+        "card": "A-16",
+        "kind": "discard",
+        "number": 16,
+        "order": "Followup"
+      },
+      {
+        "card": "A-23",
+        "kind": "discard",
+        "number": 23,
+        "order": "Followup"
+      },
+      {
+        "atk_type": "Strike",
+        "card": "A-28",
+        "kind": "play",
+        "number": 28,
+        "order": "Finish"
+      }
+    ],
+    "B": [
+      {
+        "atk_type": "Submission",
+        "card": "B-12",
+        "kind": "play",
+        "number": 12,
+        "order": "Lead"
+      },
+      {
+        "atk_type": "Submission",
+        "card": "B-21",
+        "kind": "play",
+        "number": 21,
+        "order": "Followup"
+      },
+      {
+        "kind": "none",
+        "vs_order": "Lead",
+        "vs_type": "Strike"
+      },
+      {
+        "kind": "pass"
+      },
+      {
+        "kind": "pass"
+      },
+      {
+        "kind": "pass"
+      },
+      {
+        "kind": "none",
+        "vs_order": "Followup",
+        "vs_type": "Grapple"
+      },
+      {
+        "atk_type": "Grapple",
+        "card": "B-29",
+        "kind": "play",
+        "number": 29,
+        "order": "Finish"
+      },
+      {
+        "atk_type": "Strike",
+        "card": "B-10",
+        "kind": "play",
+        "number": 10,
+        "order": "Lead"
+      },
+      {
+        "kind": "none",
+        "vs_order": "Lead",
+        "vs_type": "Strike"
+      },
+      {
+        "atk_type": "Strike",
+        "card": "B-16",
+        "kind": "play",
+        "number": 16,
+        "order": "Followup"
+      },
+      {
+        "card": "B-18",
+        "kind": "discard",
+        "number": 18,
+        "order": "Followup"
+      },
+      {
+        "card": "B-07",
+        "kind": "discard",
+        "number": 7,
+        "order": "Lead"
+      },
+      {
+        "kind": "none",
+        "vs_order": "Followup",
+        "vs_type": "Submission"
+      },
+      {
+        "card": "B-23",
+        "kind": "discard",
+        "number": 23,
+        "order": "Followup"
+      },
+      {
+        "kind": "pass"
+      },
+      {
+        "atk_type": "Grapple",
+        "card": "B-29",
+        "kind": "play",
+        "number": 29,
+        "order": "Finish"
+      },
+      {
+        "card": "B-17",
+        "kind": "discard",
+        "number": 17,
+        "order": "Followup"
+      },
+      {
+        "kind": "pass"
+      },
+      {
+        "atk_type": "Submission",
+        "card": "B-21",
+        "kind": "play",
+        "number": 21,
+        "order": "Followup"
+      },
+      {
+        "atk_type": "Strike",
+        "card": "B-13",
+        "kind": "stop",
+        "number": 13,
+        "order": "Followup"
+      },
+      {
+        "card": "B-24",
+        "kind": "discard",
+        "number": 24,
+        "order": "Followup"
+      }
+    ]
+  },
+  "decks": {
+    "A": {
+      "cards": [
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-01",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": "Lead",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 1",
+          "number": 1,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-02",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": "Lead",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 2",
+          "number": 2,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-03",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": "Lead",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 3",
+          "number": 3,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-04",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": "Followup",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 4",
+          "number": 4,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-05",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": "Followup",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 5",
+          "number": 5,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-06",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": "Followup",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 6",
+          "number": 6,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-07",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 7",
+          "number": 7,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-08",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 8",
+          "number": 8,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-09",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 9",
+          "number": 9,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-10",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 10",
+          "number": 10,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-11",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 11",
+          "number": 11,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-12",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 12",
+          "number": 12,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-13",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "SkillCompare",
+                "cmp": ">",
+                "skill": "Strike",
+                "value": null,
+                "vs": "OPP_SAME",
+                "vs_skill": null,
+                "who": "SELF"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 13",
+          "number": 13,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-14",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "SkillCompare",
+                "cmp": ">",
+                "skill": "Grapple",
+                "value": null,
+                "vs": "OPP_SAME",
+                "vs_skill": null,
+                "who": "SELF"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 14",
+          "number": 14,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-15",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "SkillCompare",
+                "cmp": ">",
+                "skill": "Submission",
+                "value": null,
+                "vs": "OPP_SAME",
+                "vs_skill": null,
+                "who": "SELF"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 15",
+          "number": 15,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-16",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 16",
+          "number": 16,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-17",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 17",
+          "number": 17,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-18",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 18",
+          "number": 18,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-19",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "HasInPlay",
+                "cmp": ">=",
+                "count": 1,
+                "filter": {
+                  "@type": "CardFilter",
+                  "atk_type": "Grapple",
+                  "name": null,
+                  "number": null,
+                  "play_order": null,
+                  "raw": null,
+                  "tag": null
+                },
+                "who": "OPP"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 19",
+          "number": 19,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-20",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "HasInPlay",
+                "cmp": ">=",
+                "count": 1,
+                "filter": {
+                  "@type": "CardFilter",
+                  "atk_type": "Submission",
+                  "name": null,
+                  "number": null,
+                  "play_order": null,
+                  "raw": null,
+                  "tag": null
+                },
+                "who": "OPP"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 20",
+          "number": 20,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-21",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "HasInPlay",
+                "cmp": ">=",
+                "count": 1,
+                "filter": {
+                  "@type": "CardFilter",
+                  "atk_type": "Strike",
+                  "name": null,
+                  "number": null,
+                  "play_order": null,
+                  "raw": null,
+                  "tag": null
+                },
+                "who": "OPP"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 21",
+          "number": 21,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-22",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 22",
+          "number": 22,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-23",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 23",
+          "number": 23,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-24",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "A Card 24",
+          "number": 24,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-25",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 25",
+          "number": 25,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-26",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 26",
+          "number": 26,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-27",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "A Card 27",
+          "number": 27,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "A-28",
+          "effects": [],
+          "finish_bonuses": {
+            "Strike": 2
+          },
+          "name": "A Card 28",
+          "number": 28,
+          "play_order": "Finish",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "A-29",
+          "effects": [],
+          "finish_bonuses": {
+            "Grapple": 2
+          },
+          "name": "A Card 29",
+          "number": 29,
+          "play_order": "Finish",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "A-30",
+          "effects": [],
+          "finish_bonuses": {
+            "Submission": 2
+          },
+          "name": "A Card 30",
+          "number": 30,
+          "play_order": "Finish",
+          "raw_text": "",
+          "tags": []
+        }
+      ],
+      "competitor": {
+        "db_uuid": "c-bull",
+        "division": "Worlds",
+        "effects": [
+          {
+            "@type": "Effect",
+            "actions": [
+              {
+                "@type": "ModifyRoll",
+                "delta": 1,
+                "per": null,
+                "per_who": "OPP",
+                "when": "NEXT",
+                "who": "SELF"
+              }
+            ],
+            "condition": {
+              "@type": "RollGapExactly",
+              "k": 3
+            },
+            "duration": "INSTANT",
+            "frequency": {
+              "@type": "FrequencyGuard",
+              "kind": "UNLIMITED",
+              "n": null
+            },
+            "optional": false,
+            "raw_clause": "",
+            "source": "gimmick",
+            "trigger": {
+              "@type": "OnRoll",
+              "skill": null,
+              "who": "SELF"
+            }
+          },
+          {
+            "@type": "Effect",
+            "actions": [
+              {
+                "@type": "ModifyRoll",
+                "delta": 2,
+                "per": null,
+                "per_who": "OPP",
+                "when": "NEXT",
+                "who": "SELF"
+              }
+            ],
+            "condition": {
+              "@type": "RollGapExactly",
+              "k": 4
+            },
+            "duration": "INSTANT",
+            "frequency": {
+              "@type": "FrequencyGuard",
+              "kind": "UNLIMITED",
+              "n": null
+            },
+            "optional": false,
+            "raw_clause": "",
+            "source": "gimmick",
+            "trigger": {
+              "@type": "OnRoll",
+              "skill": null,
+              "who": "SELF"
+            }
+          },
+          {
+            "@type": "Effect",
+            "actions": [
+              {
+                "@type": "ModifyRoll",
+                "delta": 3,
+                "per": null,
+                "per_who": "OPP",
+                "when": "NEXT",
+                "who": "SELF"
+              }
+            ],
+            "condition": {
+              "@type": "RollGapAtLeast",
+              "k": 5
+            },
+            "duration": "INSTANT",
+            "frequency": {
+              "@type": "FrequencyGuard",
+              "kind": "UNLIMITED",
+              "n": null
+            },
+            "optional": false,
+            "raw_clause": "",
+            "source": "gimmick",
+            "trigger": {
+              "@type": "OnRoll",
+              "skill": null,
+              "who": "SELF"
+            }
+          }
+        ],
+        "gimmick_text": "",
+        "name": "The Bull",
+        "related_finishes": [],
+        "stats": {
+          "Agility": 5,
+          "Grapple": 9,
+          "Power": 10,
+          "Strike": 7,
+          "Submission": 8,
+          "Technique": 6
+        }
+      },
+      "entrance": {
+        "db_uuid": "A-ent",
+        "effects": [],
+        "name": "A Entrance",
+        "raw_text": ""
+      }
+    },
+    "B": {
+      "cards": [
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-01",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": "Lead",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 1",
+          "number": 1,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-02",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": "Lead",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 2",
+          "number": 2,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-03",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": "Lead",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 3",
+          "number": 3,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-04",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": "Followup",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 4",
+          "number": 4,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-05",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": "Followup",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 5",
+          "number": 5,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-06",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": "Followup",
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 6",
+          "number": 6,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-07",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 7",
+          "number": 7,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-08",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 8",
+          "number": 8,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-09",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 9",
+          "number": 9,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-10",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 10",
+          "number": 10,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-11",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 11",
+          "number": 11,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-12",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 12",
+          "number": 12,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-13",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "SkillCompare",
+                "cmp": ">",
+                "skill": "Strike",
+                "value": null,
+                "vs": "OPP_SAME",
+                "vs_skill": null,
+                "who": "SELF"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 13",
+          "number": 13,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-14",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "SkillCompare",
+                "cmp": ">",
+                "skill": "Grapple",
+                "value": null,
+                "vs": "OPP_SAME",
+                "vs_skill": null,
+                "who": "SELF"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 14",
+          "number": 14,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-15",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "SkillCompare",
+                "cmp": ">",
+                "skill": "Submission",
+                "value": null,
+                "vs": "OPP_SAME",
+                "vs_skill": null,
+                "who": "SELF"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 15",
+          "number": 15,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-16",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 16",
+          "number": 16,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-17",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 17",
+          "number": 17,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-18",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 18",
+          "number": 18,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-19",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "HasInPlay",
+                "cmp": ">=",
+                "count": 1,
+                "filter": {
+                  "@type": "CardFilter",
+                  "atk_type": "Grapple",
+                  "name": null,
+                  "number": null,
+                  "play_order": null,
+                  "raw": null,
+                  "tag": null
+                },
+                "who": "OPP"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 19",
+          "number": 19,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-20",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "HasInPlay",
+                "cmp": ">=",
+                "count": 1,
+                "filter": {
+                  "@type": "CardFilter",
+                  "atk_type": "Submission",
+                  "name": null,
+                  "number": null,
+                  "play_order": null,
+                  "raw": null,
+                  "tag": null
+                },
+                "who": "OPP"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 20",
+          "number": 20,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-21",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "HasInPlay",
+                "cmp": ">=",
+                "count": 1,
+                "filter": {
+                  "@type": "CardFilter",
+                  "atk_type": "Strike",
+                  "name": null,
+                  "number": null,
+                  "play_order": null,
+                  "raw": null,
+                  "tag": null
+                },
+                "who": "OPP"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 21",
+          "number": 21,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-22",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 22",
+          "number": 22,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-23",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 23",
+          "number": 23,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-24",
+          "effects": [],
+          "finish_bonuses": {},
+          "name": "B Card 24",
+          "number": 24,
+          "play_order": "Followup",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-25",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Grapple",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 25",
+          "number": 25,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-26",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 26",
+          "number": 26,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-27",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Strike",
+                  "order": null,
+                  "source_is_skillreq": false
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "",
+              "source": "card",
+              "trigger": {
+                "@type": "Static"
+              }
+            }
+          ],
+          "finish_bonuses": {},
+          "name": "B Card 27",
+          "number": 27,
+          "play_order": "Lead",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Strike",
+          "db_uuid": "B-28",
+          "effects": [],
+          "finish_bonuses": {
+            "Strike": 2
+          },
+          "name": "B Card 28",
+          "number": 28,
+          "play_order": "Finish",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Grapple",
+          "db_uuid": "B-29",
+          "effects": [],
+          "finish_bonuses": {
+            "Grapple": 2
+          },
+          "name": "B Card 29",
+          "number": 29,
+          "play_order": "Finish",
+          "raw_text": "",
+          "tags": []
+        },
+        {
+          "atk_type": "Submission",
+          "db_uuid": "B-30",
+          "effects": [],
+          "finish_bonuses": {
+            "Submission": 2
+          },
+          "name": "B Card 30",
+          "number": 30,
+          "play_order": "Finish",
+          "raw_text": "",
+          "tags": []
+        }
+      ],
+      "competitor": {
+        "db_uuid": "c-fae",
+        "division": "Worlds",
+        "effects": [
+          {
+            "@type": "Effect",
+            "actions": [
+              {
+                "@type": "LowestRollWins"
+              }
+            ],
+            "condition": {
+              "@type": "Always"
+            },
+            "duration": "WHILE_GIMMICK_ACTIVE",
+            "frequency": {
+              "@type": "FrequencyGuard",
+              "kind": "UNLIMITED",
+              "n": null
+            },
+            "optional": false,
+            "raw_clause": "",
+            "source": "gimmick",
+            "trigger": {
+              "@type": "Static"
+            }
+          }
+        ],
+        "gimmick_text": "",
+        "name": "Fae Dragon",
+        "related_finishes": [],
+        "stats": {
+          "Agility": 6,
+          "Grapple": 5,
+          "Power": 10,
+          "Strike": 8,
+          "Submission": 9,
+          "Technique": 7
+        }
+      },
+      "entrance": {
+        "db_uuid": "B-ent",
+        "effects": [],
+        "name": "B Entrance",
+        "raw_text": ""
+      }
+    }
+  },
+  "fixture_schema": 1,
+  "kind": "sim",
+  "label": "heuristic_bull_fae_s42",
+  "log": [
+    {
+      "created": "",
+      "kind": "sim",
+      "players": {
+        "A": {
+          "competitor": "The Bull",
+          "deck": [
+            "A-01",
+            "A-02",
+            "A-03",
+            "A-04",
+            "A-05",
+            "A-06",
+            "A-07",
+            "A-08",
+            "A-09",
+            "A-10",
+            "A-11",
+            "A-12",
+            "A-13",
+            "A-14",
+            "A-15",
+            "A-16",
+            "A-17",
+            "A-18",
+            "A-19",
+            "A-20",
+            "A-21",
+            "A-22",
+            "A-23",
+            "A-24",
+            "A-25",
+            "A-26",
+            "A-27",
+            "A-28",
+            "A-29",
+            "A-30"
+          ],
+          "entrance": "A Entrance",
+          "policy": "heuristic"
+        },
+        "B": {
+          "competitor": "Fae Dragon",
+          "deck": [
+            "B-01",
+            "B-02",
+            "B-03",
+            "B-04",
+            "B-05",
+            "B-06",
+            "B-07",
+            "B-08",
+            "B-09",
+            "B-10",
+            "B-11",
+            "B-12",
+            "B-13",
+            "B-14",
+            "B-15",
+            "B-16",
+            "B-17",
+            "B-18",
+            "B-19",
+            "B-20",
+            "B-21",
+            "B-22",
+            "B-23",
+            "B-24",
+            "B-25",
+            "B-26",
+            "B-27",
+            "B-28",
+            "B-29",
+            "B-30"
+          ],
+          "entrance": "B Entrance",
+          "policy": "heuristic"
+        }
+      },
+      "schema": 1,
+      "seed": 42
+    },
+    {
+      "cards": [
+        "A-07",
+        "A-19",
+        "A-17"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 0,
+      "type": "draw"
+    },
+    {
+      "cards": [
+        "B-03",
+        "B-12",
+        "B-10"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 0,
+      "type": "draw"
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "A",
+      "skill": "Grapple",
+      "t": 1,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "base": 5,
+      "mods": [],
+      "player": "B",
+      "skill": "Grapple",
+      "t": 1,
+      "type": "roll",
+      "value": 5
+    },
+    {
+      "t": 1,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-04"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 1,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Submission",
+        "card": "B-12",
+        "kind": "play",
+        "number": 12,
+        "order": "Lead"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-12",
+          "kind": "play",
+          "number": 12,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 1,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Submission",
+      "card": "B-12",
+      "order": "Lead",
+      "player": "B",
+      "t": 1,
+      "type": "play"
+    },
+    {
+      "base": 10,
+      "mods": [],
+      "player": "A",
+      "skill": "Power",
+      "t": 2,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "base": 10,
+      "mods": [],
+      "player": "B",
+      "skill": "Power",
+      "t": 2,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "cards": [
+        "A-02"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 2,
+      "type": "draw"
+    },
+    {
+      "cards": [
+        "B-21"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 2,
+      "type": "draw"
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "A",
+      "skill": "Grapple",
+      "t": 2,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "base": 5,
+      "mods": [],
+      "player": "B",
+      "skill": "Grapple",
+      "t": 2,
+      "type": "roll",
+      "value": 5
+    },
+    {
+      "t": 2,
+      "tie_bumps": 1,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-13"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 2,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Submission",
+        "card": "B-21",
+        "kind": "play",
+        "number": 21,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-21",
+          "kind": "play",
+          "number": 21,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "play",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 2,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Submission",
+      "card": "B-21",
+      "order": "Followup",
+      "player": "B",
+      "t": 2,
+      "type": "play"
+    },
+    {
+      "base": 6,
+      "mods": [],
+      "player": "A",
+      "skill": "Technique",
+      "t": 3,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "B",
+      "skill": "Submission",
+      "t": 3,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "t": 3,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "A"
+    },
+    {
+      "action": "ModifyRoll",
+      "detail": {
+        "delta": 1,
+        "when": "next"
+      },
+      "src": "A",
+      "t": 3,
+      "target": "A",
+      "type": "effect"
+    },
+    {
+      "cards": [
+        "A-27"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 3,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Strike",
+        "card": "A-07",
+        "kind": "play",
+        "number": 7,
+        "order": "Lead"
+      },
+      "legal": [
+        {
+          "atk_type": "Strike",
+          "card": "A-07",
+          "kind": "play",
+          "number": 7,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "play",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "A",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 3,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Strike",
+      "card": "A-07",
+      "order": "Lead",
+      "player": "A",
+      "t": 3,
+      "type": "play"
+    },
+    {
+      "chosen": {
+        "kind": "none",
+        "vs_order": "Lead",
+        "vs_type": "Strike"
+      },
+      "legal": [
+        {
+          "kind": "none",
+          "vs_order": "Lead",
+          "vs_type": "Strike"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "stop",
+          "number": 3,
+          "order": "Lead"
+        }
+      ],
+      "player": "B",
+      "point": "stop",
+      "policy": "heuristic",
+      "t": 3,
+      "type": "decision"
+    },
+    {
+      "base": 9,
+      "mods": [
+        {
+          "delta": 1,
+          "src": "pending"
+        }
+      ],
+      "player": "A",
+      "skill": "Grapple",
+      "t": 4,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "B",
+      "skill": "Technique",
+      "t": 4,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "t": 4,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-16"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 4,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "kind": "pass"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "play",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-16",
+          "kind": "play",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 4,
+      "type": "decision"
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "A",
+      "skill": "Strike",
+      "t": 5,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "B",
+      "skill": "Technique",
+      "t": 5,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "cards": [
+        "A-10"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 5,
+      "type": "draw"
+    },
+    {
+      "cards": [
+        "B-26"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 5,
+      "type": "draw"
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "A",
+      "skill": "Grapple",
+      "t": 5,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "base": 6,
+      "mods": [],
+      "player": "B",
+      "skill": "Agility",
+      "t": 5,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "t": 5,
+      "tie_bumps": 1,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-25"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 5,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "kind": "pass"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "play",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-16",
+          "kind": "play",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 5,
+      "type": "decision"
+    },
+    {
+      "base": 10,
+      "mods": [],
+      "player": "A",
+      "skill": "Power",
+      "t": 6,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "B",
+      "skill": "Technique",
+      "t": 6,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "t": 6,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-18"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 6,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "kind": "pass"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "play",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-16",
+          "kind": "play",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-18",
+          "kind": "play",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 6,
+      "type": "decision"
+    },
+    {
+      "base": 6,
+      "mods": [],
+      "player": "A",
+      "skill": "Technique",
+      "t": 7,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "B",
+      "skill": "Submission",
+      "t": 7,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "t": 7,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "A"
+    },
+    {
+      "action": "ModifyRoll",
+      "detail": {
+        "delta": 1,
+        "when": "next"
+      },
+      "src": "A",
+      "t": 7,
+      "target": "A",
+      "type": "effect"
+    },
+    {
+      "cards": [
+        "A-09"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 7,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Grapple",
+        "card": "A-17",
+        "kind": "play",
+        "number": 17,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "atk_type": "Strike",
+          "card": "A-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-17",
+          "kind": "play",
+          "number": 17,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "play",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-09",
+          "kind": "play",
+          "number": 9,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "A",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 7,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Grapple",
+      "card": "A-17",
+      "order": "Followup",
+      "player": "A",
+      "t": 7,
+      "type": "play"
+    },
+    {
+      "chosen": {
+        "kind": "none",
+        "vs_order": "Followup",
+        "vs_type": "Grapple"
+      },
+      "legal": [
+        {
+          "kind": "none",
+          "vs_order": "Followup",
+          "vs_type": "Grapple"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "stop",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "stop",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "stop",
+          "number": 25,
+          "order": "Lead"
+        }
+      ],
+      "player": "B",
+      "point": "stop",
+      "policy": "heuristic",
+      "t": 7,
+      "type": "decision"
+    },
+    {
+      "base": 5,
+      "mods": [
+        {
+          "delta": 1,
+          "src": "pending"
+        }
+      ],
+      "player": "A",
+      "skill": "Agility",
+      "t": 8,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "B",
+      "skill": "Technique",
+      "t": 8,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "t": 8,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "A"
+    },
+    {
+      "cards": [
+        "A-18"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 8,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "kind": "pass"
+      },
+      "legal": [
+        {
+          "atk_type": "Strike",
+          "card": "A-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "play",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-09",
+          "kind": "play",
+          "number": 9,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-18",
+          "kind": "play",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "A",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 8,
+      "type": "decision"
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "A",
+      "skill": "Grapple",
+      "t": 9,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "B",
+      "skill": "Submission",
+      "t": 9,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "cards": [
+        "A-05"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 9,
+      "type": "draw"
+    },
+    {
+      "cards": [
+        "B-14"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 9,
+      "type": "draw"
+    },
+    {
+      "base": 5,
+      "mods": [],
+      "player": "A",
+      "skill": "Agility",
+      "t": 9,
+      "type": "roll",
+      "value": 5
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "B",
+      "skill": "Submission",
+      "t": 9,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "t": 9,
+      "tie_bumps": 1,
+      "type": "turn_result",
+      "winner": "A"
+    },
+    {
+      "action": "ModifyRoll",
+      "detail": {
+        "delta": 2,
+        "when": "next"
+      },
+      "src": "A",
+      "t": 9,
+      "target": "A",
+      "type": "effect"
+    },
+    {
+      "cards": [
+        "A-03"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 9,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "kind": "pass"
+      },
+      "legal": [
+        {
+          "atk_type": "Strike",
+          "card": "A-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "play",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-09",
+          "kind": "play",
+          "number": 9,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-18",
+          "kind": "play",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-05",
+          "kind": "play",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "A",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 9,
+      "type": "decision"
+    },
+    {
+      "base": 9,
+      "mods": [
+        {
+          "delta": 2,
+          "src": "pending"
+        }
+      ],
+      "player": "A",
+      "skill": "Grapple",
+      "t": 10,
+      "type": "roll",
+      "value": 11
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "B",
+      "skill": "Submission",
+      "t": 10,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "t": 10,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-29"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 10,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Grapple",
+        "card": "B-29",
+        "kind": "play",
+        "number": 29,
+        "order": "Finish"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "play",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-16",
+          "kind": "play",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-18",
+          "kind": "play",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-14",
+          "kind": "play",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-29",
+          "kind": "play",
+          "number": 29,
+          "order": "Finish"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 10,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Grapple",
+      "card": "B-29",
+      "order": "Finish",
+      "player": "B",
+      "t": 10,
+      "type": "play"
+    },
+    {
+      "auto_success": false,
+      "bonus": {},
+      "crowd_meter": 0,
+      "finish": "B-29",
+      "player": "B",
+      "t": 10,
+      "type": "finish_attempt",
+      "value": 8
+    },
+    {
+      "broke_out": true,
+      "defender": "A",
+      "rolls": [
+        {
+          "penalty": 0,
+          "skill": "Power",
+          "success": true,
+          "value": 10
+        }
+      ],
+      "t": 10,
+      "type": "breakout"
+    },
+    {
+      "cards": [
+        "A-07",
+        "A-17"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "A",
+      "t": 10,
+      "type": "discard"
+    },
+    {
+      "cards": [
+        "B-12",
+        "B-21",
+        "B-29"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "B",
+      "t": 10,
+      "type": "discard"
+    },
+    {
+      "delta": 1,
+      "t": 10,
+      "type": "crowd_meter",
+      "value": 1
+    },
+    {
+      "base": 10,
+      "mods": [],
+      "player": "A",
+      "skill": "Power",
+      "t": 11,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "B",
+      "skill": "Technique",
+      "t": 11,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "t": 11,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-07"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 11,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Strike",
+        "card": "B-10",
+        "kind": "play",
+        "number": 10,
+        "order": "Lead"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-07",
+          "kind": "play",
+          "number": 7,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 11,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Strike",
+      "card": "B-10",
+      "order": "Lead",
+      "player": "B",
+      "t": 11,
+      "type": "play"
+    },
+    {
+      "chosen": {
+        "kind": "none",
+        "vs_order": "Lead",
+        "vs_type": "Strike"
+      },
+      "legal": [
+        {
+          "kind": "none",
+          "vs_order": "Lead",
+          "vs_type": "Strike"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "stop",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-03",
+          "kind": "stop",
+          "number": 3,
+          "order": "Lead"
+        }
+      ],
+      "player": "A",
+      "point": "stop",
+      "policy": "heuristic",
+      "t": 11,
+      "type": "decision"
+    },
+    {
+      "base": 6,
+      "mods": [],
+      "player": "A",
+      "skill": "Technique",
+      "t": 12,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "base": 10,
+      "mods": [],
+      "player": "B",
+      "skill": "Power",
+      "t": 12,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "t": 12,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "A"
+    },
+    {
+      "action": "ModifyRoll",
+      "detail": {
+        "delta": 2,
+        "when": "next"
+      },
+      "src": "A",
+      "t": 12,
+      "target": "A",
+      "type": "effect"
+    },
+    {
+      "cards": [
+        "A-16"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 12,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Strike",
+        "card": "A-10",
+        "kind": "play",
+        "number": 10,
+        "order": "Lead"
+      },
+      "legal": [
+        {
+          "atk_type": "Grapple",
+          "card": "A-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "play",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-10",
+          "kind": "play",
+          "number": 10,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-09",
+          "kind": "play",
+          "number": 9,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-05",
+          "kind": "play",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "A",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 12,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Strike",
+      "card": "A-10",
+      "order": "Lead",
+      "player": "A",
+      "t": 12,
+      "type": "play"
+    },
+    {
+      "chosen": {
+        "kind": "none",
+        "vs_order": "Lead",
+        "vs_type": "Strike"
+      },
+      "legal": [
+        {
+          "kind": "none",
+          "vs_order": "Lead",
+          "vs_type": "Strike"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "stop",
+          "number": 3,
+          "order": "Lead"
+        }
+      ],
+      "player": "B",
+      "point": "stop",
+      "policy": "heuristic",
+      "t": 12,
+      "type": "decision"
+    },
+    {
+      "base": 8,
+      "mods": [
+        {
+          "delta": 2,
+          "src": "pending"
+        }
+      ],
+      "player": "A",
+      "skill": "Submission",
+      "t": 13,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "base": 8,
+      "mods": [],
+      "player": "B",
+      "skill": "Strike",
+      "t": 13,
+      "type": "roll",
+      "value": 8
+    },
+    {
+      "t": 13,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-19"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 13,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Strike",
+        "card": "B-16",
+        "kind": "play",
+        "number": 16,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "play",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-16",
+          "kind": "play",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-18",
+          "kind": "play",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-14",
+          "kind": "play",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-07",
+          "kind": "play",
+          "number": 7,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 13,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Strike",
+      "card": "B-16",
+      "order": "Followup",
+      "player": "B",
+      "t": 13,
+      "type": "play"
+    },
+    {
+      "chosen": {
+        "kind": "none",
+        "vs_order": "Followup",
+        "vs_type": "Strike"
+      },
+      "legal": [
+        {
+          "kind": "none",
+          "vs_order": "Followup",
+          "vs_type": "Strike"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "stop",
+          "number": 27,
+          "order": "Lead"
+        }
+      ],
+      "player": "A",
+      "point": "stop",
+      "policy": "heuristic",
+      "t": 13,
+      "type": "decision"
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "A",
+      "skill": "Strike",
+      "t": 14,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "B",
+      "skill": "Technique",
+      "t": 14,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "cards": [
+        "A-23"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 14,
+      "type": "draw"
+    },
+    {
+      "cards": [
+        "B-23"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 14,
+      "type": "draw"
+    },
+    {
+      "base": 6,
+      "mods": [],
+      "player": "A",
+      "skill": "Technique",
+      "t": 14,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "base": 6,
+      "mods": [],
+      "player": "B",
+      "skill": "Agility",
+      "t": 14,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "cards": [
+        "A-12"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 14,
+      "type": "draw"
+    },
+    {
+      "cards": [
+        "B-17"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 14,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "B-18",
+        "kind": "discard",
+        "number": 18,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "card": "B-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "B-04",
+          "kind": "discard",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "card": "B-13",
+          "kind": "discard",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "card": "B-26",
+          "kind": "discard",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "card": "B-25",
+          "kind": "discard",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "card": "B-18",
+          "kind": "discard",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "card": "B-14",
+          "kind": "discard",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "card": "B-07",
+          "kind": "discard",
+          "number": 7,
+          "order": "Lead"
+        },
+        {
+          "card": "B-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "B-23",
+          "kind": "discard",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "card": "B-17",
+          "kind": "discard",
+          "number": 17,
+          "order": "Followup"
+        }
+      ],
+      "player": "B",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 14,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "B-18"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "B",
+      "t": 14,
+      "type": "discard"
+    },
+    {
+      "base": 5,
+      "mods": [],
+      "player": "A",
+      "skill": "Agility",
+      "t": 14,
+      "type": "roll",
+      "value": 5
+    },
+    {
+      "base": 5,
+      "mods": [],
+      "player": "B",
+      "skill": "Grapple",
+      "t": 14,
+      "type": "roll",
+      "value": 5
+    },
+    {
+      "cards": [
+        "A-29"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 14,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "A-09",
+        "kind": "discard",
+        "number": 9,
+        "order": "Lead"
+      },
+      "legal": [
+        {
+          "card": "A-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "A-02",
+          "kind": "discard",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "card": "A-27",
+          "kind": "discard",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "card": "A-09",
+          "kind": "discard",
+          "number": 9,
+          "order": "Lead"
+        },
+        {
+          "card": "A-18",
+          "kind": "discard",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "card": "A-05",
+          "kind": "discard",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "card": "A-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "A-16",
+          "kind": "discard",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "card": "A-23",
+          "kind": "discard",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "card": "A-12",
+          "kind": "discard",
+          "number": 12,
+          "order": "Lead"
+        },
+        {
+          "card": "A-29",
+          "kind": "discard",
+          "number": 29,
+          "order": "Finish"
+        }
+      ],
+      "player": "A",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 14,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "A-09"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "A",
+      "t": 14,
+      "type": "discard"
+    },
+    {
+      "cards": [
+        "B-02"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 14,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "B-07",
+        "kind": "discard",
+        "number": 7,
+        "order": "Lead"
+      },
+      "legal": [
+        {
+          "card": "B-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "B-04",
+          "kind": "discard",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "card": "B-13",
+          "kind": "discard",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "card": "B-26",
+          "kind": "discard",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "card": "B-25",
+          "kind": "discard",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "card": "B-14",
+          "kind": "discard",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "card": "B-07",
+          "kind": "discard",
+          "number": 7,
+          "order": "Lead"
+        },
+        {
+          "card": "B-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "B-23",
+          "kind": "discard",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "card": "B-17",
+          "kind": "discard",
+          "number": 17,
+          "order": "Followup"
+        },
+        {
+          "card": "B-02",
+          "kind": "discard",
+          "number": 2,
+          "order": "Lead"
+        }
+      ],
+      "player": "B",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 14,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "B-07"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "B",
+      "t": 14,
+      "type": "discard"
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "A",
+      "skill": "Strike",
+      "t": 14,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "base": 10,
+      "mods": [],
+      "player": "B",
+      "skill": "Power",
+      "t": 14,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "t": 14,
+      "tie_bumps": 3,
+      "type": "turn_result",
+      "winner": "A"
+    },
+    {
+      "action": "ModifyRoll",
+      "detail": {
+        "delta": 1,
+        "when": "next"
+      },
+      "src": "A",
+      "t": 14,
+      "target": "A",
+      "type": "effect"
+    },
+    {
+      "cards": [
+        "A-26"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 14,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "A-12",
+        "kind": "discard",
+        "number": 12,
+        "order": "Lead"
+      },
+      "legal": [
+        {
+          "card": "A-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "A-02",
+          "kind": "discard",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "card": "A-27",
+          "kind": "discard",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "card": "A-18",
+          "kind": "discard",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "card": "A-05",
+          "kind": "discard",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "card": "A-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "A-16",
+          "kind": "discard",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "card": "A-23",
+          "kind": "discard",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "card": "A-12",
+          "kind": "discard",
+          "number": 12,
+          "order": "Lead"
+        },
+        {
+          "card": "A-29",
+          "kind": "discard",
+          "number": 29,
+          "order": "Finish"
+        },
+        {
+          "card": "A-26",
+          "kind": "discard",
+          "number": 26,
+          "order": "Lead"
+        }
+      ],
+      "player": "A",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 14,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "A-12"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "A",
+      "t": 14,
+      "type": "discard"
+    },
+    {
+      "chosen": {
+        "atk_type": "Submission",
+        "card": "A-18",
+        "kind": "play",
+        "number": 18,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "atk_type": "Strike",
+          "card": "A-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "play",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-18",
+          "kind": "play",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-05",
+          "kind": "play",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-16",
+          "kind": "play",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-23",
+          "kind": "play",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "A",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 14,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Submission",
+      "card": "A-18",
+      "order": "Followup",
+      "player": "A",
+      "t": 14,
+      "type": "play"
+    },
+    {
+      "chosen": {
+        "kind": "none",
+        "vs_order": "Followup",
+        "vs_type": "Submission"
+      },
+      "legal": [
+        {
+          "kind": "none",
+          "vs_order": "Followup",
+          "vs_type": "Submission"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-26",
+          "kind": "stop",
+          "number": 26,
+          "order": "Lead"
+        }
+      ],
+      "player": "B",
+      "point": "stop",
+      "policy": "heuristic",
+      "t": 14,
+      "type": "decision"
+    },
+    {
+      "base": 9,
+      "mods": [
+        {
+          "delta": 1,
+          "src": "pending"
+        }
+      ],
+      "player": "A",
+      "skill": "Grapple",
+      "t": 15,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "base": 6,
+      "mods": [],
+      "player": "B",
+      "skill": "Agility",
+      "t": 15,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "t": 15,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-06"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 15,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "B-23",
+        "kind": "discard",
+        "number": 23,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "card": "B-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "B-04",
+          "kind": "discard",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "card": "B-13",
+          "kind": "discard",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "card": "B-26",
+          "kind": "discard",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "card": "B-25",
+          "kind": "discard",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "card": "B-14",
+          "kind": "discard",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "card": "B-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "B-23",
+          "kind": "discard",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "card": "B-17",
+          "kind": "discard",
+          "number": 17,
+          "order": "Followup"
+        },
+        {
+          "card": "B-02",
+          "kind": "discard",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "card": "B-06",
+          "kind": "discard",
+          "number": 6,
+          "order": "Lead"
+        }
+      ],
+      "player": "B",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 15,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "B-23"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "B",
+      "t": 15,
+      "type": "discard"
+    },
+    {
+      "chosen": {
+        "kind": "pass"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "play",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-14",
+          "kind": "play",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-17",
+          "kind": "play",
+          "number": 17,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-06",
+          "kind": "play",
+          "number": 6,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 15,
+      "type": "decision"
+    },
+    {
+      "chosen": {
+        "atk_type": "Grapple",
+        "card": "B-29",
+        "kind": "play",
+        "number": 29,
+        "order": "Finish"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-12",
+          "kind": "play",
+          "number": 12,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-21",
+          "kind": "play",
+          "number": 21,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-29",
+          "kind": "play",
+          "number": 29,
+          "order": "Finish"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-18",
+          "kind": "play",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-07",
+          "kind": "play",
+          "number": 7,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-23",
+          "kind": "play",
+          "number": 23,
+          "order": "Followup"
+        }
+      ],
+      "player": "B",
+      "point": "bury",
+      "policy": "heuristic",
+      "t": 15,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "B-29"
+      ],
+      "from": "discard",
+      "hidden": false,
+      "player": "B",
+      "t": 15,
+      "type": "bury"
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "A",
+      "skill": "Grapple",
+      "t": 16,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "base": 5,
+      "mods": [],
+      "player": "B",
+      "skill": "Grapple",
+      "t": 16,
+      "type": "roll",
+      "value": 5
+    },
+    {
+      "t": 16,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "B"
+    },
+    {
+      "cards": [
+        "B-24"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 16,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "B-17",
+        "kind": "discard",
+        "number": 17,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "card": "B-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "B-04",
+          "kind": "discard",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "card": "B-13",
+          "kind": "discard",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "card": "B-26",
+          "kind": "discard",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "card": "B-25",
+          "kind": "discard",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "card": "B-14",
+          "kind": "discard",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "card": "B-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "B-17",
+          "kind": "discard",
+          "number": 17,
+          "order": "Followup"
+        },
+        {
+          "card": "B-02",
+          "kind": "discard",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "card": "B-06",
+          "kind": "discard",
+          "number": 6,
+          "order": "Lead"
+        },
+        {
+          "card": "B-24",
+          "kind": "discard",
+          "number": 24,
+          "order": "Followup"
+        }
+      ],
+      "player": "B",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 16,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "B-17"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "B",
+      "t": 16,
+      "type": "discard"
+    },
+    {
+      "chosen": {
+        "kind": "pass"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-04",
+          "kind": "play",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "play",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-14",
+          "kind": "play",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-06",
+          "kind": "play",
+          "number": 6,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-24",
+          "kind": "play",
+          "number": 24,
+          "order": "Followup"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "B",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 16,
+      "type": "decision"
+    },
+    {
+      "chosen": {
+        "atk_type": "Submission",
+        "card": "B-21",
+        "kind": "play",
+        "number": 21,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "atk_type": "Submission",
+          "card": "B-12",
+          "kind": "play",
+          "number": 12,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-21",
+          "kind": "play",
+          "number": 21,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "B-18",
+          "kind": "play",
+          "number": 18,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-07",
+          "kind": "play",
+          "number": 7,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-23",
+          "kind": "play",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "B-17",
+          "kind": "play",
+          "number": 17,
+          "order": "Followup"
+        }
+      ],
+      "player": "B",
+      "point": "bury",
+      "policy": "heuristic",
+      "t": 16,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "B-21"
+      ],
+      "from": "discard",
+      "hidden": false,
+      "player": "B",
+      "t": 16,
+      "type": "bury"
+    },
+    {
+      "base": 6,
+      "mods": [],
+      "player": "A",
+      "skill": "Technique",
+      "t": 17,
+      "type": "roll",
+      "value": 6
+    },
+    {
+      "base": 9,
+      "mods": [],
+      "player": "B",
+      "skill": "Submission",
+      "t": 17,
+      "type": "roll",
+      "value": 9
+    },
+    {
+      "t": 17,
+      "tie_bumps": 0,
+      "type": "turn_result",
+      "winner": "A"
+    },
+    {
+      "action": "ModifyRoll",
+      "detail": {
+        "delta": 1,
+        "when": "next"
+      },
+      "src": "A",
+      "t": 17,
+      "target": "A",
+      "type": "effect"
+    },
+    {
+      "cards": [
+        "A-25"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 17,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "atk_type": "Grapple",
+        "card": "A-29",
+        "kind": "play",
+        "number": 29,
+        "order": "Finish"
+      },
+      "legal": [
+        {
+          "atk_type": "Strike",
+          "card": "A-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "play",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-05",
+          "kind": "play",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-16",
+          "kind": "play",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-23",
+          "kind": "play",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-29",
+          "kind": "play",
+          "number": 29,
+          "order": "Finish"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "A",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 17,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Grapple",
+      "card": "A-29",
+      "order": "Finish",
+      "player": "A",
+      "t": 17,
+      "type": "play"
+    },
+    {
+      "chosen": {
+        "atk_type": "Strike",
+        "card": "B-13",
+        "kind": "stop",
+        "number": 13,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "kind": "none",
+          "vs_order": "Finish",
+          "vs_type": "Grapple"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-13",
+          "kind": "stop",
+          "number": 13,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "B-25",
+          "kind": "stop",
+          "number": 25,
+          "order": "Lead"
+        }
+      ],
+      "player": "B",
+      "point": "stop",
+      "policy": "heuristic",
+      "t": 17,
+      "type": "decision"
+    },
+    {
+      "card": "B-13",
+      "player": "B",
+      "reason": "Strike stops Grapple",
+      "stopped": "A-29",
+      "t": 17,
+      "type": "stop"
+    },
+    {
+      "base": 6,
+      "mods": [
+        {
+          "delta": 1,
+          "src": "pending"
+        }
+      ],
+      "player": "A",
+      "skill": "Technique",
+      "t": 18,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "B",
+      "skill": "Technique",
+      "t": 18,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "cards": [
+        "A-11"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 18,
+      "type": "draw"
+    },
+    {
+      "cards": [
+        "B-05"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 18,
+      "type": "draw"
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "A",
+      "skill": "Strike",
+      "t": 18,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "B",
+      "skill": "Technique",
+      "t": 18,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "cards": [
+        "A-28"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 18,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "A-16",
+        "kind": "discard",
+        "number": 16,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "card": "A-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "A-02",
+          "kind": "discard",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "card": "A-27",
+          "kind": "discard",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "card": "A-05",
+          "kind": "discard",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "card": "A-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "A-16",
+          "kind": "discard",
+          "number": 16,
+          "order": "Followup"
+        },
+        {
+          "card": "A-23",
+          "kind": "discard",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "card": "A-26",
+          "kind": "discard",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "card": "A-25",
+          "kind": "discard",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "card": "A-11",
+          "kind": "discard",
+          "number": 11,
+          "order": "Lead"
+        },
+        {
+          "card": "A-28",
+          "kind": "discard",
+          "number": 28,
+          "order": "Finish"
+        }
+      ],
+      "player": "A",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 18,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "A-16"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "A",
+      "t": 18,
+      "type": "discard"
+    },
+    {
+      "cards": [
+        "B-11"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "B",
+      "t": 18,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "B-24",
+        "kind": "discard",
+        "number": 24,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "card": "B-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "B-04",
+          "kind": "discard",
+          "number": 4,
+          "order": "Lead"
+        },
+        {
+          "card": "B-26",
+          "kind": "discard",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "card": "B-25",
+          "kind": "discard",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "card": "B-14",
+          "kind": "discard",
+          "number": 14,
+          "order": "Followup"
+        },
+        {
+          "card": "B-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "B-02",
+          "kind": "discard",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "card": "B-06",
+          "kind": "discard",
+          "number": 6,
+          "order": "Lead"
+        },
+        {
+          "card": "B-24",
+          "kind": "discard",
+          "number": 24,
+          "order": "Followup"
+        },
+        {
+          "card": "B-05",
+          "kind": "discard",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "card": "B-11",
+          "kind": "discard",
+          "number": 11,
+          "order": "Lead"
+        }
+      ],
+      "player": "B",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 18,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "B-24"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "B",
+      "t": 18,
+      "type": "discard"
+    },
+    {
+      "base": 7,
+      "mods": [],
+      "player": "A",
+      "skill": "Strike",
+      "t": 18,
+      "type": "roll",
+      "value": 7
+    },
+    {
+      "base": 10,
+      "mods": [],
+      "player": "B",
+      "skill": "Power",
+      "t": 18,
+      "type": "roll",
+      "value": 10
+    },
+    {
+      "t": 18,
+      "tie_bumps": 2,
+      "type": "turn_result",
+      "winner": "A"
+    },
+    {
+      "action": "ModifyRoll",
+      "detail": {
+        "delta": 1,
+        "when": "next"
+      },
+      "src": "A",
+      "t": 18,
+      "target": "A",
+      "type": "effect"
+    },
+    {
+      "cards": [
+        "A-20"
+      ],
+      "from": "TOP",
+      "hidden": true,
+      "player": "A",
+      "t": 18,
+      "type": "draw"
+    },
+    {
+      "chosen": {
+        "card": "A-23",
+        "kind": "discard",
+        "number": 23,
+        "order": "Followup"
+      },
+      "legal": [
+        {
+          "card": "A-19",
+          "kind": "discard",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "card": "A-02",
+          "kind": "discard",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "card": "A-27",
+          "kind": "discard",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "card": "A-05",
+          "kind": "discard",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "card": "A-03",
+          "kind": "discard",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "card": "A-23",
+          "kind": "discard",
+          "number": 23,
+          "order": "Followup"
+        },
+        {
+          "card": "A-26",
+          "kind": "discard",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "card": "A-25",
+          "kind": "discard",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "card": "A-11",
+          "kind": "discard",
+          "number": 11,
+          "order": "Lead"
+        },
+        {
+          "card": "A-28",
+          "kind": "discard",
+          "number": 28,
+          "order": "Finish"
+        },
+        {
+          "card": "A-20",
+          "kind": "discard",
+          "number": 20,
+          "order": "Followup"
+        }
+      ],
+      "player": "A",
+      "point": "discard",
+      "policy": "heuristic",
+      "t": 18,
+      "type": "decision"
+    },
+    {
+      "cards": [
+        "A-23"
+      ],
+      "from": null,
+      "hidden": false,
+      "player": "A",
+      "t": 18,
+      "type": "discard"
+    },
+    {
+      "chosen": {
+        "atk_type": "Strike",
+        "card": "A-28",
+        "kind": "play",
+        "number": 28,
+        "order": "Finish"
+      },
+      "legal": [
+        {
+          "atk_type": "Strike",
+          "card": "A-19",
+          "kind": "play",
+          "number": 19,
+          "order": "Followup"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-02",
+          "kind": "play",
+          "number": 2,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-27",
+          "kind": "play",
+          "number": 27,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-05",
+          "kind": "play",
+          "number": 5,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Submission",
+          "card": "A-03",
+          "kind": "play",
+          "number": 3,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-26",
+          "kind": "play",
+          "number": 26,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-25",
+          "kind": "play",
+          "number": 25,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-11",
+          "kind": "play",
+          "number": 11,
+          "order": "Lead"
+        },
+        {
+          "atk_type": "Strike",
+          "card": "A-28",
+          "kind": "play",
+          "number": 28,
+          "order": "Finish"
+        },
+        {
+          "atk_type": "Grapple",
+          "card": "A-20",
+          "kind": "play",
+          "number": 20,
+          "order": "Followup"
+        },
+        {
+          "kind": "pass"
+        }
+      ],
+      "player": "A",
+      "point": "turn_action",
+      "policy": "heuristic",
+      "t": 18,
+      "type": "decision"
+    },
+    {
+      "atk_type": "Strike",
+      "card": "A-28",
+      "order": "Finish",
+      "player": "A",
+      "t": 18,
+      "type": "play"
+    },
+    {
+      "auto_success": false,
+      "bonus": {},
+      "crowd_meter": 1,
+      "finish": "A-28",
+      "player": "A",
+      "t": 18,
+      "type": "finish_attempt",
+      "value": 10
+    },
+    {
+      "broke_out": false,
+      "defender": "B",
+      "rolls": [
+        {
+          "penalty": 0,
+          "skill": "Strike",
+          "success": false,
+          "value": 8
+        },
+        {
+          "penalty": 0,
+          "skill": "Strike",
+          "success": false,
+          "value": 8
+        },
+        {
+          "penalty": 0,
+          "skill": "Strike",
+          "success": false,
+          "value": 8
+        }
+      ],
+      "t": 18,
+      "type": "breakout"
+    },
+    {
+      "reason": "finish",
+      "t": 18,
+      "turns": 18,
+      "type": "result",
+      "winner": "A"
+    }
+  ],
+  "policies": {
+    "A": "heuristic",
+    "B": "heuristic"
+  },
+  "seed": 42
+}
