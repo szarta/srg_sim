@@ -231,7 +231,11 @@ read hidden zones (opponent `hand`/either `deck`) unless an effect reveals them.
 pending_roll_mods{this,next}, freq_counters, gimmick_blanked:bool, flags`. `GameState`:
 `players[A,B], crowd_meter, active, turn_no, rng, log`. All snapshottable
 (`to_dict`/`from_dict`) so any state is reproducible and diffable. `deck` order matters;
-shuffles/searches go through the seeded RNG. **Bury** = move a card from `discard` to the
+shuffles/searches go through the seeded RNG. **The seeded RNG is a portable
+`splitmix64`** (identical stream in Python and the Rust engine), not a `random.Random`
+wrapper, so cross-engine logs are byte-identical (see the substrate-split doc,
+`docs/design/substrate-split.md` §5); this reseeds existing golden logs and touches
+neither §3 nor §8. **Bury** = move a card from `discard` to the
 **bottom of `deck`**; **Flip** = move the top of `deck` to `discard` (there is no separate
 "buried" zone — a buried card lives in the deck).
 
@@ -373,6 +377,18 @@ five-region rule); the viewer's own `hand` is full. RNG, `flags`, `freq_counters
 pairs with the log's `hidden` flag (§8): the engine keeps ground-truth ids for deterministic
 replay, and `observable` is what decides what a given viewer is allowed to know.
 
+**Decision protocol / wire form** (substrate split — `docs/design/substrate-split.md`
+§4). The synchronous `_decide(point, key, legal)` call has a transport form for
+remote/interactive play: server → `DecisionRequest{request_id, seq, viewer, point,
+legal, observable_state}`; client → `DecisionResponse{request_id, chosen}`. `point`,
+`legal`, `chosen` are exactly the `decision`-event fields (§8) and `observable_state`
+is exactly `GameState.observable(viewer)`, so this introduces **no schema change** —
+only `observable` crosses the wire, keeping seed + hidden zones server-side (anti-cheat).
+**Reserved for explicit timing** (tournament play; deferred, see §12): two additional
+decision points — `order_triggers` (controller orders simultaneous triggers) and
+`pass_priority` (priority passing / response windows). These are §7 additions, **not**
+§3/§8 changes, and are unspecified until the timing follow-up.
+
 **Player-profile policies** (todo #32) subclass `HeuristicPolicy`, overriding only the
 decision points that differ, so a matchup can pit skill levels against each other:
 - `aggressive` (`AggressiveBuilder`) — the validated baseline; builds one chain greedily.
@@ -453,6 +469,18 @@ tests/            # parity + regression (see §10)
 DESIGN.md README.md pyproject.toml
 ```
 
+**Substrate split & Rust end-state** (`docs/design/substrate-split.md`). The modules
+above divide into a **substrate** — the authoritative rules engine (`cards`, `loader`,
+`effects`/`conditions`, `rules_parser`+`overrides`, `state`, `engine`, `finish`,
+`stops`, `rng`, `gamelog`, `policy`, plus a new `session` for the wire protocol) — and
+**consumers** on top (`cli`, `interactive`, `review`, `report/`, `analysis`, a future
+MCP server / web / mobile). The boundary rule: **the substrate never imports a
+consumer** (guarded by `import-linter`, then by the Rust crate graph). The end-state
+moves the substrate + parser to a single **Rust `srg-core` crate** compiled to every
+target (native console/MCP, WASM web, native mobile lib); the Python engine serves as a
+**transitional parity oracle**, then is deprecated in favor of a frozen golden-log
+corpus. See §13.
+
 ---
 
 ## 10. Milestones
@@ -530,3 +558,27 @@ Regression against the validated `fae_comp` tools:
   "+N to your Finish rolls" (in progress).
 - Exact interaction of some gimmicks with multi-roll breakouts (buffs that change mid-breakout,
   effects that add breakout attempts) and simultaneity when both players trigger on one event.
+
+---
+
+## 13. Substrate split & Rust migration
+
+Full detail: [`docs/design/substrate-split.md`](docs/design/substrate-split.md) (a
+review artifact of the same class as this document). Summary of what it pins:
+
+- **The boundary.** A **substrate** (authoritative rules engine + parser + a new
+  `session` wire layer) below the line; **consumers** (console, MCP, interactive,
+  review, report, web, mobile) above it. The substrate never imports a consumer.
+- **The public API** — three layers: load/build (`load_index`, `resolve_deck`,
+  `validate_deck`), batch/pure (`Engine::play`), and session/interactive (`Session`,
+  the pausable **continuation state machine** driving the decision protocol, §7).
+- **The engine goes Rust**, one crate compiled to every target (native + WASM),
+  resolving the language-split delta by compiling one implementation N ways rather than
+  trusting a second one. The Python engine is a **transitional parity oracle**, then
+  deprecated (frozen golden-log corpus).
+- **The conformance harness** is the migration's safety rail: same `(seed,
+  decisions[])` → Python and Rust must emit byte-identical `GameLog` (enabled by the
+  portable `splitmix64` RNG, §5), plus parser-parity on `cards.ir.json`.
+- **§3 and §8 are unchanged** — re-homed as language-neutral JSON contracts. Every
+  delta this migration needs is additive (RNG note §5, protocol + reserved timing
+  points §7, module/boundary note §9, this section).
