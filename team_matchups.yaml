@@ -1,0 +1,17 @@
+# Team matchup roster for the combined scouting report (srg-sim report-book).
+# Each entry is a [competitor_a, competitor_b] pair (name / substring / db_uuid),
+# resolved against the card DB. Build with:  srg-sim report-book team_matchups.yaml --pdf
+title: "Team Scouting Report"
+matchups:
+  - ["Soborno", "Mrs. Apocalypse"]
+  - ["Little Guido", "D2 (V1)"]
+  - ["Rey Zerblade", "Copy Kat (V2)"]
+  - ["Mastermind", "Cassandra"]
+  - ["D1 (V1)", "The Queen of Cheer Adrianna Dee"]
+  - ["The Bull", "Johnny Korea"]
+  - ["The Bull", "Cassandra"]
+  - ["Little Guido", "Mrs. Apocalypse"]
+  - ["Soborno", "Copy Kat (V2)"]
+  - ["Mastermind", "D2 (V1)"]
+  - ["D1 (V1)", "Johnny Korea"]
+  - ["Rey Zerblade", "The Queen of Cheer Adrianna Dee"]

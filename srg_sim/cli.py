@@ -28,6 +28,8 @@ The user-facing entry point that ties the pipeline together:
   Sphinx project rendered to HTML and, with ``--pdf``, a xelatex PDF. ``--glance``
   builds the one-page scouting card (PDF) instead — comp-vs-comp, turn win %, best
   finish + CM0–2 odds, open lanes, and premium/Equal-8 skill-stop access.
+* ``report-book roster.yaml`` — combine many matchups' scouting cards into one
+  multi-page PDF (a card per matchup) from a ``{title?, matchups: [[A, B], ...]}`` file.
 
 ``--cards`` overrides the card-export path (defaults to the snapshot), so every
 command runs against any ``cards.yaml`` — real or a test fixture.
@@ -343,6 +345,38 @@ def _cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_report_book(args: argparse.Namespace) -> int:
+    import yaml
+
+    from srg_sim.loader import LoaderError
+    from srg_sim.report.build import build_glance_book
+
+    spec = yaml.safe_load(Path(args.matchups).read_text()) or {}
+    pairs = [(str(a), str(b)) for a, b in spec.get("matchups", [])]
+    if not pairs:
+        raise SystemExit(f"no matchups found in {args.matchups}")
+    try:
+        out = build_glance_book(
+            pairs,
+            cards_path=args.cards,
+            cms=_parse_cms(args.cm),
+            mc_games=args.mc,
+            seed=args.seed,
+            out_root=args.out,
+            title=str(spec.get("title") or "Team Scouting Report"),
+            html=not args.no_html,
+            pdf=not args.no_pdf,
+        )
+    except LoaderError as exc:
+        raise SystemExit(f"could not build report book: {exc}") from exc
+    print(f"report-book: {out}  ({len(pairs)} matchups)")
+    if not args.no_html:
+        print(f"  html: {out / '_build' / 'html' / 'index.html'}")
+    if not args.no_pdf:
+        print(f"  pdf:  {out / '_build' / 'latex' / 'matchup.pdf'}")
+    return 0
+
+
 def _parse_cms(spec: str) -> tuple[int, ...]:
     """Parse a Crowd-Meter spec: ``"1-5"`` range or ``"1,3,5"`` list."""
     if "-" in spec:
@@ -452,6 +486,20 @@ def _build_parser() -> argparse.ArgumentParser:
     report.add_argument("--no-html", action="store_true", help="skip the HTML build")
     _add_cards_arg(report)
     report.set_defaults(func=_cmd_report)
+
+    book = sub.add_parser(
+        "report-book",
+        help="combine many matchups' scouting cards into one multi-page PDF (from a YAML roster)",
+    )
+    book.add_argument("matchups", help="YAML file: {title?, matchups: [[A, B], ...]}")
+    book.add_argument("--cm", default="0-5", help="Crowd-Meter range/list for finish odds")
+    book.add_argument("--mc", type=int, default=50000, help="Monte-Carlo rolls for turn odds")
+    book.add_argument("--seed", type=int, default=11, help="turn-odds MC seed")
+    book.add_argument("--out", default="docs/reports", help="output root dir")
+    book.add_argument("--no-html", action="store_true", help="skip the HTML build")
+    book.add_argument("--no-pdf", action="store_true", help="skip the xelatex PDF build")
+    _add_cards_arg(book)
+    book.set_defaults(func=_cmd_report_book)
 
     export = sub.add_parser(
         "export", help="flatten one or more logs to imitation-learning NDJSON (§10 M4)"

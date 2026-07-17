@@ -20,17 +20,38 @@ _GLANCE_CMS = (0, 1, 2)  # the contested early Crowd Meter — where finishes ar
 
 
 def render_glance(data: MatchupData, images: Mapping[str, str] | None = None) -> str:
-    """The one-page ``index.rst`` for a matchup scouting card."""
+    """The one-page ``index.rst`` for a single matchup scouting card."""
     img = images or {}
-    a_stops = glance_stops(data.a.comp, data.b.comp)
-    b_stops = glance_stops(data.b.comp, data.a.comp)
-    lines: list[str] = []
-    lines += _heading(f"Scouting Card — {data.title}", "=")
-    lines += _roles_block()
-    lines += _caveat(data)
-    lines += _table(data, img, a_stops, b_stops)
+    lines = _heading(f"Scouting Card — {data.title}", "=") + _roles_block()
+    lines += _caveat(data) + _table_for(data, img)
     lines += _footnote()
     return "\n".join(lines) + "\n"
+
+
+def render_glance_book(
+    matchups: list[MatchupData],
+    images: Mapping[str, str] | None = None,
+    *,
+    title: str = "Team Scouting Report",
+) -> str:
+    """Combine every matchup's scouting card into one multi-page ``index.rst`` — a
+    section per matchup (each on its own page), sharing one title + role block."""
+    img = images or {}
+    lines = _heading(title, "=") + _roles_block()
+    for i, data in enumerate(matchups):
+        lines += _heading(data.title, "-")
+        lines += _caveat(data) + _table_for(data, img)
+        if i < len(matchups) - 1:  # a page break between cards, none after the last
+            lines += ["", ".. raw:: latex", "", "   \\clearpage", ""]
+    lines += _footnote()
+    return "\n".join(lines) + "\n"
+
+
+def _table_for(data: MatchupData, images: Mapping[str, str]) -> list[str]:
+    """One matchup's stop-resolved comparison table (both directions)."""
+    a_stops = glance_stops(data.a.comp, data.b.comp)
+    b_stops = glance_stops(data.b.comp, data.a.comp)
+    return _table(data, images, a_stops, b_stops)
 
 
 def _heading(text: str, char: str) -> list[str]:
@@ -74,7 +95,13 @@ def _caveat(data: MatchupData) -> list[str]:
 def _table(
     data: MatchupData, images: Mapping[str, str], a_stops: GlanceStops, b_stops: GlanceStops
 ) -> list[str]:
-    lines = [".. list-table::", "   :header-rows: 1", "   :stub-columns: 1", "   :widths: 16 42 42", ""]
+    lines = [
+        ".. list-table::",
+        "   :header-rows: 1",
+        "   :stub-columns: 1",
+        "   :widths: 16 42 42",
+        "",
+    ]
     lines += _row("", f"**{data.a.comp.name}**", f"**{data.b.comp.name}**")
     lines += _row("", _image(data.a.image_uuid, images), _image(data.b.image_uuid, images))
     lines += _row("Turn roll", _turn(data.a), _turn(data.b))
@@ -111,7 +138,9 @@ def _best_finish(cr: CompetitorReport) -> str:
     best = ml.best
     tag = " *(logoless)*" if not best.is_signature else ""
     lane = "open" if ml.open_lane else "contested"
-    odds = " · ".join(f"CM{cm} :{_verdict_role(best.odds_at(cm))}:`{best.odds_at(cm):.0%}`" for cm in _GLANCE_CMS)
+    odds = " · ".join(
+        f"CM{cm} :{_verdict_role(best.odds_at(cm))}:`{best.odds_at(cm):.0%}`" for cm in _GLANCE_CMS
+    )
     return f"**{best.finish.name}** ({ml.atk_type}, {lane}){tag}\n{odds}"
 
 

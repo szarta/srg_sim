@@ -375,6 +375,36 @@ def test_report_glance_flag_builds_the_scouting_card(
     assert "glance:" in capsys.readouterr().out
 
 
+def test_report_book_combines_matchups_from_a_roster(
+    world: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # report-book reads a YAML roster and routes to build_glance_book; stub the builder
+    # so the test stays offline (no Sphinx/xelatex).
+    calls: dict[str, object] = {}
+
+    def fake_book(pairs: list[tuple[str, str]], **kwargs: object) -> Path:
+        calls.update(pairs=pairs, **kwargs)
+        return tmp_path / "team-scouting-report"
+
+    monkeypatch.setattr("srg_sim.report.build.build_glance_book", fake_book)
+    roster = tmp_path / "roster.yaml"
+    roster.write_text(yaml.safe_dump({"title": "My Team", "matchups": [["Comp A", "Comp B"]]}))
+    rc = main(["report-book", str(roster), "--cards", str(world["cards"]), "--no-html"])
+    assert rc == 0
+    assert calls["pairs"] == [("Comp A", "Comp B")] and calls["title"] == "My Team"
+    assert "report-book:" in capsys.readouterr().out
+
+
+def test_report_book_empty_roster_exits(world: dict[str, Path], tmp_path: Path) -> None:
+    roster = tmp_path / "empty.yaml"
+    roster.write_text(yaml.safe_dump({"matchups": []}))
+    with pytest.raises(SystemExit, match="no matchups found"):
+        main(["report-book", str(roster), "--cards", str(world["cards"])])
+
+
 def test_report_unknown_competitor_exits(world: dict[str, Path], tmp_path: Path) -> None:
     with pytest.raises(SystemExit, match="could not build report"):
         main(["report", "Nobody", "Comp B", "--cards", str(world["cards"]), "--out", str(tmp_path)])

@@ -15,7 +15,7 @@ from pathlib import Path
 from srg_sim.loader import DEFAULT_CARDS_YAML
 from srg_sim.report import images as img
 from srg_sim.report.carddb import ReportCardDB
-from srg_sim.report.glance import render_glance
+from srg_sim.report.glance import render_glance, render_glance_book
 from srg_sim.report.model import MatchupData, build_matchup
 from srg_sim.report.render import render_report
 
@@ -74,6 +74,39 @@ def build_glance(
     images = _convert_comp_images(data, out_dir / "_images")
     (out_dir / "index.rst").write_text(render_glance(data, images))
     (out_dir / "conf.py").write_text(_conf_py(f"{data.title} — Scouting Card", toc=False))
+    if html:
+        _sphinx(out_dir, "-b", "html", out_dir / "_build" / "html")
+    if pdf:
+        _sphinx(out_dir, "-M", "latexpdf", out_dir / "_build")
+    return out_dir
+
+
+def build_glance_book(
+    matchups: list[tuple[str, str]],
+    *,
+    cards_path: str | Path = DEFAULT_CARDS_YAML,
+    cms: tuple[int, ...] = (0, 1, 2, 3, 4, 5),
+    mc_games: int = 50_000,
+    seed: int = 11,
+    out_root: str | Path = Path("docs/reports"),
+    out_name: str = "team-scouting-report",
+    title: str = "Team Scouting Report",
+    html: bool = True,
+    pdf: bool = True,
+) -> Path:
+    """Combine many matchups' scouting cards into one multi-page report; return its dir.
+
+    A single self-contained Sphinx project under ``out_root/<out_name>/`` — a card per
+    matchup (each on its own page), with a table of contents listing every matchup."""
+    db = ReportCardDB.from_yaml(cards_path)
+    datas = [build_matchup(db, a, b, cms=cms, mc_games=mc_games, seed=seed) for a, b in matchups]
+    out_dir = Path(out_root) / out_name
+    out_dir.mkdir(parents=True, exist_ok=True)
+    images: dict[str, str] = {}
+    for data in datas:  # dedup across matchups: a competitor reused keeps one PNG
+        images.update(_convert_comp_images(data, out_dir / "_images"))
+    (out_dir / "index.rst").write_text(render_glance_book(datas, images, title=title))
+    (out_dir / "conf.py").write_text(_conf_py(title, toc=True))
     if html:
         _sphinx(out_dir, "-b", "html", out_dir / "_build" / "html")
     if pdf:

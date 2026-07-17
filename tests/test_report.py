@@ -14,9 +14,9 @@ from typing import Any
 import pytest
 from srg_sim.loader import CardIndex, LoaderError
 from srg_sim.report import classify, finishes, skillreqs, turn
-from srg_sim.report.build import build_glance, build_report, slugify
+from srg_sim.report.build import build_glance, build_glance_book, build_report, slugify
 from srg_sim.report.carddb import ReportCardDB
-from srg_sim.report.glance import render_glance
+from srg_sim.report.glance import render_glance, render_glance_book
 from srg_sim.report.images import source_webp
 from srg_sim.report.model import build_matchup
 from srg_sim.report.render import render_report
@@ -266,6 +266,34 @@ def test_render_glance_emits_one_page_scouting_sections(db: ReportCardDB) -> Non
         ".. list-table",
     ):
         assert token in rst, token
+
+
+def test_render_glance_book_combines_matchups_with_page_breaks(db: ReportCardDB) -> None:
+    a = build_matchup(db, "Test Alpha", "Test Beta")
+    b = build_matchup(db, "Test Beta", "Test Alpha")
+    rst = render_glance_book([a, b], {}, title="My Team")
+    assert rst.startswith("My Team\n")
+    assert rst.count("Test Alpha vs Test Beta") >= 1 and "Test Beta vs Test Alpha" in rst
+    assert rst.count("\\clearpage") == 1  # one break between two cards, none trailing
+    assert rst.count(".. list-table") == 2  # one comparison table per matchup
+
+
+@pytest.mark.skipif(importlib.util.find_spec("sphinx") is None, reason="sphinx not installed")
+def test_build_glance_book_writes_one_multipage_project(
+    db: ReportCardDB, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "srg_sim.report.build.ReportCardDB.from_yaml", classmethod(lambda cls, path: db)
+    )
+    out = build_glance_book(
+        [("Test Alpha", "Test Beta"), ("Test Beta", "Test Alpha")],
+        out_root=tmp_path,
+        html=True,
+        pdf=False,
+    )
+    assert out.name == "team-scouting-report"
+    assert (out / "_build" / "html" / "index.html").exists()
+    assert '"tableofcontents": ""' not in (out / "conf.py").read_text()  # book keeps its TOC
 
 
 @pytest.mark.skipif(importlib.util.find_spec("sphinx") is None, reason="sphinx not installed")
