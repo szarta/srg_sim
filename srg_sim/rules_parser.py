@@ -42,16 +42,19 @@ from srg_sim.cards import (
 )
 from srg_sim.effects import (
     AddFromDiscard,
+    AlsoLead,
     Always,
     BuffSkill,
     Bury,
     CardFilter,
     Comparator,
     Condition,
+    CountsAsInPlay,
     CrowdMeterCompare,
     DeckEnd,
     Direction,
     Discard,
+    DoubleFinishIfBumped,
     Draw,
     Duration,
     Effect,
@@ -61,6 +64,7 @@ from srg_sim.effects import (
     Flip,
     Frequency,
     FrequencyGuard,
+    HandSizeCompare,
     HasInPlay,
     LoseBy,
     LoseKind,
@@ -70,6 +74,8 @@ from srg_sim.effects import (
     OnPlay,
     OnStop,
     Peek,
+    RecurToDeckTop,
+    RevealAndDiscard,
     RollWhen,
     ShuffleDeck,
     ShuffleIntoDeck,
@@ -77,6 +83,7 @@ from srg_sim.effects import (
     Static,
     Stop,
     Trigger,
+    Unstoppable,
     Unsupported,
     Vs,
     Who,
@@ -160,6 +167,52 @@ def _stop_eff(target: str, condition: Condition | None) -> Effect | None:
     if stops is None:
         return None
     return _eff(OnPlay(), list(stops), condition=condition)
+
+
+_CNT_ORD = {"lead": PlayOrder.LEAD, "follow up": PlayOrder.FOLLOWUP, "finish": PlayOrder.FINISH}
+_CNT_ATK = {
+    "strike": AtkType.STRIKE,
+    "grapple": AtkType.GRAPPLE,
+    "submission": AtkType.SUBMISSION,
+}
+
+
+def _count_filter(text: str) -> CardFilter | None:
+    """Parse a count descriptor — "Lead", "Strike", "Lead Strike", "Follow up Strike"
+    (case-insensitive, optional trailing "s") — into a :class:`CardFilter`, or ``None``
+    if unrecognized (so the "for each …" clause falls through to Unsupported)."""
+    t = text.strip().lower().rstrip("s")
+    m = re.fullmatch(r"(?:(lead|follow up|finish) )?(strike|grapple|submission)", t)
+    if m:
+        order = _CNT_ORD[m[1]] if m[1] else None
+        return CardFilter(play_order=order, atk_type=_CNT_ATK[m[2]])
+    if t in _CNT_ORD:
+        return CardFilter(play_order=_CNT_ORD[t])
+    return None
+
+
+def _per_roll(m: Any, delta: int, desc: str, per_who: Who, trigger: Trigger) -> Effect | None:
+    """ "+delta to your next turn roll for each <desc> in play" (declines on a bad desc)."""
+    per = _count_filter(desc)
+    if per is None:
+        return None
+    return _eff(trigger, [ModifyRoll(Who.SELF, delta, RollWhen.NEXT, per=per, per_who=per_who)])
+
+
+def _per_draw(m: Any, n: int, desc: str) -> Effect | None:
+    """ "Draw N for each <desc> you have in play"; OnPlay so the source is not counted."""
+    per = _count_filter(desc)
+    if per is None:
+        return None
+    return _eff(OnPlay(), [Draw(n=n, per=per, per_who=Who.SELF)])
+
+
+def _per_discard(m: Any, n: int, desc: str) -> Effect | None:
+    """ "Opponent discards N for each <desc> you have in play"; OnPlay (source uncounted)."""
+    per = _count_filter(desc)
+    if per is None:
+        return None
+    return _eff(OnPlay(), [Discard(count=n, who=Who.OPP, per=per, per_who=Who.SELF)])
 
 
 _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect | None]]] = [
@@ -311,6 +364,111 @@ _RULES: list[tuple[re.Pattern[str], Callable[[re.Match[str]], Effect | None]]] =
     _rule(
         r"Shuffle (?:up to )?(\d+) cards? from your discard pile into your deck",
         lambda m: _eff(OnHit(), [ShuffleIntoDeck(CardFilter())]),
+    ),
+    # Recur a card discard -> top of deck ("Put N cards from your discard pile on top
+    # of your deck"). RecurToDeckTop is an "up to" recycle; a bare "N" is authored as
+    # its count. The self-conditional "another <type> in play" variant fires OnPlay so
+    # the just-played card is not yet on the board (count=1 = a genuinely OTHER card).
+    _rule(
+        r"Put (?:up to )?(\d+) cards? from your discard pile on top of your deck",
+        lambda m: _eff(OnHit(), [RecurToDeckTop(count=int(m[1]))]),
+    ),
+    _rule(
+        rf"If you have another {_ATK} in play, put (?:up to )?(\d+) cards? "
+        r"from your discard pile on top of your deck",
+        lambda m: _eff(
+            OnPlay(),
+            [RecurToDeckTop(count=int(m[2]))],
+            condition=HasInPlay(Who.SELF, CardFilter(atk_type=_atk(m[1])), count=1),
+        ),
+    ),
+    # "If you have another <type> in play, draw N and your next turn roll is +M"
+    # (Double Wrist Twist). OnPlay + count=1 as above.
+    _rule(
+        rf"If you have another {_ATK} in play, draw (\d+) cards? "
+        r"and your next turn roll is \+(\d+)",
+        lambda m: _eff(
+            OnPlay(),
+            [Draw(n=int(m[2])), ModifyRoll(Who.SELF, int(m[3]), RollWhen.NEXT)],
+            condition=HasInPlay(Who.SELF, CardFilter(atk_type=_atk(m[1])), count=1),
+        ),
+    ),
+    # "Cannot be stopped by Follow Ups" — a static self-declaration read by the stop
+    # check (a Follow-Up stopper cannot stop this card).
+    _rule(
+        r"Cannot be stopped by Follow ?Ups?",
+        lambda m: _eff(
+            Static(), [Unstoppable(by_order=PlayOrder.FOLLOWUP)], duration=Duration.WHILE_IN_PLAY
+        ),
+    ),
+    # "This card counts as N <order> <type>s in play" — a static count self-declaration
+    # (feeds per-count roll/draw/discard scaling and HasInPlay count gates).
+    _rule(
+        r"This card counts as (\d+) (Lead|Follow [Uu]p|Finish) (Strike|Grapple|Submission)s? "
+        r"in play",
+        lambda m: _eff(
+            Static(),
+            [CountsAsInPlay(_count_filter(f"{m[2]} {m[3]}") or CardFilter(), int(m[1]))],
+            duration=Duration.WHILE_IN_PLAY,
+        ),
+    ),
+    # Per-count next turn roll ("+N for each <X> your opponent has / you have in play").
+    # Opponent-counted fires OnHit (source card's timing is irrelevant to the opponent's
+    # board); self-counted fires OnPlay so the just-played card is not counted.
+    _rule(
+        r"Your next turn roll is \+(\d+) for each (.+?) your opponent has in play",
+        lambda m: _per_roll(m, int(m[1]), m[2], Who.OPP, OnHit()),
+    ),
+    _rule(
+        r"Your next turn roll is \+(\d+) for each (.+?) you have in play",
+        lambda m: _per_roll(m, int(m[1]), m[2], Who.SELF, OnPlay()),
+    ),
+    # Per-count draw ("Draw N for each [other] <X> you have in play"); OnPlay so the
+    # source card is not yet on the board ("other").
+    _rule(
+        r"Draw (\d+) cards? for each (?:other )?(.+?) you have in play",
+        lambda m: _per_draw(m, int(m[1]), m[2]),
+    ),
+    # Per-count opponent discard ("Your opponent discards N ... for each <X> you have
+    # in play"); OnPlay so the source card is not counted.
+    _rule(
+        r"Your opponent discards (\d+) cards?(?: from their hand)? for each (.+?) you have in play",
+        lambda m: _per_discard(m, int(m[1]), m[2]),
+    ),
+    # "Your opponent randomly reveals N cards in their hand and discards all revealed
+    # Stops" — reveal N random, drop the Stops among them (0..N leave).
+    _rule(
+        r"Your opponent randomly reveals (\d+) cards?(?: in their hand)? "
+        r"and discards all revealed [Ss]tops",
+        lambda m: _eff(OnHit(), [RevealAndDiscard(count=int(m[1]), who=Who.OPP)]),
+    ),
+    # "If you have no other cards in your hand, this card is also a Lead" — the Finish
+    # becomes playable as a Lead while the hand holds only this card (size <= 1).
+    _rule(
+        r"If you have no other cards in your hand, this card is also a Lead",
+        lambda m: _eff(
+            Static(),
+            [AlsoLead(HandSizeCompare(Comparator.LE, Vs.VALUE, 1))],
+            duration=Duration.WHILE_IN_PLAY,
+        ),
+    ),
+    # "If you bumped on the last turn roll, double these bonuses" — a static self-
+    # declaration read by the finish sequence (T-Virus). "these bonuses" = the card's
+    # own printed Finish bonuses, doubled when the turn's roll-off involved a bump.
+    _rule(
+        r"If you bumped on the last turn roll, double these bonuses",
+        lambda m: _eff(Static(), [DoubleFinishIfBumped()], duration=Duration.WHILE_IN_PLAY),
+    ),
+    # Conditional Finish-roll bonus keyed on the rolled skill, for whoever finishes
+    # ("If either player rolls Agility for their Finish roll, their roll is +N";
+    # the card text prints "play" for "player" on some cards).
+    _rule(
+        rf"If either play(?:er)? rolls {_SK} for their Finish roll, their roll is \+(\d+)",
+        lambda m: _eff(
+            Static(),
+            [FinishRollBonus(int(m[2]), when_skill=_skill(m[1]), either=True)],
+            duration=Duration.WHILE_IN_PLAY,
+        ),
     ),
     # "stop any <target>" — the target is parsed by _stop_targets (bare type,
     # "<order> <type>", or "X or Y"), shared by the unconditional and conditional

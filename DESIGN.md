@@ -126,21 +126,29 @@ Always
 
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
-Draw(n, from=TOP|BOTTOM, who) Bury(selector, count)         Discard(selector, count)
+Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF)  Bury(selector, count)   Discard(selector, count, who, per?, per_who=SELF)
 Flip(n, who=SELF)             Search(filter, dest=HAND|DISCARD, count=1)  ShuffleIntoDeck(selector)
                               # dest=DISCARD: "search your deck for up to `count` cards, put them in
                               # discard" — owner chooses which/how many (a `search` decision), then shuffles
+                              # Draw/Discard `per`: n/count scales by the count of `per` cards in play,
+                              # exactly like ModifyRoll (authored OnPlay for "for each OTHER … in play")
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
+RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
+CountsAsInPlay(selector, count=2)  # Static self-decl: this card counts as `count` cards matching `selector`
 ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP)  # delta scales by count of `per` cards in play
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 Reroll(who, once=True)        WinTie(who)                   Bump(who)
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
+Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)
+AlsoLead(condition)           # Static self-decl: also playable as a Lead while `condition` holds
 BlankText(card, until=END_OF_TURN)             LoseBy(kind=DISQUALIFICATION|PINFALL, who)
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
+FinishRollBonus(delta, when_skill?, either=False)  # +delta to a Finish roll; when_skill gates on the rolled skill
+DoubleFinishIfBumped          # Static self-decl: double THIS card's Finish bonuses if the finisher bumped
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
 `Bury(selector, count)` moves `count` cards from the **discard pile to the bottom of the
@@ -159,6 +167,13 @@ read on demand (`GameState.effective_hand_cap` = base + active mods, clamped at 
 stored, so raising your own cap or lowering an opponent's folds in and out with the card.
 `LoseBy` is how
 cards trigger the DQ / pinfall loss conditions (§6). Count-out is engine-driven, not an action.
+The **static self-declaration** family — `CountsAsInPlay`, `Unstoppable`, `AlsoLead`,
+`DoubleFinishIfBumped` — carries no mutation: each is a `Static` marker the engine *reads
+structurally* (in-play counting, the stop check, the playability check, the finish sequence)
+and never executes, so it dispatches to a no-op like `LowestRollWins`. `CountsAsInPlay` lifts
+every "in play" tally its `selector` *implies* (a Lead-Strike declaration raises the Lead, the
+Strike, and the Lead-Strike counts alike), feeding per-count `ModifyRoll`/`Draw`/`Discard`
+scaling and `HasInPlay` gates.
 
 **Unsupported sentinel** — any clause the parser can't confidently map:
 ```

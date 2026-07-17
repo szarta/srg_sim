@@ -479,6 +479,8 @@ class Draw(IRNode):
     n: int = 1
     source: DeckEnd = DeckEnd.TOP
     who: Who = Who.SELF  # SELF, or OPP for "your opponent draws N" / "each player draws N"
+    per: CardFilter | None = None  # if set, `n` scales by the count of matching cards...
+    per_who: Who = Who.SELF  # ...in `per_who`'s in-play board ("draw 1 for each Lead you have")
 
 
 @dataclass(frozen=True)
@@ -524,6 +526,10 @@ class Discard(IRNode):
     count: int = 1
     who: Who = Who.SELF
     random: bool = False
+    per: CardFilter | None = None  # if set, `count` scales by the count of matching cards...
+    per_who: Who = (
+        Who.SELF
+    )  # ...in `per_who`'s in-play board ("discard 1 for each Strike you have")
 
 
 @dataclass(frozen=True)
@@ -562,6 +568,20 @@ class RecurToDeckTop(IRNode):
 
     selector: CardFilter = CardFilter()
     count: int = 1
+
+
+@dataclass(frozen=True)
+class CountsAsInPlay(IRNode):
+    """A static self-declaration that the source card counts as ``count`` cards
+    matching ``selector`` for any "in play" tally ("This card counts as 2 Lead
+    Strikes in play"). Read by :func:`conditions.count_in_play`; it mutates no
+    state, so the engine folds it like a Static marker (executing it is a no-op).
+    It lifts every count that ``selector`` *implies* — a Lead-Strike declaration
+    raises the Lead count, the Strike count, and the Lead-Strike count alike — and
+    feeds per-count roll/draw/discard scaling and ``HasInPlay`` count gates."""
+
+    selector: CardFilter = CardFilter()
+    count: int = 2
 
 
 @dataclass(frozen=True)
@@ -663,6 +683,46 @@ class Stop(IRNode):
 
 
 @dataclass(frozen=True)
+class Unstoppable(IRNode):
+    """A static self-declaration that the source card cannot be stopped by stops of
+    play-order ``by_order`` ("Cannot be stopped by Follow Ups"); ``by_order=None``
+    means it cannot be stopped at all. Read by the stop-resolution check, which drops
+    any candidate stopper of that order. Executing it is a no-op (a Static marker)."""
+
+    by_order: PlayOrder | None = None
+
+
+@dataclass(frozen=True)
+class AlsoLead(IRNode):
+    """Static self-declaration that the source card may also be played as a Lead —
+    starting a play chain without the normal order prerequisite — while ``condition``
+    holds ("If you have no other cards in your hand, this card is also a Lead" —
+    Broken Butterfly). Read by the engine's playability check; a no-op to execute."""
+
+    condition: Condition = Always()
+
+
+@dataclass(frozen=True)
+class DoubleFinishIfBumped(IRNode):
+    """A static self-declaration: double THIS card's printed Finish bonuses if the
+    finisher bumped on the turn roll that set up the finish ("If you bumped on the
+    last turn roll, double these bonuses" — T-Virus). Read by the finish sequence,
+    which doubles the card's ``bonus_for`` contribution; a no-op to execute."""
+
+
+@dataclass(frozen=True)
+class RevealAndDiscard(IRNode):
+    """Reveal ``count`` random cards from ``who``'s hand and discard those that can
+    act as Stops ("Your opponent randomly reveals 3 cards in their hand and discards
+    all revealed Stops" — Spin Wheel Kick). Distinct from :class:`Discard`, which
+    drops a fixed count: here 0..``count`` leave, depending on how many revealed cards
+    are Stops. The RNG picks which cards are revealed."""
+
+    count: int = 3
+    who: Who = Who.OPP
+
+
+@dataclass(frozen=True)
 class BlankGimmick(IRNode):
     who: Who
     duration: Duration = Duration.WHILE_IN_PLAY
@@ -720,11 +780,16 @@ class FinishBonus(IRNode):
 
 @dataclass(frozen=True)
 class FinishRollBonus(IRNode):
-    """A flat "+N to your Finish rolls" — added to the owner's Finish roll whatever
-    skill is rolled (any-skill), summed across in-play cards. Finish attempts only;
-    it does not help breakout rolls (a defender's rolls are a separate check)."""
+    """A "+N to your Finish rolls" — added to the owner's Finish roll, summed across
+    in-play cards. Finish attempts only; it does not help breakout rolls (a defender's
+    rolls are a separate check). By default any-skill/flat; ``when_skill`` gates it to
+    a Finish roll of that skill ("if either player rolls Agility for their Finish roll,
+    their roll is +1"), and ``either`` marks that the bonus applies to whoever makes
+    the Finish roll rather than only the card's owner."""
 
     delta: int
+    when_skill: Skill | None = None  # None = any skill; else only when this skill is rolled
+    either: bool = False  # applies to whichever player makes the Finish roll (Spin Wheel Kick)
 
 
 @dataclass(frozen=True)
@@ -897,7 +962,9 @@ Action = (
     | ShuffleIntoDeck
     | AddFromDiscard
     | RecurToDeckTop
+    | CountsAsInPlay
     | RemoveFromPlay
+    | RevealAndDiscard
     | Peek
     | ModifyRoll
     | BuffSkill
@@ -918,6 +985,9 @@ Action = (
     | BreakoutModifier
     | LowestRollWins
     | FlipGimmickSigns
+    | Unstoppable
+    | AlsoLead
+    | DoubleFinishIfBumped
     | Choice
 )
 

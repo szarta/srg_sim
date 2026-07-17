@@ -9,6 +9,7 @@ from srg_sim.cards import AtkType, PlayOrder, Skill
 from srg_sim.effects import (
     _REGISTRY,
     AddFromDiscard,
+    AlsoLead,
     Always,
     And,
     BlankGimmick,
@@ -21,12 +22,14 @@ from srg_sim.effects import (
     Choice,
     ChoiceOption,
     Comparator,
+    CountsAsInPlay,
     CrowdMeter,
     CrowdMeterCompare,
     DeckEnd,
     Dest,
     Direction,
     Discard,
+    DoubleFinishIfBumped,
     Draw,
     Effect,
     EffectSource,
@@ -65,6 +68,7 @@ from srg_sim.effects import (
     RecurToDeckTop,
     RemoveFromPlay,
     Reroll,
+    RevealAndDiscard,
     RollGapAtLeast,
     RollGapExactly,
     RollValue,
@@ -79,6 +83,7 @@ from srg_sim.effects import (
     StartOfTurn,
     Static,
     Stop,
+    Unstoppable,
     Unsupported,
     Until,
     Vs,
@@ -140,7 +145,15 @@ SAMPLES: list[IRNode] = [
     RemoveFromPlay(CardFilter(play_order=PlayOrder.FOLLOWUP), Who.OPP, 1),
     Peek(Who.OPP),
     RecurToDeckTop(CardFilter(play_order=PlayOrder.FINISH), 3),
+    CountsAsInPlay(  # "counts as 2 Lead Strikes in play" (Double Cross)
+        CardFilter(play_order=PlayOrder.LEAD, atk_type=AtkType.STRIKE), 2
+    ),
+    RevealAndDiscard(3, Who.OPP),  # Spin Wheel Kick reveal-3-discard-Stops
     ModifyRoll(Who.SELF, 1, RollWhen.NEXT),
+    Draw(1, per=CardFilter(play_order=PlayOrder.LEAD), per_who=Who.SELF),  # per-count draw
+    Discard(  # per-count opponent discard (Field of Fire)
+        count=1, who=Who.OPP, per=CardFilter(atk_type=AtkType.STRIKE), per_who=Who.SELF
+    ),
     BuffSkill(Skill.POWER, 1),
     BuffSkill(Skill.GRAPPLE, 0, Who.SELF, target_highest=True, per_crowd=True, cap=5),
     MaxHandSize(-1, Who.OPP),
@@ -158,8 +171,12 @@ SAMPLES: list[IRNode] = [
     SetFinishRoll(11, CrowdMeterCompare(Comparator.GT, 0)),
     FinishBonus(Skill.STRIKE, 2),
     FinishRollBonus(3),
+    FinishRollBonus(1, when_skill=Skill.AGILITY, either=True),  # Spin Wheel Kick conditional
     BreakoutModifier(1, attempts=2),
     LowestRollWins(),
+    Unstoppable(by_order=PlayOrder.FOLLOWUP),  # "Cannot be stopped by Follow Ups"
+    AlsoLead(HandSizeCompare(Comparator.LE, Vs.VALUE, 1)),  # Broken Butterfly empty-hand Lead
+    DoubleFinishIfBumped(),  # T-Virus "double these bonuses if you bumped"
     ChoiceOption("draw", (Draw(n=1),)),
     Choice(
         options=(

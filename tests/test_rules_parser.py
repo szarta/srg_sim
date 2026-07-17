@@ -15,12 +15,15 @@ from srg_sim import rules_parser as rp
 from srg_sim.cards import AtkType, PlayOrder, Skill
 from srg_sim.effects import (
     AddFromDiscard,
+    AlsoLead,
     BuffSkill,
     Bury,
     Comparator,
+    CountsAsInPlay,
     CrowdMeterCompare,
     DeckEnd,
     Discard,
+    DoubleFinishIfBumped,
     Draw,
     Duration,
     EffectSource,
@@ -33,13 +36,17 @@ from srg_sim.effects import (
     MaxHandSize,
     ModifyRoll,
     OnHit,
+    OnPlay,
     Peek,
+    RecurToDeckTop,
+    RevealAndDiscard,
     RollWhen,
     ShuffleDeck,
     ShuffleIntoDeck,
     SkillCompare,
     Static,
     Stop,
+    Unstoppable,
     Unsupported,
     Who,
 )
@@ -275,6 +282,108 @@ def test_conditional_stop_count_in_play_missing_comma() -> None:
     assert isinstance(cond, HasInPlay)
     assert cond.count == 2
     assert effect.actions == (Stop(atk_type=AtkType.SUBMISSION),)
+
+
+# --- mastermind-v3 shapes: counts-as, per-count, recur, unstoppable, finish ----
+
+
+def test_counts_as_n_in_play() -> None:
+    for clause, order in (
+        ("This card counts as 2 Lead Strikes in play", PlayOrder.LEAD),
+        ("This card counts as 2 Follow up Strikes in play", PlayOrder.FOLLOWUP),
+        ("This card counts as 2 Follow Up Strikes in play", PlayOrder.FOLLOWUP),
+    ):
+        eff = rp.parse_text(clause, CARD)[0]
+        act = eff.actions[0]
+        assert isinstance(act, CountsAsInPlay), clause
+        assert act.count == 2
+        assert act.selector.play_order is order
+        assert act.selector.atk_type is AtkType.STRIKE
+        assert isinstance(eff.trigger, Static)
+        assert eff.duration is Duration.WHILE_IN_PLAY
+
+
+def test_per_count_next_turn_roll_opponent_and_self() -> None:
+    opp = rp.parse_text("Your next turn roll is +1 for each Lead your opponent has in play", CARD)[
+        0
+    ]
+    assert isinstance(opp.actions[0], ModifyRoll)
+    assert opp.actions[0].per.play_order is PlayOrder.LEAD
+    assert opp.actions[0].per_who is Who.OPP
+    assert isinstance(opp.trigger, OnHit)  # opponent-counted: source card's timing is moot
+    # self-counted fires OnPlay so the just-played card is not itself counted
+    me = rp.parse_text("Your next turn roll is +1 for each Strike you have in play", CARD)[0]
+    assert me.actions[0].per.atk_type is AtkType.STRIKE
+    assert me.actions[0].per_who is Who.SELF
+    assert isinstance(me.trigger, OnPlay)
+
+
+def test_per_count_draw_and_opponent_discard() -> None:
+    draw = rp.parse_text("Draw 1 card for each other Lead you have in play", CARD)[0]
+    assert isinstance(draw.actions[0], Draw)
+    assert draw.actions[0].per.play_order is PlayOrder.LEAD
+    assert isinstance(draw.trigger, OnPlay)  # "other" via timing (card not yet in play)
+    disc = rp.parse_text(
+        "Your opponent discards 1 card from their hand for each strike you have in play", CARD
+    )[0]
+    assert isinstance(disc.actions[0], Discard)
+    assert disc.actions[0].who is Who.OPP
+    assert disc.actions[0].per.atk_type is AtkType.STRIKE
+    assert disc.actions[0].per_who is Who.SELF
+
+
+def test_recur_to_deck_top_plain_and_conditional() -> None:
+    plain = _one("Put 1 card from your discard pile on top of your deck")
+    assert isinstance(plain, RecurToDeckTop)
+    assert plain.count == 1
+    cond = rp.parse_text(
+        "If you have another Grapple in play, put 1 card from your discard pile "
+        "on top of your deck",
+        CARD,
+    )[0]
+    assert isinstance(cond.actions[0], RecurToDeckTop)
+    assert isinstance(cond.condition, HasInPlay)
+    assert cond.condition.who is Who.SELF
+    assert cond.condition.filter.atk_type is AtkType.GRAPPLE
+    assert isinstance(cond.trigger, OnPlay)  # OnPlay so count==1 means a genuinely OTHER card
+
+
+def test_cannot_be_stopped_by_follow_ups() -> None:
+    act = _one("Cannot be stopped by Follow Ups.")
+    assert isinstance(act, Unstoppable)
+    assert act.by_order is PlayOrder.FOLLOWUP
+
+
+def test_double_finish_if_bumped() -> None:
+    eff = rp.parse_text("If you bumped on the last turn roll, double these bonuses.", CARD)[0]
+    assert isinstance(eff.actions[0], DoubleFinishIfBumped)
+    assert isinstance(eff.trigger, Static)
+
+
+def test_conditional_finish_roll_bonus_keyed_on_skill() -> None:
+    # note the card text prints "play" for "player"
+    act = _one("If either play rolls Agility for their Finish roll, their roll is +1")
+    assert isinstance(act, FinishRollBonus)
+    assert act.when_skill is Skill.AGILITY
+    assert act.either is True
+    assert act.delta == 1
+
+
+def test_reveal_and_discard_stops() -> None:
+    act = _one(
+        "Your opponent randomly reveals 3 cards in their hand and discards all revealed Stops"
+    )
+    assert isinstance(act, RevealAndDiscard)
+    assert act.count == 3
+    assert act.who is Who.OPP
+
+
+def test_also_lead_when_hand_empty() -> None:
+    eff = rp.parse_text("If you have no other cards in your hand, this card is also a Lead", CARD)[
+        0
+    ]
+    assert isinstance(eff.actions[0], AlsoLead)
+    assert isinstance(eff.trigger, Static)
 
 
 # --- #27 coverage cleanup: metadata, skill-stop printings, draws, shuffle ----

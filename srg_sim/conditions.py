@@ -20,7 +20,7 @@ need a :class:`RollContext`; without one they are simply false.
 from __future__ import annotations
 
 import operator
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -65,6 +65,43 @@ def card_matches(card: Card, filt: fx.CardFilter) -> bool:
     if filt.tag is not None and filt.tag not in card.tags:
         return False
     return not (filt.name is not None and card.name != filt.name)
+
+
+def _filter_implies(sel: fx.CardFilter, query: fx.CardFilter) -> bool:
+    """True iff every card matching ``sel`` necessarily matches ``query`` — i.e.
+    ``query`` is no more restrictive than ``sel`` (each field ``query`` constrains,
+    ``sel`` constrains identically). So a Lead-Strike declaration implies the looser
+    "Lead" and "Strike" queries, but not "Follow up" (``raw`` is ignored)."""
+    for field in ("number", "atk_type", "play_order", "tag", "name"):
+        q = getattr(query, field)
+        if q is not None and getattr(sel, field) != q:
+            return False
+    return True
+
+
+def _counts_as(card: Card, query: fx.CardFilter) -> int:
+    """The largest ``CountsAsInPlay`` count this card declares for a ``query`` its
+    selector implies (0 if none) — e.g. "counts as 2 Lead Strikes" returns 2 for a
+    Lead / Strike / Lead-Strike query, 0 for a Follow-up query."""
+    best = 0
+    for eff in card.effects:
+        for action in eff.actions:
+            if isinstance(action, fx.CountsAsInPlay) and _filter_implies(action.selector, query):
+                best = max(best, action.count)
+    return best
+
+
+def count_in_play(cards: Iterable[Card], query: fx.CardFilter, exclude: Card | None = None) -> int:
+    """Count cards in a board matching ``query``, honoring ``CountsAsInPlay`` self-
+    declarations (a card that "counts as N" contributes N instead of 1). ``exclude``
+    drops one card object (the just-played source, for "each **other** … in play")."""
+    total = 0
+    for card in cards:
+        if card is exclude:
+            continue
+        base = 1 if card_matches(card, query) else 0
+        total += max(base, _counts_as(card, query))
+    return total
 
 
 def _who(state: GameState, owner: str, who: fx.Who) -> str:
@@ -122,7 +159,7 @@ def _h_crowd(c: fx.CrowdMeterCompare, s: GameState, o: str, r: RollContext | Non
 
 
 def _h_in_play(c: fx.HasInPlay, s: GameState, o: str, r: RollContext | None) -> bool:
-    n = sum(card_matches(card, c.filter) for card in s.players[_who(s, o, c.who)].in_play)
+    n = count_in_play(s.players[_who(s, o, c.who)].in_play, c.filter)
     return _CMP[c.cmp](n, c.count)
 
 

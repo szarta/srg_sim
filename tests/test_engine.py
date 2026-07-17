@@ -1469,3 +1469,106 @@ def test_mid_game_state_snapshot_round_trips() -> None:
     eng = _play(9)
     snap = eng.state.to_dict()
     assert GameState.from_dict(snap).to_dict() == snap
+
+
+# -- mastermind-v3 behaviors -------------------------------------------------
+
+
+def _bare(number: int, order: PlayOrder, atk: AtkType, effects: tuple[fx.Effect, ...]) -> Card:
+    return Card(
+        db_uuid=f"t-{number}",
+        name=f"card {number}",
+        number=number,
+        atk_type=atk,
+        play_order=order,
+        effects=effects,
+    )
+
+
+def test_counts_as_in_play_counts_a_card_as_n() -> None:
+    from srg_sim import conditions
+
+    lead_strike = _bare(
+        1,
+        PlayOrder.LEAD,
+        AtkType.STRIKE,
+        (
+            fx.Effect(
+                trigger=fx.Static(),
+                actions=(
+                    fx.CountsAsInPlay(
+                        fx.CardFilter(play_order=PlayOrder.LEAD, atk_type=AtkType.STRIKE), 2
+                    ),
+                ),
+            ),
+        ),
+    )
+    board = [lead_strike]
+    assert conditions.count_in_play(board, fx.CardFilter(play_order=PlayOrder.LEAD)) == 2
+    assert conditions.count_in_play(board, fx.CardFilter(atk_type=AtkType.STRIKE)) == 2
+    # a Follow-up query the declaration does not imply falls back to the base 0
+    assert conditions.count_in_play(board, fx.CardFilter(play_order=PlayOrder.FOLLOWUP)) == 0
+
+
+def test_unstoppable_card_cannot_be_stopped_by_a_follow_up() -> None:
+    attack = _bare(
+        11,
+        PlayOrder.LEAD,
+        AtkType.GRAPPLE,
+        (fx.Effect(trigger=fx.Static(), actions=(fx.Unstoppable(by_order=PlayOrder.FOLLOWUP),)),),
+    )
+    stop_eff = (fx.Effect(trigger=fx.Static(), actions=(fx.Stop(atk_type=AtkType.GRAPPLE),)),)
+    follow_up_stopper = _bare(6, PlayOrder.FOLLOWUP, AtkType.STRIKE, stop_eff)
+    lead_stopper = _bare(1, PlayOrder.LEAD, AtkType.STRIKE, stop_eff)
+    eng = _fresh()
+    assert eng._card_can_stop("B", follow_up_stopper, attack) is False  # unstoppable by Follow Ups
+    assert eng._card_can_stop("B", lead_stopper, attack) is True  # a Lead stop still works
+
+
+def test_t_virus_finish_bonus_doubles_on_bump() -> None:
+    t_virus = _bare(
+        30,
+        PlayOrder.FINISH,
+        AtkType.SUBMISSION,
+        (fx.Effect(trigger=fx.Static(), actions=(fx.DoubleFinishIfBumped(),)),),
+    )
+    object.__setattr__(t_virus, "finish_bonuses", ((Skill.GRAPPLE, 2),))
+    eng = _fresh()
+    eng._turn_bumped = False
+    assert eng._card_finish_bonus(t_virus, Skill.GRAPPLE) == 2
+    eng._turn_bumped = True
+    assert eng._card_finish_bonus(t_virus, Skill.GRAPPLE) == 4  # doubled on a bumped turn
+
+
+def test_per_count_draw_scales_with_the_board() -> None:
+    draw = fx.Draw(n=1, per=fx.CardFilter(play_order=PlayOrder.LEAD), per_who=fx.Who.SELF)
+    eng = _fresh()
+    eng.state.players["A"].in_play = [
+        _bare(n, PlayOrder.LEAD, AtkType.STRIKE, ()) for n in (1, 2, 3)
+    ]
+    before = len(eng.state.players["A"].hand)
+    eng._act_draw(draw, "A")
+    assert len(eng.state.players["A"].hand) == before + 3  # one per Lead in play
+
+
+def test_also_lead_makes_a_finish_playable_when_hand_holds_only_it() -> None:
+    also_lead = _bare(
+        28,
+        PlayOrder.FINISH,
+        AtkType.STRIKE,
+        (
+            fx.Effect(
+                trigger=fx.Static(),
+                actions=(fx.AlsoLead(fx.HandSizeCompare(fx.Comparator.LE, fx.Vs.VALUE, 1)),),
+            ),
+        ),
+    )
+    eng = _fresh()
+    eng.state.players["A"].in_play = []  # no Follow Up, so a Finish is normally unplayable
+    eng.state.players["A"].hand = [also_lead]
+    opts = eng._playable_options("A")
+    assert [o["number"] for o in opts] == [28]  # playable as a Lead because the hand is bare
+    # with another card in hand the condition fails and the Finish is unplayable again
+    eng.state.players["A"].hand = [also_lead, _bare(2, PlayOrder.LEAD, AtkType.STRIKE, ())]
+    playable_finishes = [o for o in eng._playable_options("A") if o["number"] == 28]
+    assert playable_finishes == []

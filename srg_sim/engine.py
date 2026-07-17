@@ -93,6 +93,9 @@ class Engine:
         # Per-player context of the most recent roll-off (rolled skill + margin),
         # so turn-roll gimmicks (OnWinTurn/OnLoseTurn) can gate on RollGap*/RollWasSkill.
         self._roll_ctx: dict[str, conditions.RollContext] = {}
+        # Whether this turn's roll-off involved a bump — read by the finish sequence
+        # for "if you bumped on the last turn roll, double these bonuses" (T-Virus).
+        self._turn_bumped = False
 
     # -- setup -------------------------------------------------------------
 
@@ -284,6 +287,7 @@ class Engine:
             forced = self._tie_winner()
             if forced is not None:
                 self._record_roll_ctx(sa, va, sb, vb)
+                self._turn_bumped = bumps > 0
                 self._log(gl.TurnResult(t=self.state.turn_no, winner=forced, tie_bumps=bumps))
                 return forced
             # Would-bump replacement (Rey Zerblade): on a tie, before bumping, a player
@@ -302,6 +306,7 @@ class Engine:
             va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # debuff re-rolls too
         winner = self._roll_winner(va, vb, lowest)
         self._record_roll_ctx(sa, va, sb, vb)
+        self._turn_bumped = bumps > 0
         self._log(gl.TurnResult(t=self.state.turn_no, winner=winner, tie_bumps=bumps))
         return winner
 
@@ -603,8 +608,12 @@ class Engine:
         """Text-driven stop (DESIGN.md §6): a card can stop ``attack`` iff one of its
         parsed ``Stop`` effects matches the attack's order/type and that effect's
         condition holds from the defender's view (skill stops, see-1, crowd-meter
-        gates all fall out of the condition). Cards with no Stop effect cannot stop.
+        gates all fall out of the condition). Cards with no Stop effect cannot stop;
+        an attack that declares itself ``Unstoppable`` by the stopper's play order
+        cannot be stopped by it.
         """
+        if _is_unstoppable_by(attack, stopper):
+            return False
         return any(
             isinstance(action, fx.Stop)
             and _stop_matches(action, attack)
@@ -641,9 +650,11 @@ class Engine:
         skill = self.state.rng.roll()
         base = self._stat(finisher, skill)
         # The whole in-play combo pays off: sum every card's printed bonus for the
-        # rolled skill, plus any flat "+N to your Finish rolls" (DESIGN.md §5).
-        bonus = sum(c.bonus_for(skill) for c in self.state.players[finisher].in_play)
-        bonus += self._finish_roll_bonus(finisher)
+        # rolled skill, plus any flat "+N to your Finish rolls" (DESIGN.md §5). A card
+        # that reads "if you bumped, double these bonuses" (T-Virus) doubles its own
+        # contribution when this turn's roll-off involved a bump.
+        bonus = sum(self._card_finish_bonus(c, skill) for c in self.state.players[finisher].in_play)
+        bonus += self._finish_roll_bonus(finisher, skill)
         cm = self.state.crowd_meter
         value = base + bonus + cm
         auto = is_auto_success(value, cm)
@@ -653,13 +664,30 @@ class Engine:
             return
         self._win(finisher, "finish")
 
-    def _finish_roll_bonus(self, key: str) -> int:
-        """Flat any-skill "+N to your Finish rolls" from the finisher's live effects
-        (in-play combo, gimmick, entrance), each gated by its condition (DESIGN.md §5)."""
+    def _card_finish_bonus(self, card: Card, skill: Skill) -> int:
+        """A single in-play card's Finish-roll combo bonus for ``skill``, doubled when
+        the card declares ``DoubleFinishIfBumped`` and this turn's roll-off bumped."""
+        bonus = card.bonus_for(skill)
+        if self._turn_bumped and any(
+            isinstance(a, fx.DoubleFinishIfBumped) for eff in card.effects for a in eff.actions
+        ):
+            bonus *= 2
+        return bonus
+
+    def _finish_roll_bonus(self, key: str, skill: Skill) -> int:
+        """ "+N to your Finish rolls" from the finisher's live effects (in-play combo,
+        gimmick, entrance), each gated by its condition and by its ``when_skill`` (a
+        skill-specific bonus applies only when that skill is rolled; DESIGN.md §5)."""
         total = 0
         for eff in self._standing_effects(key):
-            if conditions.holds(eff.condition, self.state, key):
-                total += sum(a.delta for a in eff.actions if isinstance(a, fx.FinishRollBonus))
+            if not conditions.holds(eff.condition, self.state, key):
+                continue
+            total += sum(
+                a.delta
+                for a in eff.actions
+                if isinstance(a, fx.FinishRollBonus)
+                and (a.when_skill is None or a.when_skill is skill)
+            )
         return total
 
     def _log_finish_attempt(
@@ -818,9 +846,21 @@ class Engine:
 
     # individual action handlers (kept tiny for the complexity gate) --------
 
+    def _per_multiplier(self, per: fx.CardFilter, per_who: fx.Who, key: str) -> int:
+        """Count of ``per``-matching cards on ``per_who``'s board (honoring
+        ``CountsAsInPlay``), the scale for a per-count Draw/Discard/ModifyRoll. A
+        "for each other … in play" clause is authored ``OnPlay`` so the source card is
+        not yet on the board — no explicit self-exclusion is needed."""
+        counter = key if per_who is fx.Who.SELF else self.state.opponent_of(key)
+        return conditions.count_in_play(self.state.players[counter].in_play, per)
+
     def _act_draw(self, action: fx.Draw, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
-        self._draw(target, action.n, action.source)
+        n = action.n
+        if action.per is not None:
+            n *= self._per_multiplier(action.per, action.per_who, key)
+        if n:
+            self._draw(target, n, action.source)
 
     def _act_shuffle_deck(self, action: fx.ShuffleDeck, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
@@ -1007,7 +1047,31 @@ class Engine:
 
     def _act_discard(self, action: fx.Discard, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
-        self._discard_from_hand(target, action.count, action.random, action.selector)
+        count = action.count
+        if action.per is not None:
+            count *= self._per_multiplier(action.per, action.per_who, key)
+        if count:
+            self._discard_from_hand(target, count, action.random, action.selector)
+
+    def _act_reveal_and_discard(self, action: fx.RevealAndDiscard, key: str) -> None:
+        # Reveal `count` random cards from the target's hand; discard the Stops among
+        # them (Spin Wheel Kick). 0..count leave, so it is not a fixed-count discard.
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        player = self.state.players[target]
+        pool = list(player.hand)
+        revealed: list[Card] = []
+        for _ in range(min(action.count, len(pool))):
+            card = self.state.rng.reveal(pool)
+            pool.remove(card)
+            revealed.append(card)
+        dropped = [c for c in revealed if _is_stop_card(c)]
+        for card in dropped:
+            player.hand.remove(card)
+        if dropped:
+            player.discard.extend(dropped)
+            self._log(
+                gl.Discard(t=self.state.turn_no, player=target, cards=[c.db_uuid for c in dropped])
+            )
 
     def _act_crowd(self, action: fx.CrowdMeter, key: str) -> None:
         self.state.crowd_meter += action.delta
@@ -1021,9 +1085,7 @@ class Engine:
         delta = action.delta
         if action.per is not None:
             # "+delta for each matching card in per_who's play" (Enjoy Everything).
-            counter = key if action.per_who is fx.Who.SELF else self.state.opponent_of(key)
-            board = self.state.players[counter].in_play
-            delta *= sum(1 for c in board if conditions.card_matches(c, action.per))
+            delta *= self._per_multiplier(action.per, action.per_who, key)
         self.state.players[target].pending_roll_mods[slot] += delta
         self._log_effect(key, "ModifyRoll", target, {"delta": delta, "when": slot})
 
@@ -1199,7 +1261,21 @@ class Engine:
 
     def _playable_options(self, key: str) -> list[Option]:
         chain = self.state.players[key].in_play
-        return [self._card_option(c) for c in self.state.players[key].hand if _playable(chain, c)]
+        return [
+            self._card_option(c)
+            for c in self.state.players[key].hand
+            if _playable(chain, c) or self._also_lead_now(key, c)
+        ]
+
+    def _also_lead_now(self, key: str, card: Card) -> bool:
+        """Whether ``card`` may be played as a Lead this instant via an ``AlsoLead``
+        self-declaration whose condition currently holds ("… this card is also a
+        Lead"). Lets an otherwise-ungated Finish/Follow-Up start a chain."""
+        return any(
+            isinstance(a, fx.AlsoLead) and conditions.holds(a.condition, self.state, key)
+            for eff in card.effects
+            for a in eff.actions
+        )
 
     @staticmethod
     def _card_option(card: Card) -> Option:
@@ -1223,6 +1299,24 @@ def _stop_matches(stop: fx.Stop, attack: Card) -> bool:
     if stop.order is not None and stop.order is not attack.play_order:
         return False
     return stop.atk_type is None or stop.atk_type is attack.atk_type
+
+
+def _is_stop_card(card: Card) -> bool:
+    """Whether ``card`` can act as a Stop — carries at least one ``Stop`` action (its
+    online condition is not checked; a revealed Stop is discarded regardless)."""
+    return any(isinstance(a, fx.Stop) for eff in card.effects for a in eff.actions)
+
+
+def _is_unstoppable_by(attack: Card, stopper: Card) -> bool:
+    """Whether ``attack`` declares itself ``Unstoppable`` against ``stopper`` — i.e. it
+    carries an :class:`fx.Unstoppable` whose ``by_order`` is the stopper's play order
+    (or ``None`` = unstoppable by anything). "Cannot be stopped by Follow Ups"."""
+    return any(
+        isinstance(action, fx.Unstoppable)
+        and (action.by_order is None or action.by_order is stopper.play_order)
+        for eff in attack.effects
+        for action in eff.actions
+    )
 
 
 def _playable(board: list[Card], card: Card) -> bool:
@@ -1255,6 +1349,11 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.LoseBy: Engine._act_lose_by,
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
+    fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
+    fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
+    fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed
+    fx.DoubleFinishIfBumped: Engine._act_noop,  # Static, read in the finish sequence
+    fx.RevealAndDiscard: Engine._act_reveal_and_discard,
     fx.MaxHandSize: Engine._act_noop,  # Static, read via effective_hand_cap; never executed
     fx.ShuffleDeck: Engine._act_shuffle_deck,
     fx.Search: Engine._act_search,

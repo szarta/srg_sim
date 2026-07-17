@@ -934,58 +934,8 @@ e8d2328e6e114b2ead86a2e97a6b4abc:
     Cage rider unsupported)
   source: card
 
-# #11 Double Wrist Twist: if another Grapple in play, draw 1 + next roll +1
-ef2967fc07044d958f64372afacbb95e:
-- '@type': Effect
-  trigger:
-    '@type': OnHit
-  condition:
-    '@type': HasInPlay
-    who: SELF
-    filter:
-      '@type': CardFilter
-      number: null
-      atk_type: Grapple
-      play_order: null
-      tag: null
-      name: null
-      raw: null
-    count: 1
-    cmp: '>='
-  actions:
-  - '@type': Draw
-    n: 1
-    source: TOP
-    who: SELF
-  - '@type': ModifyRoll
-    who: SELF
-    delta: 1
-    when: NEXT
-    per: null
-    per_who: OPP
-  duration: INSTANT
-  frequency:
-    '@type': FrequencyGuard
-    kind: UNLIMITED
-    n: null
-  raw_clause: if another Grapple in play, draw 1 and your next turn roll is +1
-  source: card
-- '@type': Effect
-  trigger:
-    '@type': OnPlay
-  condition:
-    '@type': Always
-  actions:
-  - '@type': Unsupported
-    raw_text: Cannot be stopped by Follow Ups.
-    reason: stop-immunity (unstoppable-by-order) has no IR action
-  duration: INSTANT
-  frequency:
-    '@type': FrequencyGuard
-    kind: UNLIMITED
-    n: null
-  raw_clause: cannot be stopped by Follow Ups (unstoppable IR gap)
-  source: card
+# #11 Double Wrist Twist is now fully grammar-parsed (Unstoppable + the OnPlay
+# "another Grapple in play" conditional draw/roll); its stale override was removed.
 
 # Destiny's Call (V2) #24 — search-to-discard (#49): mill up to 4 chosen cards,
 # then draw 2 (the search shuffles). Was Unsupported OnPlay; now modeled via Dest.DISCARD.
@@ -1648,4 +1598,144 @@ dfa3e0991ea3426197f4ded552575d61:
     n: null
   raw_clause: When you roll Power for your turn roll, draw 2 cards.
   source: gimmick
+  optional: false
+
+# #8 Reverse Scoop Slam: draw 1 OR shuffle up to 3 from discard into deck
+cc0f951e80054c7997e07eb2be71ac35:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    keyword: null
+    name: null
+    atk_type: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: draw 1
+      actions:
+      - '@type': Draw
+        n: 1
+        source: TOP
+        who: SELF
+        per: null
+        per_who: SELF
+    - '@type': ChoiceOption
+      label: shuffle up to 3 from discard into deck
+      actions:
+      - '@type': ShuffleIntoDeck
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+      - '@type': ShuffleIntoDeck
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+      - '@type': ShuffleIntoDeck
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: draw 1 card OR shuffle up to 3 cards from your discard pile into your deck
+  source: card
+  optional: false
+
+# #18 You're Not Ready: search "Ready to Rumble" to hand, may play it as an extra card, blank opp gimmick while RtR in play
+0100a2f0cb604367864f8e3a40bef90f:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    keyword: null
+    name: null
+    atk_type: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: Ready to Rumble
+      raw: null
+    dest: HAND
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: search your deck for "Ready to Rumble" and add it to your hand (deck-or-discard simplified
+    to deck)
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    keyword: null
+    name: null
+    atk_type: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': PlayExtraCard
+    order: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: you may play that card as an additional card this turn
+  source: card
+  optional: true
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: Ready to Rumble
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': BlankGimmick
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if you have "Ready to Rumble" in play, your opponent's Gimmick is blank
+  source: card
   optional: false
