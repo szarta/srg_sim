@@ -353,8 +353,8 @@ class Engine:
         positive gap means that side rolled lower) for roll-scoped conditions fired
         this turn (RollGap*/RollWasSkill; DESIGN.md §3)."""
         self._roll_ctx = {
-            "A": conditions.RollContext(skill=sa, gap=vb - va),
-            "B": conditions.RollContext(skill=sb, gap=va - vb),
+            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va),
+            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb),
         }
 
     # -- derived stats (with live condition evaluation) --------------------

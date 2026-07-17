@@ -145,6 +145,7 @@ class Comparator(Enum):
     GE = ">="
     EQ = "="
     LT = "<"
+    LE = "<="
 
 
 class Vs(Enum):
@@ -419,6 +420,18 @@ class RollGapExactly(IRNode):
 @dataclass(frozen=True)
 class RollGapAtLeast(IRNode):
     k: int
+
+
+@dataclass(frozen=True)
+class RollValue(IRNode):
+    """The rolled value of the current turn roll compared against ``value`` — gates on
+    the **actual number rolled** this turn (not a static stat), read from the
+    :class:`~srg_sim.conditions.RollContext`. Which roll it reads is set by the
+    trigger's ``who`` (Mrs. Apocalypse: ``OnRoll(who=OPP)`` + ``RollValue(LE, 7)`` =
+    "when your opponent's turn roll is 7 or less"). False without a roll context."""
+
+    cmp: Comparator
+    value: int
 
 
 # ---------------------------------------------------------------------------
@@ -812,6 +825,7 @@ Condition = (
     | RollWasSkill
     | RollGapExactly
     | RollGapAtLeast
+    | RollValue
 )
 
 Action = (

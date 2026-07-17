@@ -418,6 +418,47 @@ def test_cassandra_flips_the_signs_on_the_opponents_gimmick_only() -> None:
     assert a_unflipped.actions[0].delta == 4  # flip gone -> original sign restored
 
 
+def test_mrs_apocalypse_blanks_the_opponent_gimmick_only_on_a_low_roll() -> None:
+    # Mrs. Apocalypse (#59) clause 1: OnRoll(who=OPP) + RollValue(<=7) -> BlankGimmick(OPP)
+    # gates on the opponent's ACTUAL rolled value this turn (the new RollValue condition).
+    from srg_sim.conditions import RollContext
+
+    blank_low = fx.Effect(
+        trigger=fx.OnRoll(who=fx.Who.OPP),
+        condition=fx.RollValue(fx.Comparator.LE, 7),
+        actions=(fx.BlankGimmick(fx.Who.OPP),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="opp roll <=7 -> blank their gimmick",
+    )
+    victim = fx.Effect(  # B's own gimmick, the thing that gets blanked
+        trigger=fx.OnRoll(),
+        actions=(fx.ModifyRoll(who=fx.Who.SELF, delta=1, when=fx.RollWhen.NEXT),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="B gimmick",
+    )
+
+    def run(opp_value: int) -> bool:
+        eng = Engine(
+            make_deck("A", with_effects(vanilla(), (blank_low,))),  # A = Mrs. Apocalypse
+            make_deck("B", with_effects(vanilla(), (victim,))),
+            HeuristicPolicy(),
+            HeuristicPolicy(),
+            seed=1,
+        )
+        eng.setup()
+        eng.state.turn_no = 1
+        eng._roll_ctx = {
+            "A": RollContext(skill=Skill.POWER, gap=opp_value - 8, value=8),
+            "B": RollContext(skill=Skill.POWER, gap=8 - opp_value, value=opp_value),
+        }
+        eng._run_on_roll("A")  # Mrs. Apocalypse reacts to B's roll
+        return eng.state.is_gimmick_blanked("B")
+
+    assert run(6) is True  # opp rolled 6 (<=7) -> gimmick blanked
+    assert run(7) is True  # boundary: 7 is "7 or less"
+    assert run(8) is False  # opp rolled 8 -> not blanked (LE 7 fails)
+
+
 def test_hit_a_type_gimmick_fires_only_for_that_attack_type() -> None:
     # D1 (#57): "When you hit a Submission draw 1 card" = a gimmick OnHit(atk_type=
     # Submission) -> Draw, fired by _run_hit_gimmicks when the owner hits that type.

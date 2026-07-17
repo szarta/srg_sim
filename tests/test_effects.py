@@ -63,6 +63,7 @@ from srg_sim.effects import (
     Reroll,
     RollGapAtLeast,
     RollGapExactly,
+    RollValue,
     RollWasSkill,
     RollWhen,
     Search,
@@ -119,6 +120,7 @@ SAMPLES: list[IRNode] = [
     RollWasSkill(Skill.AGILITY),
     RollGapExactly(2),
     RollGapAtLeast(3),
+    RollValue(Comparator.LE, 7),
     # actions
     Draw(2, DeckEnd.BOTTOM),
     Bury(CardFilter(number=1), 2),

@@ -1445,3 +1445,60 @@ aebe9e8baa0046ddbde13690b7c18455:
     of Kickstarter" card.
   source: gimmick
   optional: false
+
+
+# --- Roll-value-gated blank + armed bump debuff (matchup roster, todo #59) ---
+# Mrs. Apocalypse (2 clauses): "During the turn roll: When your opponent's turn roll
+# is 7 or less, their Gimmick is immediately blank.  If it is 9 or greater, if you
+# would bump on the next turn roll, your opponent's roll is -1 instead."
+#   Clause 1 (modeled): OnRoll(who=OPP) + RollValue(<=,7) -> BlankGimmick(OPP). Gates
+#   on the opponent's ACTUAL rolled value this turn (new RollValue condition + the
+#   value carried on RollContext), fired by _run_on_roll after the roll resolves.
+#   Clause 2 (Unsupported sentinel): an armed, next-turn, would-bump-only -1 to the
+#   opponent — a delayed conditional that needs bespoke arming state; carried explicitly
+#   so it surfaces in the coverage report rather than being silently dropped/over-modeled.
+dfa3e0991ea3426197f4ded552575d61:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: OPP
+  condition:
+    '@type': RollValue
+    cmp: <=
+    value: 7
+  actions:
+  - '@type': BlankGimmick
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'During the turn roll: when your opponent''s turn roll is 7 or less,
+    their Gimmick is immediately blank.'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: OPP
+  condition:
+    '@type': RollValue
+    cmp: '>='
+    value: 9
+  actions:
+  - '@type': Unsupported
+    raw_text: if opp rolls 9+, next would-bump their roll is -1 instead
+    reason: armed next-turn would-bump opp-debuff not modeled
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If it is 9 or greater, if you would bump on the next turn roll, your
+    opponent's roll is -1 instead.
+  source: gimmick
+  optional: false

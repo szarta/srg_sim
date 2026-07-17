@@ -35,6 +35,7 @@ _CMP: dict[fx.Comparator, Callable[[int, int], bool]] = {
     fx.Comparator.GE: operator.ge,
     fx.Comparator.EQ: operator.eq,
     fx.Comparator.LT: operator.lt,
+    fx.Comparator.LE: operator.le,
 }
 
 
@@ -50,6 +51,7 @@ class RollContext:
 
     skill: Skill | None = None
     gap: int | None = None  # opponent's roll minus owner's; positive => owner rolled lower
+    value: int | None = None  # the owner's own rolled value this turn (for RollValue)
 
 
 def card_matches(card: Card, filt: fx.CardFilter) -> bool:
@@ -145,6 +147,10 @@ def _h_gap_at_least(c: fx.RollGapAtLeast, s: GameState, o: str, r: RollContext |
     return r is not None and r.gap is not None and r.gap >= c.k
 
 
+def _h_roll_value(c: fx.RollValue, s: GameState, o: str, r: RollContext | None) -> bool:
+    return r is not None and r.value is not None and _CMP[c.cmp](r.value, c.value)
+
+
 _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]] = {
     fx.Always: _h_always,
     fx.And: _h_and,
@@ -159,4 +165,5 @@ _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]]
     fx.RollWasSkill: _h_roll_was,
     fx.RollGapExactly: _h_gap_exact,
     fx.RollGapAtLeast: _h_gap_at_least,
+    fx.RollValue: _h_roll_value,
 }

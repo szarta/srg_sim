@@ -576,6 +576,22 @@ def test_sign_flip_gimmick_override_is_modeled() -> None:
 
 
 @requires_db
+def test_roll_value_gated_blank_gimmick_override_is_modeled() -> None:
+    # Mrs. Apocalypse (overrides.yaml, todo #59): clause 1 = OnRoll(who=OPP) +
+    # RollValue(<=7) -> BlankGimmick(OPP); clause 2 kept as an explicit Unsupported.
+    from srg_sim.effects import BlankGimmick, Comparator, OnRoll, RollValue
+    from srg_sim.report.carddb import ReportCardDB
+
+    mrs = ReportCardDB.from_yaml().resolve_competitor("Mrs. Apocalypse")
+    blank = next(e for e in mrs.effects if any(isinstance(a, BlankGimmick) for a in e.actions))
+    assert isinstance(blank.trigger, OnRoll) and blank.trigger.who is Who.OPP
+    assert isinstance(blank.condition, RollValue)
+    assert blank.condition.cmp is Comparator.LE and blank.condition.value == 7
+    # Clause 2 (armed bump debuff) is honestly surfaced, not silently dropped.
+    assert any(isinstance(a, Unsupported) for e in mrs.effects for a in e.actions)
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck
