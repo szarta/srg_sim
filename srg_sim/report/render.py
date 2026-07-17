@@ -69,16 +69,23 @@ def _intro(data: MatchupData) -> list[str]:
 
 
 def _gimmick_caveat(data: MatchupData) -> list[str]:
-    unmodeled = [s.comp.name for s in (data.a, data.b) if not s.gimmick_modeled]
-    if not unmodeled:
-        return []
-    who = " and ".join(unmodeled)
-    return [
-        f".. warning:: {who}'s gimmick is not yet modeled by the rules parser, so the "
-        "turn-roll odds and comp-type below reflect the **base stat line only** — the "
-        "gimmick's effect is not counted (its text is on the card image).",
-        "",
-    ]
+    full = [s.comp.name for s in (data.a, data.b) if s.gimmick_fully_unmodeled]
+    partial = [s.comp.name for s in (data.a, data.b) if s.gimmick_partial]
+    out: list[str] = []
+    if full:
+        out += [
+            f".. warning:: {' and '.join(full)}'s gimmick is not yet modeled by the rules "
+            "parser, so the turn-roll odds and comp-type below reflect the **base stat line "
+            "only** — the gimmick's effect is not counted (its text is on the card image).",
+            "",
+        ]
+    if partial:
+        out += [
+            f".. note:: {' and '.join(partial)}'s gimmick is modeled except for one clause "
+            "that is not yet counted (its full text is on the card image).",
+            "",
+        ]
+    return out
 
 
 def _competitor_block(cr: CompetitorReport, images: Mapping[str, str]) -> list[str]:
@@ -106,11 +113,13 @@ def _type_line(cr: CompetitorReport) -> list[str]:
     also = f" (also {', '.join(cr.comp_type.also)})" if cr.comp_type.also else ""
     src = "curated" if cr.comp_type.source == "override" else "auto"
     out = [f"**Type:** {cr.comp_type.label}{also} *({src})*", ""]
-    if not cr.gimmick_modeled:
+    if cr.gimmick_fully_unmodeled:
         out += [
             "*(gimmick not yet modeled — turn odds & type reflect the base stat line only)*",
             "",
         ]
+    elif cr.gimmick_partial:
+        out += ["*(one gimmick clause not yet counted; the rest is modeled)*", ""]
     return out
 
 

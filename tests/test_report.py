@@ -14,8 +14,9 @@ from typing import Any
 import pytest
 from srg_sim.loader import CardIndex, LoaderError
 from srg_sim.report import classify, finishes, skillreqs, turn
-from srg_sim.report.build import build_report, slugify
+from srg_sim.report.build import build_glance, build_report, slugify
 from srg_sim.report.carddb import ReportCardDB
+from srg_sim.report.glance import render_glance
 from srg_sim.report.images import source_webp
 from srg_sim.report.model import build_matchup
 from srg_sim.report.render import render_report
@@ -239,6 +240,45 @@ def test_render_emits_expected_sections(db: ReportCardDB) -> None:
     for token in tokens:
         assert token in rst, token
     assert "Better logoless alternatives" in rst  # Grapple logoless beats signature
+
+
+def test_glance_stops_reports_runnable_premium_and_equal8(db: ReportCardDB) -> None:
+    # Alpha = Po5 Ag10 Te9 Su6 Gr7 St8: can't run Al13N (Su8) / Beg for Mercy (Gr8);
+    # Sealed Away has no requirement (board-gated -> situational). Equal-8: Springboard
+    # Lion Splash runs (St8) and is online (Agility 10 > Strike 8).
+    alpha, beta = db.resolve_competitor("Test Alpha"), db.resolve_competitor("Test Beta")
+    gs = skillreqs.glance_stops(alpha, beta)
+    assert [s.name for s in gs.big] == ["Sealed Away"]
+    assert gs.big[0].live is None  # situational
+    assert gs.equal8 is not None and "Springboard" in gs.equal8.name and gs.equal8.live is True
+
+
+def test_render_glance_emits_one_page_scouting_sections(db: ReportCardDB) -> None:
+    data = build_matchup(db, "Test Alpha", "Test Beta")
+    rst = render_glance(data, {})
+    for token in (
+        "Scouting Card",
+        "Turn roll",
+        "Best finish",
+        "Open lanes",
+        "Big skill stops",
+        "Equal-8 stop",
+        ".. list-table",
+    ):
+        assert token in rst, token
+
+
+@pytest.mark.skipif(importlib.util.find_spec("sphinx") is None, reason="sphinx not installed")
+def test_build_glance_writes_a_one_page_project(
+    db: ReportCardDB, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "srg_sim.report.build.ReportCardDB.from_yaml", classmethod(lambda cls, path: db)
+    )
+    out = build_glance("Test Alpha", "Test Beta", out_root=tmp_path, html=True, pdf=False)
+    assert out.name.endswith("-glance")
+    assert (out / "_build" / "html" / "index.html").exists()
+    assert '"tableofcontents": ""' in (out / "conf.py").read_text()  # no local TOC
 
 
 def test_source_webp_path_is_sharded_by_uuid_prefix() -> None:

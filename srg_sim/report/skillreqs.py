@@ -100,3 +100,40 @@ def top_for(me: Competitor, opp: Competitor, limit: int = 6) -> list[PriorityCar
 def personal_choice(table: dict[str, Any] | None = None) -> tuple[str, ...]:
     """The no-requirement disruption Leads (Apocalypse / Rejected), a standing note."""
     return tuple((table or load_priority()).get("personal_choice", []))
+
+
+@dataclass(frozen=True)
+class StopAccess:
+    """One premium stop a competitor can run, with its online status for the matchup."""
+
+    name: str
+    live: bool | None  # True=online, False=runnable-but-offline, None=situational (board-gated)
+
+
+@dataclass(frozen=True)
+class GlanceStops:
+    """The scouting one-pager's stop summary for one competitor vs an opponent."""
+
+    big: tuple[StopAccess, ...]  # runnable premium stops (Al13N / Beg for Mercy / Sealed Away)
+    equal8: StopAccess | None  # best runnable Equal-8 stop (online first), if any
+
+
+def glance_stops(
+    me: Competitor, opp: Competitor, table: dict[str, Any] | None = None
+) -> GlanceStops:
+    """The at-a-glance stop access for ``me`` vs ``opp``: which premium "13/14/15"
+    stops are runnable (with online status) and the best runnable Equal-8 stop."""
+    tbl = table or load_priority()
+    ms, os_ = me.stats.to_dict(), opp.stats.to_dict()
+    big: list[StopAccess] = []
+    for entry in tbl.get("glance_skill_stops", []):
+        reqs = (entry.get("requires") or {}).items()
+        if not all(ms[skill] >= int(n) for skill, n in reqs):
+            continue  # can't run it on this stat line
+        online = entry.get("online")
+        live = _online_holds(online, ms, os_) if online else None
+        big.append(StopAccess(str(entry["name"]), live))
+    equal8 = [e for e in tbl.get("priority", []) if e.get("tier") == "equal8"]
+    ranked = priority_cards(me, opp, equal8)  # runnable, sorted online-first
+    best = ranked[0] if ranked else None
+    return GlanceStops(tuple(big), StopAccess(best.name, best.live) if best else None)

@@ -43,8 +43,25 @@ class CompetitorReport:
 
     @property
     def gimmick_modeled(self) -> bool:
-        """False when any gimmick clause is Unsupported — so odds/type are base-only."""
+        """True when no gimmick clause is Unsupported — every clause is counted."""
         return not self.unsupported_gimmick
+
+    @property
+    def _has_modeled_effect(self) -> bool:
+        """The gimmick has at least one clause the engine executes (not all Unsupported)."""
+        return any(
+            not all(isinstance(a, fx.Unsupported) for a in eff.actions) for eff in self.comp.effects
+        )
+
+    @property
+    def gimmick_fully_unmodeled(self) -> bool:
+        """No gimmick clause is modeled — odds/type reflect the base stat line only."""
+        return bool(self.unsupported_gimmick) and not self._has_modeled_effect
+
+    @property
+    def gimmick_partial(self) -> bool:
+        """Some clauses are modeled and counted, but at least one is still Unsupported."""
+        return bool(self.unsupported_gimmick) and self._has_modeled_effect
 
 
 @dataclass(frozen=True)

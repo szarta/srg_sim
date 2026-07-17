@@ -25,7 +25,9 @@ The user-facing entry point that ties the pipeline together:
   the honest per-seat training signal ``LearnedPolicy`` consumes (DESIGN.md §10 M4).
 * ``report A B`` — build a 2-competitor matchup report (turn-roll odds, CM1–5 finish
   odds with card art, skill stops, skill-requirement payoffs) as a self-contained
-  Sphinx project rendered to HTML and, with ``--pdf``, a xelatex PDF.
+  Sphinx project rendered to HTML and, with ``--pdf``, a xelatex PDF. ``--glance``
+  builds the one-page scouting card (PDF) instead — comp-vs-comp, turn win %, best
+  finish + CM0–2 odds, open lanes, and premium/Equal-8 skill-stop access.
 
 ``--cards`` overrides the card-export path (defaults to the snapshot), so every
 command runs against any ``cards.yaml`` — real or a test fixture.
@@ -313,10 +315,13 @@ def _cmd_review(args: argparse.Namespace) -> int:
 
 def _cmd_report(args: argparse.Namespace) -> int:
     from srg_sim.loader import LoaderError
-    from srg_sim.report.build import build_report
+    from srg_sim.report.build import build_glance, build_report
 
+    # --glance builds the one-page scouting card (PDF by default); otherwise the full
+    # multi-page report (PDF only with --pdf).
+    builder = build_glance if args.glance else build_report
     try:
-        out = build_report(
+        out = builder(
             args.comp_a,
             args.comp_b,
             cards_path=args.cards,
@@ -325,14 +330,15 @@ def _cmd_report(args: argparse.Namespace) -> int:
             seed=args.seed,
             out_root=args.out,
             html=not args.no_html,
-            pdf=args.pdf,
+            pdf=args.pdf or args.glance,
         )
     except LoaderError as exc:
         raise SystemExit(f"could not build report: {exc}") from exc
-    print(f"report: {out}")
+    kind = "glance" if args.glance else "report"
+    print(f"{kind}: {out}")
     if not args.no_html:
         print(f"  html: {out / '_build' / 'html' / 'index.html'}")
-    if args.pdf:
+    if args.pdf or args.glance:
         print(f"  pdf:  {out / '_build' / 'latex' / 'matchup.pdf'}")
     return 0
 
@@ -438,6 +444,11 @@ def _build_parser() -> argparse.ArgumentParser:
     report.add_argument("--seed", type=int, default=11, help="turn-odds MC seed")
     report.add_argument("--out", default="docs/reports", help="output root dir")
     report.add_argument("--pdf", action="store_true", help="also build the xelatex PDF")
+    report.add_argument(
+        "--glance",
+        action="store_true",
+        help="build the one-page scouting card (PDF) instead of the full report",
+    )
     report.add_argument("--no-html", action="store_true", help="skip the HTML build")
     _add_cards_arg(report)
     report.set_defaults(func=_cmd_report)

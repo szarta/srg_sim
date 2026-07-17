@@ -352,6 +352,29 @@ def test_report_writes_a_sphinx_project(
     assert "Comp A" in text and "Turn roll:" in text and "Key skill-requirement cards" in text
 
 
+def test_report_glance_flag_builds_the_scouting_card(
+    world: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # --glance routes to build_glance and defaults to a PDF; stub the builder so the
+    # test stays offline (no Sphinx/xelatex) and just checks the routing + flags.
+    calls: dict[str, object] = {}
+
+    def fake_glance(a: str, b: str, **kwargs: object) -> Path:
+        calls.update(a=a, b=b, **kwargs)
+        return tmp_path / "x-glance"
+
+    monkeypatch.setattr("srg_sim.report.build.build_glance", fake_glance)
+    rc = main(
+        ["report", "Comp A", "Comp B", "--cards", str(world["cards"]), "--glance", "--no-html"]
+    )
+    assert rc == 0
+    assert calls["a"] == "Comp A" and calls["pdf"] is True and calls["html"] is False
+    assert "glance:" in capsys.readouterr().out
+
+
 def test_report_unknown_competitor_exits(world: dict[str, Path], tmp_path: Path) -> None:
     with pytest.raises(SystemExit, match="could not build report"):
         main(["report", "Nobody", "Comp B", "--cards", str(world["cards"]), "--out", str(tmp_path)])
