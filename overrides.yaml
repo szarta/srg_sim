@@ -1418,3 +1418,30 @@ aebe9e8baa0046ddbde13690b7c18455:
     have in play to add +1 to your turn roll instead.'
   source: gimmick
   optional: true
+
+
+# --- Gimmick sign-flip (matchup roster, todo #61) ---
+# Cassandra: 'Change "+" to "-" and "-" to "+" on your target's Gimmick and "Champion
+# of Kickstarter" card.' A Static FlipGimmickSigns(OPP) marker — when the opponent's
+# gimmick effects are gathered (_standing_effects), effects.flip_signs negates every
+# printed +/- delta (ModifyRoll/BuffSkill/CrowdMeter/MaxHandSize/Finish* /Breakout).
+# So the Bull's "+N" comeback and Mastermind's "opp -2" both invert against Cassandra.
+# The "Champion of Kickstarter" clause (a specific promo card) is out of scope.
+98f3f8c2a9624054b696f59bc8d89dd9:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FlipGimmickSigns
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Change "+" to "-" and "-" to "+" on your target's Gimmick and "Champion
+    of Kickstarter" card.
+  source: gimmick
+  optional: false

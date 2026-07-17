@@ -384,6 +384,40 @@ def test_would_bump_boost_breaks_the_tie_without_bumping(monkeypatch: pytest.Mon
     assert lead in eng.state.players["A"].discard  # the Lead paid for the +1
 
 
+def test_cassandra_flips_the_signs_on_the_opponents_gimmick_only() -> None:
+    # Cassandra (#61): a Static FlipGimmickSigns(OPP) negates every printed +/- on the
+    # opponent's gimmick. Here A's "+4 to your next roll" comeback flips to -4 while
+    # A holds Cassandra's opponent; Cassandra's own gimmick is untouched.
+    comeback = fx.Effect(
+        trigger=fx.OnRoll(),
+        actions=(fx.ModifyRoll(who=fx.Who.SELF, delta=4, when=fx.RollWhen.NEXT),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="your next roll is +4",
+    )
+    flip = fx.Effect(
+        trigger=fx.Static(),
+        actions=(fx.FlipGimmickSigns(fx.Who.OPP),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="flip opponent gimmick signs",
+    )
+    eng = Engine(
+        make_deck("A", with_effects(vanilla(), (comeback,))),
+        make_deck("B", with_effects(vanilla(), (flip,))),  # B = Cassandra
+        HeuristicPolicy(),
+        HeuristicPolicy(),
+        seed=1,
+    )
+    eng.setup()
+    (a_eff,) = [e for e in eng._standing_effects("A") if isinstance(e.trigger, fx.OnRoll)]
+    assert a_eff.actions[0].delta == -4  # +4 comeback negated by Cassandra
+    # Cassandra's own gimmick is not self-flipped, and blanking her disables the flip.
+    (b_eff,) = eng._standing_effects("B")
+    assert isinstance(b_eff.actions[0], fx.FlipGimmickSigns)
+    eng.state.players["B"].gimmick_blanked = True
+    (a_unflipped,) = [e for e in eng._standing_effects("A") if isinstance(e.trigger, fx.OnRoll)]
+    assert a_unflipped.actions[0].delta == 4  # flip gone -> original sign restored
+
+
 def test_hit_a_type_gimmick_fires_only_for_that_attack_type() -> None:
     # D1 (#57): "When you hit a Submission draw 1 card" = a gimmick OnHit(atk_type=
     # Submission) -> Draw, fired by _run_hit_gimmicks when the owner hits that type.

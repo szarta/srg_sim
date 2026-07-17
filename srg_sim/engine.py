@@ -704,11 +704,28 @@ class Engine:
         player = self.state.players[key]
         out: list[fx.Effect] = []
         if not self.state.is_gimmick_blanked(key):
-            out.extend(player.competitor.effects)
+            gimmick = player.competitor.effects
+            if self._gimmick_signs_flipped(key):  # Cassandra flips this player's gimmick
+                gimmick = tuple(fx.flip_signs(e) for e in gimmick)
+            out.extend(gimmick)
         out.extend(player.entrance.effects)
         for card in player.in_play:
             out.extend(card.effects)
         return tuple(out)
+
+    def _gimmick_signs_flipped(self, key: str) -> bool:
+        """True iff ``key``'s opponent has an active (unblanked) ``Static``
+        :class:`~srg_sim.effects.FlipGimmickSigns` — Cassandra negating every printed
+        +/- on ``key``'s gimmick. Reads the opponent's raw competitor effects (not their
+        standing set) so it never recurses back through :meth:`_standing_effects`."""
+        opp = self.state.opponent_of(key)
+        if self.state.is_gimmick_blanked(opp):
+            return False
+        return any(
+            isinstance(eff.trigger, fx.Static)
+            and any(isinstance(a, fx.FlipGimmickSigns) for a in eff.actions)
+            for eff in self.state.players[opp].competitor.effects
+        )
 
     def _run_effects(
         self,
@@ -1187,6 +1204,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.BlankGimmick: Engine._act_blank_gimmick,
     fx.LoseBy: Engine._act_lose_by,
     fx.LowestRollWins: Engine._act_noop,
+    fx.FlipGimmickSigns: Engine._act_noop,
     fx.MaxHandSize: Engine._act_noop,  # Static, read via effective_hand_cap; never executed
     fx.ShuffleDeck: Engine._act_shuffle_deck,
     fx.Search: Engine._act_search,

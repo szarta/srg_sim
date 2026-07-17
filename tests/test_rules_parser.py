@@ -563,6 +563,19 @@ def test_would_bump_boost_gimmick_override_is_modeled() -> None:
 
 
 @requires_db
+def test_sign_flip_gimmick_override_is_modeled() -> None:
+    # Cassandra (overrides.yaml, todo #61): a Static FlipGimmickSigns(OPP) marker.
+    from srg_sim.effects import FlipGimmickSigns, Static
+    from srg_sim.report.carddb import ReportCardDB
+
+    cass = ReportCardDB.from_yaml().resolve_competitor("Cassandra")
+    (eff,) = cass.effects
+    assert isinstance(eff.trigger, Static)
+    (act,) = eff.actions
+    assert isinstance(act, FlipGimmickSigns) and act.who is Who.OPP
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck

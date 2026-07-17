@@ -19,9 +19,9 @@ from __future__ import annotations
 
 import json
 import types
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from enum import Enum
-from typing import Any, Union, get_args, get_origin, get_type_hints
+from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from srg_sim.cards import AtkType, PlayOrder, Skill
 
@@ -674,6 +674,56 @@ class LowestRollWins(IRNode):
 
 
 @dataclass(frozen=True)
+class FlipGimmickSigns(IRNode):
+    """Gimmick marker (Cassandra): "change '+' to '-' and '-' to '+' on your target's
+    Gimmick". While active, every printed +/- modifier on the **opponent's** gimmick is
+    negated. Carried as a ``Static`` passive read when the opponent's gimmick effects
+    are gathered (like :class:`LowestRollWins`), never executed as a mutation; the
+    negation itself is :func:`flip_signs`. ``who`` is the target whose gimmick flips."""
+
+    who: Who = Who.OPP
+
+
+# Action nodes whose ``delta`` is a printed +/- modifier that :func:`flip_signs`
+# negates. Count-like fields (Draw.n, Discard.count) carry no sign and are left alone.
+_SIGNED_DELTA = (
+    ModifyRoll,
+    BuffSkill,
+    CrowdMeter,
+    MaxHandSize,
+    FinishBonus,
+    FinishRollBonus,
+    BreakoutModifier,
+)
+
+
+_A = TypeVar("_A", bound=IRNode)
+
+
+def _negate_action(action: _A) -> _A:
+    """Negate the signed ``delta`` on one action (recursing into a :class:`Choice`'s
+    branches); anything without a printed +/- is returned unchanged. The return type
+    mirrors the input, so a :class:`Choice`'s ``tuple[Action, ...]`` stays that width."""
+    if isinstance(action, Choice):
+        return replace(
+            action,
+            options=tuple(
+                replace(opt, actions=tuple(_negate_action(a) for a in opt.actions))
+                for opt in action.options
+            ),
+        )
+    if isinstance(action, _SIGNED_DELTA):
+        return replace(action, delta=-action.delta)
+    return action
+
+
+def flip_signs(effect: Effect) -> Effect:
+    """Return a copy of ``effect`` with every printed +/- modifier negated — the
+    transform Cassandra's :class:`FlipGimmickSigns` applies to the opponent's gimmick."""
+    return replace(effect, actions=tuple(_negate_action(a) for a in effect.actions))
+
+
+@dataclass(frozen=True)
 class ChoiceOption(IRNode):
     """One branch of a :class:`Choice`: a human-readable ``label`` plus the actions
     taken if this branch is picked."""
@@ -793,6 +843,7 @@ Action = (
     | FinishRollBonus
     | BreakoutModifier
     | LowestRollWins
+    | FlipGimmickSigns
     | Choice
 )
 

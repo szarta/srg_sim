@@ -33,6 +33,7 @@ from srg_sim.effects import (
     FinishBonus,
     FinishRollBonus,
     Flip,
+    FlipGimmickSigns,
     Frequency,
     FrequencyGuard,
     HandSizeCompare,
@@ -138,6 +139,7 @@ SAMPLES: list[IRNode] = [
     Bump(Who.OPP),
     Stop(PlayOrder.LEAD, AtkType.GRAPPLE, source_is_skillreq=True),
     BlankGimmick(Who.OPP),
+    FlipGimmickSigns(Who.OPP),
     BlankText(CardFilter(name="Gimmick"), Until.END_OF_TURN),
     LoseBy(LoseKind.PINFALL, Who.SELF),
     CrowdMeter(1),
@@ -273,3 +275,29 @@ def test_search_to_discard_round_trips_and_defaults() -> None:
 def test_unknown_type_raises() -> None:
     with pytest.raises(KeyError):
         from_dict({"@type": "NoSuchNode"})
+
+
+def test_flip_signs_negates_printed_deltas_but_not_counts() -> None:
+    from srg_sim.effects import flip_signs
+
+    effect = Effect(
+        trigger=OnRoll(),
+        actions=(
+            ModifyRoll(Who.OPP, -2, RollWhen.NEXT),  # printed sign -> flips
+            BuffSkill(Skill.POWER, 3),  # +3 to Power -> flips
+            Draw(2),  # a count, no sign -> untouched
+            Choice(
+                options=(
+                    ChoiceOption("buff", (BuffSkill(Skill.STRIKE, 1),)),  # nested -> flips
+                    ChoiceOption("draw", (Draw(1),)),  # nested count -> untouched
+                )
+            ),
+        ),
+    )
+    flipped = flip_signs(effect)
+    assert flipped.actions[0].delta == 2  # -2 -> +2
+    assert flipped.actions[1].delta == -3  # +3 -> -3
+    assert flipped.actions[2].n == 2  # Draw count unchanged
+    choice = flipped.actions[3]
+    assert choice.options[0].actions[0].delta == -1  # nested BuffSkill flipped
+    assert choice.options[1].actions[0].n == 1  # nested Draw unchanged
