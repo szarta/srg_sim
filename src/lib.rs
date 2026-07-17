@@ -25,6 +25,10 @@
 #![forbid(unsafe_code)]
 
 pub mod error;
+pub mod finish;
 pub mod ir;
+pub mod skills;
+pub mod stops;
 
 pub use error::{Result, SrgError};
+pub use skills::Skills;

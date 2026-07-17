@@ -74,7 +74,7 @@ type_tag!(ChoiceOptionTag, "ChoiceOption");
 // ---------------------------------------------------------------------------
 
 /// The six skills (three attributes + three attack types).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Skill {
     Power,
     Agility,
@@ -82,6 +82,30 @@ pub enum Skill {
     Submission,
     Grapple,
     Strike,
+}
+
+impl Skill {
+    /// All six skills, in the canonical order used by the finish/stop math.
+    pub const ALL: [Skill; 6] = [
+        Skill::Power,
+        Skill::Agility,
+        Skill::Technique,
+        Skill::Submission,
+        Skill::Grapple,
+        Skill::Strike,
+    ];
+
+    /// The skill's canonical name — identical to its serialized `@type` value.
+    pub fn name(self) -> &'static str {
+        match self {
+            Skill::Power => "Power",
+            Skill::Agility => "Agility",
+            Skill::Technique => "Technique",
+            Skill::Submission => "Submission",
+            Skill::Grapple => "Grapple",
+            Skill::Strike => "Strike",
+        }
+    }
 }
 
 /// Attack type of a card (or `None` for non-attack cards).
