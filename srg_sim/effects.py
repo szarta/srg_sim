@@ -258,10 +258,17 @@ class OnRollBoost(IRNode):
     discard a card of that move type and your turn roll is +1"). Unlike :class:`OnRoll`
     (which fires *after* the roll for a NEXT-roll comeback), this can flip the current
     roll's outcome. The effect's ``condition`` gates payability (only offered when the
-    cost can be paid) and its ``actions`` are the cost; ``optional`` makes it a "may"."""
+    cost can be paid) and its ``actions`` are the cost; ``optional`` makes it a "may".
+
+    ``on_bump`` scopes *when* the boost is offered. Default ``False`` offers it on the
+    initial roll (Soborno). ``True`` offers it only on a would-bump — a tie, before the
+    bump's draw+re-roll — so paying the cost adds ``delta`` and breaks the tie *instead*
+    of bumping (Rey Zerblade: "when you would bump, you may discard 1 Lead you have in
+    play to add +1 to your turn roll instead")."""
 
     skill: Skill | None = None
     delta: int = 1
+    on_bump: bool = False
 
 
 @dataclass(frozen=True)

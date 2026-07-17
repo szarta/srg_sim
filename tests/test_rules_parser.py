@@ -548,6 +548,21 @@ def test_hit_a_type_gimmick_override_is_modeled() -> None:
 
 
 @requires_db
+def test_would_bump_boost_gimmick_override_is_modeled() -> None:
+    # Rey Zerblade (overrides.yaml, todo #58): OnRollBoost(on_bump=True) -> pay an
+    # in-play Lead (RemoveFromPlay) for +1, an optional HasInPlay-gated would-bump boost.
+    from srg_sim.effects import HasInPlay, OnRollBoost, RemoveFromPlay
+    from srg_sim.report.carddb import ReportCardDB
+
+    rey = ReportCardDB.from_yaml().resolve_competitor("Rey Zerblade")
+    (eff,) = rey.effects
+    assert isinstance(eff.trigger, OnRollBoost) and eff.trigger.on_bump and eff.optional
+    assert isinstance(eff.condition, HasInPlay)
+    assert any(isinstance(a, RemoveFromPlay) for a in eff.actions)
+    assert not any(isinstance(a, Unsupported) for a in eff.actions)
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck

@@ -311,6 +311,79 @@ def test_in_roll_boost_pays_only_when_payable_and_discards_the_typed_cost() -> N
     assert broke.state.players["A"].discard == []
 
 
+def _rey_bump_boost() -> fx.Effect:
+    # Rey Zerblade (#58): "Once per turn roll: when you would bump, you may discard 1
+    # Lead you have in play to add +1 to your turn roll instead." An OnRollBoost with
+    # on_bump=True — offered on a tie, cost is an in-play Lead (RemoveFromPlay).
+    return fx.Effect(
+        trigger=fx.OnRollBoost(skill=None, delta=1, on_bump=True),
+        condition=fx.HasInPlay(fx.Who.SELF, fx.CardFilter(play_order=PlayOrder.LEAD)),
+        actions=(fx.RemoveFromPlay(fx.CardFilter(play_order=PlayOrder.LEAD), fx.Who.SELF, 1),),
+        frequency=fx.FrequencyGuard(kind=fx.Frequency.ONCE_PER_TURN),
+        optional=True,
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="would bump -> discard a Lead for +1",
+    )
+
+
+def test_would_bump_boost_offered_only_on_a_bump_and_pays_an_in_play_lead() -> None:
+    lead = Card("l1", "Lead", 1, AtkType.STRIKE, PlayOrder.LEAD)
+
+    def eng_with(board: list[Card]) -> Engine:
+        eng = Engine(
+            make_deck("A", with_effects(vanilla(), (_rey_bump_boost(),))),
+            make_deck("B", vanilla()),
+            HeuristicPolicy(),
+            HeuristicPolicy(),
+            seed=1,
+        )
+        eng.setup()
+        eng.state.turn_no = 1
+        eng.state.players["A"].in_play = list(board)
+        eng.state.players["A"].discard = []
+        return eng
+
+    # NOT offered on the initial roll (on_bump=False path), even holding a Lead in play.
+    initial = eng_with([lead])
+    assert initial._offer_roll_boost("A", Skill.POWER, 6) == 6
+    assert lead in initial.state.players["A"].in_play  # nothing paid
+
+    # Offered on a would-bump: +1 and the in-play Lead is the cost (Lead -> discard).
+    bump = eng_with([lead])
+    assert bump._offer_roll_boost("A", Skill.POWER, 6, on_bump=True) == 7
+    assert lead in bump.state.players["A"].discard and lead not in bump.state.players["A"].in_play
+
+    # Cost only if payable: no Lead in play -> no boost, no discard.
+    broke = eng_with([])
+    assert broke._offer_roll_boost("A", Skill.POWER, 6, on_bump=True) == 6
+    assert broke.state.players["A"].discard == []
+
+
+def test_would_bump_boost_breaks_the_tie_without_bumping(monkeypatch: pytest.MonkeyPatch) -> None:
+    # On a tied roll, Rey pays the Lead to +1 *instead* of bumping: he wins the roll
+    # and neither player draws (no bump). Contrast test_bump_makes_both_players_draw.
+    eng = Engine(
+        make_deck("A", with_effects(vanilla(), (_rey_bump_boost(),))),
+        make_deck("B", vanilla()),
+        HeuristicPolicy(),
+        HeuristicPolicy(),
+        seed=1,
+    )
+    eng.setup()
+    eng.state.turn_no = 1
+    lead = Card("l1", "Lead", 1, AtkType.STRIKE, PlayOrder.LEAD)
+    eng.state.players["A"].in_play = [lead]
+    eng.state.players["A"].discard = []
+    a0, b0 = len(eng.state.players["A"].deck), len(eng.state.players["B"].deck)
+    # Both roll Power 5 (a tie) — the boost breaks it, so _roll_for is called only twice.
+    rolls = iter([(Skill.POWER, 5), (Skill.POWER, 5)])
+    monkeypatch.setattr(eng, "_roll_for", lambda key, use_pending: next(rolls))
+    assert eng._roll_off() == "A"
+    assert len(eng.state.players["A"].deck) == a0  # no bump: nobody drew
+    assert len(eng.state.players["B"].deck) == b0
+    assert lead in eng.state.players["A"].discard  # the Lead paid for the +1
+
+
 def test_hit_a_type_gimmick_fires_only_for_that_attack_type() -> None:
     # D1 (#57): "When you hit a Submission draw 1 card" = a gimmick OnHit(atk_type=
     # Submission) -> Draw, fired by _run_hit_gimmicks when the owner hits that type.

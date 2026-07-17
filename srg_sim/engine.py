@@ -285,6 +285,13 @@ class Engine:
                 self._record_roll_ctx(sa, va, sb, vb)
                 self._log(gl.TurnResult(t=self.state.turn_no, winner=forced, tie_bumps=bumps))
                 return forced
+            # Would-bump replacement (Rey Zerblade): on a tie, before bumping, a player
+            # may pay a cost for +delta to THIS roll *instead* of the bump. If that
+            # breaks the tie, the bump is skipped entirely.
+            va = self._offer_roll_boost("A", sa, va, on_bump=True)
+            vb = self._offer_roll_boost("B", sb, vb, on_bump=True)
+            if va != vb:
+                break
             self._draw("A", 1)  # bump: both players draw, then re-roll (mechanics §2)
             self._draw("B", 1)
             bumps += 1
@@ -296,14 +303,18 @@ class Engine:
         self._log(gl.TurnResult(t=self.state.turn_no, winner=winner, tie_bumps=bumps))
         return winner
 
-    def _offer_roll_boost(self, key: str, skill: Skill, value: int) -> int:
+    def _offer_roll_boost(self, key: str, skill: Skill, value: int, on_bump: bool = False) -> int:
         """Offer ``key``'s in-roll boosts for a roll of ``skill`` and return the (maybe
         boosted) value. Each matching :class:`~srg_sim.effects.OnRollBoost` effect whose
         cost is payable (condition holds) is offered; taking it pays the cost (its
-        actions, e.g. a type-matched discard) and adds ``delta`` to this roll."""
+        actions, e.g. a type-matched discard) and adds ``delta`` to this roll. ``on_bump``
+        selects which boosts apply: the initial roll offers ``on_bump=False`` boosts
+        (Soborno), a would-bump tie offers ``on_bump=True`` ones (Rey Zerblade)."""
         for eff in self._standing_effects(key):
             trig = eff.trigger
             if not isinstance(trig, fx.OnRollBoost):
+                continue
+            if trig.on_bump is not on_bump:
                 continue
             if trig.skill is not None and trig.skill is not skill:
                 continue

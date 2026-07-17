@@ -94,6 +94,7 @@ SAMPLES: list[IRNode] = [
     OnPlay(),
     OnRoll(Skill.STRIKE, Who.OPP),
     OnRollBoost(Skill.GRAPPLE, 1),
+    OnRollBoost(None, 1, on_bump=True),  # Rey Zerblade would-bump replacement
     OnWinTurn(),
     OnLoseTurn(by=2),
     OnStop(Direction.YOURS),

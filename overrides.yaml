@@ -1368,3 +1368,53 @@ aebe9e8baa0046ddbde13690b7c18455:
   raw_clause: when you hit a Submission, draw 1
   source: gimmick
   optional: false
+
+
+# --- Would-bump replacement (matchup roster, todo #58) ---
+# Rey Zerblade: "Once per turn roll: When you would bump, you may discard 1 Lead you
+# have in play to add +1 to your turn roll instead." Modeled as an OnRollBoost with
+# on_bump=True — offered on a tie (would-bump), before the bump's draw+re-roll, so
+# paying the cost (+1) breaks the tie *instead* of bumping. HasInPlay(Lead) gates
+# payability ("cost only if you have a Lead in play"); RemoveFromPlay(SELF, Lead)
+# pays it (in-play Lead -> discard). Once-per-turn frequency = "once per turn roll".
+3e6ec7e5fe33421d83a699ac956a6858:
+- '@type': Effect
+  trigger:
+    '@type': OnRollBoost
+    skill: null
+    delta: 1
+    on_bump: true
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Lead
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    cmp: '>='
+  actions:
+  - '@type': RemoveFromPlay
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Lead
+      tag: null
+      name: null
+      raw: null
+    who: SELF
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'Once per turn roll: When you would bump, you may discard 1 Lead you
+    have in play to add +1 to your turn roll instead.'
+  source: gimmick
+  optional: true
