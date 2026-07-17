@@ -1,10 +1,10 @@
-# Pre-commit hooks for srg_sim (Python).
+# Pre-commit hooks for srg-core (Rust).
 #
 #   Install once:   pre-commit install
 #   Run manually:   pre-commit run --all-files
 #
-# The knots hook uses the prebuilt PyPI wheel (language: python) so the first
-# run is seconds — no Rust toolchain. See ~/data/knots for the source of truth.
+# The knots hook gates code complexity (shared across our Rust tools); cargo fmt +
+# clippy are the format/lint gate. `invoke check` runs all of this.
 
 repos:
   # Standard hygiene hooks
@@ -17,25 +17,31 @@ repos:
       - id: check-merge-conflict
       - id: check-yaml
       - id: check-toml
+      - id: mixed-line-ending
+        args: [--fix=lf]
 
-  # Lint + format with ruff (config lives in pyproject.toml)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.21
+  # Format + lint with the Rust toolchain (config in rustfmt defaults / Cargo).
+  - repo: local
     hooks:
-      - id: ruff-check
-        args: [--fix]
-      - id: ruff-format
+      - id: cargo-fmt
+        name: cargo fmt --check
+        entry: cargo fmt --all -- --check
+        language: system
+        types: [rust]
+        pass_filenames: false
 
-  # Code-complexity gate with knots — prebuilt wheel, Python-only for this repo.
-  # require_serial: knots errors ("No functions found") when a *batch* of files
-  # has zero functions between them. pre-commit chunks files across workers, so a
-  # chunk of only function-free modules (early stubs, enums-only files) would
-  # trip it; running serially keeps every matched file in one invocation, which
-  # always includes function-bearing modules.
+      - id: cargo-clippy
+        name: cargo clippy -D warnings
+        entry: cargo clippy --all-targets --all-features -- -D warnings
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+  # Code-complexity gate with knots — keep functions small. require_serial keeps
+  # every matched file in one invocation, so a chunk of function-free files (e.g.
+  # a module of only `mod` decls / enums) can't trip knots' "No functions found".
   - repo: https://github.com/brandon-arrendondo/knots-pre-commit
     rev: v1.15.1
     hooks:
       - id: knots
-        types: [python]
-        exclude: ^docs/conf\.py$
         require_serial: true

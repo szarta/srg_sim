@@ -1,24 +1,11 @@
-# Python
+# Rust
+/target
+THIRD_PARTY_LICENSES.txt
+*.cdx.json
+
+# invoke leftovers (tasks.py runs through the shared venv)
 __pycache__/
 *.py[cod]
-*.egg-info/
-*.egg
-build/
-dist/
-.eggs/
-
-# Virtual environments
-.venv/
-venv/
-env/
-
-# Tooling caches
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-coverage.xml
 
 # Editor / OS
 .idea/
@@ -26,11 +13,11 @@ coverage.xml
 *.swp
 .DS_Store
 
-# Simulator output
+# Engine output
 *.jsonl
-!tests/**/*.jsonl
+!fixtures/**/*.json
 out/
 
-# Generated matchup reports: self-contained Sphinx projects with converted card
-# art (not vendored — see CLAUDE.md). Regenerate with `srg-sim report A B`.
+# Generated matchup reports (Python report tool; not vendored, regenerated).
 docs/reports/
+docs/_build/

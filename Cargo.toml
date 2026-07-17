@@ -1,0 +1,45 @@
+[package]
+name = "srg-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+description = "SRG Supershow match engine — the authoritative, deterministic rules core"
+license = "MIT"
+authors = ["Brandon Arrendondo"]
+repository = "https://github.com/szarta/srg_sim"
+homepage = "https://github.com/szarta/srg_sim"
+readme = "README.md"
+keywords = ["srg", "supershow", "wrestling", "card-game", "simulation"]
+categories = ["games", "simulation"]
+exclude = [
+    "target/",
+    "fixtures/",
+    "docs/",
+    ".github/",
+    "about.hbs",
+    "about.toml",
+]
+
+[lib]
+name = "srg_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "srg"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
