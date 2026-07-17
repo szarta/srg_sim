@@ -1593,3 +1593,59 @@ dfa3e0991ea3426197f4ded552575d61:
     +5) (temporal scope approximated as always-on).'
   source: gimmick
   optional: false
+
+
+# --- Roll-skill in-roll debuff + roll-skill draw (one-off friend matchup) ---
+# Tomato Tomato Jr.: "When you or your target roll Power for the turn roll, your
+# target's turn roll is -1." An InRoll(skill=Power, either=True) -> ModifyRoll(OPP,-1,
+# THIS) — an automatic in-roll debuff on the opponent's CURRENT roll, applied once
+# (capped -1) even when both roll Power (single effect, single action).
+9d97eac40c3048e392de35c0f3812a46:
+- '@type': Effect
+  trigger:
+    '@type': InRoll
+    skill: Power
+    who: SELF
+    either: true
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: OPP
+    delta: -1
+    when: THIS
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you or your target roll Power for the turn roll, your target's turn
+    roll is -1 (capped -1).
+  source: gimmick
+  optional: false
+
+# Amazing Red: "When you roll Power for your turn roll draw 2 cards." A plain roll-skill
+# trigger OnRoll(skill=Power, SELF) -> Draw(2); roll-neutral (does not change the odds).
+2507369b706f4dec83b61e8da40b80c0:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you roll Power for your turn roll, draw 2 cards.
+  source: gimmick
+  optional: false

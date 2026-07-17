@@ -252,6 +252,23 @@ class OnRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class InRoll(IRNode):
+    """An automatic (no-cost) modifier applied DURING the roll-off — after both players
+    roll, before the winner is decided — that adjusts the *current* roll via its
+    ``ModifyRoll(when=THIS)`` actions. Unlike :class:`OnRollBoost` (optional, self-only,
+    cost-paying) it fires unconditionally and its action's ``who`` picks the target, so
+    it can debuff the opponent's current roll. ``skill`` gates on the rolled skill;
+    ``who`` says whose roll must match it (``SELF``/``OPP``). ``either`` overrides ``who``
+    to "fires once if EITHER player rolled ``skill``" — and because it is one effect with
+    one action, the modifier is applied once (capped), never doubled (Tomato Tomato Jr.:
+    "when you or your target roll Power, your target's turn roll is -1")."""
+
+    skill: Skill | None = None
+    who: Who = Who.SELF
+    either: bool = False
+
+
+@dataclass(frozen=True)
 class OnRollBoost(IRNode):
     """Offered DURING the owner's roll-off — right after they roll ``skill`` and
     *before* the winner is decided — an optional, cost-paying boost that adds
@@ -839,6 +856,7 @@ class Effect(IRNode):
 Trigger = (
     OnPlay
     | OnRoll
+    | InRoll
     | OnRollBoost
     | OnWinTurn
     | OnLoseTurn

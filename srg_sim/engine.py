@@ -277,6 +277,7 @@ class Engine:
         # the outcome or break a tie. A no-op for competitors without such a gimmick.
         va = self._offer_roll_boost("A", sa, va)
         vb = self._offer_roll_boost("B", sb, vb)
+        va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # Tomato: roll-skill debuff
         self._consume_pending()
         bumps = 0
         while va == vb and bumps < MAX_TIE_REROLLS:
@@ -298,6 +299,7 @@ class Engine:
             self._run_on_bump()  # bump-punish gimmicks (Mastermind: opp next roll -2)
             sa, va = self._roll_for("A", use_pending=False)
             sb, vb = self._roll_for("B", use_pending=False)
+            va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # debuff re-rolls too
         winner = self._roll_winner(va, vb, lowest)
         self._record_roll_ctx(sa, va, sb, vb)
         self._log(gl.TurnResult(t=self.state.turn_no, winner=winner, tie_bumps=bumps))
@@ -327,6 +329,39 @@ class Engine:
             value += trig.delta
             self._log_effect(key, "RollBoost", key, {"skill": skill.value, "delta": trig.delta})
         return value
+
+    def _apply_in_roll_mods(self, sa: Skill, va: int, sb: Skill, vb: int) -> tuple[int, int]:
+        """Apply automatic in-roll modifiers to the current roll (Tomato Tomato Jr.:
+        "when you or your target roll Power, your target's roll is -1"). Each
+        :class:`~srg_sim.effects.InRoll` effect whose skill gate matches adds its
+        ``ModifyRoll(when=THIS)`` deltas to the named side's value — one action, one
+        application, so an ``either``-gated debuff is capped, never doubled."""
+        rolled = {"A": sa, "B": sb}
+        vals = {"A": va, "B": vb}
+        for owner in ("A", "B"):
+            opp = self.state.opponent_of(owner)
+            for eff in self._standing_effects(owner):
+                trig = eff.trigger
+                if not isinstance(trig, fx.InRoll) or not self._in_roll_matches(
+                    trig, owner, rolled
+                ):
+                    continue
+                if not conditions.holds(eff.condition, self.state, owner):
+                    continue
+                for a in eff.actions:
+                    if isinstance(a, fx.ModifyRoll) and a.when is fx.RollWhen.THIS:
+                        target = owner if a.who is fx.Who.SELF else opp
+                        vals[target] += a.delta
+        return vals["A"], vals["B"]
+
+    def _in_roll_matches(self, trig: fx.InRoll, owner: str, rolled: dict[str, Skill]) -> bool:
+        """Whether an :class:`~srg_sim.effects.InRoll` trigger fires for this roll."""
+        if trig.skill is None:
+            return True
+        if trig.either:  # fires once if EITHER side rolled the skill (capped modifier)
+            return trig.skill in rolled.values()
+        roller = owner if trig.who is fx.Who.SELF else self.state.opponent_of(owner)
+        return rolled[roller] is trig.skill
 
     @staticmethod
     def _roll_winner(va: int, vb: int, lowest: bool) -> str:

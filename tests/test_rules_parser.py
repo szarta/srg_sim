@@ -609,6 +609,22 @@ def test_two_sided_transform_gimmick_override_is_modeled() -> None:
 
 
 @requires_db
+def test_in_roll_debuff_gimmick_override_is_modeled() -> None:
+    # Tomato Tomato Jr. (overrides.yaml): InRoll(Power, either) -> ModifyRoll(OPP,-1,THIS).
+    from srg_sim.effects import InRoll, ModifyRoll, RollWhen
+    from srg_sim.report.carddb import ReportCardDB
+
+    tomato = ReportCardDB.from_yaml().resolve_competitor("Tomato Tomato Jr.")
+    (eff,) = tomato.effects
+    assert (
+        isinstance(eff.trigger, InRoll) and eff.trigger.skill is Skill.POWER and eff.trigger.either
+    )
+    (act,) = eff.actions
+    assert isinstance(act, ModifyRoll) and act.who is Who.OPP and act.delta == -1
+    assert act.when is RollWhen.THIS
+
+
+@requires_db
 def test_enriched_real_deck_plays() -> None:
     from srg_sim.engine import Engine
     from srg_sim.loader import load_deck

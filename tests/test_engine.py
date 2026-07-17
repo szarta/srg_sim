@@ -517,6 +517,29 @@ def test_copy_kat_transforms_on_breakout_and_swaps_its_two_sides() -> None:
     assert eng.state.players["A"].gimmick_flipped
 
 
+def test_in_roll_either_debuff_applies_once_and_is_capped() -> None:
+    # Tomato Tomato Jr.: InRoll(Power, either) -> ModifyRoll(OPP, -1, THIS). The
+    # opponent's CURRENT roll drops by 1 when either side rolls Power, capped at -1.
+    gimmick = fx.Effect(
+        trigger=fx.InRoll(skill=Skill.POWER, either=True),
+        actions=(fx.ModifyRoll(fx.Who.OPP, -1, fx.RollWhen.THIS),),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="either rolls Power -> opp roll -1 (capped)",
+    )
+    eng = Engine(
+        make_deck("A", with_effects(vanilla(), (gimmick,))),  # A = Tomato
+        make_deck("B", vanilla()),
+        HeuristicPolicy(),
+        HeuristicPolicy(),
+        seed=1,
+    )
+    eng.setup()
+    assert eng._apply_in_roll_mods(Skill.POWER, 5, Skill.STRIKE, 5) == (5, 4)  # A rolls Power
+    assert eng._apply_in_roll_mods(Skill.STRIKE, 5, Skill.POWER, 5) == (5, 4)  # B rolls Power
+    assert eng._apply_in_roll_mods(Skill.POWER, 5, Skill.POWER, 5) == (5, 4)  # both -> capped -1
+    assert eng._apply_in_roll_mods(Skill.STRIKE, 6, Skill.GRAPPLE, 5) == (6, 5)  # no Power -> none
+
+
 def test_hit_a_type_gimmick_fires_only_for_that_attack_type() -> None:
     # D1 (#57): "When you hit a Submission draw 1 card" = a gimmick OnHit(atk_type=
     # Submission) -> Draw, fired by _run_hit_gimmicks when the owner hits that type.
