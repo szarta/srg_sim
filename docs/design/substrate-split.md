@@ -280,9 +280,11 @@ fixtures + their canonical logs). Rust then regresses against the frozen corpus 
 Each phase ends green (conformance for engine phases; a working consumer for the rest).
 
 - **M-R0 — contract freeze.** Pin §3 IR and §8 gamelog as JSON schemas both languages
-  validate against. Swap Python `rng.py` to splitmix64 and regenerate golden logs. (No
-  consumers depend on Python, so this needs no deprecation runway — the only cost is
-  reseeding fixtures.)
+  validate against — *done*: generated from the frozen dataclasses by
+  `srg_sim/schema.py`, committed under `schemas/v1/`, with a drift-guard + conformance
+  test (`tests/test_schema.py`) that fails on any un-versioned §3/§8 change. Swap Python
+  `rng.py` to splitmix64 and regenerate golden logs. (No consumers depend on Python, so
+  this needs no deprecation runway — the only cost is reseeding fixtures.)
 - **M-R1 — Rust core + parity (console + MCP).** Port `ir`, `state`, `finish`,
   `stops`, `rng`, `gamelog`, `engine` (as the resumable state machine), `parser`,
   and the `policy` trait. Stand up the **conformance harness** (§6). Ship the **Rust

@@ -1,0 +1,706 @@
+{
+  "$defs": {
+    "Breakout": {
+      "additionalProperties": false,
+      "properties": {
+        "broke_out": {
+          "type": "boolean"
+        },
+        "defender": {
+          "type": "string"
+        },
+        "rolls": {
+          "items": {
+            "$ref": "#/$defs/BreakoutRoll"
+          },
+          "type": "array"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "breakout"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "defender",
+        "broke_out",
+        "rolls"
+      ],
+      "type": "object"
+    },
+    "BreakoutRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "penalty": {
+          "type": "integer"
+        },
+        "skill": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "skill",
+        "value",
+        "penalty",
+        "success"
+      ],
+      "type": "object"
+    },
+    "Bury": {
+      "additionalProperties": false,
+      "properties": {
+        "cards": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hidden": {
+          "type": "boolean"
+        },
+        "player": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "bury"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "cards",
+        "from",
+        "hidden"
+      ],
+      "type": "object"
+    },
+    "CrowdMeter": {
+      "additionalProperties": false,
+      "properties": {
+        "delta": {
+          "type": "integer"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "crowd_meter"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "delta",
+        "value"
+      ],
+      "type": "object"
+    },
+    "Decision": {
+      "additionalProperties": false,
+      "properties": {
+        "chosen": {},
+        "legal": {
+          "items": {},
+          "type": "array"
+        },
+        "player": {
+          "type": "string"
+        },
+        "point": {
+          "type": "string"
+        },
+        "policy": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "decision"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "point",
+        "legal",
+        "chosen",
+        "policy"
+      ],
+      "type": "object"
+    },
+    "Discard": {
+      "additionalProperties": false,
+      "properties": {
+        "cards": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hidden": {
+          "type": "boolean"
+        },
+        "player": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "discard"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "cards",
+        "from",
+        "hidden"
+      ],
+      "type": "object"
+    },
+    "Draw": {
+      "additionalProperties": false,
+      "properties": {
+        "cards": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hidden": {
+          "type": "boolean"
+        },
+        "player": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "draw"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "cards",
+        "from",
+        "hidden"
+      ],
+      "type": "object"
+    },
+    "EffectApplied": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "detail": {},
+        "src": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": {
+          "const": "effect"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "src",
+        "action",
+        "target",
+        "detail"
+      ],
+      "type": "object"
+    },
+    "Event": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Breakout"
+        },
+        {
+          "$ref": "#/$defs/Bury"
+        },
+        {
+          "$ref": "#/$defs/CrowdMeter"
+        },
+        {
+          "$ref": "#/$defs/Decision"
+        },
+        {
+          "$ref": "#/$defs/Discard"
+        },
+        {
+          "$ref": "#/$defs/Draw"
+        },
+        {
+          "$ref": "#/$defs/EffectApplied"
+        },
+        {
+          "$ref": "#/$defs/FinishAttempt"
+        },
+        {
+          "$ref": "#/$defs/Play"
+        },
+        {
+          "$ref": "#/$defs/Result"
+        },
+        {
+          "$ref": "#/$defs/Roll"
+        },
+        {
+          "$ref": "#/$defs/Search"
+        },
+        {
+          "$ref": "#/$defs/Stop"
+        },
+        {
+          "$ref": "#/$defs/TurnResult"
+        },
+        {
+          "$ref": "#/$defs/Unsupported"
+        }
+      ]
+    },
+    "FinishAttempt": {
+      "additionalProperties": false,
+      "properties": {
+        "auto_success": {
+          "type": "boolean"
+        },
+        "bonus": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "crowd_meter": {
+          "type": "integer"
+        },
+        "finish": {
+          "type": "string"
+        },
+        "player": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "finish_attempt"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "finish",
+        "value",
+        "crowd_meter",
+        "auto_success",
+        "bonus"
+      ],
+      "type": "object"
+    },
+    "Header": {
+      "additionalProperties": false,
+      "properties": {
+        "created": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "players": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PlayerInfo"
+          },
+          "type": "object"
+        },
+        "schema": {
+          "type": "integer"
+        },
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seed",
+        "kind",
+        "created",
+        "players",
+        "schema"
+      ],
+      "type": "object"
+    },
+    "Play": {
+      "additionalProperties": false,
+      "properties": {
+        "atk_type": {
+          "type": "string"
+        },
+        "card": {
+          "type": "string"
+        },
+        "order": {
+          "type": "string"
+        },
+        "player": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "play"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "card",
+        "order",
+        "atk_type"
+      ],
+      "type": "object"
+    },
+    "PlayerInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "competitor": {
+          "type": "string"
+        },
+        "deck": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "entrance": {
+          "type": "string"
+        },
+        "policy": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "competitor",
+        "entrance",
+        "deck",
+        "policy"
+      ],
+      "type": "object"
+    },
+    "Result": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "turns": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "result"
+        },
+        "winner": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "winner",
+        "reason",
+        "turns"
+      ],
+      "type": "object"
+    },
+    "Roll": {
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "type": "integer"
+        },
+        "mods": {
+          "items": {
+            "$ref": "#/$defs/RollMod"
+          },
+          "type": "array"
+        },
+        "player": {
+          "type": "string"
+        },
+        "skill": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "roll"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "skill",
+        "base",
+        "value",
+        "mods"
+      ],
+      "type": "object"
+    },
+    "RollMod": {
+      "additionalProperties": false,
+      "properties": {
+        "delta": {
+          "type": "integer"
+        },
+        "src": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "src",
+        "delta"
+      ],
+      "type": "object"
+    },
+    "Search": {
+      "additionalProperties": false,
+      "properties": {
+        "cards": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hidden": {
+          "type": "boolean"
+        },
+        "player": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "search"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "cards",
+        "from",
+        "hidden"
+      ],
+      "type": "object"
+    },
+    "Stop": {
+      "additionalProperties": false,
+      "properties": {
+        "card": {
+          "type": "string"
+        },
+        "player": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "stopped": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "stop"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "player",
+        "card",
+        "stopped",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "TurnResult": {
+      "additionalProperties": false,
+      "properties": {
+        "t": {
+          "type": "integer"
+        },
+        "tie_bumps": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "turn_result"
+        },
+        "winner": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "winner",
+        "tie_bumps"
+      ],
+      "type": "object"
+    },
+    "Unsupported": {
+      "additionalProperties": false,
+      "properties": {
+        "card": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gimmick": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "owner": {
+          "type": "string"
+        },
+        "raw": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "t": {
+          "type": "integer"
+        },
+        "type": {
+          "const": "unsupported"
+        }
+      },
+      "required": [
+        "type",
+        "t",
+        "owner",
+        "raw",
+        "reason",
+        "card",
+        "gimmick"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://srg-sim/schemas/v1/gamelog",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Header"
+    },
+    {
+      "$ref": "#/$defs/Event"
+    }
+  ],
+  "title": "gamelog",
+  "version": 1
+}

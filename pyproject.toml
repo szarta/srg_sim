@@ -23,6 +23,8 @@ dev = [
     "pre-commit>=3",
     "sphinx>=7",
     "types-PyYAML>=6",
+    "jsonschema>=4.20",
+    "types-jsonschema>=4.20",
 ]
 
 [project.scripts]

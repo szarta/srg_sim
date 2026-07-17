@@ -1,0 +1,2494 @@
+{
+  "$defs": {
+    "AddFromDiscard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "AddFromDiscard"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        }
+      },
+      "required": [
+        "@type",
+        "filter"
+      ],
+      "type": "object"
+    },
+    "AlsoLead": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "AlsoLead"
+        },
+        "condition": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Always"
+            },
+            {
+              "$ref": "#/$defs/And"
+            },
+            {
+              "$ref": "#/$defs/Or"
+            },
+            {
+              "$ref": "#/$defs/Not"
+            },
+            {
+              "$ref": "#/$defs/SkillCompare"
+            },
+            {
+              "$ref": "#/$defs/HandSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/CrowdMeterCompare"
+            },
+            {
+              "$ref": "#/$defs/HasInPlay"
+            },
+            {
+              "$ref": "#/$defs/HasInHand"
+            },
+            {
+              "$ref": "#/$defs/HasInDiscard"
+            },
+            {
+              "$ref": "#/$defs/RollWasSkill"
+            },
+            {
+              "$ref": "#/$defs/RollGapExactly"
+            },
+            {
+              "$ref": "#/$defs/RollGapAtLeast"
+            },
+            {
+              "$ref": "#/$defs/RollValue"
+            },
+            {
+              "$ref": "#/$defs/GimmickFlipped"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "condition"
+      ],
+      "type": "object"
+    },
+    "Always": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Always"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "And": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "And"
+        },
+        "items": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Always"
+              },
+              {
+                "$ref": "#/$defs/And"
+              },
+              {
+                "$ref": "#/$defs/Or"
+              },
+              {
+                "$ref": "#/$defs/Not"
+              },
+              {
+                "$ref": "#/$defs/SkillCompare"
+              },
+              {
+                "$ref": "#/$defs/HandSizeCompare"
+              },
+              {
+                "$ref": "#/$defs/CrowdMeterCompare"
+              },
+              {
+                "$ref": "#/$defs/HasInPlay"
+              },
+              {
+                "$ref": "#/$defs/HasInHand"
+              },
+              {
+                "$ref": "#/$defs/HasInDiscard"
+              },
+              {
+                "$ref": "#/$defs/RollWasSkill"
+              },
+              {
+                "$ref": "#/$defs/RollGapExactly"
+              },
+              {
+                "$ref": "#/$defs/RollGapAtLeast"
+              },
+              {
+                "$ref": "#/$defs/RollValue"
+              },
+              {
+                "$ref": "#/$defs/GimmickFlipped"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "items"
+      ],
+      "type": "object"
+    },
+    "AtkType": {
+      "enum": [
+        "Strike",
+        "Grapple",
+        "Submission",
+        "None"
+      ],
+      "type": "string"
+    },
+    "BlankGimmick": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BlankGimmick"
+        },
+        "duration": {
+          "$ref": "#/$defs/Duration"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "duration"
+      ],
+      "type": "object"
+    },
+    "BlankText": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BlankText"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "until": {
+          "$ref": "#/$defs/Until"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "until"
+      ],
+      "type": "object"
+    },
+    "BreakoutModifier": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BreakoutModifier"
+        },
+        "attempts": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delta": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "delta",
+        "attempts"
+      ],
+      "type": "object"
+    },
+    "BuffSkill": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BuffSkill"
+        },
+        "cap": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delta": {
+          "type": "integer"
+        },
+        "duration": {
+          "$ref": "#/$defs/Duration"
+        },
+        "per_crowd": {
+          "type": "boolean"
+        },
+        "skill": {
+          "$ref": "#/$defs/Skill"
+        },
+        "target_highest": {
+          "type": "boolean"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "skill",
+        "delta",
+        "who",
+        "duration",
+        "target_highest",
+        "per_crowd",
+        "cap"
+      ],
+      "type": "object"
+    },
+    "Bump": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Bump"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "Bury": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Bury"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "random": {
+          "type": "boolean"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "count",
+        "who",
+        "random"
+      ],
+      "type": "object"
+    },
+    "CardFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CardFilter"
+        },
+        "atk_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtkType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "number": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "play_order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tag": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "number",
+        "atk_type",
+        "play_order",
+        "tag",
+        "name",
+        "raw"
+      ],
+      "type": "object"
+    },
+    "Choice": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Choice"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/ChoiceOption"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "options"
+      ],
+      "type": "object"
+    },
+    "ChoiceOption": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ChoiceOption"
+        },
+        "actions": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Draw"
+              },
+              {
+                "$ref": "#/$defs/Bury"
+              },
+              {
+                "$ref": "#/$defs/Flip"
+              },
+              {
+                "$ref": "#/$defs/Discard"
+              },
+              {
+                "$ref": "#/$defs/Search"
+              },
+              {
+                "$ref": "#/$defs/ShuffleDeck"
+              },
+              {
+                "$ref": "#/$defs/ShuffleIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/AddFromDiscard"
+              },
+              {
+                "$ref": "#/$defs/RecurToDeckTop"
+              },
+              {
+                "$ref": "#/$defs/CountsAsInPlay"
+              },
+              {
+                "$ref": "#/$defs/RemoveFromPlay"
+              },
+              {
+                "$ref": "#/$defs/RevealAndDiscard"
+              },
+              {
+                "$ref": "#/$defs/Peek"
+              },
+              {
+                "$ref": "#/$defs/ModifyRoll"
+              },
+              {
+                "$ref": "#/$defs/BuffSkill"
+              },
+              {
+                "$ref": "#/$defs/MaxHandSize"
+              },
+              {
+                "$ref": "#/$defs/Reroll"
+              },
+              {
+                "$ref": "#/$defs/WinTie"
+              },
+              {
+                "$ref": "#/$defs/Bump"
+              },
+              {
+                "$ref": "#/$defs/ElectBumpOnSameSkill"
+              },
+              {
+                "$ref": "#/$defs/Stop"
+              },
+              {
+                "$ref": "#/$defs/BlankGimmick"
+              },
+              {
+                "$ref": "#/$defs/FlipGimmick"
+              },
+              {
+                "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/LoseBy"
+              },
+              {
+                "$ref": "#/$defs/CrowdMeter"
+              },
+              {
+                "$ref": "#/$defs/PlayExtraCard"
+              },
+              {
+                "$ref": "#/$defs/SetFinishRoll"
+              },
+              {
+                "$ref": "#/$defs/FinishBonus"
+              },
+              {
+                "$ref": "#/$defs/FinishRollBonus"
+              },
+              {
+                "$ref": "#/$defs/BreakoutModifier"
+              },
+              {
+                "$ref": "#/$defs/LowestRollWins"
+              },
+              {
+                "$ref": "#/$defs/FlipGimmickSigns"
+              },
+              {
+                "$ref": "#/$defs/Unstoppable"
+              },
+              {
+                "$ref": "#/$defs/AlsoLead"
+              },
+              {
+                "$ref": "#/$defs/DoubleFinishIfBumped"
+              },
+              {
+                "$ref": "#/$defs/Choice"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "label",
+        "actions"
+      ],
+      "type": "object"
+    },
+    "Comparator": {
+      "enum": [
+        ">",
+        ">=",
+        "=",
+        "<",
+        "<="
+      ],
+      "type": "string"
+    },
+    "CountsAsInPlay": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CountsAsInPlay"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "count"
+      ],
+      "type": "object"
+    },
+    "CrowdMeter": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CrowdMeter"
+        },
+        "delta": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "delta"
+      ],
+      "type": "object"
+    },
+    "CrowdMeterCompare": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CrowdMeterCompare"
+        },
+        "cmp": {
+          "$ref": "#/$defs/Comparator"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "cmp",
+        "value"
+      ],
+      "type": "object"
+    },
+    "DeckEnd": {
+      "enum": [
+        "TOP",
+        "BOTTOM"
+      ],
+      "type": "string"
+    },
+    "Dest": {
+      "enum": [
+        "HAND",
+        "DISCARD"
+      ],
+      "type": "string"
+    },
+    "Direction": {
+      "enum": [
+        "YOURS",
+        "THEIRS"
+      ],
+      "type": "string"
+    },
+    "Discard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Discard"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "per": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_who": {
+          "$ref": "#/$defs/Who"
+        },
+        "random": {
+          "type": "boolean"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "count",
+        "who",
+        "random",
+        "per",
+        "per_who"
+      ],
+      "type": "object"
+    },
+    "DoubleFinishIfBumped": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "DoubleFinishIfBumped"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "Draw": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Draw"
+        },
+        "n": {
+          "type": "integer"
+        },
+        "per": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_who": {
+          "$ref": "#/$defs/Who"
+        },
+        "source": {
+          "$ref": "#/$defs/DeckEnd"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "n",
+        "source",
+        "who",
+        "per",
+        "per_who"
+      ],
+      "type": "object"
+    },
+    "Duration": {
+      "enum": [
+        "WHILE_IN_PLAY",
+        "WHILE_GIMMICK_ACTIVE",
+        "INSTANT"
+      ],
+      "type": "string"
+    },
+    "Effect": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Effect"
+        },
+        "actions": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Draw"
+              },
+              {
+                "$ref": "#/$defs/Bury"
+              },
+              {
+                "$ref": "#/$defs/Flip"
+              },
+              {
+                "$ref": "#/$defs/Discard"
+              },
+              {
+                "$ref": "#/$defs/Search"
+              },
+              {
+                "$ref": "#/$defs/ShuffleDeck"
+              },
+              {
+                "$ref": "#/$defs/ShuffleIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/AddFromDiscard"
+              },
+              {
+                "$ref": "#/$defs/RecurToDeckTop"
+              },
+              {
+                "$ref": "#/$defs/CountsAsInPlay"
+              },
+              {
+                "$ref": "#/$defs/RemoveFromPlay"
+              },
+              {
+                "$ref": "#/$defs/RevealAndDiscard"
+              },
+              {
+                "$ref": "#/$defs/Peek"
+              },
+              {
+                "$ref": "#/$defs/ModifyRoll"
+              },
+              {
+                "$ref": "#/$defs/BuffSkill"
+              },
+              {
+                "$ref": "#/$defs/MaxHandSize"
+              },
+              {
+                "$ref": "#/$defs/Reroll"
+              },
+              {
+                "$ref": "#/$defs/WinTie"
+              },
+              {
+                "$ref": "#/$defs/Bump"
+              },
+              {
+                "$ref": "#/$defs/ElectBumpOnSameSkill"
+              },
+              {
+                "$ref": "#/$defs/Stop"
+              },
+              {
+                "$ref": "#/$defs/BlankGimmick"
+              },
+              {
+                "$ref": "#/$defs/FlipGimmick"
+              },
+              {
+                "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/LoseBy"
+              },
+              {
+                "$ref": "#/$defs/CrowdMeter"
+              },
+              {
+                "$ref": "#/$defs/PlayExtraCard"
+              },
+              {
+                "$ref": "#/$defs/SetFinishRoll"
+              },
+              {
+                "$ref": "#/$defs/FinishBonus"
+              },
+              {
+                "$ref": "#/$defs/FinishRollBonus"
+              },
+              {
+                "$ref": "#/$defs/BreakoutModifier"
+              },
+              {
+                "$ref": "#/$defs/LowestRollWins"
+              },
+              {
+                "$ref": "#/$defs/FlipGimmickSigns"
+              },
+              {
+                "$ref": "#/$defs/Unstoppable"
+              },
+              {
+                "$ref": "#/$defs/AlsoLead"
+              },
+              {
+                "$ref": "#/$defs/DoubleFinishIfBumped"
+              },
+              {
+                "$ref": "#/$defs/Choice"
+              },
+              {
+                "$ref": "#/$defs/Unsupported"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "condition": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Always"
+            },
+            {
+              "$ref": "#/$defs/And"
+            },
+            {
+              "$ref": "#/$defs/Or"
+            },
+            {
+              "$ref": "#/$defs/Not"
+            },
+            {
+              "$ref": "#/$defs/SkillCompare"
+            },
+            {
+              "$ref": "#/$defs/HandSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/CrowdMeterCompare"
+            },
+            {
+              "$ref": "#/$defs/HasInPlay"
+            },
+            {
+              "$ref": "#/$defs/HasInHand"
+            },
+            {
+              "$ref": "#/$defs/HasInDiscard"
+            },
+            {
+              "$ref": "#/$defs/RollWasSkill"
+            },
+            {
+              "$ref": "#/$defs/RollGapExactly"
+            },
+            {
+              "$ref": "#/$defs/RollGapAtLeast"
+            },
+            {
+              "$ref": "#/$defs/RollValue"
+            },
+            {
+              "$ref": "#/$defs/GimmickFlipped"
+            }
+          ]
+        },
+        "duration": {
+          "$ref": "#/$defs/Duration"
+        },
+        "frequency": {
+          "$ref": "#/$defs/FrequencyGuard"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "raw_clause": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/EffectSource"
+        },
+        "trigger": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/OnPlay"
+            },
+            {
+              "$ref": "#/$defs/OnRoll"
+            },
+            {
+              "$ref": "#/$defs/InRoll"
+            },
+            {
+              "$ref": "#/$defs/OnRollBoost"
+            },
+            {
+              "$ref": "#/$defs/OnWinTurn"
+            },
+            {
+              "$ref": "#/$defs/OnLoseTurn"
+            },
+            {
+              "$ref": "#/$defs/OnStop"
+            },
+            {
+              "$ref": "#/$defs/OnHit"
+            },
+            {
+              "$ref": "#/$defs/OnBump"
+            },
+            {
+              "$ref": "#/$defs/StartOfTurn"
+            },
+            {
+              "$ref": "#/$defs/StartOfMatch"
+            },
+            {
+              "$ref": "#/$defs/OnBreakout"
+            },
+            {
+              "$ref": "#/$defs/Static"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "trigger",
+        "condition",
+        "actions",
+        "duration",
+        "frequency",
+        "raw_clause",
+        "source",
+        "optional"
+      ],
+      "type": "object"
+    },
+    "EffectSource": {
+      "enum": [
+        "card",
+        "gimmick",
+        "entrance"
+      ],
+      "type": "string"
+    },
+    "ElectBumpOnSameSkill": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ElectBumpOnSameSkill"
+        },
+        "uses": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "uses"
+      ],
+      "type": "object"
+    },
+    "FinishBonus": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FinishBonus"
+        },
+        "delta": {
+          "type": "integer"
+        },
+        "skill": {
+          "$ref": "#/$defs/Skill"
+        }
+      },
+      "required": [
+        "@type",
+        "skill",
+        "delta"
+      ],
+      "type": "object"
+    },
+    "FinishRollBonus": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FinishRollBonus"
+        },
+        "delta": {
+          "type": "integer"
+        },
+        "either": {
+          "type": "boolean"
+        },
+        "when_skill": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skill"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "delta",
+        "when_skill",
+        "either"
+      ],
+      "type": "object"
+    },
+    "Flip": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Flip"
+        },
+        "n": {
+          "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "n",
+        "who"
+      ],
+      "type": "object"
+    },
+    "FlipGimmick": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FlipGimmick"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "FlipGimmickSigns": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FlipGimmickSigns"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "Frequency": {
+      "enum": [
+        "UNLIMITED",
+        "ONCE_PER_TURN",
+        "ONCE_PER_MATCH",
+        "N_PER_MATCH"
+      ],
+      "type": "string"
+    },
+    "FrequencyGuard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FrequencyGuard"
+        },
+        "kind": {
+          "$ref": "#/$defs/Frequency"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "kind",
+        "n"
+      ],
+      "type": "object"
+    },
+    "GimmickFlipped": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "GimmickFlipped"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "HandSizeCompare": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "HandSizeCompare"
+        },
+        "cmp": {
+          "$ref": "#/$defs/Comparator"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "vs": {
+          "$ref": "#/$defs/Vs"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "cmp",
+        "vs",
+        "value",
+        "who"
+      ],
+      "type": "object"
+    },
+    "HasInDiscard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "HasInDiscard"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "filter"
+      ],
+      "type": "object"
+    },
+    "HasInHand": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "HasInHand"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "filter",
+        "count"
+      ],
+      "type": "object"
+    },
+    "HasInPlay": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "HasInPlay"
+        },
+        "cmp": {
+          "$ref": "#/$defs/Comparator"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "filter",
+        "count",
+        "cmp"
+      ],
+      "type": "object"
+    },
+    "IRNode": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AddFromDiscard"
+        },
+        {
+          "$ref": "#/$defs/AlsoLead"
+        },
+        {
+          "$ref": "#/$defs/Always"
+        },
+        {
+          "$ref": "#/$defs/And"
+        },
+        {
+          "$ref": "#/$defs/BlankGimmick"
+        },
+        {
+          "$ref": "#/$defs/BlankText"
+        },
+        {
+          "$ref": "#/$defs/BreakoutModifier"
+        },
+        {
+          "$ref": "#/$defs/BuffSkill"
+        },
+        {
+          "$ref": "#/$defs/Bump"
+        },
+        {
+          "$ref": "#/$defs/Bury"
+        },
+        {
+          "$ref": "#/$defs/CardFilter"
+        },
+        {
+          "$ref": "#/$defs/Choice"
+        },
+        {
+          "$ref": "#/$defs/ChoiceOption"
+        },
+        {
+          "$ref": "#/$defs/CountsAsInPlay"
+        },
+        {
+          "$ref": "#/$defs/CrowdMeter"
+        },
+        {
+          "$ref": "#/$defs/CrowdMeterCompare"
+        },
+        {
+          "$ref": "#/$defs/Discard"
+        },
+        {
+          "$ref": "#/$defs/DoubleFinishIfBumped"
+        },
+        {
+          "$ref": "#/$defs/Draw"
+        },
+        {
+          "$ref": "#/$defs/Effect"
+        },
+        {
+          "$ref": "#/$defs/ElectBumpOnSameSkill"
+        },
+        {
+          "$ref": "#/$defs/FinishBonus"
+        },
+        {
+          "$ref": "#/$defs/FinishRollBonus"
+        },
+        {
+          "$ref": "#/$defs/Flip"
+        },
+        {
+          "$ref": "#/$defs/FlipGimmick"
+        },
+        {
+          "$ref": "#/$defs/FlipGimmickSigns"
+        },
+        {
+          "$ref": "#/$defs/FrequencyGuard"
+        },
+        {
+          "$ref": "#/$defs/GimmickFlipped"
+        },
+        {
+          "$ref": "#/$defs/HandSizeCompare"
+        },
+        {
+          "$ref": "#/$defs/HasInDiscard"
+        },
+        {
+          "$ref": "#/$defs/HasInHand"
+        },
+        {
+          "$ref": "#/$defs/HasInPlay"
+        },
+        {
+          "$ref": "#/$defs/InRoll"
+        },
+        {
+          "$ref": "#/$defs/LoseBy"
+        },
+        {
+          "$ref": "#/$defs/LowestRollWins"
+        },
+        {
+          "$ref": "#/$defs/MaxHandSize"
+        },
+        {
+          "$ref": "#/$defs/ModifyRoll"
+        },
+        {
+          "$ref": "#/$defs/Not"
+        },
+        {
+          "$ref": "#/$defs/OnBreakout"
+        },
+        {
+          "$ref": "#/$defs/OnBump"
+        },
+        {
+          "$ref": "#/$defs/OnHit"
+        },
+        {
+          "$ref": "#/$defs/OnLoseTurn"
+        },
+        {
+          "$ref": "#/$defs/OnPlay"
+        },
+        {
+          "$ref": "#/$defs/OnRoll"
+        },
+        {
+          "$ref": "#/$defs/OnRollBoost"
+        },
+        {
+          "$ref": "#/$defs/OnStop"
+        },
+        {
+          "$ref": "#/$defs/OnWinTurn"
+        },
+        {
+          "$ref": "#/$defs/Or"
+        },
+        {
+          "$ref": "#/$defs/Peek"
+        },
+        {
+          "$ref": "#/$defs/PlayExtraCard"
+        },
+        {
+          "$ref": "#/$defs/RecurToDeckTop"
+        },
+        {
+          "$ref": "#/$defs/RemoveFromPlay"
+        },
+        {
+          "$ref": "#/$defs/Reroll"
+        },
+        {
+          "$ref": "#/$defs/RevealAndDiscard"
+        },
+        {
+          "$ref": "#/$defs/RollGapAtLeast"
+        },
+        {
+          "$ref": "#/$defs/RollGapExactly"
+        },
+        {
+          "$ref": "#/$defs/RollValue"
+        },
+        {
+          "$ref": "#/$defs/RollWasSkill"
+        },
+        {
+          "$ref": "#/$defs/Search"
+        },
+        {
+          "$ref": "#/$defs/SetFinishRoll"
+        },
+        {
+          "$ref": "#/$defs/ShuffleDeck"
+        },
+        {
+          "$ref": "#/$defs/ShuffleIntoDeck"
+        },
+        {
+          "$ref": "#/$defs/SkillCompare"
+        },
+        {
+          "$ref": "#/$defs/StartOfMatch"
+        },
+        {
+          "$ref": "#/$defs/StartOfTurn"
+        },
+        {
+          "$ref": "#/$defs/Static"
+        },
+        {
+          "$ref": "#/$defs/Stop"
+        },
+        {
+          "$ref": "#/$defs/Unstoppable"
+        },
+        {
+          "$ref": "#/$defs/Unsupported"
+        },
+        {
+          "$ref": "#/$defs/WinTie"
+        }
+      ]
+    },
+    "InRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "InRoll"
+        },
+        "either": {
+          "type": "boolean"
+        },
+        "skill": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skill"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "skill",
+        "who",
+        "either"
+      ],
+      "type": "object"
+    },
+    "LoseBy": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "LoseBy"
+        },
+        "kind": {
+          "$ref": "#/$defs/LoseKind"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "kind",
+        "who"
+      ],
+      "type": "object"
+    },
+    "LoseKind": {
+      "enum": [
+        "DISQUALIFICATION",
+        "PINFALL"
+      ],
+      "type": "string"
+    },
+    "LowestRollWins": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "LowestRollWins"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "MaxHandSize": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "MaxHandSize"
+        },
+        "delta": {
+          "type": "integer"
+        },
+        "duration": {
+          "$ref": "#/$defs/Duration"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "delta",
+        "who",
+        "duration"
+      ],
+      "type": "object"
+    },
+    "ModifyRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ModifyRoll"
+        },
+        "delta": {
+          "type": "integer"
+        },
+        "per": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_who": {
+          "$ref": "#/$defs/Who"
+        },
+        "when": {
+          "$ref": "#/$defs/RollWhen"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "delta",
+        "when",
+        "per",
+        "per_who"
+      ],
+      "type": "object"
+    },
+    "Not": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Not"
+        },
+        "item": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Always"
+            },
+            {
+              "$ref": "#/$defs/And"
+            },
+            {
+              "$ref": "#/$defs/Or"
+            },
+            {
+              "$ref": "#/$defs/Not"
+            },
+            {
+              "$ref": "#/$defs/SkillCompare"
+            },
+            {
+              "$ref": "#/$defs/HandSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/CrowdMeterCompare"
+            },
+            {
+              "$ref": "#/$defs/HasInPlay"
+            },
+            {
+              "$ref": "#/$defs/HasInHand"
+            },
+            {
+              "$ref": "#/$defs/HasInDiscard"
+            },
+            {
+              "$ref": "#/$defs/RollWasSkill"
+            },
+            {
+              "$ref": "#/$defs/RollGapExactly"
+            },
+            {
+              "$ref": "#/$defs/RollGapAtLeast"
+            },
+            {
+              "$ref": "#/$defs/RollValue"
+            },
+            {
+              "$ref": "#/$defs/GimmickFlipped"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "item"
+      ],
+      "type": "object"
+    },
+    "OnBreakout": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnBreakout"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "OnBump": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnBump"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "OnHit": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnHit"
+        },
+        "atk_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtkType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "keyword": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "keyword",
+        "name",
+        "atk_type"
+      ],
+      "type": "object"
+    },
+    "OnLoseTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnLoseTurn"
+        },
+        "by": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "by"
+      ],
+      "type": "object"
+    },
+    "OnPlay": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnPlay"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "OnRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnRoll"
+        },
+        "skill": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skill"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "skill",
+        "who"
+      ],
+      "type": "object"
+    },
+    "OnRollBoost": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnRollBoost"
+        },
+        "delta": {
+          "type": "integer"
+        },
+        "on_bump": {
+          "type": "boolean"
+        },
+        "skill": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skill"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "skill",
+        "delta",
+        "on_bump"
+      ],
+      "type": "object"
+    },
+    "OnStop": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnStop"
+        },
+        "dir": {
+          "$ref": "#/$defs/Direction"
+        }
+      },
+      "required": [
+        "@type",
+        "dir"
+      ],
+      "type": "object"
+    },
+    "OnWinTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnWinTurn"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "Or": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Or"
+        },
+        "items": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Always"
+              },
+              {
+                "$ref": "#/$defs/And"
+              },
+              {
+                "$ref": "#/$defs/Or"
+              },
+              {
+                "$ref": "#/$defs/Not"
+              },
+              {
+                "$ref": "#/$defs/SkillCompare"
+              },
+              {
+                "$ref": "#/$defs/HandSizeCompare"
+              },
+              {
+                "$ref": "#/$defs/CrowdMeterCompare"
+              },
+              {
+                "$ref": "#/$defs/HasInPlay"
+              },
+              {
+                "$ref": "#/$defs/HasInHand"
+              },
+              {
+                "$ref": "#/$defs/HasInDiscard"
+              },
+              {
+                "$ref": "#/$defs/RollWasSkill"
+              },
+              {
+                "$ref": "#/$defs/RollGapExactly"
+              },
+              {
+                "$ref": "#/$defs/RollGapAtLeast"
+              },
+              {
+                "$ref": "#/$defs/RollValue"
+              },
+              {
+                "$ref": "#/$defs/GimmickFlipped"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "items"
+      ],
+      "type": "object"
+    },
+    "Peek": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Peek"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "PlayExtraCard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "PlayExtraCard"
+        },
+        "order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "order"
+      ],
+      "type": "object"
+    },
+    "PlayOrder": {
+      "enum": [
+        "Lead",
+        "Followup",
+        "Finish",
+        "None"
+      ],
+      "type": "string"
+    },
+    "RecurToDeckTop": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RecurToDeckTop"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "count"
+      ],
+      "type": "object"
+    },
+    "RemoveFromPlay": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RemoveFromPlay"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "who",
+        "count"
+      ],
+      "type": "object"
+    },
+    "Reroll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Reroll"
+        },
+        "once": {
+          "type": "boolean"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "once"
+      ],
+      "type": "object"
+    },
+    "RevealAndDiscard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RevealAndDiscard"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "count",
+        "who"
+      ],
+      "type": "object"
+    },
+    "RollGapAtLeast": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RollGapAtLeast"
+        },
+        "k": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "k"
+      ],
+      "type": "object"
+    },
+    "RollGapExactly": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RollGapExactly"
+        },
+        "k": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "k"
+      ],
+      "type": "object"
+    },
+    "RollValue": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RollValue"
+        },
+        "cmp": {
+          "$ref": "#/$defs/Comparator"
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "cmp",
+        "value"
+      ],
+      "type": "object"
+    },
+    "RollWasSkill": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RollWasSkill"
+        },
+        "skill": {
+          "$ref": "#/$defs/Skill"
+        }
+      },
+      "required": [
+        "@type",
+        "skill"
+      ],
+      "type": "object"
+    },
+    "RollWhen": {
+      "enum": [
+        "THIS",
+        "NEXT"
+      ],
+      "type": "string"
+    },
+    "Search": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Search"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "dest": {
+          "$ref": "#/$defs/Dest"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        }
+      },
+      "required": [
+        "@type",
+        "filter",
+        "dest",
+        "count"
+      ],
+      "type": "object"
+    },
+    "SetFinishRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SetFinishRoll"
+        },
+        "condition": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Always"
+            },
+            {
+              "$ref": "#/$defs/And"
+            },
+            {
+              "$ref": "#/$defs/Or"
+            },
+            {
+              "$ref": "#/$defs/Not"
+            },
+            {
+              "$ref": "#/$defs/SkillCompare"
+            },
+            {
+              "$ref": "#/$defs/HandSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/CrowdMeterCompare"
+            },
+            {
+              "$ref": "#/$defs/HasInPlay"
+            },
+            {
+              "$ref": "#/$defs/HasInHand"
+            },
+            {
+              "$ref": "#/$defs/HasInDiscard"
+            },
+            {
+              "$ref": "#/$defs/RollWasSkill"
+            },
+            {
+              "$ref": "#/$defs/RollGapExactly"
+            },
+            {
+              "$ref": "#/$defs/RollGapAtLeast"
+            },
+            {
+              "$ref": "#/$defs/RollValue"
+            },
+            {
+              "$ref": "#/$defs/GimmickFlipped"
+            }
+          ]
+        },
+        "value": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "value",
+        "condition"
+      ],
+      "type": "object"
+    },
+    "ShuffleDeck": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ShuffleDeck"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "ShuffleIntoDeck": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ShuffleIntoDeck"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        }
+      },
+      "required": [
+        "@type",
+        "selector"
+      ],
+      "type": "object"
+    },
+    "Skill": {
+      "enum": [
+        "Power",
+        "Agility",
+        "Technique",
+        "Submission",
+        "Grapple",
+        "Strike"
+      ],
+      "type": "string"
+    },
+    "SkillCompare": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SkillCompare"
+        },
+        "cmp": {
+          "$ref": "#/$defs/Comparator"
+        },
+        "skill": {
+          "$ref": "#/$defs/Skill"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "vs": {
+          "$ref": "#/$defs/Vs"
+        },
+        "vs_skill": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skill"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "skill",
+        "cmp",
+        "who",
+        "vs",
+        "value",
+        "vs_skill"
+      ],
+      "type": "object"
+    },
+    "StartOfMatch": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "StartOfMatch"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "StartOfTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "StartOfTurn"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "Static": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Static"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "Stop": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Stop"
+        },
+        "atk_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtkType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_is_skillreq": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "@type",
+        "order",
+        "atk_type",
+        "source_is_skillreq"
+      ],
+      "type": "object"
+    },
+    "Unstoppable": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Unstoppable"
+        },
+        "by_order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "by_order"
+      ],
+      "type": "object"
+    },
+    "Unsupported": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Unsupported"
+        },
+        "raw_text": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "raw_text",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "Until": {
+      "enum": [
+        "END_OF_TURN"
+      ],
+      "type": "string"
+    },
+    "Vs": {
+      "enum": [
+        "OPP",
+        "OPP_SAME",
+        "VALUE"
+      ],
+      "type": "string"
+    },
+    "Who": {
+      "enum": [
+        "SELF",
+        "OPP"
+      ],
+      "type": "string"
+    },
+    "WinTie": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "WinTie"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "https://srg-sim/schemas/v1/effect_ir",
+  "$ref": "#/$defs/IRNode",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "effect_ir",
+  "version": 1
+}
