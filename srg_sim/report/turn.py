@@ -88,6 +88,7 @@ def _mc_turn_odds(comp_a: Competitor, comp_b: Competitor, n: int, seed: int) -> 
             player.hand = []
             player.deck = [filler] * 8
         engine.state.turn_no = i + 1
+        engine._clear_turn_freq()  # noqa: SLF001 (fresh turn: reset once-per-turn guards)
         wins[engine._turn_roll()] += 1  # noqa: SLF001 (report drives the engine's roll)
         if engine.state.log is not None:
             engine.state.log.events.clear()  # bound memory over a long stream

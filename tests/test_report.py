@@ -242,14 +242,37 @@ def test_render_emits_expected_sections(db: ReportCardDB) -> None:
     assert "Better logoless alternatives" in rst  # Grapple logoless beats signature
 
 
+def test_turn_odds_mc_reapplies_a_once_per_turn_gimmick_every_turn() -> None:
+    # Regression: the roll-only MC must reset once-per-turn frequency guards each
+    # simulated turn. Without it, a bump-punish gimmick fires on the FIRST bump then
+    # its guard blocks it forever, so the odds stay ~50/50 (the Mastermind bug).
+    import srg_sim.effects as fx
+    from srg_sim.cards import Competitor, Stats
+    from srg_sim.report.turn import turn_odds
+
+    line = Stats(power=10, agility=8, technique=9, submission=7, grapple=6, strike=5)
+    punish = fx.Effect(
+        trigger=fx.OnBump(),
+        actions=(fx.ModifyRoll(who=fx.Who.OPP, delta=-2, when=fx.RollWhen.NEXT),),
+        frequency=fx.FrequencyGuard(kind=fx.Frequency.ONCE_PER_TURN),
+        source=fx.EffectSource.GIMMICK,
+        raw_clause="when you bump, your opponent's next turn roll is -2",
+    )
+    masher = Competitor("c-mash", "Masher", "X", line, effects=(punish,))
+    plain = Competitor("c-plain", "Plain", "X", line)  # identical stat line, no gimmick
+    odds = turn_odds(masher, plain, mc_games=30000, seed=3)
+    assert odds.method == "mc"
+    assert odds.win_a > 0.53  # the punish fires on every bump -> a clear edge, not 50/50
+
+
 def test_glance_stops_reports_runnable_premium_and_equal8(db: ReportCardDB) -> None:
     # Alpha = Po5 Ag10 Te9 Su6 Gr7 St8: can't run Al13N (Su8) / Beg for Mercy (Gr8);
-    # Sealed Away has no requirement (board-gated -> situational). Equal-8: Springboard
-    # Lion Splash runs (St8) and is online (Agility 10 > Strike 8).
+    # runs The Seven Seals (St8) but it's offline (Power 5 not > Beta's Power 8).
+    # Equal-8: Springboard Lion Splash runs (St8) and is online (Agility 10 > Strike 8).
     alpha, beta = db.resolve_competitor("Test Alpha"), db.resolve_competitor("Test Beta")
     gs = skillreqs.glance_stops(alpha, beta)
-    assert [s.name for s in gs.big] == ["Sealed Away"]
-    assert gs.big[0].live is None  # situational
+    assert [s.name for s in gs.big] == ["The Seven Seals (Strike)"]
+    assert gs.big[0].live is False  # runnable but offline
     assert gs.equal8 is not None and "Springboard" in gs.equal8.name and gs.equal8.live is True
 
 

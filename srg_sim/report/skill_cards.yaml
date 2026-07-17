@@ -68,19 +68,18 @@ personal_choice:
   - "Apocalypse"
   - "Rejected!"
 
-# At-a-glance premium skill stops (the "13/14/15" stops, by set number: Al13N #13,
-# Beg for Mercy #15, Sealed Away #20). The scouting one-pager shows which a competitor
-# can run and whether its stop is online. Colossal Smash / Poison Stars are Power-10 /
-# Strike-10 specific and deliberately NOT listed here. Sealed Away has no skill
-# requirement (anyone can run it); its stop is board-gated (opponent has another
-# Submission in play), so it is always "situational".
+# At-a-glance premium skill stops (the "13/14/15" stops, by set number): Al13N #13,
+# The Seven Seals #14, Beg for Mercy #15 — three Followup skill-req stops, one per RPS
+# direction, each recurring a card. The scouting one-pager shows which a competitor can
+# run and whether its stop is online. Colossal Smash / Poison Stars are Power-10 /
+# Strike-10 specific and deliberately NOT listed here.
 glance_skill_stops:
   - name: "Al13N Invasion (Submission)"
     requires: {Submission: 8}
     online: [Agility, gt, "opp:Agility"]        # stop any Grapple + recur
+  - name: "The Seven Seals (Strike)"
+    requires: {Strike: 8}
+    online: [Power, gt, "opp:Power"]            # stop any Submission + recur
   - name: "Beg for Mercy (Grapple)"
     requires: {Grapple: 8}
     online: [Technique, gt, "opp:Technique"]    # stop any Strike + recur
-  - name: "Sealed Away"
-    requires: {}                                # no skill requirement
-    # stop any Submission if opponent has another Submission in play (board-gated)

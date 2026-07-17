@@ -2,7 +2,7 @@
 
 A compact side-by-side of the two competitors — turn-roll win %, the best finish to
 throw with its early Crowd-Meter (CM0–2) odds, open finish lanes, and premium skill-
-stop access (the "13/14/15" stops — Al13N Invasion / Beg for Mercy / Sealed Away — and
+stop access (the "13/14/15" stops — Al13N Invasion / The Seven Seals / Beg for Mercy — and
 the best Equal-8 stop). This is the at-a-glance companion to the full multi-page report
 (:mod:`srg_sim.report.render`); it holds the same numbers, laid out for one glance.
 """
@@ -176,6 +176,6 @@ def _footnote() -> list[str]:
         "",
         "*Turn-roll win % and finish odds use the validated finish/breakout math; "
         "finish odds shown at the contested early Crowd Meter (CM0–2). Big skill stops: "
-        "Al13N Invasion (#13), Beg for Mercy (#15), Sealed Away (#20).*",
+        "Al13N Invasion (#13), The Seven Seals (#14), Beg for Mercy (#15).*",
         "",
     ]
