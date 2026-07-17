@@ -1,0 +1,463 @@
+[
+  {
+    "@type": "AddFromDiscard",
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    }
+  },
+  {
+    "@type": "AlsoLead",
+    "condition": {
+      "@type": "Always"
+    }
+  },
+  {
+    "@type": "Always"
+  },
+  {
+    "@type": "And",
+    "items": []
+  },
+  {
+    "@type": "BlankGimmick",
+    "duration": "WHILE_IN_PLAY",
+    "who": "SELF"
+  },
+  {
+    "@type": "BlankText",
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    },
+    "until": "END_OF_TURN"
+  },
+  {
+    "@type": "BreakoutModifier",
+    "attempts": null,
+    "delta": 0
+  },
+  {
+    "@type": "BuffSkill",
+    "cap": null,
+    "delta": 0,
+    "duration": "WHILE_IN_PLAY",
+    "per_crowd": false,
+    "skill": "Power",
+    "target_highest": false,
+    "who": "SELF"
+  },
+  {
+    "@type": "Bump",
+    "who": "SELF"
+  },
+  {
+    "@type": "Bury",
+    "count": 0,
+    "random": false,
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    },
+    "who": "SELF"
+  },
+  {
+    "@type": "CardFilter",
+    "atk_type": null,
+    "name": null,
+    "number": null,
+    "play_order": null,
+    "raw": null,
+    "tag": null
+  },
+  {
+    "@type": "Choice",
+    "options": []
+  },
+  {
+    "@type": "ChoiceOption",
+    "actions": [],
+    "label": ""
+  },
+  {
+    "@type": "CountsAsInPlay",
+    "count": 0,
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    }
+  },
+  {
+    "@type": "CrowdMeter",
+    "delta": 0
+  },
+  {
+    "@type": "CrowdMeterCompare",
+    "cmp": ">",
+    "value": 0
+  },
+  {
+    "@type": "Discard",
+    "count": 0,
+    "per": null,
+    "per_who": "SELF",
+    "random": false,
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    },
+    "who": "SELF"
+  },
+  {
+    "@type": "DoubleFinishIfBumped"
+  },
+  {
+    "@type": "Draw",
+    "n": 0,
+    "per": null,
+    "per_who": "SELF",
+    "source": "TOP",
+    "who": "SELF"
+  },
+  {
+    "@type": "Effect",
+    "actions": [],
+    "condition": {
+      "@type": "Always"
+    },
+    "duration": "WHILE_IN_PLAY",
+    "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+    },
+    "optional": false,
+    "raw_clause": "",
+    "source": "card",
+    "trigger": {
+      "@type": "OnPlay"
+    }
+  },
+  {
+    "@type": "ElectBumpOnSameSkill",
+    "uses": 0
+  },
+  {
+    "@type": "FinishBonus",
+    "delta": 0,
+    "skill": "Power"
+  },
+  {
+    "@type": "FinishRollBonus",
+    "delta": 0,
+    "either": false,
+    "when_skill": null
+  },
+  {
+    "@type": "Flip",
+    "n": 0,
+    "who": "SELF"
+  },
+  {
+    "@type": "FlipGimmick",
+    "who": "SELF"
+  },
+  {
+    "@type": "FlipGimmickSigns",
+    "who": "SELF"
+  },
+  {
+    "@type": "FrequencyGuard",
+    "kind": "UNLIMITED",
+    "n": null
+  },
+  {
+    "@type": "GimmickFlipped",
+    "who": "SELF"
+  },
+  {
+    "@type": "HandSizeCompare",
+    "cmp": ">",
+    "value": null,
+    "vs": "OPP",
+    "who": "SELF"
+  },
+  {
+    "@type": "HasInDiscard",
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    },
+    "who": "SELF"
+  },
+  {
+    "@type": "HasInHand",
+    "count": 0,
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    },
+    "who": "SELF"
+  },
+  {
+    "@type": "HasInPlay",
+    "cmp": ">",
+    "count": 0,
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    },
+    "who": "SELF"
+  },
+  {
+    "@type": "InRoll",
+    "either": false,
+    "skill": null,
+    "who": "SELF"
+  },
+  {
+    "@type": "LoseBy",
+    "kind": "DISQUALIFICATION",
+    "who": "SELF"
+  },
+  {
+    "@type": "LowestRollWins"
+  },
+  {
+    "@type": "MaxHandSize",
+    "delta": 0,
+    "duration": "WHILE_IN_PLAY",
+    "who": "SELF"
+  },
+  {
+    "@type": "ModifyRoll",
+    "delta": 0,
+    "per": null,
+    "per_who": "SELF",
+    "when": "THIS",
+    "who": "SELF"
+  },
+  {
+    "@type": "Not",
+    "item": {
+      "@type": "Always"
+    }
+  },
+  {
+    "@type": "OnBreakout"
+  },
+  {
+    "@type": "OnBump"
+  },
+  {
+    "@type": "OnHit",
+    "atk_type": null,
+    "keyword": null,
+    "name": null
+  },
+  {
+    "@type": "OnLoseTurn",
+    "by": null
+  },
+  {
+    "@type": "OnPlay"
+  },
+  {
+    "@type": "OnRoll",
+    "skill": null,
+    "who": "SELF"
+  },
+  {
+    "@type": "OnRollBoost",
+    "delta": 0,
+    "on_bump": false,
+    "skill": null
+  },
+  {
+    "@type": "OnStop",
+    "dir": "YOURS"
+  },
+  {
+    "@type": "OnWinTurn"
+  },
+  {
+    "@type": "Or",
+    "items": []
+  },
+  {
+    "@type": "Peek",
+    "who": "SELF"
+  },
+  {
+    "@type": "PlayExtraCard",
+    "order": null
+  },
+  {
+    "@type": "RecurToDeckTop",
+    "count": 0,
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    }
+  },
+  {
+    "@type": "RemoveFromPlay",
+    "count": 0,
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    },
+    "who": "SELF"
+  },
+  {
+    "@type": "Reroll",
+    "once": false,
+    "who": "SELF"
+  },
+  {
+    "@type": "RevealAndDiscard",
+    "count": 0,
+    "who": "SELF"
+  },
+  {
+    "@type": "RollGapAtLeast",
+    "k": 0
+  },
+  {
+    "@type": "RollGapExactly",
+    "k": 0
+  },
+  {
+    "@type": "RollValue",
+    "cmp": ">",
+    "value": 0
+  },
+  {
+    "@type": "RollWasSkill",
+    "skill": "Power"
+  },
+  {
+    "@type": "Search",
+    "count": 0,
+    "dest": "HAND",
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    }
+  },
+  {
+    "@type": "SetFinishRoll",
+    "condition": {
+      "@type": "Always"
+    },
+    "value": 0
+  },
+  {
+    "@type": "ShuffleDeck",
+    "who": "SELF"
+  },
+  {
+    "@type": "ShuffleIntoDeck",
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null
+    }
+  },
+  {
+    "@type": "SkillCompare",
+    "cmp": ">",
+    "skill": "Power",
+    "value": null,
+    "vs": "OPP",
+    "vs_skill": null,
+    "who": "SELF"
+  },
+  {
+    "@type": "StartOfMatch"
+  },
+  {
+    "@type": "StartOfTurn"
+  },
+  {
+    "@type": "Static"
+  },
+  {
+    "@type": "Stop",
+    "atk_type": null,
+    "order": null,
+    "source_is_skillreq": false
+  },
+  {
+    "@type": "Unstoppable",
+    "by_order": null
+  },
+  {
+    "@type": "Unsupported",
+    "raw_text": "",
+    "reason": ""
+  },
+  {
+    "@type": "WinTie",
+    "who": "SELF"
+  }
+]

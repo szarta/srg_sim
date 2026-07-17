@@ -25,5 +25,6 @@
 #![forbid(unsafe_code)]
 
 pub mod error;
+pub mod ir;
 
 pub use error::{Result, SrgError};

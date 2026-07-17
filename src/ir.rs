@@ -1,0 +1,815 @@
+//! Effect IR — the DESIGN.md §3 contract, as Rust serde types.
+//!
+//! This is a faithful port of the Python `effects.py` / `conditions.py`
+//! dataclasses. Every node is tag-serialized by its class name under the
+//! `@type` key, exactly as the Python side emits it, so the same
+//! `cards.ir.json` round-trips through both engines. The frozen JSON Schema
+//! (`schemas/v1/effect_ir.schema.json`, task #62) is the authority; the
+//! `tests/ir_roundtrip.rs` corpus guards the mapping.
+//!
+//! Structure mirrors the schema's four unions:
+//!   * [`Trigger`]   — when an [`Effect`] fires (`Effect.trigger`)
+//!   * [`Condition`] — the guard on an effect / choice
+//!   * [`Action`]    — what an effect does (`Effect.actions`)
+//!   * [`IrNode`]    — the top-level union of *all* node types, used to
+//!     round-trip an arbitrary node (the schema root `IRNode`).
+//!
+//! Node structs carry only their payload fields; the `@type` tag is supplied
+//! by the enclosing internally-tagged enum. Fields that are "required but
+//! nullable" in the schema map to `Option<T>` **without** `skip_serializing_if`
+//! so `None` serializes as an explicit `null`, matching the Python output.
+
+use serde::{Deserialize, Serialize};
+
+// ---------------------------------------------------------------------------
+// `@type` tags for product structs
+// ---------------------------------------------------------------------------
+//
+// The union nodes get their `@type` from the enclosing internally-tagged enum.
+// The four *product* structs ([`Effect`], [`CardFilter`], [`FrequencyGuard`],
+// [`ChoiceOption`]) are plain fields, so they carry the tag themselves: a ZST
+// field that (de)serializes as a fixed string, exactly matching the Python
+// `to_dict()` output. `Default` lets construction sites omit it.
+
+macro_rules! type_tag {
+    ($name:ident, $lit:literal) => {
+        /// Zero-sized `@type` marker that (de)serializes as a fixed string.
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+        pub struct $name;
+
+        impl Serialize for $name {
+            fn serialize<S: serde::Serializer>(
+                &self,
+                s: S,
+            ) -> std::result::Result<S::Ok, S::Error> {
+                s.serialize_str($lit)
+            }
+        }
+
+        impl<'de> Deserialize<'de> for $name {
+            fn deserialize<D: serde::Deserializer<'de>>(
+                d: D,
+            ) -> std::result::Result<Self, D::Error> {
+                let s = String::deserialize(d)?;
+                if s == $lit {
+                    Ok($name)
+                } else {
+                    Err(serde::de::Error::custom(format!(
+                        "expected @type {:?}, got {:?}",
+                        $lit, s
+                    )))
+                }
+            }
+        }
+    };
+}
+
+type_tag!(EffectTag, "Effect");
+type_tag!(CardFilterTag, "CardFilter");
+type_tag!(FrequencyGuardTag, "FrequencyGuard");
+type_tag!(ChoiceOptionTag, "ChoiceOption");
+
+// ---------------------------------------------------------------------------
+// Scalar enums
+// ---------------------------------------------------------------------------
+
+/// The six skills (three attributes + three attack types).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Skill {
+    Power,
+    Agility,
+    Technique,
+    Submission,
+    Grapple,
+    Strike,
+}
+
+/// Attack type of a card (or `None` for non-attack cards).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AtkType {
+    Strike,
+    Grapple,
+    Submission,
+    None,
+}
+
+/// Where a card sits in a play sequence.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PlayOrder {
+    Lead,
+    Followup,
+    Finish,
+    None,
+}
+
+/// Numeric comparison operator.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Comparator {
+    #[serde(rename = ">")]
+    Gt,
+    #[serde(rename = ">=")]
+    Ge,
+    #[serde(rename = "=")]
+    Eq,
+    #[serde(rename = "<")]
+    Lt,
+    #[serde(rename = "<=")]
+    Le,
+}
+
+/// Which end of a deck a draw/recur touches.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DeckEnd {
+    Top,
+    Bottom,
+}
+
+/// Destination zone for a search.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Dest {
+    Hand,
+    Discard,
+}
+
+/// Direction of a stop relative to the acting player.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Direction {
+    Yours,
+    Theirs,
+}
+
+/// How long a modifier persists.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Duration {
+    WhileInPlay,
+    WhileGimmickActive,
+    Instant,
+}
+
+/// Where an effect originates.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum EffectSource {
+    Card,
+    Gimmick,
+    Entrance,
+}
+
+/// How often an effect may fire.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Frequency {
+    Unlimited,
+    OncePerTurn,
+    OncePerMatch,
+    NPerMatch,
+}
+
+/// A forced-loss condition.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum LoseKind {
+    Disqualification,
+    Pinfall,
+}
+
+/// Whether a roll modifier applies to this roll or the next.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RollWhen {
+    This,
+    Next,
+}
+
+/// Text-blank expiry window.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Until {
+    EndOfTurn,
+}
+
+/// Comparison operand for skill/hand-size compares.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum Vs {
+    Opp,
+    OppSame,
+    Value,
+}
+
+/// Which player a node targets. `SELF` is the acting player.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Who {
+    #[serde(rename = "SELF")]
+    SelfSide,
+    #[serde(rename = "OPP")]
+    Opp,
+}
+
+// ---------------------------------------------------------------------------
+// Shared leaf nodes
+// ---------------------------------------------------------------------------
+
+/// A predicate over cards (name/number/tag/attack-type/play-order/raw).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CardFilter {
+    #[serde(rename = "@type", default)]
+    pub node_type: CardFilterTag,
+    pub number: Option<i64>,
+    pub atk_type: Option<AtkType>,
+    pub play_order: Option<PlayOrder>,
+    pub tag: Option<String>,
+    pub name: Option<String>,
+    pub raw: Option<String>,
+}
+
+/// The frequency guard attached to every [`Effect`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FrequencyGuard {
+    #[serde(rename = "@type", default)]
+    pub node_type: FrequencyGuardTag,
+    pub kind: Frequency,
+    pub n: Option<i64>,
+}
+
+// ---------------------------------------------------------------------------
+// Triggers — `Effect.trigger`
+// ---------------------------------------------------------------------------
+
+/// When an [`Effect`] fires.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "@type")]
+pub enum Trigger {
+    OnPlay,
+    OnRoll {
+        skill: Option<Skill>,
+        who: Who,
+    },
+    InRoll {
+        skill: Option<Skill>,
+        who: Who,
+        either: bool,
+    },
+    OnRollBoost {
+        skill: Option<Skill>,
+        delta: i64,
+        on_bump: bool,
+    },
+    OnWinTurn,
+    OnLoseTurn {
+        by: Option<i64>,
+    },
+    OnStop {
+        dir: Direction,
+    },
+    OnHit {
+        keyword: Option<String>,
+        name: Option<String>,
+        atk_type: Option<AtkType>,
+    },
+    OnBump,
+    StartOfTurn,
+    StartOfMatch,
+    OnBreakout,
+    Static,
+}
+
+// ---------------------------------------------------------------------------
+// Conditions — the effect guard
+// ---------------------------------------------------------------------------
+
+/// A boolean guard on an effect or choice option.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "@type")]
+pub enum Condition {
+    Always,
+    And {
+        items: Vec<Condition>,
+    },
+    Or {
+        items: Vec<Condition>,
+    },
+    Not {
+        item: Box<Condition>,
+    },
+    SkillCompare {
+        skill: Skill,
+        cmp: Comparator,
+        who: Who,
+        vs: Vs,
+        value: Option<i64>,
+        vs_skill: Option<Skill>,
+    },
+    HandSizeCompare {
+        cmp: Comparator,
+        vs: Vs,
+        value: Option<i64>,
+        who: Who,
+    },
+    CrowdMeterCompare {
+        cmp: Comparator,
+        value: i64,
+    },
+    HasInPlay {
+        who: Who,
+        filter: CardFilter,
+        count: i64,
+        cmp: Comparator,
+    },
+    HasInHand {
+        who: Who,
+        filter: CardFilter,
+        count: i64,
+    },
+    HasInDiscard {
+        who: Who,
+        filter: CardFilter,
+    },
+    RollWasSkill {
+        skill: Skill,
+    },
+    RollGapExactly {
+        k: i64,
+    },
+    RollGapAtLeast {
+        k: i64,
+    },
+    RollValue {
+        cmp: Comparator,
+        value: i64,
+    },
+    GimmickFlipped {
+        who: Who,
+    },
+}
+
+// ---------------------------------------------------------------------------
+// Actions — `Effect.actions` / `ChoiceOption.actions`
+// ---------------------------------------------------------------------------
+
+/// One primitive game action performed by an [`Effect`].
+///
+/// This is the superset used by `Effect.actions`; `ChoiceOption.actions`
+/// excludes only [`Action::Unsupported`], which never appears inside a choice.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "@type")]
+pub enum Action {
+    Draw {
+        n: i64,
+        source: DeckEnd,
+        who: Who,
+        per: Option<CardFilter>,
+        per_who: Who,
+    },
+    Bury {
+        selector: CardFilter,
+        count: i64,
+        who: Who,
+        random: bool,
+    },
+    Flip {
+        n: i64,
+        who: Who,
+    },
+    Discard {
+        selector: CardFilter,
+        count: i64,
+        who: Who,
+        random: bool,
+        per: Option<CardFilter>,
+        per_who: Who,
+    },
+    Search {
+        filter: CardFilter,
+        dest: Dest,
+        count: i64,
+    },
+    ShuffleDeck {
+        who: Who,
+    },
+    ShuffleIntoDeck {
+        selector: CardFilter,
+    },
+    AddFromDiscard {
+        filter: CardFilter,
+    },
+    RecurToDeckTop {
+        selector: CardFilter,
+        count: i64,
+    },
+    CountsAsInPlay {
+        selector: CardFilter,
+        count: i64,
+    },
+    RemoveFromPlay {
+        selector: CardFilter,
+        who: Who,
+        count: i64,
+    },
+    RevealAndDiscard {
+        count: i64,
+        who: Who,
+    },
+    Peek {
+        who: Who,
+    },
+    ModifyRoll {
+        who: Who,
+        delta: i64,
+        when: RollWhen,
+        per: Option<CardFilter>,
+        per_who: Who,
+    },
+    BuffSkill {
+        skill: Skill,
+        delta: i64,
+        who: Who,
+        duration: Duration,
+        target_highest: bool,
+        per_crowd: bool,
+        cap: Option<i64>,
+    },
+    MaxHandSize {
+        delta: i64,
+        who: Who,
+        duration: Duration,
+    },
+    Reroll {
+        who: Who,
+        once: bool,
+    },
+    WinTie {
+        who: Who,
+    },
+    Bump {
+        who: Who,
+    },
+    ElectBumpOnSameSkill {
+        uses: i64,
+    },
+    Stop {
+        order: Option<PlayOrder>,
+        atk_type: Option<AtkType>,
+        source_is_skillreq: bool,
+    },
+    BlankGimmick {
+        who: Who,
+        duration: Duration,
+    },
+    FlipGimmick {
+        who: Who,
+    },
+    BlankText {
+        selector: CardFilter,
+        until: Until,
+    },
+    LoseBy {
+        kind: LoseKind,
+        who: Who,
+    },
+    CrowdMeter {
+        delta: i64,
+    },
+    PlayExtraCard {
+        order: Option<PlayOrder>,
+    },
+    SetFinishRoll {
+        value: i64,
+        condition: Condition,
+    },
+    FinishBonus {
+        skill: Skill,
+        delta: i64,
+    },
+    FinishRollBonus {
+        delta: i64,
+        when_skill: Option<Skill>,
+        either: bool,
+    },
+    BreakoutModifier {
+        delta: i64,
+        attempts: Option<i64>,
+    },
+    LowestRollWins,
+    FlipGimmickSigns {
+        who: Who,
+    },
+    Unstoppable {
+        by_order: Option<PlayOrder>,
+    },
+    AlsoLead {
+        condition: Condition,
+    },
+    DoubleFinishIfBumped,
+    Choice {
+        options: Vec<ChoiceOption>,
+    },
+    Unsupported {
+        raw_text: String,
+        reason: String,
+    },
+}
+
+/// One labelled branch of a [`Action::Choice`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ChoiceOption {
+    #[serde(rename = "@type", default)]
+    pub node_type: ChoiceOptionTag,
+    pub label: String,
+    pub actions: Vec<Action>,
+}
+
+// ---------------------------------------------------------------------------
+// Effect — the compiled unit of card text
+// ---------------------------------------------------------------------------
+
+/// A single compiled clause: a trigger, a guard, and the actions it performs.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Effect {
+    #[serde(rename = "@type", default)]
+    pub node_type: EffectTag,
+    pub trigger: Trigger,
+    pub condition: Condition,
+    pub actions: Vec<Action>,
+    pub duration: Duration,
+    pub frequency: FrequencyGuard,
+    pub raw_clause: String,
+    pub source: EffectSource,
+    pub optional: bool,
+}
+
+// ---------------------------------------------------------------------------
+// IrNode — the top-level union (schema root `IRNode`)
+// ---------------------------------------------------------------------------
+
+/// Any IR node, tag-dispatched by `@type`. This is the schema root: it
+/// round-trips an arbitrary node regardless of where it sits in the tree.
+///
+/// The sub-union enums ([`Trigger`], [`Condition`], [`Action`]) are the typed
+/// slots used *inside* [`Effect`]; `IrNode` is the untyped envelope used when a
+/// node's kind is not known ahead of time (e.g. reading `cards.ir.json`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "@type")]
+#[allow(clippy::large_enum_variant)]
+pub enum IrNode {
+    // Structural
+    Effect(Effect),
+    CardFilter(CardFilter),
+    ChoiceOption(ChoiceOption),
+    FrequencyGuard(FrequencyGuard),
+
+    // Triggers
+    OnPlay,
+    OnRoll {
+        skill: Option<Skill>,
+        who: Who,
+    },
+    InRoll {
+        skill: Option<Skill>,
+        who: Who,
+        either: bool,
+    },
+    OnRollBoost {
+        skill: Option<Skill>,
+        delta: i64,
+        on_bump: bool,
+    },
+    OnWinTurn,
+    OnLoseTurn {
+        by: Option<i64>,
+    },
+    OnStop {
+        dir: Direction,
+    },
+    OnHit {
+        keyword: Option<String>,
+        name: Option<String>,
+        atk_type: Option<AtkType>,
+    },
+    OnBump,
+    StartOfTurn,
+    StartOfMatch,
+    OnBreakout,
+    Static,
+
+    // Conditions
+    Always,
+    And {
+        items: Vec<Condition>,
+    },
+    Or {
+        items: Vec<Condition>,
+    },
+    Not {
+        item: Box<Condition>,
+    },
+    SkillCompare {
+        skill: Skill,
+        cmp: Comparator,
+        who: Who,
+        vs: Vs,
+        value: Option<i64>,
+        vs_skill: Option<Skill>,
+    },
+    HandSizeCompare {
+        cmp: Comparator,
+        vs: Vs,
+        value: Option<i64>,
+        who: Who,
+    },
+    CrowdMeterCompare {
+        cmp: Comparator,
+        value: i64,
+    },
+    HasInPlay {
+        who: Who,
+        filter: CardFilter,
+        count: i64,
+        cmp: Comparator,
+    },
+    HasInHand {
+        who: Who,
+        filter: CardFilter,
+        count: i64,
+    },
+    HasInDiscard {
+        who: Who,
+        filter: CardFilter,
+    },
+    RollWasSkill {
+        skill: Skill,
+    },
+    RollGapExactly {
+        k: i64,
+    },
+    RollGapAtLeast {
+        k: i64,
+    },
+    RollValue {
+        cmp: Comparator,
+        value: i64,
+    },
+    GimmickFlipped {
+        who: Who,
+    },
+
+    // Actions
+    Draw {
+        n: i64,
+        source: DeckEnd,
+        who: Who,
+        per: Option<CardFilter>,
+        per_who: Who,
+    },
+    Bury {
+        selector: CardFilter,
+        count: i64,
+        who: Who,
+        random: bool,
+    },
+    Flip {
+        n: i64,
+        who: Who,
+    },
+    Discard {
+        selector: CardFilter,
+        count: i64,
+        who: Who,
+        random: bool,
+        per: Option<CardFilter>,
+        per_who: Who,
+    },
+    Search {
+        filter: CardFilter,
+        dest: Dest,
+        count: i64,
+    },
+    ShuffleDeck {
+        who: Who,
+    },
+    ShuffleIntoDeck {
+        selector: CardFilter,
+    },
+    AddFromDiscard {
+        filter: CardFilter,
+    },
+    RecurToDeckTop {
+        selector: CardFilter,
+        count: i64,
+    },
+    CountsAsInPlay {
+        selector: CardFilter,
+        count: i64,
+    },
+    RemoveFromPlay {
+        selector: CardFilter,
+        who: Who,
+        count: i64,
+    },
+    RevealAndDiscard {
+        count: i64,
+        who: Who,
+    },
+    Peek {
+        who: Who,
+    },
+    ModifyRoll {
+        who: Who,
+        delta: i64,
+        when: RollWhen,
+        per: Option<CardFilter>,
+        per_who: Who,
+    },
+    BuffSkill {
+        skill: Skill,
+        delta: i64,
+        who: Who,
+        duration: Duration,
+        target_highest: bool,
+        per_crowd: bool,
+        cap: Option<i64>,
+    },
+    MaxHandSize {
+        delta: i64,
+        who: Who,
+        duration: Duration,
+    },
+    Reroll {
+        who: Who,
+        once: bool,
+    },
+    WinTie {
+        who: Who,
+    },
+    Bump {
+        who: Who,
+    },
+    ElectBumpOnSameSkill {
+        uses: i64,
+    },
+    Stop {
+        order: Option<PlayOrder>,
+        atk_type: Option<AtkType>,
+        source_is_skillreq: bool,
+    },
+    BlankGimmick {
+        who: Who,
+        duration: Duration,
+    },
+    FlipGimmick {
+        who: Who,
+    },
+    BlankText {
+        selector: CardFilter,
+        until: Until,
+    },
+    LoseBy {
+        kind: LoseKind,
+        who: Who,
+    },
+    CrowdMeter {
+        delta: i64,
+    },
+    PlayExtraCard {
+        order: Option<PlayOrder>,
+    },
+    SetFinishRoll {
+        value: i64,
+        condition: Condition,
+    },
+    FinishBonus {
+        skill: Skill,
+        delta: i64,
+    },
+    FinishRollBonus {
+        delta: i64,
+        when_skill: Option<Skill>,
+        either: bool,
+    },
+    BreakoutModifier {
+        delta: i64,
+        attempts: Option<i64>,
+    },
+    LowestRollWins,
+    FlipGimmickSigns {
+        who: Who,
+    },
+    Unstoppable {
+        by_order: Option<PlayOrder>,
+    },
+    AlsoLead {
+        condition: Condition,
+    },
+    DoubleFinishIfBumped,
+    Choice {
+        options: Vec<ChoiceOption>,
+    },
+    Unsupported {
+        raw_text: String,
+        reason: String,
+    },
+}
