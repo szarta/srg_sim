@@ -1651,13 +1651,21 @@ cc0f951e80054c7997e07eb2be71ac35:
       raw: null
     dest: HAND
     count: 1
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: Ready to Rumble
+      raw: null
   duration: INSTANT
   frequency:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
-  raw_clause: search your deck for "Ready to Rumble" and add it to your hand (deck-or-discard simplified
-    to deck)
+  raw_clause: search your deck OR discard pile for "Ready to Rumble" and add it to your hand
   source: card
   optional: false
 - '@type': Effect
