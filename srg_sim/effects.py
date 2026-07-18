@@ -215,6 +215,15 @@ class CountZone(Enum):
     DISCARD = "DISCARD"
 
 
+class DqScope(Enum):
+    """Reach of a :class:`DisqualificationRule` toggle. ``SELF`` = "you cannot be
+    disqualified" (only the owner); ``MATCH`` = "this match has no disqualifications"
+    (every player)."""
+
+    SELF = "SELF"
+    MATCH = "MATCH"
+
+
 class Until(Enum):
     END_OF_TURN = "END_OF_TURN"
 
@@ -814,6 +823,16 @@ class BlankText(IRNode):
 class LoseBy(IRNode):
     kind: LoseKind
     who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
+class DisqualificationRule(IRNode):
+    """A Static match-rule toggle: ``enabled=False`` = "no disqualifications",
+    ``enabled=True`` re-enables them. ``scope`` is who it reaches. Read at the
+    disqualification-loss point, not executed."""
+
+    enabled: bool = False
+    scope: DqScope = DqScope.SELF
 
 
 @dataclass(frozen=True)

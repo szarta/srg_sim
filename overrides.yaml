@@ -3015,3 +3015,115 @@ c9c7ebf148884c038fa00763434c6244:
     n: null
   raw_clause: your Technique is +1 for each card in your discard pile with "Swift" or "Microphone" in the name (Max +2)
   source: gimmick
+
+# ===========================================================================
+# Top-96: no-DQ family (schema v8). DisqualificationRule{enabled,scope} — a Static
+# match-rule toggle; a disqualification LoseBy is voided when the loser is immune
+# (SELF-scope owner, or any MATCH-scope rule). enabled=false = "no DQ". Combines
+# with the OnHit name/text gate (Phase 2) and HasInPlay name_contains (Phase 1).
+# ===========================================================================
+
+# Deathmatch King Matt Cardona (World Championship): "You cannot be disqualified.
+# When you hit a card with 'Disqualification' in the text, draw 2 cards."
+b3c837b732a54281aa9169ab1d46d42f:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': DisqualificationRule
+    enabled: false
+    scope: SELF
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: you cannot be disqualified
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    text_contains: ['Disqualification']
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you hit a card with "Disqualification" in the text, draw 2 cards
+  source: gimmick
+
+# The Boatswain's Mate Spencer Vance (World Championship): "When you hit a card
+# with 'Drop' in the name your opponent buries 1 card in their hand. When you have
+# 3 cards in play with 'Drop' in the name, this match has no disqualification."
+e38cced416cc45e0a9e1367935fd590a:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: ['Drop']
+    text_contains: []
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Bury
+    who: OPP
+    count: 1
+    random: false
+    source: HAND
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you hit a card with "Drop" in the name your opponent buries 1 card in their hand
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    cmp: '>='
+    count: 3
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: ['Drop']
+      text_contains: []
+  actions:
+  - '@type': DisqualificationRule
+    enabled: false
+    scope: MATCH
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you have 3 cards in play with "Drop" in the name, this match has no disqualification
+  source: gimmick

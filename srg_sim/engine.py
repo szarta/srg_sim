@@ -1306,8 +1306,38 @@ class Engine:
 
     def _act_lose_by(self, action: fx.LoseBy, key: str) -> None:
         loser = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        if action.kind is fx.LoseKind.DISQUALIFICATION and self._is_dq_immune(loser):
+            # "no disqualifications" / "you cannot be disqualified": the loss is voided
+            # and play continues (the triggering effect still fired).
+            self._log_effect(key, "LoseByVoided", loser, {"kind": action.kind.value})
+            return
         self._pending_loss = (loser, action.kind.value.lower())
         self._log_effect(key, "LoseBy", loser, {"kind": action.kind.value})
+
+    def _is_dq_immune(self, loser: str) -> bool:
+        """True iff ``loser`` is immune to a disqualification loss: some active
+        ``DisqualificationRule`` disables DQ for them and none re-enables it. A rule
+        applies when its scope is ``MATCH`` (any owner) or ``SELF`` (owner == loser).
+        In-play-scoped and condition-gated. NOTE: last-played-order tie-break is task
+        #93; with no re-enable card modeled yet this is exact."""
+        disabled = False
+        for owner, player in self.state.players.items():
+            sources = [player.competitor.effects, player.entrance.effects]
+            sources += [c.effects for c in player.in_play]
+            for effects in sources:
+                for eff in effects:
+                    if not isinstance(eff.trigger, fx.Static):
+                        continue
+                    for action in eff.actions:
+                        if not isinstance(action, fx.DisqualificationRule):
+                            continue
+                        applies = action.scope is fx.DqScope.MATCH or owner == loser
+                        if not applies or not conditions.holds(eff.condition, self.state, owner):
+                            continue
+                        if action.enabled:
+                            return False  # an active rule re-enables DQ
+                        disabled = True
+        return disabled
 
     def _discard_from_hand(
         self, key: str, count: int, random: bool, selector: fx.CardFilter | None = None
@@ -1507,6 +1537,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.BlankGimmick: Engine._act_blank_gimmick,
     fx.FlipGimmick: Engine._act_flip_gimmick,
     fx.LoseBy: Engine._act_lose_by,
+    fx.DisqualificationRule: Engine._act_noop,  # Static, read via _is_dq_immune; never executed
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
