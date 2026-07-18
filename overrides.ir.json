@@ -49,8 +49,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     },
     {
@@ -76,8 +76,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     },
     {
@@ -224,8 +224,54 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
+      }
+    }
+  ],
+  "0d71d3dff2ad4f23a35055c49935c913": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "count": 1,
+          "random": true,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "HAND",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you hit a card with \"Power\" or \"Choke\" in the name, your opponent buries 1 random card in their hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [
+          "Power",
+          "Choke"
+        ],
+        "text_contains": []
       }
     }
   ],
@@ -505,8 +551,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     },
     {
@@ -895,8 +941,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     }
   ],
@@ -1229,8 +1275,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": "Submission",
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     }
   ],
@@ -1723,8 +1769,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     },
     {
@@ -1754,8 +1800,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     }
   ],
@@ -2161,6 +2207,62 @@
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
+      }
+    }
+  ],
+  "831eb73c2ab9435794db4413c7e2521b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "n": 1,
+                  "per": null,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "draw 1 card"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "PlayExtraCard",
+                  "order": null
+                }
+              ],
+              "label": "play 1 additional card this turn"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once during your turn when you hit a card with \"Lock\" in the name: draw 1 card or you may play 1 additional card this turn",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [
+          "Lock"
+        ],
+        "text_contains": []
       }
     }
   ],
@@ -2732,6 +2834,59 @@
       }
     }
   ],
+  "a2895b52164743edbdd083272279e147": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        },
+        {
+          "@type": "Bury",
+          "count": 1,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "HAND",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you hit a card with \"Leg\" in the name, draw 2 cards then bury 1 card in your hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [
+          "Leg"
+        ],
+        "text_contains": []
+      }
+    }
+  ],
   "a4b61c579c2d4ca59b5001ea5503fdef": [
     {
       "@type": "Effect",
@@ -3045,8 +3200,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     }
   ],
@@ -3432,8 +3587,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     }
   ],
@@ -3739,8 +3894,8 @@
       "trigger": {
         "@type": "OnHit",
         "atk_type": null,
-        "keyword": null,
-        "name": null
+        "name_contains": [],
+        "text_contains": []
       }
     }
   ],

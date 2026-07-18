@@ -56,9 +56,9 @@ fn eff(trigger: Trigger, actions: Vec<Action>, condition: Condition, duration: D
 
 fn on_hit() -> Trigger {
     Trigger::OnHit {
-        keyword: None,
-        name: None,
         atk_type: None,
+        name_contains: Vec::new(),
+        text_contains: Vec::new(),
     }
 }
 

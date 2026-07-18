@@ -1720,17 +1720,32 @@ impl Engine {
     /// attack type that just hit (D1). A card's own untyped OnHit already resolved
     /// via `run_effects`, so it is not re-fired.
     fn run_hit_gimmicks(&mut self, card: &Card, key: &str) -> Eng<()> {
-        let atk = card.atk_type;
         let effects = self.standing_effects(key);
         for eff in &effects {
-            if let Trigger::OnHit {
-                atk_type: Some(want),
+            let Trigger::OnHit {
+                atk_type,
+                name_contains,
+                text_contains,
                 ..
             } = &eff.trigger
-            {
-                if *want == atk {
-                    self.fire_if_ready(eff, key, None)?;
-                }
+            else {
+                continue;
+            };
+            // A bare OnHit (no gate) is the card's OWN "when this hits", already
+            // fired via `run_effects`; only fire standing gimmicks that gate on
+            // the hit card's type and/or name/text.
+            let has_name_gate = !name_contains.is_empty() || !text_contains.is_empty();
+            if atk_type.is_none() && !has_name_gate {
+                continue;
+            }
+            let type_ok = atk_type.is_none_or(|want| want == card.atk_type);
+            let name_gate = CardFilter {
+                name_contains: name_contains.clone(),
+                text_contains: text_contains.clone(),
+                ..Default::default()
+            };
+            if type_ok && conditions::card_matches(card, &name_gate) {
+                self.fire_if_ready(eff, key, None)?;
             }
         }
         Ok(())

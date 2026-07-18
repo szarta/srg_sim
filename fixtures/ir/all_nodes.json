@@ -311,8 +311,8 @@
   {
     "@type": "OnHit",
     "atk_type": null,
-    "keyword": null,
-    "name": null
+    "name_contains": [],
+    "text_contains": []
   },
   {
     "@type": "OnLoseTurn",

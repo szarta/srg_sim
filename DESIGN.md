@@ -87,7 +87,10 @@ OnRoll(skill?, who=SELF)     # after `who` makes a turn roll (skill=None => any 
                              #   outcome-agnostic — roll-value gimmicks (Bull) live here
 OnWinTurn / OnLoseTurn(by=?) # after the turn roll resolves (outcome-specific)
 OnStop(dir=YOURS|THEIRS)     # when a stop happens
-OnHit(keyword|name)          # when a matching card RESOLVES into play — see "hit" below
+OnHit(atk_type?, name_contains?, text_contains?)  # when a matching card RESOLVES into play (schema v6)
+                             #   gimmicks gate on the hit card's attack type and/or its
+                             #   title/text ("when you hit a card with 'X' in the name",
+                             #   case-insensitive OR-substring); see "hit" below
 OnBump                       # when the owner bumps (a tied roll: both draw + re-roll).
                              #   Both sides bump on a tie, so each owner's OnBump fires;
                              #   bump-punish gimmicks (Mastermind: "opp next roll -2") live

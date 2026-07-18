@@ -338,9 +338,15 @@ pub enum Trigger {
         dir: Direction,
     },
     OnHit {
-        keyword: Option<String>,
-        name: Option<String>,
         atk_type: Option<AtkType>,
+        /// Case-insensitive OR-substring match on the **hit** card's title —
+        /// "when you hit a card with 'X' (or 'Y') in the name". Empty = no name
+        /// gate. Combines (AND) with `atk_type` when both are set.
+        #[serde(default)]
+        name_contains: Vec<String>,
+        /// Same, against the hit card's rules text — "…with 'X' in the text".
+        #[serde(default)]
+        text_contains: Vec<String>,
     },
     OnBump,
     StartOfTurn,
@@ -667,9 +673,15 @@ pub enum IrNode {
         dir: Direction,
     },
     OnHit {
-        keyword: Option<String>,
-        name: Option<String>,
         atk_type: Option<AtkType>,
+        /// Case-insensitive OR-substring match on the **hit** card's title —
+        /// "when you hit a card with 'X' (or 'Y') in the name". Empty = no name
+        /// gate. Combines (AND) with `atk_type` when both are set.
+        #[serde(default)]
+        name_contains: Vec<String>,
+        /// Same, against the hit card's rules text — "…with 'X' in the text".
+        #[serde(default)]
+        text_contains: Vec<String>,
     },
     OnBump,
     StartOfTurn,

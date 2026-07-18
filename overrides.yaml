@@ -934,8 +934,6 @@ e8d2328e6e114b2ead86a2e97a6b4abc:
   source: card
   trigger:
     '@type': OnHit
-    keyword: null
-    name: null
 - '@type': Effect
   actions:
   - '@type': Draw
@@ -954,8 +952,6 @@ e8d2328e6e114b2ead86a2e97a6b4abc:
   source: card
   trigger:
     '@type': OnHit
-    keyword: null
-    name: null
 
 
 # --- Turn-roll gap-comeback competitor gimmicks (matchup roster, todo #52/#53) ---
@@ -1268,8 +1264,6 @@ aebe9e8baa0046ddbde13690b7c18455:
 - '@type': Effect
   trigger:
     '@type': OnHit
-    keyword: null
-    name: null
     atk_type: Submission
   condition:
     '@type': Always
@@ -1573,8 +1567,6 @@ cc0f951e80054c7997e07eb2be71ac35:
 - '@type': Effect
   trigger:
     '@type': OnHit
-    keyword: null
-    name: null
     atk_type: null
   condition:
     '@type': Always
@@ -1634,8 +1626,6 @@ cc0f951e80054c7997e07eb2be71ac35:
 - '@type': Effect
   trigger:
     '@type': OnHit
-    keyword: null
-    name: null
     atk_type: null
   condition:
     '@type': Always
@@ -1671,8 +1661,6 @@ cc0f951e80054c7997e07eb2be71ac35:
 - '@type': Effect
   trigger:
     '@type': OnHit
-    keyword: null
-    name: null
     atk_type: null
   condition:
     '@type': Always
@@ -1878,8 +1866,6 @@ da0099e73b9344f9a3197a13652623ec:
 - '@type': Effect
   trigger:
     '@type': OnHit
-    keyword: null
-    name: null
     atk_type: null
   condition:
     '@type': Always
@@ -2803,3 +2789,120 @@ b339f906c69c4183b699037dffd6cfa1:
     n: null
   raw_clause: 'when you roll Submission: shuffle 1 card with "Steel", "Kick", or "Sheep" in the name from your discard pile into your deck and draw 1'
   source: gimmick
+
+# ===========================================================================
+# Top-96: name-substring family, Phase 2 — OnHit name gate (schema v6). OnHit
+# now carries name_contains / text_contains; run_hit_gimmicks matches the HIT
+# card's title/text ("when you hit a card with 'X' in the name"). Combines with
+# the hand-bury node (schema v4) for the disruption comps.
+# ===========================================================================
+
+# The Witch's Apprentice (World Championship): "When you hit a card with 'Power'
+# or 'Choke' in the name, your opponent buries 1 random card in their hand."
+0d71d3dff2ad4f23a35055c49935c913:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: ['Power', 'Choke']
+    text_contains: []
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Bury
+    who: OPP
+    count: 1
+    random: true
+    source: HAND
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you hit a card with "Power" or "Choke" in the name, your opponent buries 1 random card in their hand
+  source: gimmick
+
+# The Tartan Terror (World Championship): "When you hit a card with 'Leg' in the
+# name, draw 2 cards then bury 1 card in your hand."
+a2895b52164743edbdd083272279e147:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: ['Leg']
+    text_contains: []
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+  - '@type': Bury
+    who: SELF
+    count: 1
+    random: false
+    source: HAND
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you hit a card with "Leg" in the name, draw 2 cards then bury 1 card in your hand
+  source: gimmick
+
+# Theo the Greek Neo V1 (World Championship): "Once during your turn when you hit
+# a card with 'Lock' in the name; draw 1 card or you may play 1 additional card
+# this turn." (once per turn; choose draw OR an extra play.)
+831eb73c2ab9435794db4413c7e2521b:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: ['Lock']
+    text_contains: []
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: draw 1 card
+      actions:
+      - '@type': Draw
+        n: 1
+        source: TOP
+        who: SELF
+    - '@type': ChoiceOption
+      label: play 1 additional card this turn
+      actions:
+      - '@type': PlayExtraCard
+        order: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once during your turn when you hit a card with "Lock" in the name: draw 1 card or you may play 1 additional card this turn'
+  source: gimmick
+  optional: false

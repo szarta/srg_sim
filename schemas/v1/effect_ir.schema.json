@@ -1781,32 +1781,24 @@
             }
           ]
         },
-        "keyword": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
+        "name_contains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
-        "name": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
+        "text_contains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "required": [
         "@type",
-        "keyword",
-        "name",
-        "atk_type"
+        "atk_type",
+        "name_contains",
+        "text_contains"
       ],
       "type": "object"
     },
@@ -2585,5 +2577,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 5
+  "version": 6
 }
