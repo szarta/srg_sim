@@ -1,0 +1,255 @@
+//! The console subcommands — a port of `cli.py`'s `play` / `coverage` / `analyze`
+//! / `replay`, thin shells over `srg_core`. (`review` and the full matchup-report
+//! tooling stay in Python until M-R3; see `docs/design/substrate-split.md` §7.)
+
+use super::loader::{card_type, db_uuid, is_top96, overrides, rules_text, CardIndex};
+use anyhow::{anyhow, bail, Context, Result};
+use srg_core::engine::{Engine, GameResult, Yield};
+use srg_core::gamelog::{diff, GameLog};
+use srg_core::parser::{coverage, CoverageRecord, CoverageReport};
+use srg_core::policy::{build_policy, Policies, Policy};
+use std::collections::BTreeMap;
+use std::path::Path;
+
+const POLICY_NAMES: &str = "random|heuristic|aggressive|smart|newbie";
+
+/// `play A.yaml B.yaml` — one seeded match; print the result, optionally write the log.
+pub fn play(
+    cards: &Path,
+    deck_a: &Path,
+    deck_b: &Path,
+    seed: u64,
+    policies: (&str, &str),
+    created: &str,
+    out: Option<&Path>,
+) -> Result<()> {
+    let (policy_a, policy_b) = policies;
+    let index = CardIndex::from_yaml(cards)?;
+    let ov = overrides()?;
+    let da = index.load_playable(deck_a, &ov)?;
+    let db = index.load_playable(deck_b, &ov)?;
+    let (name_a, name_b) = (da.competitor.name.clone(), db.competitor.name.clone());
+    let policies = make_policies(policy_a, policy_b)?;
+    let mut engine = Engine::new(
+        da,
+        db,
+        Box::new(policies),
+        seed,
+        created.to_owned(),
+        "sim".into(),
+    );
+    let result = run(&mut engine)?;
+    println!("seed {seed}: {name_a} ({policy_a}) vs {name_b} ({policy_b})");
+    println!(
+        "result: {} wins by {} in {} turns",
+        result.winner, result.reason, result.turns
+    );
+    if let Some(path) = out {
+        engine
+            .log
+            .write(path)
+            .with_context(|| format!("write {}", path.display()))?;
+        println!(
+            "log: {} ({} events)",
+            path.display(),
+            engine.log.events.len()
+        );
+    }
+    Ok(())
+}
+
+/// `coverage [--top96]` — the rules-parser coverage report over the card DB.
+pub fn coverage_report(cards: &Path, top96: bool) -> Result<()> {
+    let index = CardIndex::from_yaml(cards)?;
+    let ov = overrides()?;
+    let main: Vec<CoverageRecord> = index
+        .records()
+        .iter()
+        .filter(|r| card_type(r) == Some("MainDeckCard"))
+        .map(|r| CoverageRecord {
+            text: rules_text(r),
+            db_uuid: db_uuid(r),
+        })
+        .collect();
+    print_coverage("main deck", &coverage(&main, Some(&ov)));
+    if top96 {
+        let top: Vec<CoverageRecord> = index
+            .records()
+            .iter()
+            .filter(|r| is_top96(r))
+            .map(|r| CoverageRecord {
+                text: rules_text(r),
+                db_uuid: db_uuid(r),
+            })
+            .collect();
+        print_coverage("top-96 competitors", &coverage(&top, Some(&ov)));
+    }
+    Ok(())
+}
+
+/// `analyze A.yaml B.yaml --games N` — a batch win-rate summary (the full
+/// MatchupReport, with finish/turn odds, stays in Python; §7).
+pub fn analyze(
+    cards: &Path,
+    deck_a: &Path,
+    deck_b: &Path,
+    games: u64,
+    seed_start: u64,
+    policy_a: &str,
+    policy_b: &str,
+) -> Result<()> {
+    let index = CardIndex::from_yaml(cards)?;
+    let ov = overrides()?;
+    let da = index.load_playable(deck_a, &ov)?;
+    let db = index.load_playable(deck_b, &ov)?;
+    let (name_a, name_b) = (da.competitor.name.clone(), db.competitor.name.clone());
+    let mut tally = Tally::default();
+    for i in 0..games {
+        // Fresh policies each game (they may carry per-game state), mirroring the
+        // Python factory-per-game batch.
+        let policies = make_policies(policy_a, policy_b)?;
+        let mut engine = Engine::new(
+            da.clone(),
+            db.clone(),
+            Box::new(policies),
+            seed_start + i,
+            String::new(),
+            "sim".into(),
+        );
+        tally.record(&run(&mut engine)?);
+    }
+    println!(
+        "analyze: {name_a} ({policy_a}) vs {name_b} ({policy_b}) — {games} games (seeds {seed_start}..{})",
+        seed_start + games
+    );
+    tally.print(games);
+    Ok(())
+}
+
+/// `replay LOG.jsonl` — re-run a recorded sim log from its header and verify it
+/// reproduces byte-for-byte (DESIGN.md §8 determinism).
+pub fn replay(cards: &Path, log_path: &Path) -> Result<()> {
+    let recorded =
+        GameLog::read(log_path).with_context(|| format!("read {}", log_path.display()))?;
+    if recorded.header.kind != "sim" {
+        bail!(
+            "replay verifies sim logs; {} is kind {:?} (a human's decisions aren't re-derivable)",
+            log_path.display(),
+            recorded.header.kind
+        );
+    }
+    let index = CardIndex::from_yaml(cards)?;
+    let ov = overrides()?;
+    let a = player(&recorded, "A")?;
+    let b = player(&recorded, "B")?;
+    let da = index.deck_from_uuids(&a.competitor, &a.entrance, &a.deck, &ov)?;
+    let db = index.deck_from_uuids(&b.competitor, &b.entrance, &b.deck, &ov)?;
+    let policies = make_policies(&a.policy, &b.policy)?;
+    let mut engine = Engine::new(
+        da,
+        db,
+        Box::new(policies),
+        recorded.header.seed,
+        recorded.header.created.clone(),
+        recorded.header.kind.clone(),
+    );
+    run(&mut engine)?;
+    let diffs = diff(&recorded, &engine.log);
+    if diffs.is_empty() {
+        println!(
+            "replay OK: {} reproduces ({} events)",
+            log_path.display(),
+            engine.log.events.len()
+        );
+        return Ok(());
+    }
+    for d in diffs.iter().take(20) {
+        println!("  {d}");
+    }
+    bail!("replay MISMATCH: {} differing record(s)", diffs.len());
+}
+
+// ---------------------------------------------------------------------------
+// helpers
+// ---------------------------------------------------------------------------
+
+/// Run a fully-local match to completion; a suspension means a policy declined to
+/// choose (a bug for local policies — remote seats belong to the Session/MCP path).
+fn run(engine: &mut Engine) -> Result<GameResult> {
+    engine.play().map_err(|Yield(req)| {
+        anyhow!(
+            "engine suspended awaiting a {:?} decision — local policies must always choose",
+            req.point
+        )
+    })
+}
+
+fn make_policies(a: &str, b: &str) -> Result<Policies> {
+    Ok(Policies::new(named_policy(a)?, named_policy(b)?))
+}
+
+fn named_policy(name: &str) -> Result<Box<dyn Policy>> {
+    build_policy(name).ok_or_else(|| anyhow!("unknown policy {name:?}; choose from {POLICY_NAMES}"))
+}
+
+fn player<'a>(log: &'a GameLog, key: &str) -> Result<&'a srg_core::gamelog::PlayerInfo> {
+    log.header
+        .players
+        .get(key)
+        .ok_or_else(|| anyhow!("log header has no player {key:?}"))
+}
+
+fn print_coverage(label: &str, report: &CoverageReport) {
+    println!(
+        "\n{label}: {} clauses ({:.1}% parsed)",
+        report.total,
+        report.rate() * 100.0
+    );
+    println!("  grammar      {:6}", report.grammar);
+    println!("  override     {:6}", report.override_);
+    println!("  unsupported  {:6}", report.unsupported);
+    if !report.top_unparsed.is_empty() {
+        println!("  top unparsed shapes:");
+        for (shape, count) in report.top_unparsed.iter().take(15) {
+            println!("    {count:5}  {shape}");
+        }
+    }
+}
+
+/// Running win/reason tallies for `analyze`.
+#[derive(Default)]
+struct Tally {
+    a: u64,
+    b: u64,
+    draws: u64,
+    turns: i64,
+    reasons: BTreeMap<String, u64>,
+}
+
+impl Tally {
+    fn record(&mut self, r: &GameResult) {
+        match r.winner.as_str() {
+            "A" => self.a += 1,
+            "B" => self.b += 1,
+            _ => self.draws += 1,
+        }
+        self.turns += r.turns;
+        *self.reasons.entry(r.reason.clone()).or_default() += 1;
+    }
+
+    fn print(&self, games: u64) {
+        if games == 0 {
+            println!("  (no games)");
+            return;
+        }
+        let pct = |n: u64| 100.0 * n as f64 / games as f64;
+        println!("  A wins   {:5}  ({:.1}%)", self.a, pct(self.a));
+        println!("  B wins   {:5}  ({:.1}%)", self.b, pct(self.b));
+        println!("  draws    {:5}  ({:.1}%)", self.draws, pct(self.draws));
+        println!("  avg turns {:.1}", self.turns as f64 / games as f64);
+        println!("  by reason:");
+        for (reason, count) in &self.reasons {
+            println!("    {count:5}  {reason}");
+        }
+    }
+}

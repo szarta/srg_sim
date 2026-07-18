@@ -27,6 +27,15 @@ path = "src/lib.rs"
 [[bin]]
 name = "srg"
 path = "src/main.rs"
+# The console consumer reads the card DB from YAML; keep that (and its C libyaml
+# transitive) out of lib-only / WASM builds — see the `cli` feature below.
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+# The console CLI: the YAML card-DB loader (`src/console`). Off for lib-only or
+# `wasm32` consumers that sync the DB as JSON and never touch `serde_yaml_ng`.
+cli = ["dep:serde_yaml_ng"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -39,6 +48,8 @@ anyhow = "1"
 num-rational = { version = "0.4", default-features = false }
 # Whole-clause pattern grammar for the rules_text -> Effect IR parser (DESIGN.md §4).
 regex = "1"
+# Card-DB YAML loader for the console consumer only (optional, `cli` feature).
+serde_yaml_ng = { version = "0.10", optional = true }
 
 [dev-dependencies]
 tempfile = "3"
