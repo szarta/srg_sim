@@ -1,13 +1,12 @@
 //! Whole-engine byte-parity (task 72e): the parity proof for the entire engine
 //! (task 72). For every golden conformance fixture, replay its recorded
-//! `decisions[]` through the engine and assert the produced [`GameLog`] is
-//! byte-identical to the fixture's `log` — first via the batch [`Engine::play`]
-//! driver, then via the resumable [`Session`] driver, confirming both drivers
-//! share one protocol and land on the same log.
+//! `decisions[]` through the batch [`Engine::play`] driver and assert the produced
+//! [`GameLog`] is byte-identical to the fixture's `log`. The resumable [`Session`]
+//! driver is proven against the same corpus in `tests/session.rs`.
 
 use serde_json::Value;
 use srg_core::cards::Deck;
-use srg_core::engine::{DecisionResponse, Engine, ReplayDecider, Session, Step};
+use srg_core::engine::{Engine, ReplayDecider};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
@@ -86,45 +85,5 @@ fn batch_replay_matches_fixture_log() {
             .play()
             .unwrap_or_else(|_| panic!("{}: batch replay suspended", fx.label));
         assert_log_eq(&fx.label, &engine.log.canonical(), &fx.log);
-    }
-}
-
-/// The resumable driver: feed each `DecisionRequest`'s recorded answer via
-/// `submit`, and the session's final log must match the fixture — the same log
-/// the batch driver produced, proving the two drivers share one protocol.
-#[test]
-fn session_replay_matches_fixture_log() {
-    for fx in fixtures() {
-        let recorded = fx.decisions.clone();
-        let mut cursors: BTreeMap<String, usize> = BTreeMap::new();
-        let (mut session, mut step) = Session::open(
-            fx.deck_a,
-            fx.deck_b,
-            fx.policies,
-            fx.seed,
-            String::new(),
-            fx.kind,
-        );
-        loop {
-            match step {
-                Step::Done(_) => break,
-                Step::Decision(req) => {
-                    let idx = cursors.entry(req.viewer.clone()).or_default();
-                    let chosen = recorded[&req.viewer]
-                        .get(*idx)
-                        .unwrap_or_else(|| {
-                            panic!("{}: no recorded answer for {}", fx.label, req.viewer)
-                        })
-                        .clone();
-                    *idx += 1;
-                    step = session.submit(DecisionResponse {
-                        request_id: req.request_id,
-                        chosen,
-                    });
-                }
-            }
-        }
-        let log = session.log().expect("finished session has a log");
-        assert_log_eq(&fx.label, &log.canonical(), &fx.log);
     }
 }
