@@ -321,6 +321,9 @@
         "selector": {
           "$ref": "#/$defs/CardFilter"
         },
+        "source": {
+          "$ref": "#/$defs/BuryFrom"
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
@@ -330,9 +333,17 @@
         "selector",
         "count",
         "who",
-        "random"
+        "random",
+        "source"
       ],
       "type": "object"
+    },
+    "BuryFrom": {
+      "enum": [
+        "DISCARD",
+        "HAND"
+      ],
+      "type": "string"
     },
     "CardFilter": {
       "additionalProperties": false,
@@ -2560,5 +2571,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 3
+  "version": 4
 }

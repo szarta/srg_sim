@@ -2553,3 +2553,85 @@ b1c536d936c143d7b31a0ce0490f8bd9: *dunn
   raw_clause: 'when you roll Strike for your turn roll: flip 2 cards or add 1 finish from your discard pile to your hand'
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96: OnRoll(<skill>) -> draw 1 + opponent buries from HAND. First users of
+# the new Bury source=HAND (schema v4): "bury N cards in [your/their] hand" moves
+# hand -> bottom of deck (the hand owner chooses which unless random). The whole
+# "bury ... in hand" family (522 DB clauses) was Unsupported before this node.
+# ---------------------------------------------------------------------------
+
+# Ariel Lipstick (World Championship): "When you roll Power for your turn roll,
+# draw 1 card and your opponent buries 1 card in their hand."
+37f9036514b94c4b82fefbb482b5a1a9:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  - '@type': Bury
+    who: OPP
+    count: 1
+    random: false
+    source: HAND
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Power for your turn roll, draw 1 card and your opponent buries 1 card in their hand
+  source: gimmick
+
+# TVA Commissioner Drew Madsen (World Championship): "When you roll Strike for
+# your turn roll: Draw 1 card and your opponent buries 1 card in their hand,
+# then shuffles their deck."
+191fdd8ac35641ba930ccdfcea5e94fd:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  - '@type': Bury
+    who: OPP
+    count: 1
+    random: false
+    source: HAND
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': ShuffleDeck
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Strike for your turn roll: draw 1 card and your opponent buries 1 card in their hand, then shuffles their deck'
+  source: gimmick

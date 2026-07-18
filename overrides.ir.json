@@ -277,6 +277,58 @@
       }
     }
   ],
+  "191fdd8ac35641ba930ccdfcea5e94fd": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        },
+        {
+          "@type": "Bury",
+          "count": 1,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "source": "HAND",
+          "who": "OPP"
+        },
+        {
+          "@type": "ShuffleDeck",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Strike for your turn roll: draw 1 card and your opponent buries 1 card in their hand, then shuffles their deck",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Strike",
+        "who": "SELF"
+      }
+    }
+  ],
   "1cf1f13bf01a404ea9117d3483eb2984": [
     {
       "@type": "Effect",
@@ -521,6 +573,7 @@
             "raw": null,
             "tag": null
           },
+          "source": "DISCARD",
           "who": "OPP"
         }
       ],
@@ -715,6 +768,54 @@
       "source": "gimmick",
       "trigger": {
         "@type": "OnBump"
+      }
+    }
+  ],
+  "37f9036514b94c4b82fefbb482b5a1a9": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        },
+        {
+          "@type": "Bury",
+          "count": 1,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "source": "HAND",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Power for your turn roll, draw 1 card and your opponent buries 1 card in their hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
       }
     }
   ],

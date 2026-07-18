@@ -18,8 +18,8 @@ use crate::cards::{Card, Deck};
 use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
-    Action, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction, Duration, Effect,
-    LoseKind, PlayOrder, RollWhen, Skill, Trigger, Who,
+    Action, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction, Duration,
+    Effect, LoseKind, PlayOrder, RollWhen, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -791,7 +791,8 @@ impl Engine {
                 count,
                 who,
                 random,
-            } => self.act_bury(selector, *count, *who, *random, key),
+                source,
+            } => self.act_bury(selector, *count, *who, *random, *source, key)?,
             Action::Flip { n, who } => self.act_flip(*n, *who, key),
             Action::Discard {
                 selector,
@@ -912,8 +913,22 @@ impl Engine {
         self.log_effect(key, "ShuffleDeck", Some(&target), Value::Null);
     }
 
-    fn act_bury(&mut self, _selector: &CardFilter, count: i64, who: Who, random: bool, key: &str) {
+    fn act_bury(
+        &mut self,
+        selector: &CardFilter,
+        count: i64,
+        who: Who,
+        random: bool,
+        source: BuryFrom,
+        key: &str,
+    ) -> Eng<()> {
         let target = self.target(who, key);
+        if source == BuryFrom::Hand {
+            return self.bury_from_hand(&target, count.max(0) as usize, random, selector);
+        }
+        // Discard source: recycle the top `count` of the discard pile (optionally
+        // randomized) to the bottom of the deck. Selector is ignored (the pass-and-
+        // recycle bury never filters).
         let mut cards: Vec<Card> = self.state.players[&target]
             .discard
             .iter()
@@ -926,6 +941,58 @@ impl Engine {
         if !cards.is_empty() {
             self.bury_cards(&target, &cards);
         }
+        Ok(())
+    }
+
+    /// "Bury N cards in [your/their] hand": move `count` cards from `key`'s hand to
+    /// the bottom of their deck. The hand owner chooses which (their hidden hand)
+    /// unless `random`. Mirrors [`discard_from_hand`](Self::discard_from_hand) but
+    /// lands the cards on the deck bottom and logs a `Bury` from `hand`.
+    fn bury_from_hand(
+        &mut self,
+        key: &str,
+        count: usize,
+        random: bool,
+        selector: &CardFilter,
+    ) -> Eng<()> {
+        let mut buried: Vec<Card> = Vec::new();
+        for _ in 0..count {
+            let pool: Vec<Card> = self.state.players[key]
+                .hand
+                .iter()
+                .filter(|c| conditions::card_matches(c, selector))
+                .cloned()
+                .collect();
+            if pool.is_empty() {
+                break;
+            }
+            let card = if random {
+                self.state.rng.reveal(&pool).cloned().unwrap()
+            } else {
+                self.pick_from(key, &pool, "bury_hand")?
+            };
+            let hand = &mut self.state.players.get_mut(key).unwrap().hand;
+            if let Some(pos) = hand.iter().position(|c| c.db_uuid == card.db_uuid) {
+                hand.remove(pos);
+            }
+            buried.push(card);
+        }
+        if !buried.is_empty() {
+            let uuids = buried.iter().map(|c| c.db_uuid.clone()).collect();
+            let player = self.state.players.get_mut(key).unwrap();
+            for card in buried {
+                player.deck.push(card);
+            }
+            let t = self.state.turn_no;
+            self.log(Event::Bury(CardMovement {
+                t,
+                player: key.to_owned(),
+                cards: uuids,
+                source: Some("hand".to_owned()),
+                hidden: false,
+            }));
+        }
+        Ok(())
     }
 
     fn act_flip(&mut self, n: i64, who: Who, key: &str) {

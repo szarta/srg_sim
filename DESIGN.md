@@ -155,9 +155,11 @@ FinishRollBonus(delta, when_skill?, either=False)  # +delta to a Finish roll; wh
 DoubleFinishIfBumped          # Static self-decl: double THIS card's Finish bonuses if the finisher bumped
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
-`Bury(selector, count)` moves `count` cards from the **discard pile to the bottom of the
-deck**; `Flip(n)` moves the **top `n` cards of the deck to the discard pile** (there is no
-"buried" zone — see §5). `RemoveFromPlay(selector, who, count)` moves up to `count` cards from
+`Bury(selector, count, who, random, source)` moves `count` cards to the **bottom of the
+deck** (schema v4). `source=DISCARD` (default) recycles the top `count` of the **discard
+pile** (the pass-and-recycle bury); `source=HAND` is the card-text bury — "bury N cards in
+[your/their] hand" — where the **hand owner chooses which** unless `random`. `Flip(n)` moves
+the **top `n` cards of the deck to the discard pile** (there is no "buried" zone — see §5). `RemoveFromPlay(selector, who, count)` moves up to `count` cards from
 a player's **`in_play` board to their discard** ("Discard 1 card your opponent has in play");
 the **acting** player chooses which matching card(s) — an aimed disruption, not random — and a
 no-match board is a no-op. `RecurToDeckTop(selector, count)` puts **up to** `count` matching

@@ -183,6 +183,18 @@ pub enum Dest {
     Discard,
 }
 
+/// Source zone a [`Action::Bury`] draws from. `Discard` (the default) is the
+/// "pass and recycle" bury — discard pile to the bottom of the deck. `Hand` is
+/// the card-text bury — "bury N cards in [your/their] hand" — hand to the bottom
+/// of the deck.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum BuryFrom {
+    #[default]
+    Discard,
+    Hand,
+}
+
 /// Direction of a stop relative to the acting player.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -428,6 +440,8 @@ pub enum Action {
         count: i64,
         who: Who,
         random: bool,
+        #[serde(default)]
+        source: BuryFrom,
     },
     Flip {
         n: i64,
@@ -736,6 +750,8 @@ pub enum IrNode {
         count: i64,
         who: Who,
         random: bool,
+        #[serde(default)]
+        source: BuryFrom,
     },
     Flip {
         n: i64,

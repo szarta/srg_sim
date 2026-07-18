@@ -16,9 +16,9 @@
 
 use crate::cards::{Card, Competitor, Deck, EntranceCard};
 use crate::ir::{
-    Action, AtkType, CardFilter, Comparator, Condition, DeckEnd, Direction, Duration, Effect,
-    EffectSource, EffectTag, Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, PlayOrder,
-    RollWhen, Skill, Trigger, Vs, Who,
+    Action, AtkType, BuryFrom, CardFilter, Comparator, Condition, DeckEnd, Direction, Duration,
+    Effect, EffectSource, EffectTag, Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind,
+    PlayOrder, RollWhen, Skill, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -112,6 +112,7 @@ fn bury(count: i64, who: Who) -> Action {
         count,
         who,
         random: false,
+        source: BuryFrom::Discard,
     }
 }
 

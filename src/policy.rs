@@ -357,6 +357,9 @@ impl Policy for HeuristicPolicy {
             "turn_action" => self.at_turn_action(legal, state, key),
             "stop" => self.at_stop(legal, state, key),
             "bury" => self.at_bury(legal, state, key),
+            // Burying from hand is the affected player shedding a hand card (to the
+            // deck bottom) — same "drop your least valuable" read as a discard.
+            "bury_hand" => self.at_discard(legal, state, key),
             "discard" => self.at_discard(legal, state, key),
             "optional" => self.at_optional(legal),
             "elect_bump" => self.at_elect_bump(legal),
