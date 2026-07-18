@@ -72,6 +72,7 @@ from srg_sim.effects import (
     RevealAndDiscard,
     RollGapAtLeast,
     RollGapExactly,
+    RollLeadAtLeast,
     RollValue,
     RollWasSkill,
     RollWhen,
@@ -135,6 +136,7 @@ SAMPLES: list[IRNode] = [
     RollWasSkill(Skill.AGILITY),
     RollGapExactly(2),
     RollGapAtLeast(3),
+    RollLeadAtLeast(3),
     RollValue(Comparator.LE, 7),
     GimmickFlipped(Who.SELF),
     # actions

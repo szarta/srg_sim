@@ -452,6 +452,17 @@ class RollGapAtLeast(IRNode):
 
 
 @dataclass(frozen=True)
+class RollLeadAtLeast(IRNode):
+    """The owner rolled at least ``k`` *higher* than the opponent this turn — the
+    mirror of :class:`RollGapAtLeast` (owner rolled ``k`` lower). Reads the signed
+    ``gap`` (opponent − owner) on the :class:`~srg_sim.conditions.RollContext`: a lead
+    of ``k`` is ``gap <= -k``. False without a roll context (YamatoHama: "when your
+    turn roll is at least 3 greater than your opponent's, bury 3 in their discard")."""
+
+    k: int
+
+
+@dataclass(frozen=True)
 class GimmickFlipped(IRNode):
     """True iff ``who``'s competitor card has been turned over to its back side (by
     :class:`FlipGimmick`). Gates a two-sided gimmick's front effects (``Not(...)``)
@@ -964,6 +975,7 @@ Condition = (
     | RollWasSkill
     | RollGapExactly
     | RollGapAtLeast
+    | RollLeadAtLeast
     | RollValue
     | GimmickFlipped
 )

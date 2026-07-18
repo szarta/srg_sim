@@ -2279,3 +2279,43 @@ a4b61c579c2d4ca59b5001ea5503fdef:
   raw_clause: when your opponent's turn roll is 10, your turn roll is +2
   source: gimmick
   optional: false
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — roll-LEAD-gated (new RollLeadAtLeast
+# condition; schema v2). "roll >= k greater than opponent", the mirror of
+# RollGapAtLeast — task #88.
+# ---------------------------------------------------------------------------
+
+# YamatoHama (Underworld): "When your turn roll is at least 3 greater than your
+# opponent's turn roll, bury 3 cards in your opponent's discard pile."
+# OnRoll(SELF) fires on your roll; RollLeadAtLeast(3) gates on rolling >=3 higher;
+# Bury(count=3, who=OPP) sends 3 of their discard to the bottom of their deck.
+2b02cdb188af4611b79c7a0e616ad692:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollLeadAtLeast
+    k: 3
+  actions:
+  - '@type': Bury
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 3
+    who: OPP
+    random: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your turn roll is at least 3 greater than your opponent's, bury 3 in their discard
+  source: gimmick
+  optional: false

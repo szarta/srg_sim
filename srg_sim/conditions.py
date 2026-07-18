@@ -184,6 +184,11 @@ def _h_gap_at_least(c: fx.RollGapAtLeast, s: GameState, o: str, r: RollContext |
     return r is not None and r.gap is not None and r.gap >= c.k
 
 
+def _h_lead_at_least(c: fx.RollLeadAtLeast, s: GameState, o: str, r: RollContext | None) -> bool:
+    # A lead of k = the owner rolled k higher = gap (opp - owner) <= -k.
+    return r is not None and r.gap is not None and r.gap <= -c.k
+
+
 def _h_roll_value(c: fx.RollValue, s: GameState, o: str, r: RollContext | None) -> bool:
     return r is not None and r.value is not None and _CMP[c.cmp](r.value, c.value)
 
@@ -206,6 +211,7 @@ _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]]
     fx.RollWasSkill: _h_roll_was,
     fx.RollGapExactly: _h_gap_exact,
     fx.RollGapAtLeast: _h_gap_at_least,
+    fx.RollLeadAtLeast: _h_lead_at_least,
     fx.RollValue: _h_roll_value,
     fx.GimmickFlipped: _h_gimmick_flipped,
 }
