@@ -64,6 +64,9 @@
               "$ref": "#/$defs/RollGapAtLeast"
             },
             {
+              "$ref": "#/$defs/RollLeadAtLeast"
+            },
+            {
               "$ref": "#/$defs/RollValue"
             },
             {
@@ -137,6 +140,9 @@
               },
               {
                 "$ref": "#/$defs/RollGapAtLeast"
+              },
+              {
+                "$ref": "#/$defs/RollLeadAtLeast"
               },
               {
                 "$ref": "#/$defs/RollValue"
@@ -912,6 +918,9 @@
               "$ref": "#/$defs/RollGapAtLeast"
             },
             {
+              "$ref": "#/$defs/RollLeadAtLeast"
+            },
+            {
               "$ref": "#/$defs/RollValue"
             },
             {
@@ -1445,6 +1454,9 @@
           "$ref": "#/$defs/RollGapAtLeast"
         },
         {
+          "$ref": "#/$defs/RollLeadAtLeast"
+        },
+        {
           "$ref": "#/$defs/RollGapExactly"
         },
         {
@@ -1670,6 +1682,9 @@
             },
             {
               "$ref": "#/$defs/RollGapAtLeast"
+            },
+            {
+              "$ref": "#/$defs/RollLeadAtLeast"
             },
             {
               "$ref": "#/$defs/RollValue"
@@ -1925,6 +1940,9 @@
                 "$ref": "#/$defs/RollGapAtLeast"
               },
               {
+                "$ref": "#/$defs/RollLeadAtLeast"
+              },
+              {
                 "$ref": "#/$defs/RollValue"
               },
               {
@@ -2105,6 +2123,22 @@
       ],
       "type": "object"
     },
+    "RollLeadAtLeast": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RollLeadAtLeast"
+        },
+        "k": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "k"
+      ],
+      "type": "object"
+    },
     "RollValue": {
       "additionalProperties": false,
       "properties": {
@@ -2218,6 +2252,9 @@
             },
             {
               "$ref": "#/$defs/RollGapAtLeast"
+            },
+            {
+              "$ref": "#/$defs/RollLeadAtLeast"
             },
             {
               "$ref": "#/$defs/RollValue"
@@ -2490,5 +2527,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 1
+  "version": 2
 }

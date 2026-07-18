@@ -378,6 +378,10 @@
     "k": 0
   },
   {
+    "@type": "RollLeadAtLeast",
+    "k": 0
+  },
+  {
     "@type": "RollValue",
     "cmp": ">",
     "value": 0

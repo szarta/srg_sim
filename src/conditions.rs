@@ -192,6 +192,8 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
         Condition::RollWasSkill { skill } => roll.is_some_and(|r| r.skill == Some(*skill)),
         Condition::RollGapExactly { k } => roll.is_some_and(|r| r.gap == Some(*k)),
         Condition::RollGapAtLeast { k } => roll.is_some_and(|r| r.gap.is_some_and(|g| g >= *k)),
+        // A lead of k = the owner rolled k higher = gap (opp - owner) <= -k.
+        Condition::RollLeadAtLeast { k } => roll.is_some_and(|r| r.gap.is_some_and(|g| g <= -*k)),
         Condition::RollValue { cmp, value } => {
             roll.is_some_and(|r| r.value.is_some_and(|v| cmp_apply(*cmp, v, *value)))
         }

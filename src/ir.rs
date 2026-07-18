@@ -388,6 +388,11 @@ pub enum Condition {
     RollGapAtLeast {
         k: i64,
     },
+    /// The owner rolled at least `k` *higher* than the opponent — mirror of
+    /// `RollGapAtLeast` (owner `k` lower). A lead of `k` is `gap <= -k`.
+    RollLeadAtLeast {
+        k: i64,
+    },
     RollValue {
         cmp: Comparator,
         value: i64,
@@ -697,6 +702,11 @@ pub enum IrNode {
         k: i64,
     },
     RollGapAtLeast {
+        k: i64,
+    },
+    /// The owner rolled at least `k` *higher* than the opponent — mirror of
+    /// `RollGapAtLeast` (owner `k` lower). A lead of `k` is `gap <= -k`.
+    RollLeadAtLeast {
         k: i64,
     },
     RollValue {

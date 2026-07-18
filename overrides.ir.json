@@ -446,6 +446,46 @@
       }
     }
   ],
+  "2b02cdb188af4611b79c7a0e616ad692": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "count": 3,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "RollLeadAtLeast",
+        "k": 3
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your turn roll is at least 3 greater than your opponent's, bury 3 in their discard",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
   "2e6547672591482e9af2b5369fc7ca67": [
     {
       "@type": "Effect",
