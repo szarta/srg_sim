@@ -18,8 +18,8 @@ use crate::cards::{Card, Deck};
 use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
-    Action, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Duration, Effect, LoseKind,
-    PlayOrder, RollWhen, Skill, Trigger, Who,
+    Action, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction, Duration, Effect,
+    LoseKind, PlayOrder, RollWhen, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -451,7 +451,11 @@ impl Engine {
 
     /// All effects currently able to fire for `key`: gimmick (unless blanked;
     /// sign-flipped by an opposing Cassandra), entrance, and in-play cards.
-    fn standing_effects(&self, key: &str) -> Vec<Effect> {
+    /// The persistent standing effects that are *not* a played card: competitor
+    /// gimmick (blank/flip-aware) + entrance. Fired for standing `OnStop` gimmicks
+    /// in a stop exchange, where re-scanning in-play cards would re-fire the stop
+    /// card that just entered play (`apply_stop`).
+    fn gimmick_standing_effects(&self, key: &str) -> Vec<Effect> {
         let player = &self.state.players[key];
         let mut out = Vec::new();
         if !self.state.is_gimmick_blanked(key) {
@@ -462,7 +466,12 @@ impl Engine {
             }
         }
         out.extend(player.entrance.effects.iter().cloned());
-        for card in &player.in_play {
+        out
+    }
+
+    fn standing_effects(&self, key: &str) -> Vec<Effect> {
+        let mut out = self.gimmick_standing_effects(key);
+        for card in &self.state.players[key].in_play {
             out.extend(card.effects.iter().cloned());
         }
         out
@@ -1735,8 +1744,26 @@ impl Engine {
         let attack_effects = attack.effects.clone();
         self.run_effects(&stop_effects, "OnHit", defender, None)?;
         self.run_hit_gimmicks(&stop, defender)?; // a stop entering play is itself a hit
-        self.run_effects(&attack_effects, "OnStop", active, None)?;
-        self.run_effects(&stop_effects, "OnStop", defender, None)?;
+        self.run_effects(&attack_effects, "OnStop", active, None)?; // attack card: "if this is stopped"
+        self.run_effects(&stop_effects, "OnStop", defender, None)?; // stop card: "when this stops"
+                                                                    // Standing competitor/entrance OnStop, dir-aware from each owner's POV: the
+                                                                    // attacker's card was stopped (YOURS), the defender stopped a card (THEIRS =
+                                                                    // "when you Stop a card", e.g. Gia).
+        self.run_on_stop_gimmicks(active, Direction::Yours)?;
+        self.run_on_stop_gimmicks(defender, Direction::Theirs)?;
+        Ok(())
+    }
+
+    /// Fire `key`'s standing (gimmick/entrance) `OnStop` effects whose direction
+    /// matches `dir` — THEIRS for the stopper, YOURS for the stopped attacker.
+    /// Unlike `run_effects` (trigger-name match only), this consults `OnStop.dir`.
+    fn run_on_stop_gimmicks(&mut self, key: &str, dir: Direction) -> Eng<()> {
+        let effects = self.gimmick_standing_effects(key);
+        for eff in &effects {
+            if matches!(eff.trigger, Trigger::OnStop { dir: d } if d == dir) {
+                self.fire_if_ready(eff, key, None)?;
+            }
+        }
         Ok(())
     }
 

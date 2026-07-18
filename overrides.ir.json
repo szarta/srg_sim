@@ -1927,6 +1927,37 @@
       }
     }
   ],
+  "a4b61c579c2d4ca59b5001ea5503fdef": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you Stop a card, draw 1 card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "THEIRS"
+      }
+    }
+  ],
   "aebe9e8baa0046ddbde13690b7c18455": [
     {
       "@type": "Effect",
