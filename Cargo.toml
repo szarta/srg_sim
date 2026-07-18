@@ -37,6 +37,8 @@ anyhow = "1"
 # Exact rational arithmetic for the finish-odds / stop-probability math, so the
 # port stays bit-for-bit in parity with the Python `fractions.Fraction` values.
 num-rational = { version = "0.4", default-features = false }
+# Whole-clause pattern grammar for the rules_text -> Effect IR parser (DESIGN.md §4).
+regex = "1"
 
 [dev-dependencies]
 tempfile = "3"

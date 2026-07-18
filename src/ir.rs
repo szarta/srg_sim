@@ -241,7 +241,7 @@ pub enum Who {
 // ---------------------------------------------------------------------------
 
 /// A predicate over cards (name/number/tag/attack-type/play-order/raw).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CardFilter {
     #[serde(rename = "@type", default)]
     pub node_type: CardFilterTag,

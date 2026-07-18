@@ -30,6 +30,7 @@ pub mod error;
 pub mod finish;
 pub mod gamelog;
 pub mod ir;
+pub mod parser;
 pub mod rng;
 pub mod skills;
 pub mod state;

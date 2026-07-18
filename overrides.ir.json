@@ -1,0 +1,2458 @@
+{
+  "0100a2f0cb604367864f8e3a40bef90f": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": "Ready to Rumble",
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        },
+        {
+          "@type": "AddFromDiscard",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": "Ready to Rumble",
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "search your deck OR discard pile for \"Ready to Rumble\" and add it to your hand",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "PlayExtraCard",
+          "order": null
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "you may play that card as an additional card this turn",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankGimmick",
+          "duration": "WHILE_IN_PLAY",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": "Ready to Rumble",
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you have \"Ready to Rumble\" in play, your opponent's Gimmick is blank",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "09edf17fc41849f0b0fec783384e8339": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "BOTTOM",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": null,
+          "number": null,
+          "play_order": "Lead",
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you have another Lead in play, draw the bottom card of your deck",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "0be595fb7e6e4f96a766d8bbdbb28f10": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "n": 1,
+                  "per": null,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "draw 1"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "RecurToDeckTop",
+                  "count": 4,
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null
+                  }
+                }
+              ],
+              "label": "recur up to 4 from discard to top of deck"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "draw 1 card OR take up to 4 cards from your discard pile and put them on top of your deck",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    }
+  ],
+  "1cf1f13bf01a404ea9117d3483eb2984": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ModifyRoll",
+                  "delta": -2,
+                  "per": null,
+                  "per_who": "OPP",
+                  "when": "NEXT",
+                  "who": "OPP"
+                }
+              ],
+              "label": "opponent's next turn roll is -2"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "n": 1,
+                  "per": null,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "draw 1 card"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "roll Power for turn roll -> opponent next roll -2 OR draw 1 card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
+  "1f53f71e434a426ba97e1626b44449c3": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": "Enjoy Everything",
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "search your deck for \"Enjoy Everything\" and add it to your hand (discard-source + play-as-additional-card alt simplified)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankGimmick",
+          "duration": "WHILE_IN_PLAY",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": "Enjoy Everything",
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you have \"Enjoy Everything\" in play, your opponent's Gimmick is blank",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "2507369b706f4dec83b61e8da40b80c0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When you roll Power for your turn roll, draw 2 cards.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
+  "2e6547672591482e9af2b5369fc7ca67": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ElectBumpOnSameSkill",
+          "uses": 2
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "twice per match, when you roll the same skill as your target, you may bump",
+      "source": "entrance",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "2e71ea7abb184e6cba90d56f9173dec6": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": "Submission",
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "shuffle a Submission from discard into deck (per-Sledgehammer count simplified to 1)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "30249467b3ff48dcb6b971e9b5d7182f": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Strike",
+          "order": "Lead",
+          "source_is_skillreq": false
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "stop any Lead Strike (draw-bottom alt simplified)",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "30a1a508143640d0bae1ebaa3e108ad9": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Strike",
+          "order": "Followup",
+          "source_is_skillreq": false
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "stop any Follow Up Strike ('or Apocalypse' alt simplified)",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Flip",
+          "n": 1,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "your opponent reveals the top card of their deck, they may flip it (owner decides the optional flip \u2014 a close simplification)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    }
+  ],
+  "31b5d4f1aa0743b4bc3d0622d81b0d92": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": -2,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you bump, your opponent's next turn roll is -2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnBump"
+      }
+    }
+  ],
+  "3985ce9c65644441becdde562788868a": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddFromDiscard",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": "Finish",
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "add 1 Finish from your discard pile to your hand (next-roll-10 rider dropped)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "3e6ec7e5fe33421d83a699ac956a6858": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RemoveFromPlay",
+          "count": 1,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": "Lead",
+            "raw": null,
+            "tag": null
+          },
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": null,
+          "number": null,
+          "play_order": "Lead",
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "Once per turn roll: When you would bump, you may discard 1 Lead you have in play to add +1 to your turn roll instead.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRollBoost",
+        "delta": 1,
+        "on_bump": true,
+        "skill": null
+      }
+    }
+  ],
+  "40b360f65c3e40c692b6ae670f1478a1": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Grapple",
+              "name": null,
+              "number": null,
+              "play_order": "Followup",
+              "raw": null,
+              "tag": null
+            },
+            "who": "SELF"
+          },
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Grapple",
+              "name": null,
+              "number": null,
+              "play_order": "Finish",
+              "raw": null,
+              "tag": null
+            },
+            "who": "SELF"
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if another Follow Up or Finish Grapple in play, your Agility is +1",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "51537506696946a2ad10662229ccd96f": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you hit a Submission, draw 1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": "Submission",
+        "keyword": null,
+        "name": null
+      }
+    }
+  ],
+  "5538bdae8345481ca3d414396a7dc766": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RemoveFromPlay",
+          "count": 1,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "who": "OPP"
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        },
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "discard 1 card your opponent has in play, shuffle 2 from discard into deck, draw 1",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "62cf9e40d92c4d0da09cb4185c8540f0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": null,
+          "number": null,
+          "play_order": "Lead",
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you have another Lead in play, draw 2 cards",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "6aa7c08a48ba49c3baca127d5880cd0b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 4,
+          "dest": "DISCARD",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Search your deck for up to 4 cards and put them into your discard pile. Shuffle your deck. (shuffle rides the search)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Draw 2 cards.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    }
+  ],
+  "6ecc1c7f012c48cc9403fffcedb33a1b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Strike",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Grapple",
+              "name": null,
+              "number": null,
+              "play_order": "Followup",
+              "raw": null,
+              "tag": null
+            },
+            "who": "SELF"
+          },
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Grapple",
+              "name": null,
+              "number": null,
+              "play_order": "Finish",
+              "raw": null,
+              "tag": null
+            },
+            "who": "SELF"
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if another Follow Up or Finish Grapple in play, your Strike is +1 ('another' approximated as any, matching the",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "74d34bbeb78140aea7590c6a8f2d7d5a": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "shuffle 2 cards from your discard pile into your deck",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 3,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "SkillCompare",
+        "cmp": ">",
+        "skill": "Strike",
+        "value": null,
+        "vs": "OPP_SAME",
+        "vs_skill": "Agility",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if your Strike > your opponent's Agility, draw 3 cards",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "7b1af704863e498b8b473e44c8d42ed4": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        },
+        {
+          "@type": "ModifyRoll",
+          "delta": -1,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "roll Agility for turn roll -> draw 1 and opponent next turn roll -1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Agility",
+        "who": "SELF"
+      }
+    }
+  ],
+  "7f95a0203e0744ea9ad4c79d51fda577": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Power",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Strike",
+              "name": null,
+              "number": null,
+              "play_order": "Followup",
+              "raw": null,
+              "tag": null
+            },
+            "who": "SELF"
+          },
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Strike",
+              "name": null,
+              "number": null,
+              "play_order": "Finish",
+              "raw": null,
+              "tag": null
+            },
+            "who": "SELF"
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if another Follow Up or Finish Strike in play, your Power is +1",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "7fe08b677c684e6990c0a5b9ac7033c4": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RemoveFromPlay",
+          "count": 1,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "who": "OPP"
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        },
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "discard 1 card your opponent has in play, shuffle 2 from discard into deck, draw 1",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "894c9965da684adb8ab5f532bafbff59": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 1,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollGapExactly",
+        "k": 3
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "turn roll exactly 3 less than target -> next roll +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 2,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollGapExactly",
+        "k": 4
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "turn roll exactly 4 less than target -> next roll +2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 3,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollGapAtLeast",
+        "k": 5
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "turn roll at least 5 less than target -> next roll +3",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
+  "89cd851ecd554ff9947dc12e66e241f4": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddFromDiscard",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": "Grapple",
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "add 1 Grapple from your discard pile to your hand (reveal rider dropped)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "93766c996abf4f4c94d3479e78232e3b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RecurToDeckTop",
+          "count": 3,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": "Finish",
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "put up to 3 Finishes from your discard pile on top of your deck",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "PlayExtraCard",
+          "order": null
+        }
+      ],
+      "condition": {
+        "@type": "CrowdMeterCompare",
+        "cmp": ">=",
+        "value": 2
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "if the Crowd Meter is 2 or greater, you may play an additional card this turn",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "94c2903feafa44089dc0a3af51d7569e": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Submission",
+          "order": null,
+          "source_is_skillreq": false
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Submission",
+          "name": null,
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "OPP"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if opponent has another Submission in play, stop any Submission (CM-1 rider dropped)",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "98f3f8c2a9624054b696f59bc8d89dd9": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FlipGimmickSigns",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Change \"+\" to \"-\" and \"-\" to \"+\" on your target's Gimmick and \"Champion of Kickstarter\" card.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "99a46111b1a94182b1aa132ba02a7076": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": "Grapple",
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Grapple",
+          "name": null,
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if another Grapple in play, search your deck for a Grapple (to hand ~ 'on top')",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "9b60d08fe9914e6990c6f10d86c11d96": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Submission",
+          "order": null,
+          "source_is_skillreq": false
+        }
+      ],
+      "condition": {
+        "@type": "SkillCompare",
+        "cmp": ">",
+        "skill": "Power",
+        "value": null,
+        "vs": "OPP_SAME",
+        "vs_skill": null,
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if your Power > opponent's Power, stop any Submission (flip alt simplified)",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "9d97eac40c3048e392de35c0f3812a46": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": -1,
+          "per": null,
+          "per_who": "OPP",
+          "when": "THIS",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When you or your target roll Power for the turn roll, your target's turn roll is -1 (capped -1).",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "InRoll",
+        "either": true,
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
+  "9e57cd60fb34451bbf7426fb315033ca": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": -1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Power",
+          "target_highest": true,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Not",
+        "item": {
+          "@type": "GimmickFlipped",
+          "who": "OPP"
+        }
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "FRONT: your opponent's highest skill is -1 during their turn and turn rolls (temporal scope approximated as always-on).",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FlipGimmick",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Not",
+        "item": {
+          "@type": "GimmickFlipped",
+          "who": "SELF"
+        }
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "FRONT: after a breakout, turn this card over.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnBreakout"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": 5,
+          "delta": 0,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": true,
+          "skill": "Grapple",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "GimmickFlipped",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "BACK: during your opponents turn and turn rolls, your Grapple is + the Crowd Meter (Max +5) (temporal scope approximated as always-on).",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "aebe9e8baa0046ddbde13690b7c18455": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Discard",
+          "count": 1,
+          "per": null,
+          "per_who": "SELF",
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": "Strike",
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInHand",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Strike",
+          "name": null,
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "roll Strike -> may discard a Strike card for +1 to this roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRollBoost",
+        "delta": 1,
+        "on_bump": false,
+        "skill": "Strike"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Discard",
+          "count": 1,
+          "per": null,
+          "per_who": "SELF",
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": "Grapple",
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInHand",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Grapple",
+          "name": null,
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "roll Grapple -> may discard a Grapple card for +1 to this roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRollBoost",
+        "delta": 1,
+        "on_bump": false,
+        "skill": "Grapple"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Discard",
+          "count": 1,
+          "per": null,
+          "per_who": "SELF",
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": "Submission",
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInHand",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Submission",
+          "name": null,
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "roll Submission -> may discard a Submission card for +1 to this roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRollBoost",
+        "delta": 1,
+        "on_bump": false,
+        "skill": "Submission"
+      }
+    }
+  ],
+  "b3966e9db8ec46b3abd0921f281b77c0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 1,
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": "Lead",
+            "raw": null,
+            "tag": null
+          },
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your next turn roll is +1 for each Lead your opponent has in play",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    }
+  ],
+  "ba63df8e2ef842928c6007da934a2b9a": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Grapple",
+          "order": null,
+          "source_is_skillreq": false
+        }
+      ],
+      "condition": {
+        "@type": "SkillCompare",
+        "cmp": ">",
+        "skill": "Strike",
+        "value": null,
+        "vs": "OPP_SAME",
+        "vs_skill": null,
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if your Strike > opponent's Strike, stop any Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        },
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "each player draws 1 card",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "bd04b23708fe49728541a20e689cae61": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollGapExactly",
+        "k": 2
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "draw 2 when your turn roll is exactly 2 less (draw mode; hammer-recur alt simplified)",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
+  "c7c67bea6ff64c3b81cc812363c23ac4": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 1,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollGapAtLeast",
+        "k": 2
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "turn roll at least 2 less than opponent -> next roll +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
+  "cc0f951e80054c7997e07eb2be71ac35": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "n": 1,
+                  "per": null,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "draw 1"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null
+                  }
+                },
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null
+                  }
+                },
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null
+                  }
+                }
+              ],
+              "label": "shuffle up to 3 from discard into deck"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "draw 1 card OR shuffle up to 3 cards from your discard pile into your deck",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    }
+  ],
+  "cea70654cccb4cd5be8e127a5bf6090e": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 2,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Strike",
+              "name": null,
+              "number": null,
+              "play_order": "Followup",
+              "raw": null,
+              "tag": null
+            },
+            "who": "SELF"
+          },
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Strike",
+              "name": null,
+              "number": null,
+              "play_order": "Finish",
+              "raw": null,
+              "tag": null
+            },
+            "who": "SELF"
+          }
+        ]
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you have another Follow Up or Finish Strike in play, your Agility is +1",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "da0099e73b9344f9a3197a13652623ec": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": -1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "choose a skill: opponent's skill is -1 (choice simplified to Agility; 'next roll draw 1' rider dropped)",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "df576122c28f481f998634973945e334": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": "Submission",
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        },
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Submission",
+          "name": null,
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if another Submission in play, recur a Submission and draw 1 (Reverse Hold finish rider dropped)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "dfa3e0991ea3426197f4ded552575d61": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankGimmick",
+          "duration": "WHILE_IN_PLAY",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "RollValue",
+        "cmp": "<=",
+        "value": 7
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "During the turn roll: when your opponent's turn roll is 7 or less, their Gimmick is immediately blank.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "OPP"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Unsupported",
+          "raw_text": "if opp rolls 9+, next would-bump their roll is -1 instead",
+          "reason": "armed next-turn would-bump opp-debuff not modeled"
+        }
+      ],
+      "condition": {
+        "@type": "RollValue",
+        "cmp": ">=",
+        "value": 9
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "If it is 9 or greater, if you would bump on the next turn roll, your opponent's roll is -1 instead.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "OPP"
+      }
+    }
+  ],
+  "e4809829f15e4232937e72b281f75edc": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "draw 1 (or shuffle-up-to-3-recur alt simplified to the draw mode)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "e8d2328e6e114b2ead86a2e97a6b4abc": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RecurToDeckTop",
+          "count": 1,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          }
+        },
+        {
+          "@type": "Unsupported",
+          "raw_text": "If this is a Steel Cage match, flip 3 cards.",
+          "reason": "match-type (Steel Cage) conditions are out of scope"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Submission",
+          "name": null,
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if another Submission in play, put 1 card from discard on top of deck (Steel Cage rider unsupported)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "keyword": null,
+        "name": null
+      }
+    }
+  ],
+  "ff72e21de1a143d88e1c8b24b06e99f5": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Strike",
+          "order": null,
+          "source_is_skillreq": false
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Strike",
+          "name": null,
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null
+        },
+        "who": "OPP"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if opponent has another Strike in play, stop any Strike (draw-bottom alt simplified)",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ]
+}
