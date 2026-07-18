@@ -1966,3 +1966,145 @@ ed652335019b4eee8341e33a86bad731:
     n: null
   raw_clause: when your target rolls Strike for their turn roll, draw 1 card
   source: gimmick
+
+# ---------------------------------------------------------------------------
+# Top-96: OnRoll -> ModifyRoll(NEXT) "next turn roll is +1" (multi-skill = one
+# effect per rolled skill). The proven D2/Bull comeback shape.
+# ---------------------------------------------------------------------------
+
+# Firestarter: "roll Technique or Strike -> next turn roll +1"
+279f7634d67d4759a912ff9ab8865a4e:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your turn roll, your next turn roll is +1
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Strike for your turn roll, your next turn roll is +1
+  source: gimmick
+
+# Funtime Bob (V1): "roll Technique or Grapple -> next turn roll +1"
+b7b746a51bf5436da9c4ba172c7ff504:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your turn roll, your next turn roll is +1
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Grapple
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Grapple for your turn roll, your next turn roll is +1
+  source: gimmick
+
+# The SRG Boss (V2): "roll Strike or Submission -> next turn roll +1"
+40ab70187ff14a7f8989d2b248d63b94:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Strike for your turn roll, your next turn roll is +1
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Submission
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Submission for your turn roll, your next turn roll is
+    +1
+  source: gimmick
+
