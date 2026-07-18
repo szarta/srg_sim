@@ -371,6 +371,12 @@
             }
           ]
         },
+        "name_contains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "number": {
           "anyOf": [
             {
@@ -410,6 +416,12 @@
               "type": "null"
             }
           ]
+        },
+        "text_contains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -419,7 +431,9 @@
         "play_order",
         "tag",
         "name",
-        "raw"
+        "raw",
+        "name_contains",
+        "text_contains"
       ],
       "type": "object"
     },
@@ -2571,5 +2585,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 4
+  "version": 5
 }

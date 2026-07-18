@@ -984,6 +984,8 @@
                   "number": null,
                   "play_order": null,
                   "raw": null,
+                  "name_contains": [],
+                  "text_contains": [],
                   "tag": null
                 },
                 "who": "OPP"
@@ -1034,6 +1036,8 @@
                   "number": null,
                   "play_order": null,
                   "raw": null,
+                  "name_contains": [],
+                  "text_contains": [],
                   "tag": null
                 },
                 "who": "OPP"
@@ -1084,6 +1088,8 @@
                   "number": null,
                   "play_order": null,
                   "raw": null,
+                  "name_contains": [],
+                  "text_contains": [],
                   "tag": null
                 },
                 "who": "OPP"
@@ -1899,6 +1905,8 @@
                   "number": null,
                   "play_order": null,
                   "raw": null,
+                  "name_contains": [],
+                  "text_contains": [],
                   "tag": null
                 },
                 "who": "OPP"
@@ -1949,6 +1957,8 @@
                   "number": null,
                   "play_order": null,
                   "raw": null,
+                  "name_contains": [],
+                  "text_contains": [],
                   "tag": null
                 },
                 "who": "OPP"
@@ -1999,6 +2009,8 @@
                   "number": null,
                   "play_order": null,
                   "raw": null,
+                  "name_contains": [],
+                  "text_contains": [],
                   "tag": null
                 },
                 "who": "OPP"

@@ -5,10 +5,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     }
   },
   {
@@ -35,10 +37,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     },
     "until": "END_OF_TURN"
   },
@@ -69,10 +73,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     },
     "source": "DISCARD",
     "who": "SELF"
@@ -81,10 +87,12 @@
     "@type": "CardFilter",
     "atk_type": null,
     "name": null,
+    "name_contains": [],
     "number": null,
     "play_order": null,
     "raw": null,
-    "tag": null
+    "tag": null,
+    "text_contains": []
   },
   {
     "@type": "Choice",
@@ -102,10 +110,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     }
   },
   {
@@ -127,10 +137,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     },
     "who": "SELF"
   },
@@ -214,10 +226,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     },
     "who": "SELF"
   },
@@ -228,10 +242,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     },
     "who": "SELF"
   },
@@ -243,10 +259,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     },
     "who": "SELF"
   },
@@ -340,10 +358,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     }
   },
   {
@@ -353,10 +373,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     },
     "who": "SELF"
   },
@@ -402,10 +424,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     }
   },
   {
@@ -425,10 +449,12 @@
       "@type": "CardFilter",
       "atk_type": null,
       "name": null,
+      "name_contains": [],
       "number": null,
       "play_order": null,
       "raw": null,
-      "tag": null
+      "tag": null,
+      "text_contains": []
     }
   },
   {

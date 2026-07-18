@@ -514,10 +514,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "who": "SELF"
             }
@@ -765,10 +767,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -864,10 +868,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -939,10 +945,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Lead",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "per_who": "OPP",
               "when": "NEXT",
@@ -1020,10 +1028,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "who": "OPP"
             }
@@ -1122,10 +1132,12 @@
               "@type": "CardFilter",
               "atk_type": "Submission",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "OPP"
           },
@@ -2637,10 +2649,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "source": "DISCARD",
               "who": "OPP"
@@ -2653,10 +2667,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "source": "DISCARD",
               "who": "SELF"
@@ -2793,10 +2809,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Grapple",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -2853,10 +2871,12 @@
                         "@type": "CardFilter",
                         "atk_type": null,
                         "name": null,
+                        "name_contains": [],
                         "number": null,
                         "play_order": null,
                         "raw": null,
-                        "tag": null
+                        "tag": null,
+                        "text_contains": []
                       }
                     }
                   ],
@@ -2911,10 +2931,12 @@
               "@type": "CardFilter",
               "atk_type": null,
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Lead",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -2949,10 +2971,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Grapple",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -2964,10 +2988,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -3000,10 +3026,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Submission",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -3182,10 +3210,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "source": "DISCARD",
               "who": "OPP"
@@ -3198,10 +3228,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "source": "DISCARD",
               "who": "SELF"
@@ -3258,10 +3290,12 @@
                   "@type": "CardFilter",
                   "atk_type": "Strike",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": "Followup",
                   "raw": null,
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "SELF"
               },
@@ -3273,10 +3307,12 @@
                   "@type": "CardFilter",
                   "atk_type": "Strike",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": "Finish",
                   "raw": null,
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "SELF"
               }
@@ -3312,10 +3348,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -3327,10 +3365,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -3388,10 +3428,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Submission",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             },
             {
@@ -3411,10 +3453,12 @@
               "@type": "CardFilter",
               "atk_type": "Submission",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -3456,10 +3500,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "OPP"
           },
@@ -3540,10 +3586,12 @@
               "@type": "CardFilter",
               "atk_type": "Submission",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "OPP"
           },
@@ -3585,10 +3633,12 @@
               "@type": "CardFilter",
               "atk_type": "Strike",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "OPP"
           },
@@ -3621,10 +3671,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             },
             {
@@ -3633,10 +3685,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -3707,10 +3761,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "who": "OPP"
             },
@@ -3720,10 +3776,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             },
             {
@@ -3732,10 +3790,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             },
             {
@@ -3850,10 +3910,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "source": "DISCARD",
               "who": "OPP"
@@ -3928,10 +3990,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "source": "DISCARD",
               "who": "SELF"
@@ -4165,10 +4229,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "source": "DISCARD",
               "who": "OPP"
@@ -4717,10 +4783,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Finish",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -4757,10 +4825,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Finish",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -4861,10 +4931,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Lead",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "per_who": "OPP",
               "when": "NEXT",
@@ -4949,10 +5021,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -4996,10 +5070,12 @@
               "@type": "CardFilter",
               "atk_type": null,
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Lead",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -5107,10 +5183,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Grapple",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -5243,10 +5321,12 @@
                   "@type": "CardFilter",
                   "atk_type": "Strike",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": "Followup",
                   "raw": null,
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "SELF"
               },
@@ -5258,10 +5338,12 @@
                   "@type": "CardFilter",
                   "atk_type": "Strike",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": "Finish",
                   "raw": null,
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "SELF"
               }
@@ -5312,10 +5394,12 @@
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": "Followup",
                   "raw": null,
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "SELF"
               },
@@ -5327,10 +5411,12 @@
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": "Finish",
                   "raw": null,
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "SELF"
               }
@@ -5366,10 +5452,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             },
             {
@@ -5386,10 +5474,12 @@
               "@type": "CardFilter",
               "atk_type": "Submission",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -5434,10 +5524,12 @@
               "@type": "CardFilter",
               "atk_type": "Submission",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "OPP"
           },
@@ -5518,10 +5610,12 @@
               "@type": "CardFilter",
               "atk_type": "Strike",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "OPP"
           },
@@ -5594,10 +5688,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "who": "OPP"
             },
@@ -5607,10 +5703,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             },
             {
@@ -5619,10 +5717,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             },
             {
@@ -5670,10 +5770,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "who": "SELF"
             }
@@ -5737,10 +5839,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -5781,10 +5885,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -6120,10 +6226,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -6381,10 +6489,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": "Enjoy Everything",
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -6424,10 +6534,12 @@
               "@type": "CardFilter",
               "atk_type": null,
               "name": "Enjoy Everything",
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -6476,10 +6588,12 @@
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": "Followup",
                   "raw": null,
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "SELF"
               },
@@ -6491,10 +6605,12 @@
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": "Finish",
                   "raw": null,
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "SELF"
               }
@@ -6556,10 +6672,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Strike",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Lead",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -6622,10 +6740,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Strike",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Lead",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -6681,10 +6801,12 @@
                         "@type": "CardFilter",
                         "atk_type": null,
                         "name": null,
+                        "name_contains": [],
                         "number": null,
                         "play_order": null,
                         "raw": null,
-                        "tag": null
+                        "tag": null,
+                        "text_contains": []
                       }
                     },
                     {
@@ -6693,10 +6815,12 @@
                         "@type": "CardFilter",
                         "atk_type": null,
                         "name": null,
+                        "name_contains": [],
                         "number": null,
                         "play_order": null,
                         "raw": null,
-                        "tag": null
+                        "tag": null,
+                        "text_contains": []
                       }
                     },
                     {
@@ -6705,10 +6829,12 @@
                         "@type": "CardFilter",
                         "atk_type": null,
                         "name": null,
+                        "name_contains": [],
                         "number": null,
                         "play_order": null,
                         "raw": null,
-                        "tag": null
+                        "tag": null,
+                        "text_contains": []
                       }
                     }
                   ],
@@ -6753,10 +6879,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Lead",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "per_who": "SELF",
               "source": "TOP",
@@ -6796,10 +6924,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Lead",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "per_who": "OPP",
               "when": "NEXT",
@@ -6874,10 +7004,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Strike",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Followup",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -6946,10 +7078,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -6989,10 +7123,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Strike",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "per_who": "SELF",
               "random": false,
@@ -7000,10 +7136,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "who": "OPP"
             }
@@ -7034,10 +7172,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Strike",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               },
               "per_who": "SELF",
               "when": "NEXT",
@@ -7078,10 +7218,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": "Ready to Rumble",
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             },
             {
@@ -7090,10 +7232,12 @@
                 "@type": "CardFilter",
                 "atk_type": null,
                 "name": "Ready to Rumble",
+                "name_contains": [],
                 "number": null,
                 "play_order": null,
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -7160,10 +7304,12 @@
               "@type": "CardFilter",
               "atk_type": null,
               "name": "Ready to Rumble",
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -7205,10 +7351,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": null,
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "OPP"
           },
@@ -7235,10 +7383,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Strike",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Followup",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],
@@ -7362,10 +7512,12 @@
                 "@type": "CardFilter",
                 "atk_type": "Strike",
                 "name": null,
+                "name_contains": [],
                 "number": null,
                 "play_order": "Lead",
                 "raw": null,
-                "tag": null
+                "tag": null,
+                "text_contains": []
               }
             }
           ],

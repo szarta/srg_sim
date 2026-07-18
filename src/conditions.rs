@@ -52,7 +52,20 @@ pub fn card_matches(card: &Card, filt: &CardFilter) -> bool {
             return false;
         }
     }
-    !(filt.name.is_some() && filt.name.as_ref() != Some(&card.name))
+    if filt.name.is_some() && filt.name.as_ref() != Some(&card.name) {
+        return false;
+    }
+    if !filt.name_contains.is_empty() && !any_substr_ci(&filt.name_contains, &card.name) {
+        return false;
+    }
+    !(!filt.text_contains.is_empty() && !any_substr_ci(&filt.text_contains, &card.raw_text))
+}
+
+/// True iff `haystack` contains any of `needles` as a case-insensitive substring
+/// (pure substring — "Table" matches "Stable"; OR over the needle list).
+fn any_substr_ci(needles: &[String], haystack: &str) -> bool {
+    let hay = haystack.to_lowercase();
+    needles.iter().any(|n| hay.contains(&n.to_lowercase()))
 }
 
 /// True iff every card matching `sel` necessarily matches `query` — i.e. `query`

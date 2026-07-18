@@ -287,6 +287,15 @@ pub struct CardFilter {
     pub tag: Option<String>,
     pub name: Option<String>,
     pub raw: Option<String>,
+    /// Case-insensitive substring match on the card's **title** — "a card with
+    /// 'X' (or 'Y') in the name". OR of substrings; empty = no constraint. Pure
+    /// substring, so "Table" matches "Stable".
+    #[serde(default)]
+    pub name_contains: Vec<String>,
+    /// Case-insensitive substring match on the card's **rules text** — "a card
+    /// with 'X' in the text". OR of substrings; empty = no constraint.
+    #[serde(default)]
+    pub text_contains: Vec<String>,
 }
 
 /// The frequency guard attached to every [`Effect`].

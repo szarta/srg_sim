@@ -11,10 +11,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": "Ready to Rumble",
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         },
         {
@@ -23,10 +25,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": "Ready to Rumble",
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -93,10 +97,12 @@
           "@type": "CardFilter",
           "atk_type": null,
           "name": "Ready to Rumble",
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -135,10 +141,12 @@
           "@type": "CardFilter",
           "atk_type": null,
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": "Lead",
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -187,10 +195,12 @@
                     "@type": "CardFilter",
                     "atk_type": null,
                     "name": null,
+                    "name_contains": [],
                     "number": null,
                     "play_order": null,
                     "raw": null,
-                    "tag": null
+                    "tag": null,
+                    "text_contains": []
                   }
                 }
               ],
@@ -216,6 +226,75 @@
         "atk_type": null,
         "keyword": null,
         "name": null
+      }
+    }
+  ],
+  "109e75661c724f3793fd139706a5b8b5": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Power",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Technique",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": null,
+          "name_contains": [
+            "Lariat",
+            "Clothesline"
+          ],
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null,
+          "text_contains": []
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your Power, Agility, and Technique are +1 when you have a card with \"Lariat\" or \"Clothesline\" in play",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -246,10 +325,12 @@
                     "@type": "CardFilter",
                     "atk_type": null,
                     "name": null,
+                    "name_contains": [],
                     "number": null,
                     "play_order": "Finish",
                     "raw": null,
-                    "tag": null
+                    "tag": null,
+                    "text_contains": []
                   }
                 }
               ],
@@ -297,10 +378,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "source": "HAND",
           "who": "OPP"
@@ -398,10 +481,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": "Enjoy Everything",
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -441,10 +526,12 @@
           "@type": "CardFilter",
           "atk_type": null,
           "name": "Enjoy Everything",
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -491,6 +578,74 @@
         "@type": "OnRoll",
         "skill": "Power",
         "who": "SELF"
+      }
+    }
+  ],
+  "276fb52f04234fa9bb6adebf98aa91e6": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Power",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Technique",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 1,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": null,
+          "name_contains": [
+            "High"
+          ],
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null,
+          "text_contains": []
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you have a card with \"High\" in the name in play, your Power, Technique, and Agility are +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -568,10 +723,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "source": "DISCARD",
           "who": "OPP"
@@ -633,10 +790,12 @@
             "@type": "CardFilter",
             "atk_type": "Submission",
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -791,10 +950,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "source": "HAND",
           "who": "OPP"
@@ -829,10 +990,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": "Finish",
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -864,10 +1027,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": "Lead",
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "who": "SELF"
         }
@@ -880,10 +1045,12 @@
           "@type": "CardFilter",
           "atk_type": null,
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": "Lead",
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -992,10 +1159,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Followup",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -1007,10 +1176,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Finish",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           }
@@ -1063,6 +1234,56 @@
       }
     }
   ],
+  "52492d03968e461d8a3e1e860491db9a": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Sheep",
+              "Flock",
+              "Stun"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        },
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Strike for your turn roll: shuffle 1 card with \"Sheep\", \"Flock\", or \"Stun\" in the name from your discard pile into your deck and draw 1 card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Strike",
+        "who": "SELF"
+      }
+    }
+  ],
   "5538bdae8345481ca3d414396a7dc766": [
     {
       "@type": "Effect",
@@ -1074,10 +1295,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "who": "OPP"
         },
@@ -1087,10 +1310,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         },
         {
@@ -1099,10 +1324,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         },
         {
@@ -1174,10 +1401,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": "Lead",
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -1245,10 +1474,12 @@
           "@type": "CardFilter",
           "atk_type": null,
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": "Lead",
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -1293,10 +1524,12 @@
                     "@type": "CardFilter",
                     "atk_type": "Submission",
                     "name": null,
+                    "name_contains": [],
                     "number": null,
                     "play_order": null,
                     "raw": null,
-                    "tag": null
+                    "tag": null,
+                    "text_contains": []
                   }
                 }
               ],
@@ -1340,10 +1573,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": "Lead",
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -1464,10 +1699,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -1548,10 +1785,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Followup",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -1563,10 +1802,12 @@
               "@type": "CardFilter",
               "atk_type": "Grapple",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Finish",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           }
@@ -1631,10 +1872,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         },
         {
@@ -1643,10 +1886,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -1803,10 +2048,12 @@
               "@type": "CardFilter",
               "atk_type": "Strike",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Followup",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -1818,10 +2065,12 @@
               "@type": "CardFilter",
               "atk_type": "Strike",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Finish",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           }
@@ -1852,10 +2101,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "who": "OPP"
         },
@@ -1865,10 +2116,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         },
         {
@@ -1877,10 +2130,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         },
         {
@@ -2046,10 +2301,12 @@
             "@type": "CardFilter",
             "atk_type": "Grapple",
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -2081,10 +2338,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": "Finish",
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -2150,10 +2409,12 @@
           "@type": "CardFilter",
           "atk_type": "Submission",
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "OPP"
       },
@@ -2198,10 +2459,12 @@
                     "@type": "CardFilter",
                     "atk_type": "Submission",
                     "name": null,
+                    "name_contains": [],
                     "number": null,
                     "play_order": null,
                     "raw": null,
-                    "tag": null
+                    "tag": null,
+                    "text_contains": []
                   }
                 }
               ],
@@ -2267,10 +2530,12 @@
             "@type": "CardFilter",
             "atk_type": "Grapple",
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         }
       ],
@@ -2282,10 +2547,12 @@
           "@type": "CardFilter",
           "atk_type": "Grapple",
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -2510,10 +2777,12 @@
             "@type": "CardFilter",
             "atk_type": "Strike",
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "who": "SELF"
         }
@@ -2525,10 +2794,12 @@
           "@type": "CardFilter",
           "atk_type": "Strike",
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -2561,10 +2832,12 @@
             "@type": "CardFilter",
             "atk_type": "Grapple",
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "who": "SELF"
         }
@@ -2576,10 +2849,12 @@
           "@type": "CardFilter",
           "atk_type": "Grapple",
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -2612,10 +2887,12 @@
             "@type": "CardFilter",
             "atk_type": "Submission",
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "who": "SELF"
         }
@@ -2627,10 +2904,12 @@
           "@type": "CardFilter",
           "atk_type": "Submission",
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -2678,6 +2957,56 @@
       }
     }
   ],
+  "b339f906c69c4183b699037dffd6cfa1": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Steel",
+              "Kick",
+              "Sheep"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        },
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Submission: shuffle 1 card with \"Steel\", \"Kick\", or \"Sheep\" in the name from your discard pile into your deck and draw 1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Submission",
+        "who": "SELF"
+      }
+    }
+  ],
   "b3966e9db8ec46b3abd0921f281b77c0": [
     {
       "@type": "Effect",
@@ -2689,10 +3018,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": "Lead",
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "per_who": "OPP",
           "when": "NEXT",
@@ -3044,10 +3375,12 @@
                     "@type": "CardFilter",
                     "atk_type": null,
                     "name": null,
+                    "name_contains": [],
                     "number": null,
                     "play_order": null,
                     "raw": null,
-                    "tag": null
+                    "tag": null,
+                    "text_contains": []
                   }
                 },
                 {
@@ -3056,10 +3389,12 @@
                     "@type": "CardFilter",
                     "atk_type": null,
                     "name": null,
+                    "name_contains": [],
                     "number": null,
                     "play_order": null,
                     "raw": null,
-                    "tag": null
+                    "tag": null,
+                    "text_contains": []
                   }
                 },
                 {
@@ -3068,10 +3403,12 @@
                     "@type": "CardFilter",
                     "atk_type": null,
                     "name": null,
+                    "name_contains": [],
                     "number": null,
                     "play_order": null,
                     "raw": null,
-                    "tag": null
+                    "tag": null,
+                    "text_contains": []
                   }
                 }
               ],
@@ -3126,10 +3463,12 @@
               "@type": "CardFilter",
               "atk_type": "Strike",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Followup",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           },
@@ -3141,10 +3480,12 @@
               "@type": "CardFilter",
               "atk_type": "Strike",
               "name": null,
+              "name_contains": [],
               "number": null,
               "play_order": "Finish",
               "raw": null,
-              "tag": null
+              "tag": null,
+              "text_contains": []
             },
             "who": "SELF"
           }
@@ -3206,10 +3547,12 @@
             "@type": "CardFilter",
             "atk_type": "Submission",
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         },
         {
@@ -3229,10 +3572,12 @@
           "@type": "CardFilter",
           "atk_type": "Submission",
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -3351,10 +3696,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           }
         },
         {
@@ -3371,10 +3718,12 @@
           "@type": "CardFilter",
           "atk_type": "Submission",
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "SELF"
       },
@@ -3406,10 +3755,12 @@
             "@type": "CardFilter",
             "atk_type": null,
             "name": null,
+            "name_contains": [],
             "number": null,
             "play_order": null,
             "raw": null,
-            "tag": null
+            "tag": null,
+            "text_contains": []
           },
           "who": "OPP"
         }
@@ -3485,10 +3836,12 @@
           "@type": "CardFilter",
           "atk_type": "Strike",
           "name": null,
+          "name_contains": [],
           "number": null,
           "play_order": null,
           "raw": null,
-          "tag": null
+          "tag": null,
+          "text_contains": []
         },
         "who": "OPP"
       },
