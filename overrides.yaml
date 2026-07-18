@@ -2319,3 +2319,92 @@ a4b61c579c2d4ca59b5001ea5503fdef:
   raw_clause: when your turn roll is at least 3 greater than your opponent's, bury 3 in their discard
   source: gimmick
   optional: false
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — existing-node quick-wins (no engine or
+# schema change): StartOfMatch Peek+Search, Static MaxHandSize, and the
+# already-supported owner-LOWER roll gap + RemoveFromPlay. Task follows #88/#89.
+# ---------------------------------------------------------------------------
+
+# Overdog V1 & V2 (Underworld, identical): "At the start of the match: Look at your
+# opponent's hand then search your deck for 1 Lead and add it to your hand. Your
+# maximum handsize is +10." Peek(OPP) = the look; Search(Lead->HAND); MaxHandSize(+10).
+5f78183903ba49eabae4c4ec9f0ffd11: &overdog
+- '@type': Effect
+  trigger:
+    '@type': StartOfMatch
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Peek
+    who: OPP
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Lead
+      tag: null
+      name: null
+      raw: null
+    dest: HAND
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'at the start of the match: look at your opponent''s hand then search your deck for 1 Lead and add it to your hand'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': MaxHandSize
+    delta: 10
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your maximum handsize is +10
+  source: gimmick
+  optional: false
+64639328a1d9437d8af22c5d648f4b70: *overdog
+
+# Zero Win Champion (Underworld): "When your turn roll is at least 3 less than your
+# opponent's turn roll: Discard 1 card they have in play." OnRoll(SELF)+RollGapAtLeast(3)
+# (owner rolled >=3 LOWER — the already-supported direction) -> RemoveFromPlay(OPP, 1).
+eae7c1b5fdc14e27bafc9106566cf89c:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapAtLeast
+    k: 3
+  actions:
+  - '@type': RemoveFromPlay
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    who: OPP
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your turn roll is at least 3 less than your opponent's turn roll, discard 1 card they have in play
+  source: gimmick
+  optional: false
