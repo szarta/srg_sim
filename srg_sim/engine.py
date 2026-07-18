@@ -247,6 +247,7 @@ class Engine:
         # both players regardless of who won — the Bull's "N less than target" comeback.
         self._run_on_roll("A")
         self._run_on_roll("B")
+        self.state.last_roll_winner = winner  # "last turn roll" for next turn (Dunn)
         return winner
 
     def _run_on_bump(self) -> None:

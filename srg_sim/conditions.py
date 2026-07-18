@@ -193,6 +193,10 @@ def _h_roll_value(c: fx.RollValue, s: GameState, o: str, r: RollContext | None) 
     return r is not None and r.value is not None and _CMP[c.cmp](r.value, c.value)
 
 
+def _h_opp_won_last(c: fx.OppWonLastRoll, s: GameState, o: str, r: RollContext | None) -> bool:
+    return s.last_roll_winner is not None and s.last_roll_winner == s.opponent_of(o)
+
+
 def _h_gimmick_flipped(c: fx.GimmickFlipped, s: GameState, o: str, r: RollContext | None) -> bool:
     return s.players[_who(s, o, c.who)].gimmick_flipped
 
@@ -213,5 +217,6 @@ _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]]
     fx.RollGapAtLeast: _h_gap_at_least,
     fx.RollLeadAtLeast: _h_lead_at_least,
     fx.RollValue: _h_roll_value,
+    fx.OppWonLastRoll: _h_opp_won_last,
     fx.GimmickFlipped: _h_gimmick_flipped,
 }

@@ -148,6 +148,9 @@ class GameState:
     crowd_meter: int = 0
     active: str = "A"
     turn_no: int = 0
+    # The previous turn's roll-off winner (None before turn 1), for a re-roll gimmick
+    # gated on "your opponent won the last turn roll" (Robert 'The Brain' Dunn).
+    last_roll_winner: str | None = None
     log: GameLog | None = None
 
     def opponent_of(self, key: str) -> str:
@@ -330,6 +333,7 @@ class GameState:
             "crowd_meter": self.crowd_meter,
             "active": self.active,
             "turn_no": self.turn_no,
+            "last_roll_winner": self.last_roll_winner,
         }
 
     @classmethod
@@ -340,6 +344,7 @@ class GameState:
             crowd_meter=data["crowd_meter"],
             active=data["active"],
             turn_no=data["turn_no"],
+            last_roll_winner=data.get("last_roll_winner"),
         )
 
 

@@ -463,6 +463,14 @@ class RollLeadAtLeast(IRNode):
 
 
 @dataclass(frozen=True)
+class OppWonLastRoll(IRNode):
+    """True iff the effect owner's opponent won the *previous* turn's roll-off
+    (``GameState.last_roll_winner``). False before turn 1 (no previous roll). Gates a
+    re-roll offer (Robert 'The Brain' Dunn: "if your opponent won the last turn roll,
+    you may re-roll your turn roll")."""
+
+
+@dataclass(frozen=True)
 class GimmickFlipped(IRNode):
     """True iff ``who``'s competitor card has been turned over to its back side (by
     :class:`FlipGimmick`). Gates a two-sided gimmick's front effects (``Not(...)``)
@@ -977,6 +985,7 @@ Condition = (
     | RollGapAtLeast
     | RollLeadAtLeast
     | RollValue
+    | OppWonLastRoll
     | GimmickFlipped
 )
 

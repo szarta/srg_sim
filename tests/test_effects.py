@@ -63,6 +63,7 @@ from srg_sim.effects import (
     OnRollBoost,
     OnStop,
     OnWinTurn,
+    OppWonLastRoll,
     Or,
     Peek,
     PlayExtraCard,
@@ -137,6 +138,7 @@ SAMPLES: list[IRNode] = [
     RollGapExactly(2),
     RollGapAtLeast(3),
     RollLeadAtLeast(3),
+    OppWonLastRoll(),
     RollValue(Comparator.LE, 7),
     GimmickFlipped(Who.SELF),
     # actions
