@@ -2462,3 +2462,176 @@ eae7c1b5fdc14e27bafc9106566cf89c:
   optional: true
 caf514310b2a453cbd9fbe7a3affc12d: *dunn
 b1c536d936c143d7b31a0ce0490f8bd9: *dunn
+
+# ---------------------------------------------------------------------------
+# Top-96: OnRoll -> Choice[Flip N | add 1 <move-type/finish> from discard]. A
+# self-mill-or-recur engine: on the rolled skill you either flip N cards (deck ->
+# discard, fueling the pile) or pull one matching card back from discard to hand.
+# All three nodes (Flip, AddFromDiscard, Choice) already exist + are wired, so this
+# is a pure override. Mandatory choice (not optional) — you pick a branch. Flip
+# ordered first to match the printed "Flip N ... or add 1 ..." text order.
+# ---------------------------------------------------------------------------
+
+# Zack Sabre Jr. V1/V2 (Underworld, identical text): "When you roll Technique:
+# Flip 3 cards or add 1 Submission from your discard pile to your hand."
+98d943afc0ad4074a534d4e92ab0b9dc: &zsj
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: flip 3 cards
+      actions:
+      - '@type': Flip
+        n: 3
+        who: SELF
+    - '@type': ChoiceOption
+      label: add 1 Submission from your discard pile to your hand
+      actions:
+      - '@type': AddFromDiscard
+        filter:
+          '@type': CardFilter
+          number: null
+          atk_type: Submission
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Technique: flip 3 cards or add 1 Submission from your discard pile to your hand'
+  source: gimmick
+  optional: false
+6359a3a6d77d45ae8e05f43c37b5a001: *zsj
+
+# Freedom Belle - Iku Zo (World Championship): "When you roll Strike for your turn
+# roll: Flip 2 cards or add 1 finish from your discard pile to your hand." (finish
+# card = play_order Finish.)
+13d73960938c418f9f0cecc7145ac830:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: flip 2 cards
+      actions:
+      - '@type': Flip
+        n: 2
+        who: SELF
+    - '@type': ChoiceOption
+      label: add 1 finish from your discard pile to your hand
+      actions:
+      - '@type': AddFromDiscard
+        filter:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: Finish
+          tag: null
+          name: null
+          raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Strike for your turn roll: flip 2 cards or add 1 finish from your discard pile to your hand'
+  source: gimmick
+  optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96: OnRoll(<skill>) -> draw 1 + opponent buries from HAND. First users of
+# the new Bury source=HAND (schema v4): "bury N cards in [your/their] hand" moves
+# hand -> bottom of deck (the hand owner chooses which unless random). The whole
+# "bury ... in hand" family (522 DB clauses) was Unsupported before this node.
+# ---------------------------------------------------------------------------
+
+# Ariel Lipstick (World Championship): "When you roll Power for your turn roll,
+# draw 1 card and your opponent buries 1 card in their hand."
+37f9036514b94c4b82fefbb482b5a1a9:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  - '@type': Bury
+    who: OPP
+    count: 1
+    random: false
+    source: HAND
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Power for your turn roll, draw 1 card and your opponent buries 1 card in their hand
+  source: gimmick
+
+# TVA Commissioner Drew Madsen (World Championship): "When you roll Strike for
+# your turn roll: Draw 1 card and your opponent buries 1 card in their hand,
+# then shuffles their deck."
+191fdd8ac35641ba930ccdfcea5e94fd:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  - '@type': Bury
+    who: OPP
+    count: 1
+    random: false
+    source: HAND
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  - '@type': ShuffleDeck
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Strike for your turn roll: draw 1 card and your opponent buries 1 card in their hand, then shuffles their deck'
+  source: gimmick

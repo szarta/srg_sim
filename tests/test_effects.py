@@ -18,6 +18,7 @@ from srg_sim.effects import (
     BuffSkill,
     Bump,
     Bury,
+    BuryFrom,
     CardFilter,
     Choice,
     ChoiceOption,
@@ -144,6 +145,7 @@ SAMPLES: list[IRNode] = [
     # actions
     Draw(2, DeckEnd.BOTTOM),
     Bury(CardFilter(number=1), 2),
+    Bury(CardFilter(), 1, Who.OPP, False, BuryFrom.HAND),
     Flip(2, Who.OPP),
     Discard(CardFilter(play_order=PlayOrder.FINISH), 1),
     Search(CardFilter(name="Colossal Smash"), Dest.HAND),

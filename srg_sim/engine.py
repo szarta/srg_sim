@@ -990,11 +990,44 @@ class Engine:
 
     def _act_bury(self, action: fx.Bury, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        if action.source is fx.BuryFrom.HAND:
+            self._bury_from_hand(target, action.count, action.random, action.selector)
+            return
+        # Discard source: recycle the top `count` of the discard pile (optionally
+        # randomized) to the bottom of the deck. Selector is ignored.
         cards = list(self.state.players[target].discard[: action.count])
         if action.random:
             self.state.rng.shuffle(cards)
         if cards:
             self._bury_cards(target, cards)
+
+    def _bury_from_hand(
+        self, key: str, count: int, random: bool, selector: fx.CardFilter
+    ) -> None:
+        """"Bury N cards in [your/their] hand": move ``count`` cards from ``key``'s
+        hand to the bottom of their deck. The hand owner chooses which (their hidden
+        hand) unless ``random``. Mirrors :meth:`_discard_from_hand` but lands the
+        cards on the deck bottom and logs a ``Bury`` from ``hand``."""
+        player = self.state.players[key]
+        buried: list[Card] = []
+        for _ in range(count):
+            pool = [c for c in player.hand if conditions.card_matches(c, selector)]
+            if not pool:
+                break
+            card = self.state.rng.reveal(pool) if random else self._pick_from(key, pool, "bury")
+            player.hand.remove(card)
+            buried.append(card)
+        if buried:
+            for card in buried:
+                player.deck.append(card)  # bottom of deck
+            self._log(
+                gl.Bury(
+                    t=self.state.turn_no,
+                    player=key,
+                    cards=[c.db_uuid for c in buried],
+                    source="hand",
+                )
+            )
 
     def _pick_from(self, key: str, cards: list[Card], point: str) -> Card:
         """Let ``key``'s policy pick one of ``cards`` for a recur/tutor selection —

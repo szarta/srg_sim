@@ -167,6 +167,11 @@ class HeuristicPolicy(Policy):
             legal, key=lambda o: _discard_keep_value(_hand_card(state, key, o["card"]), state, key)
         )
 
+    def _at_bury_hand(self, legal: list[Option], state: GameState, key: str) -> Option:
+        """Burying from hand is the affected player shedding a hand card (to the deck
+        bottom) — same "drop your least valuable" read as a discard."""
+        return self._at_discard(legal, state, key)
+
     def _at_optional(self, legal: list[Option], state: GameState, key: str) -> Option:
         """Take optional edges (reroll / self-buff) when offered."""
         return _by_kind(legal, "yes") or legal[0]

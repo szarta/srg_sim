@@ -198,6 +198,15 @@ class Dest(Enum):
     DISCARD = "DISCARD"
 
 
+class BuryFrom(Enum):
+    """Source zone a :class:`Bury` draws from. ``DISCARD`` (the default) is the
+    pass-and-recycle bury (discard pile -> bottom of deck); ``HAND`` is the
+    card-text bury ("bury N cards in [your/their] hand" -> bottom of deck)."""
+
+    DISCARD = "DISCARD"
+    HAND = "HAND"
+
+
 class Until(Enum):
     END_OF_TURN = "END_OF_TURN"
 
@@ -507,19 +516,20 @@ class Draw(IRNode):
 
 @dataclass(frozen=True)
 class Bury(IRNode):
-    """Move ``count`` cards from a discard pile to the **bottom of that deck**.
+    """Move ``count`` cards to the **bottom of a deck** (no separate "buried" zone).
 
-    ``who`` picks whose discard/deck (SELF or the opponent's, e.g. "bury N cards
-    in your opponent's discard pile"). ``selector`` picks which discard cards
-    (empty = engine's choice). The card's owner (or the actor, for an opponent
-    bury) chooses the buried order; ``random=True`` buries in random order. There
-    is no separate "buried" zone — a buried card lives at the bottom of the deck.
-    """
+    ``source`` picks the origin zone: ``DISCARD`` (default) is the pass-and-recycle
+    bury (top ``count`` of the discard pile); ``HAND`` is the card-text bury ("bury
+    N cards in [your/their] hand"), where the hand owner chooses which unless
+    ``random``. ``who`` picks whose zone (SELF or the opponent's). ``selector``
+    picks which cards (empty = any / engine's choice). ``random=True`` buries a
+    random selection instead of a chosen one."""
 
     selector: CardFilter = CardFilter()
     count: int = 1
     who: Who = Who.SELF
     random: bool = False
+    source: BuryFrom = BuryFrom.DISCARD
 
 
 @dataclass(frozen=True)
