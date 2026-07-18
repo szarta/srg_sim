@@ -281,6 +281,7 @@ class Engine:
         va = self._offer_roll_boost("A", sa, va)
         vb = self._offer_roll_boost("B", sb, vb)
         va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # Tomato: roll-skill debuff
+        sa, va, sb, vb = self._offer_rerolls(sa, va, sb, vb)  # Dunn/Jay White: optional re-roll
         self._consume_pending()
         bumps = 0
         while bumps < MAX_TIE_REROLLS:
@@ -326,7 +327,47 @@ class Engine:
         sa, va = self._roll_for("A", use_pending=False)
         sb, vb = self._roll_for("B", use_pending=False)
         va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # debuff re-rolls too
+        sa, va, sb, vb = self._offer_rerolls(sa, va, sb, vb)  # re-roll offered post-bump too
         return sa, va, sb, vb, bumps
+
+    def _offer_rerolls(self, sa: Skill, va: int, sb: Skill, vb: int) -> tuple[Skill, int, Skill, int]:
+        """Offer each side its once-per-turn turn-roll re-roll (Dunn, Jay White). A taken
+        re-roll REPLACES that side's (skill, value) with a fresh die — kept even if worse
+        — and spends the ONCE_PER_TURN charge; declining leaves it for a later roll in the
+        same roll-off (initial or any bump). Re-checked each call, so Jay White keys on the
+        opponent's *current* roll. Boosts/in-roll mods are not re-applied to a re-rolled
+        die (no re-roll competitor also carries those — DESIGN.md §11)."""
+        vals = {"A": (sa, va), "B": (sb, vb)}
+        # opponent-of-owner roll context: a re-roll gate reads the OPPONENT's roll
+        # (Jay White "when your opponent rolls 9/10"; Dunn's OppWonLastRoll ignores it).
+        ctx = {
+            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va),
+            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb),
+        }
+        for key in ("A", "B"):
+            opp = self.state.opponent_of(key)
+            vals[key] = self._offer_reroll(key, vals[key], ctx[opp])
+        return vals["A"][0], vals["A"][1], vals["B"][0], vals["B"][1]
+
+    def _offer_reroll(
+        self, key: str, current: tuple[Skill, int], opp_ctx: conditions.RollContext
+    ) -> tuple[Skill, int]:
+        """One side's re-roll offer: the first standing effect whose action is a
+        :class:`~srg_sim.effects.Reroll`, whose gate holds (against the opponent's roll
+        ``opp_ctx``) and whose once-per-turn charge is unspent, is offered to the owner;
+        if taken it re-rolls and returns the fresh (skill, value)."""
+        for eff in self._standing_effects(key):
+            if not any(isinstance(a, fx.Reroll) for a in eff.actions):
+                continue
+            if not (self._may_fire(eff, key) and conditions.holds(eff.condition, self.state, key, opp_ctx)):
+                continue
+            if eff.optional and not self._take_optional(eff, key):
+                continue  # declined "you may" — charge left for a later roll
+            self._mark_fired(eff, key)
+            skill, value = self._roll_for(key, use_pending=False)
+            self._log_effect(key, "Reroll", key, {"skill": skill.value, "value": value})
+            return (skill, value)  # one re-roll per turn — stop after the first taken
+        return current
 
     def _elective_bump_owner(self) -> str | None:
         """A player who holds an ``ElectBumpOnSameSkill`` grant with a per-match charge
@@ -1430,6 +1471,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
     fx.ElectBumpOnSameSkill: Engine._act_noop,  # Static, read in the roll-off; never executed
+    fx.Reroll: Engine._act_noop,  # read in the roll-off (_offer_reroll); never executed
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed
     fx.DoubleFinishIfBumped: Engine._act_noop,  # Static, read in the finish sequence

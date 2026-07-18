@@ -2408,3 +2408,32 @@ eae7c1b5fdc14e27bafc9106566cf89c:
   raw_clause: when your turn roll is at least 3 less than your opponent's turn roll, discard 1 card they have in play
   source: gimmick
   optional: false
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — optional turn-roll RE-ROLL family
+# (engine _offer_rerolls: a once-per-turn Reroll offered at every roll point).
+# Task #90 Stage 1 (existing nodes). Jay White keys on the opponent's current roll.
+# ---------------------------------------------------------------------------
+
+# Jay White (World Championship): "Once a turn roll: When your opponent rolls 9 or 10
+# for their turn roll, you may re-roll your turn roll." Static + RollValue(>=,9) read
+# against the opponent's roll + Reroll(SELF), ONCE_PER_TURN, optional.
+68d8df0c31a04446bb8734cbe82be583:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': RollValue
+    cmp: '>='
+    value: 9
+  actions:
+  - '@type': Reroll
+    who: SELF
+    once: true
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once a turn roll: when your opponent rolls 9 or 10 for their turn roll, you may re-roll your turn roll'
+  source: gimmick
+  optional: true
