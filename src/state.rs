@@ -88,6 +88,10 @@ pub struct GameState {
     pub active: String,
     #[serde(default)]
     pub turn_no: i64,
+    /// The previous turn's roll-off winner (`None` before turn 1), for a re-roll
+    /// gimmick gated on "your opponent won the last turn roll" (Dunn).
+    #[serde(default)]
+    pub last_roll_winner: Option<String>,
     /// Re-entrancy guard for stat-gated gimmick blanks (DESIGN.md §5). Transient
     /// engine bookkeeping — never serialized.
     #[serde(skip)]
@@ -108,6 +112,7 @@ impl GameState {
             crowd_meter: 0,
             active: default_active(),
             turn_no: 0,
+            last_roll_winner: None,
             blank_guard: RefCell::new(HashSet::new()),
         }
     }

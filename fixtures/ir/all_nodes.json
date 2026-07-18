@@ -387,6 +387,9 @@
     "value": 0
   },
   {
+    "@type": "OppWonLastRoll"
+  },
+  {
     "@type": "RollWasSkill",
     "skill": "Power"
   },

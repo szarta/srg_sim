@@ -197,6 +197,9 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
         Condition::RollValue { cmp, value } => {
             roll.is_some_and(|r| r.value.is_some_and(|v| cmp_apply(*cmp, v, *value)))
         }
+        Condition::OppWonLastRoll => {
+            state.last_roll_winner.as_deref() == Some(state.opponent_of(owner).as_str())
+        }
         Condition::GimmickFlipped { who } => {
             let subject = who_key(state, owner, *who);
             state.players[&subject].gimmick_flipped

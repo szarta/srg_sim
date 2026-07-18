@@ -1926,6 +1926,7 @@ impl Engine {
         self.run_effects(&eff_l, "OnLoseTurn", &loser, Some(&ctx_l))?;
         self.run_on_roll("A")?;
         self.run_on_roll("B")?;
+        self.state.last_roll_winner = Some(winner.clone()); // "last turn roll" next turn (Dunn)
         Ok(winner)
     }
 

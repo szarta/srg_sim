@@ -2437,3 +2437,28 @@ eae7c1b5fdc14e27bafc9106566cf89c:
   raw_clause: 'once a turn roll: when your opponent rolls 9 or 10 for their turn roll, you may re-roll your turn roll'
   source: gimmick
   optional: true
+
+# Robert 'The Brain' Dunn V1/V2/V3 (World Championship, identical): "Once a turn roll,
+# if your opponent won the last turn roll, you may re-roll your turn roll." Static +
+# OppWonLastRoll (opp won the PREVIOUS turn's roll-off) + Reroll(SELF), ONCE_PER_TURN,
+# optional. Available at every roll point this turn; turn 1 never fires (no prior roll).
+5c61b09db55549b6a957926b3ae14a4b: &dunn
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': OppWonLastRoll
+  actions:
+  - '@type': Reroll
+    who: SELF
+    once: true
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: once a turn roll, if your opponent won the last turn roll, you may re-roll your turn roll
+  source: gimmick
+  optional: true
+caf514310b2a453cbd9fbe7a3affc12d: *dunn
+b1c536d936c143d7b31a0ce0490f8bd9: *dunn

@@ -123,6 +123,7 @@ HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
 RollWasSkill(skill) / RollGapExactly(k) / RollGapAtLeast(k)   # gap = opp - self, positive = self rolled lower
 RollLeadAtLeast(k)           # self rolled >= k HIGHER than opp (gap <= -k) — mirror of RollGapAtLeast (YamatoHama). schema v2.
 RollValue(cmp, value)        # the actual number rolled this turn, read via the trigger's `who` (Mrs. Apocalypse, Numer01)
+OppWonLastRoll               # the opponent won the PREVIOUS turn's roll-off (GameState.last_roll_winner); false on turn 1 (Dunn re-roll). schema v3.
 Always
 ```
 

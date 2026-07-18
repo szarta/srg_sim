@@ -397,6 +397,9 @@ pub enum Condition {
         cmp: Comparator,
         value: i64,
     },
+    /// The owner's opponent won the *previous* turn's roll-off
+    /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
+    OppWonLastRoll,
     GimmickFlipped {
         who: Who,
     },
@@ -713,6 +716,9 @@ pub enum IrNode {
         cmp: Comparator,
         value: i64,
     },
+    /// The owner's opponent won the *previous* turn's roll-off
+    /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
+    OppWonLastRoll,
     GimmickFlipped {
         who: Who,
     },

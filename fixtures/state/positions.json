@@ -676,7 +676,8 @@
         },
         "crowd_meter": 0,
         "active": "A",
-        "turn_no": 0
+        "turn_no": 0,
+        "last_roll_winner": null
       },
       "effective_stats": {
         "A": {
@@ -2436,7 +2437,8 @@
         },
         "crowd_meter": 3,
         "active": "B",
-        "turn_no": 4
+        "turn_no": 4,
+        "last_roll_winner": null
       },
       "effective_stats": {
         "A": {
@@ -4666,7 +4668,8 @@
         },
         "crowd_meter": 0,
         "active": "A",
-        "turn_no": 2
+        "turn_no": 2,
+        "last_roll_winner": null
       },
       "effective_stats": {
         "A": {

@@ -70,6 +70,9 @@
               "$ref": "#/$defs/RollValue"
             },
             {
+              "$ref": "#/$defs/OppWonLastRoll"
+            },
+            {
               "$ref": "#/$defs/GimmickFlipped"
             }
           ]
@@ -146,6 +149,9 @@
               },
               {
                 "$ref": "#/$defs/RollValue"
+              },
+              {
+                "$ref": "#/$defs/OppWonLastRoll"
               },
               {
                 "$ref": "#/$defs/GimmickFlipped"
@@ -924,6 +930,9 @@
               "$ref": "#/$defs/RollValue"
             },
             {
+              "$ref": "#/$defs/OppWonLastRoll"
+            },
+            {
               "$ref": "#/$defs/GimmickFlipped"
             }
           ]
@@ -1463,6 +1472,9 @@
           "$ref": "#/$defs/RollValue"
         },
         {
+          "$ref": "#/$defs/OppWonLastRoll"
+        },
+        {
           "$ref": "#/$defs/RollWasSkill"
         },
         {
@@ -1690,6 +1702,9 @@
               "$ref": "#/$defs/RollValue"
             },
             {
+              "$ref": "#/$defs/OppWonLastRoll"
+            },
+            {
               "$ref": "#/$defs/GimmickFlipped"
             }
           ]
@@ -1891,6 +1906,18 @@
       ],
       "type": "object"
     },
+    "OppWonLastRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OppWonLastRoll"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "Or": {
       "additionalProperties": false,
       "properties": {
@@ -1944,6 +1971,9 @@
               },
               {
                 "$ref": "#/$defs/RollValue"
+              },
+              {
+                "$ref": "#/$defs/OppWonLastRoll"
               },
               {
                 "$ref": "#/$defs/GimmickFlipped"
@@ -2260,6 +2290,9 @@
               "$ref": "#/$defs/RollValue"
             },
             {
+              "$ref": "#/$defs/OppWonLastRoll"
+            },
+            {
               "$ref": "#/$defs/GimmickFlipped"
             }
           ]
@@ -2527,5 +2560,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 2
+  "version": 3
 }

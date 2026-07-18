@@ -972,6 +972,33 @@
       }
     }
   ],
+  "5c61b09db55549b6a957926b3ae14a4b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "once": true,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "OppWonLastRoll"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once a turn roll, if your opponent won the last turn roll, you may re-roll your turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "5f78183903ba49eabae4c4ec9f0ffd11": [
     {
       "@type": "Effect",
@@ -2349,6 +2376,33 @@
       }
     }
   ],
+  "b1c536d936c143d7b31a0ce0490f8bd9": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "once": true,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "OppWonLastRoll"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once a turn roll, if your opponent won the last turn roll, you may re-roll your turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "b3966e9db8ec46b3abd0921f281b77c0": [
     {
       "@type": "Effect",
@@ -2655,6 +2709,33 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "caf514310b2a453cbd9fbe7a3affc12d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "once": true,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "OppWonLastRoll"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once a turn roll, if your opponent won the last turn roll, you may re-roll your turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
