@@ -88,12 +88,24 @@ pub type Eng<T> = Result<T, Yield>;
 // The "who decides" seam
 // ---------------------------------------------------------------------------
 
-/// The decision provider — the externalized `_decide` (task 73 supplies policy
-/// impls; 72e drives it as a replay-from-seed loop).
+/// The decision provider — the externalized `_decide`. A live [`Policy`] reads
+/// `state` (and `RandomPolicy` draws from `state.rng`) to choose; the
+/// [`ReplayDecider`] ignores `state` and replays a recorded list, suspending when
+/// it runs dry.
+///
+/// [`Policy`]: crate::policy::Policy
 pub trait Decider {
     /// The chosen option for a multi-option decision point, or `None` to suspend
-    /// (the driver then yields a [`DecisionRequest`] and resumes on `submit`).
-    fn decide(&mut self, point: &str, viewer: &str, legal: &[Value]) -> Option<Value>;
+    /// (the driver then yields a [`DecisionRequest`] and resumes on `submit`). The
+    /// live `state` is passed through so a policy can inspect the board and, for a
+    /// random policy, consume the engine's seeded RNG.
+    fn decide(
+        &mut self,
+        point: &str,
+        viewer: &str,
+        legal: &[Value],
+        state: &mut GameState,
+    ) -> Option<Value>;
 
     /// The policy name recorded on the §8 `decision` event for `viewer`.
     fn policy_name(&self, viewer: &str) -> String;
@@ -126,7 +138,13 @@ impl ReplayDecider {
 }
 
 impl Decider for ReplayDecider {
-    fn decide(&mut self, _point: &str, viewer: &str, _legal: &[Value]) -> Option<Value> {
+    fn decide(
+        &mut self,
+        _point: &str,
+        viewer: &str,
+        _legal: &[Value],
+        _state: &mut GameState,
+    ) -> Option<Value> {
         self.decisions.get_mut(viewer).and_then(|q| q.pop_front())
     }
 
@@ -329,7 +347,7 @@ impl Engine {
             return Ok(legal.into_iter().next().unwrap());
         }
         self.decision_index += 1;
-        match self.decider.decide(point, key, &legal) {
+        match self.decider.decide(point, key, &legal, &mut self.state) {
             Some(chosen) => {
                 let policy = self.decider.policy_name(key);
                 self.log(Event::Decision {
