@@ -2108,3 +2108,113 @@ b7b746a51bf5436da9c4ba172c7ff504:
     +1
   source: gimmick
 
+
+# ---------------------------------------------------------------------------
+# Top-96: RollGap comeback (Big Bad Bobby D) + conditional Static BuffSkill
+# gated by hand size (Johnny T, Mr. Poppintwist). Existing IR nodes.
+# ---------------------------------------------------------------------------
+
+# Big Bad Bobby D: "opp roll >=3 greater -> next roll +2"
+64f184e2aad14b30adda926175ee8e6e:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapAtLeast
+    k: 3
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 2
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: opponent's turn roll at least 3 greater (you rolled >=3 lower) -> next
+    turn roll +2
+  source: gimmick
+
+# Johnny T: "opp hand >=8 -> your Strike & Submission +1"
+c79de6acd1954441970f9b1901a55e01:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: '>='
+    vs: VALUE
+    value: 8
+    who: OPP
+  actions:
+  - '@type': BuffSkill
+    skill: Strike
+    delta: 1
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if opponent has 8+ cards in hand, your Strike is +1
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: '>='
+    vs: VALUE
+    value: 8
+    who: OPP
+  actions:
+  - '@type': BuffSkill
+    skill: Submission
+    delta: 1
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if opponent has 8+ cards in hand, your Submission is +1
+  source: gimmick
+
+# Mr. Poppintwist: "your hand >=6 -> Grapple +2"
+7c61c4f8ca78491ba66c77a6a2778888:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: '>='
+    vs: VALUE
+    value: 6
+    who: SELF
+  actions:
+  - '@type': BuffSkill
+    skill: Grapple
+    delta: 2
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if you have 6+ cards in hand, your Grapple is +2
+  source: gimmick
+
