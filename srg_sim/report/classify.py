@@ -53,11 +53,12 @@ def _is_discard(eff: fx.Effect) -> bool:
 
 def _is_keyword(eff: fx.Effect) -> bool:
     # A keyword/synergy gimmick: an OnStop, or an OnHit that keys off a specific
-    # keyword/name (a bare OnHit is just "when this resolves" — e.g. Draw — not keyword).
+    # card name/text ("when you hit a card with 'X' in the name"). A bare OnHit is
+    # just "when this resolves" — e.g. Draw — not keyword.
     trig = eff.trigger
     if isinstance(trig, fx.OnStop):
         return True
-    return isinstance(trig, fx.OnHit) and (trig.keyword is not None or trig.name is not None)
+    return isinstance(trig, fx.OnHit) and bool(trig.name_contains or trig.text_contains)
 
 
 def _is_control(eff: fx.Effect) -> bool:

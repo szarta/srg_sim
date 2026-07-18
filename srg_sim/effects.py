@@ -330,15 +330,17 @@ class OnStop(IRNode):
 class OnHit(IRNode):
     """When a matching card resolves into play (DESIGN.md §3, "hit").
 
-    On a *card's own* effects, ``atk_type``/``keyword``/``name`` are all ``None`` — it
-    fires when that card hits. On a *competitor gimmick* (a standing effect), set
-    ``atk_type`` to fire whenever the owner hits a card of that attack type (D1: "when
-    you hit a Submission, draw 1"); a played card and a stop entering play both count
-    as hits (srg-rules-confirmed)."""
+    On a *card's own* effects, all gates are empty — it fires when that card hits.
+    On a *competitor gimmick* (a standing effect), ``atk_type`` fires whenever the
+    owner hits a card of that attack type (D1: "when you hit a Submission, draw 1");
+    ``name_contains`` / ``text_contains`` gate on the hit card's title / rules text
+    ("when you hit a card with 'X' in the name") — case-insensitive OR-substring,
+    combined by AND with ``atk_type``. A played card and a stop entering play both
+    count as hits (srg-rules-confirmed)."""
 
-    keyword: str | None = None
-    name: str | None = None
     atk_type: AtkType | None = None
+    name_contains: tuple[str, ...] = ()
+    text_contains: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

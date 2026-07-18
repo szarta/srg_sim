@@ -658,17 +658,23 @@ class Engine:
         return not self._ended()
 
     def _run_hit_gimmicks(self, card: Card, key: str) -> None:
-        """Fire ``key``'s standing type-gated ``OnHit`` gimmicks for a card of ``card``'s
-        attack type that just hit (D1: "when you hit a Submission, draw 1"). Only
-        ``atk_type``-scoped OnHit effects fire here; a card's own untyped OnHit already
-        resolved via :meth:`_run_effects`, so it is not re-fired."""
+        """Fire ``key``'s standing ``OnHit`` gimmicks for a card that just hit — gated
+        by attack type (D1: "when you hit a Submission, draw 1") and/or the hit card's
+        name/text ("when you hit a card with 'X' in the name"). A bare OnHit (no gate)
+        is the card's own "when this hits", already resolved via :meth:`_run_effects`,
+        so it is not re-fired."""
         for eff in self._standing_effects(key):
             trig = eff.trigger
-            if (
-                isinstance(trig, fx.OnHit)
-                and trig.atk_type is not None
-                and trig.atk_type is card.atk_type
-            ):
+            if not isinstance(trig, fx.OnHit):
+                continue
+            has_name_gate = bool(trig.name_contains or trig.text_contains)
+            if trig.atk_type is None and not has_name_gate:
+                continue
+            type_ok = trig.atk_type is None or trig.atk_type is card.atk_type
+            gate = fx.CardFilter(
+                name_contains=trig.name_contains, text_contains=trig.text_contains
+            )
+            if type_ok and conditions.card_matches(card, gate):
                 self._fire_if_ready(eff, key, None)
 
     def _offer_stop(self, defender: str, attacker: str, card: Card) -> Card | None:

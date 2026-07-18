@@ -114,7 +114,7 @@ SAMPLES: list[IRNode] = [
     OnWinTurn(),
     OnLoseTurn(by=2),
     OnStop(Direction.YOURS),
-    OnHit(keyword="Signature", name=None),
+    OnHit(name_contains=("Signature",)),  # gimmick "when you hit a card with X in the name"
     OnHit(atk_type=AtkType.SUBMISSION),  # gimmick "when you hit a Submission"
     OnBump(),
     OnBreakout(),
