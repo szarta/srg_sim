@@ -64,7 +64,18 @@ def card_matches(card: Card, filt: fx.CardFilter) -> bool:
         return False
     if filt.tag is not None and filt.tag not in card.tags:
         return False
-    return not (filt.name is not None and card.name != filt.name)
+    if filt.name is not None and card.name != filt.name:
+        return False
+    if filt.name_contains and not _any_substr_ci(filt.name_contains, card.name):
+        return False
+    return not (filt.text_contains and not _any_substr_ci(filt.text_contains, card.raw_text))
+
+
+def _any_substr_ci(needles: tuple[str, ...], haystack: str) -> bool:
+    """True iff ``haystack`` contains any of ``needles`` as a case-insensitive
+    substring (pure substring — "Table" matches "Stable"; OR over the needles)."""
+    hay = haystack.lower()
+    return any(n.lower() in hay for n in needles)
 
 
 def _filter_implies(sel: fx.CardFilter, query: fx.CardFilter) -> bool:

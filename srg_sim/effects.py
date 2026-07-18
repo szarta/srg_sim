@@ -236,6 +236,11 @@ class CardFilter(IRNode):
     tag: str | None = None
     name: str | None = None
     raw: str | None = None
+    # Case-insensitive substring match on the card's title (``name_contains``) or
+    # rules text (``text_contains``): "a card with 'X' (or 'Y') in the name/text".
+    # OR of substrings; empty = no constraint. Pure substring ("Table" ⊂ "Stable").
+    name_contains: tuple[str, ...] = ()
+    text_contains: tuple[str, ...] = ()
 
 
 # ---------------------------------------------------------------------------

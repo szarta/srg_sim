@@ -2635,3 +2635,171 @@ b1c536d936c143d7b31a0ce0490f8bd9: *dunn
     n: null
   raw_clause: 'when you roll Strike for your turn roll: draw 1 card and your opponent buries 1 card in their hand, then shuffles their deck'
   source: gimmick
+
+# ===========================================================================
+# Top-96: name-substring family, Phase 1 (schema v5). CardFilter.name_contains /
+# text_contains = case-insensitive OR-of-substrings on the card title / rules
+# text ("a card with 'X' in the name"). Pure substring ("Table" matches
+# "Stable"). One card_matches change flows to HasInPlay / ShuffleIntoDeck / etc.,
+# so these are pure overrides. 809 "in the name" + 64 "in the text" DB clauses.
+# ===========================================================================
+
+# Liger (World Championship): "Your Power, Agility, and Technique skills are +1
+# when you have a card with 'Lariat' or 'Clothesline' in play."
+109e75661c724f3793fd139706a5b8b5:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: ['Lariat', 'Clothesline']
+      text_contains: []
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  - '@type': BuffSkill
+    skill: Technique
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your Power, Agility, and Technique are +1 when you have a card with "Lariat" or "Clothesline" in play
+  source: gimmick
+
+# RVD (World Championship): "When you have a card with 'High' in the name in play,
+# your Power, Technique, and Agility are +1."
+276fb52f04234fa9bb6adebf98aa91e6:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: ['High']
+      text_contains: []
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  - '@type': BuffSkill
+    skill: Technique
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you have a card with "High" in the name in play, your Power, Technique, and Agility are +1
+  source: gimmick
+
+# Leader of the Black Sheep V1 (World Championship): "When you roll Strike for
+# your turn roll: Shuffle 1 card with 'Sheep', 'Flock', or 'Stun' in the name
+# from your discard pile into your deck and draw 1 card."
+52492d03968e461d8a3e1e860491db9a:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: ['Sheep', 'Flock', 'Stun']
+      text_contains: []
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Strike for your turn roll: shuffle 1 card with "Sheep", "Flock", or "Stun" in the name from your discard pile into your deck and draw 1 card'
+  source: gimmick
+
+# Steel Wool (World Championship): "When you roll Submission: Shuffle 1 card with
+# 'Steel', 'Kick', or 'Sheep' in the name from your discard pile into your deck
+# and draw 1."
+b339f906c69c4183b699037dffd6cfa1:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Submission
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: ['Steel', 'Kick', 'Sheep']
+      text_contains: []
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Submission: shuffle 1 card with "Steel", "Kick", or "Sheep" in the name from your discard pile into your deck and draw 1'
+  source: gimmick
