@@ -590,6 +590,9 @@
               },
               {
                 "$ref": "#/$defs/Choice"
+              },
+              {
+                "$ref": "#/$defs/DisqualificationRule"
               }
             ]
           },
@@ -743,6 +746,26 @@
       ],
       "type": "object"
     },
+    "DisqualificationRule": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "DisqualificationRule"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "scope": {
+          "$ref": "#/$defs/DqScope"
+        }
+      },
+      "required": [
+        "@type",
+        "enabled",
+        "scope"
+      ],
+      "type": "object"
+    },
     "DoubleFinishIfBumped": {
       "additionalProperties": false,
       "properties": {
@@ -754,6 +777,13 @@
         "@type"
       ],
       "type": "object"
+    },
+    "DqScope": {
+      "enum": [
+        "SELF",
+        "MATCH"
+      ],
+      "type": "string"
     },
     "Draw": {
       "additionalProperties": false,
@@ -924,6 +954,9 @@
               },
               {
                 "$ref": "#/$defs/Unsupported"
+              },
+              {
+                "$ref": "#/$defs/DisqualificationRule"
               }
             ]
           },
@@ -1559,6 +1592,9 @@
         },
         {
           "$ref": "#/$defs/WinTie"
+        },
+        {
+          "$ref": "#/$defs/DisqualificationRule"
         }
       ]
     },
@@ -2599,5 +2635,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 7
+  "version": 8
 }

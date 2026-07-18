@@ -3324,6 +3324,66 @@
       }
     }
   ],
+  "b3c837b732a54281aa9169ab1d46d42f": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "DisqualificationRule",
+          "enabled": false,
+          "scope": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "you cannot be disqualified",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you hit a card with \"Disqualification\" in the text, draw 2 cards",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "text_contains": [
+          "Disqualification"
+        ]
+      }
+    }
+  ],
   "b7b746a51bf5436da9c4ba172c7ff504": [
     {
       "@type": "Effect",
@@ -3981,6 +4041,92 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "OPP"
+      }
+    }
+  ],
+  "e38cced416cc45e0a9e1367935fd590a": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "count": 1,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "HAND",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you hit a card with \"Drop\" in the name your opponent buries 1 card in their hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [
+          "Drop"
+        ],
+        "text_contains": []
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "DisqualificationRule",
+          "enabled": false,
+          "scope": "MATCH"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 3,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": null,
+          "name_contains": [
+            "Drop"
+          ],
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null,
+          "text_contains": []
+        },
+        "who": "SELF"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you have 3 cards in play with \"Drop\" in the name, this match has no disqualification",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],

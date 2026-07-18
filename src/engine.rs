@@ -18,8 +18,8 @@ use crate::cards::{Card, Deck};
 use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
-    Action, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction, Duration,
-    Effect, LoseKind, PlayOrder, RollWhen, Skill, Trigger, Who,
+    Action, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction, DqScope,
+    Duration, Effect, LoseKind, PlayOrder, RollWhen, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -850,6 +850,7 @@ impl Engine {
             | Action::Unstoppable { .. }
             | Action::AlsoLead { .. }
             | Action::DoubleFinishIfBumped
+            | Action::DisqualificationRule { .. }
             | Action::MaxHandSize { .. } => {}
             other => {
                 let raw = format!("{other:?}");
@@ -1437,8 +1438,56 @@ impl Engine {
         let loser = self.target(who, key);
         let kind_str = serde_json::to_value(kind).unwrap();
         let kind_name = kind_str.as_str().unwrap().to_owned();
+        if kind == LoseKind::Disqualification && self.is_dq_immune(&loser) {
+            // "no disqualifications" / "you cannot be disqualified": the loss is
+            // voided and play continues (the triggering effect still fired).
+            self.log_effect(
+                key,
+                "LoseByVoided",
+                Some(&loser),
+                json!({"kind": kind_name}),
+            );
+            return;
+        }
         self.pending_loss = Some((loser.clone(), kind_name.to_lowercase()));
         self.log_effect(key, "LoseBy", Some(&loser), json!({"kind": kind_name}));
+    }
+
+    /// True iff `loser` is currently immune to a disqualification loss: some active
+    /// `DisqualificationRule` disables DQ for them and none re-enables it. A rule
+    /// applies to `loser` when its scope is `Match` (any owner) or `SelfSide` (owner
+    /// == loser). Effects are in-play-scoped and condition-gated. NOTE: last-played-
+    /// order tie-break between a disable and a re-enable is task #93 (needs a global
+    /// play sequence); with no re-enable card modeled yet this is exact.
+    fn is_dq_immune(&self, loser: &str) -> bool {
+        let mut disabled = false;
+        for (owner, player) in &self.state.players {
+            let sources = std::iter::once(&player.competitor.effects)
+                .chain(std::iter::once(&player.entrance.effects))
+                .chain(player.in_play.iter().map(|c| &c.effects));
+            for effects in sources {
+                for eff in effects {
+                    if !matches!(eff.trigger, Trigger::Static) {
+                        continue;
+                    }
+                    for action in &eff.actions {
+                        let Action::DisqualificationRule { enabled, scope } = action else {
+                            continue;
+                        };
+                        let applies = *scope == DqScope::Match || owner == loser;
+                        if !applies || !conditions::holds(&eff.condition, &self.state, owner, None)
+                        {
+                            continue;
+                        }
+                        if *enabled {
+                            return false; // an active rule re-enables DQ
+                        }
+                        disabled = true;
+                    }
+                }
+            }
+        }
+        disabled
     }
 
     /// Grant one more turn action this turn ("you may play an additional card");
@@ -2669,6 +2718,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::FlipGimmick { .. } => "FlipGimmick",
         Action::BlankText { .. } => "BlankText",
         Action::LoseBy { .. } => "LoseBy",
+        Action::DisqualificationRule { .. } => "DisqualificationRule",
         Action::CrowdMeter { .. } => "CrowdMeter",
         Action::PlayExtraCard { .. } => "PlayExtraCard",
         Action::SetFinishRoll { .. } => "SetFinishRoll",

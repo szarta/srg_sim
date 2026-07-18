@@ -149,6 +149,11 @@
     "who": "SELF"
   },
   {
+    "@type": "DisqualificationRule",
+    "enabled": false,
+    "scope": "SELF"
+  },
+  {
     "@type": "DoubleFinishIfBumped"
   },
   {
@@ -342,6 +347,9 @@
     "@type": "OnWinTurn"
   },
   {
+    "@type": "OppWonLastRoll"
+  },
+  {
     "@type": "Or",
     "items": []
   },
@@ -410,9 +418,6 @@
     "@type": "RollValue",
     "cmp": ">",
     "value": 0
-  },
-  {
-    "@type": "OppWonLastRoll"
   },
   {
     "@type": "RollWasSkill",

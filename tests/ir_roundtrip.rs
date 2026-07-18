@@ -57,7 +57,7 @@ fn all_node_types_round_trip() {
     assert_roundtrips(&nodes);
 }
 
-/// The exhaustive corpus must cover exactly the 72 node types in the schema —
+/// The exhaustive corpus must cover exactly the 73 node types in the schema —
 /// a guard that the union stays complete as the contract evolves.
 #[test]
 fn all_nodes_covers_every_type() {
@@ -70,8 +70,8 @@ fn all_nodes_covers_every_type() {
     tags.dedup();
     assert_eq!(
         tags.len(),
-        72,
-        "expected 72 distinct node types, got {}",
+        73,
+        "expected 73 distinct node types, got {}",
         tags.len()
     );
 }

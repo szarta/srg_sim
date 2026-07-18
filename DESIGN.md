@@ -155,6 +155,10 @@ Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_
 Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)
 AlsoLead(condition)           # Static self-decl: also playable as a Lead while `condition` holds
 BlankText(card, until=END_OF_TURN)             LoseBy(kind=DISQUALIFICATION|PINFALL, who)
+DisqualificationRule(enabled, scope=SELF|MATCH)  # Static match-rule toggle (schema v8): enabled=false =
+                                                 # "no disqualifications"; a DQ LoseBy is VOIDED when the loser
+                                                 # is immune (self-scope owner, or any match-scope rule). In-play-
+                                                 # scoped + condition-gated; last-played-order tie-break is task #93
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
 FinishRollBonus(delta, when_skill?, either=False)  # +delta to a Finish roll; when_skill gates on the rolled skill

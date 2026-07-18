@@ -205,6 +205,18 @@ pub enum CountZone {
     Discard,
 }
 
+/// Reach of a [`Action::DisqualificationRule`] toggle. `SelfSide` = "you cannot
+/// be disqualified" (only the owner); `Match` = "this match has no
+/// disqualifications" (every player).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DqScope {
+    #[default]
+    #[serde(rename = "SELF")]
+    SelfSide,
+    Match,
+}
+
 /// Direction of a stop relative to the acting player.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -575,6 +587,13 @@ pub enum Action {
         kind: LoseKind,
         who: Who,
     },
+    /// A Static match-rule toggle: `enabled=false` = "no disqualifications",
+    /// `enabled=true` re-enables them. `scope` is who it reaches (see [`DqScope`]).
+    /// Read at the disqualification-loss point, not executed.
+    DisqualificationRule {
+        enabled: bool,
+        scope: DqScope,
+    },
     CrowdMeter {
         delta: i64,
     },
@@ -897,6 +916,13 @@ pub enum IrNode {
     LoseBy {
         kind: LoseKind,
         who: Who,
+    },
+    /// A Static match-rule toggle: `enabled=false` = "no disqualifications",
+    /// `enabled=true` re-enables them. `scope` is who it reaches (see [`DqScope`]).
+    /// Read at the disqualification-loss point, not executed.
+    DisqualificationRule {
+        enabled: bool,
+        scope: DqScope,
     },
     CrowdMeter {
         delta: i64,
