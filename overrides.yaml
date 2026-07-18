@@ -1916,3 +1916,53 @@ da0099e73b9344f9a3197a13652623ec:
   raw_clause: draw 1 card OR take up to 4 cards from your discard pile and put them on top of your deck
   source: card
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3 coverage grind) — OnRoll -> Draw, the
+# proven D2/Bull turn-roll pattern (engine `_run_on_roll`).
+# ---------------------------------------------------------------------------
+
+# The Rising Sun (World Championship): "Whenever you roll Technique, draw 1 card."
+83a18825be1b4a83bcbc1392a5bcb585:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: whenever you roll Technique, draw 1 card
+  source: gimmick
+
+# El Frenetico (World Championship): "When your target rolls Strike for their
+# turn roll, draw 1 card." (trigger on the OPPONENT's roll; you draw.)
+ed652335019b4eee8341e33a86bad731:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: OPP
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your target rolls Strike for their turn roll, draw 1 card
+  source: gimmick
