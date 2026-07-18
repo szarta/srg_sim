@@ -2243,3 +2243,39 @@ a4b61c579c2d4ca59b5001ea5503fdef:
     n: null
   raw_clause: when you Stop a card, draw 1 card
   source: gimmick
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — in-roll modifier gated on the OPPONENT's
+# rolled VALUE (engine _apply_in_roll_mods now feeds the in-progress roll
+# context to the condition; who=OPP reads the opponent's roll), task #89.
+# ---------------------------------------------------------------------------
+
+# Numer01: "When your opponent's turn roll is 10, your turn roll is +2." An in-roll
+# modifier on THIS roll (user-confirmed: opp 10 + you 8 -> 10 = bump; you 9/10 -> win).
+# InRoll(who=OPP) selects the opponent's roll context; RollValue(=,10) gates on it;
+# ModifyRoll(SELF,+2,THIS) lifts your own current roll.
+719cbdbaba434b719bd7fa7a2892813e:
+- '@type': Effect
+  trigger:
+    '@type': InRoll
+    skill: null
+    who: OPP
+    either: false
+  condition:
+    '@type': RollValue
+    cmp: '='
+    value: 10
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 2
+    when: THIS
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your opponent's turn roll is 10, your turn roll is +2
+  source: gimmick
+  optional: false

@@ -390,6 +390,15 @@ class Engine:
         application, so an ``either``-gated debuff is capped, never doubled."""
         rolled = {"A": sa, "B": sb}
         vals = {"A": va, "B": vb}
+        # Roll context for the in-progress roll-off, so a value-gated in-roll modifier
+        # (Numer01: "when your opponent's turn roll is 10, your roll is +2") can read
+        # the current roll — the recorded _roll_ctx is not written until the roll-off
+        # resolves. Which side's roll the condition reads follows the trigger's `who`,
+        # exactly as the OnRoll path does (RollValue docstring).
+        ctx = {
+            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va),
+            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb),
+        }
         for owner in ("A", "B"):
             opp = self.state.opponent_of(owner)
             for eff in self._standing_effects(owner):
@@ -398,7 +407,8 @@ class Engine:
                     trig, owner, rolled
                 ):
                     continue
-                if not conditions.holds(eff.condition, self.state, owner):
+                cond_ctx = ctx[owner if trig.who is fx.Who.SELF else opp]
+                if not conditions.holds(eff.condition, self.state, owner, cond_ctx):
                     continue
                 for a in eff.actions:
                     if isinstance(a, fx.ModifyRoll) and a.when is fx.RollWhen.THIS:
