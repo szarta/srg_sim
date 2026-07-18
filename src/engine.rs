@@ -9,12 +9,10 @@
 //!
 //! Driven by a [`ReplayDecider`] over a recorded `decisions[]` list, this is the
 //! **replay-from-seed** engine: deterministic, WASM-safe (no threads/coroutines),
-//! and snapshot = `(seed, decisions[])`. The turn loop, executor, and finish
-//! sequence land in sibling sub-modules; this file is the scaffold + leaf layer.
-//!
-//! (Construction in progress — task 72a of the split; `#![allow(dead_code)]`
-//! stays until the loop is wired end-to-end in 72e.)
-#![allow(dead_code)]
+//! and snapshot = `(seed, decisions[])`. The batch [`Engine::play`] driver and the
+//! resumable [`Session`] driver share one decision protocol and produce a
+//! byte-identical [`GameLog`] — the whole-engine parity pinned by the conformance
+//! corpus (`tests/engine_conformance.rs`).
 
 use crate::cards::{Card, Deck};
 use crate::conditions::{self, RollContext};
@@ -231,8 +229,6 @@ fn flip_signs(effect: &Effect) -> Effect {
 /// Plays a single match to completion (DESIGN.md §6 turn loop), driven by a
 /// [`Decider`].
 pub struct Engine {
-    decks: BTreeMap<String, Deck>,
-    kind: String,
     pub state: GameState,
     pub log: GameLog,
     result: Option<GameResult>,
@@ -282,8 +278,6 @@ impl Engine {
         let header = Self::build_header(&decks, &*decider, seed, &kind, &created);
         let state = GameState::new(players, SeededRNG::new(seed));
         Self {
-            decks,
-            kind,
             state,
             log: GameLog::new(header),
             result: None,
@@ -1367,6 +1361,39 @@ impl Engine {
         true
     }
 
+    // -- top-level driver --------------------------------------------------
+
+    /// Run the match to a result (the log is on `self.log`). The batch driver: with
+    /// a fully-recorded [`ReplayDecider`] no decision suspends, so this returns
+    /// `Ok`; the [`Session`] driver shares the exact same body but resumes on each
+    /// `Yield`. A match that hits [`TURN_CAP`] is a `turn_cap` draw.
+    pub fn play(&mut self) -> Eng<GameResult> {
+        self.setup()?;
+        while self.result.is_none() && self.state.turn_no < TURN_CAP {
+            self.turn()?;
+        }
+        if self.result.is_none() {
+            self.result = Some(GameResult {
+                winner: "draw".to_owned(),
+                reason: "turn_cap".to_owned(),
+                turns: self.state.turn_no,
+            });
+        }
+        let event = self.result_event();
+        self.log(event);
+        Ok(self.result.clone().unwrap())
+    }
+
+    fn result_event(&self) -> Event {
+        let r = self.result.as_ref().unwrap();
+        Event::Result {
+            t: self.state.turn_no,
+            winner: r.winner.clone(),
+            reason: r.reason.clone(),
+            turns: r.turns,
+        }
+    }
+
     // -- setup / mulligan --------------------------------------------------
 
     /// Match setup: StartOfMatch effects, shuffle, opening hands. The first-turn
@@ -2401,4 +2428,116 @@ fn find_by_uuid(pool: &[Card], chosen: &Value) -> Card {
         .find(|c| c.db_uuid == uuid)
         .expect("chosen card is in the pool")
         .clone()
+}
+
+// ---------------------------------------------------------------------------
+// Session — the continuation driver over the decision protocol
+// ---------------------------------------------------------------------------
+
+/// The live match driver (`docs/design/substrate-split.md` §4): it surfaces one
+/// [`DecisionRequest`] at a time and resumes on [`submit`](Session::submit). It is
+/// a **replay-from-seed** continuation — each step rebuilds the engine over the
+/// accumulated `decisions[]` and re-runs to the next unanswered decision — so the
+/// whole session is a pure function of `(seed, decisions[])` and lands on a
+/// byte-identical [`GameLog`], WASM-safe with no threads or coroutines. It shares
+/// the protocol of the batch [`Engine::play`] driver exactly: same `point`/`legal`/
+/// `chosen` and the same resulting log.
+pub struct Session {
+    deck_a: Deck,
+    deck_b: Deck,
+    seed: u64,
+    created: String,
+    kind: String,
+    /// Per-player policy name (recorded on the header + `decision` events).
+    policies: BTreeMap<String, String>,
+    /// The answers accepted so far, per player — the session's entire replayable
+    /// state alongside `(seed, decks)`.
+    decisions: BTreeMap<String, Vec<Value>>,
+    outstanding: Option<DecisionRequest>,
+    log: Option<GameLog>,
+    result: Option<GameResult>,
+}
+
+impl Session {
+    /// Open a session over two decks and per-player policy names, running to the
+    /// first decision (or straight to `Done` if none suspends).
+    pub fn open(
+        deck_a: Deck,
+        deck_b: Deck,
+        policies: BTreeMap<String, String>,
+        seed: u64,
+        created: String,
+        kind: String,
+    ) -> (Self, Step) {
+        let mut session = Self {
+            deck_a,
+            deck_b,
+            seed,
+            created,
+            kind,
+            policies,
+            decisions: BTreeMap::new(),
+            outstanding: None,
+            log: None,
+            result: None,
+        };
+        let step = session.advance();
+        (session, step)
+    }
+
+    /// Feed the player's choice and resume. A stale/duplicate `request_id` (client
+    /// resend, reconnect) is a no-op that re-surfaces the outstanding request —
+    /// there is never more than one outstanding request per session.
+    pub fn submit(&mut self, response: DecisionResponse) -> Step {
+        let Some(req) = self.outstanding.clone() else {
+            return Step::Done(self.result.clone().expect("finished session has a result"));
+        };
+        if req.request_id != response.request_id {
+            return Step::Decision(req); // idempotent: ignore a stale/duplicate answer
+        }
+        self.decisions
+            .entry(req.viewer.clone())
+            .or_default()
+            .push(response.chosen);
+        self.advance()
+    }
+
+    /// The completed log, once the session has reached `Done` (else `None`).
+    pub fn log(&self) -> Option<&GameLog> {
+        self.log.as_ref()
+    }
+
+    /// The outstanding request, if the session is parked awaiting a choice.
+    pub fn pending(&self) -> Option<&DecisionRequest> {
+        self.outstanding.as_ref()
+    }
+
+    /// Rebuild the engine over the accumulated decisions and run to the next
+    /// suspension (or completion) — the replay-from-seed step.
+    fn advance(&mut self) -> Step {
+        let decider = Box::new(ReplayDecider::new(
+            self.decisions.clone(),
+            self.policies.clone(),
+        ));
+        let mut engine = Engine::new(
+            self.deck_a.clone(),
+            self.deck_b.clone(),
+            decider,
+            self.seed,
+            self.created.clone(),
+            self.kind.clone(),
+        );
+        match engine.play() {
+            Ok(result) => {
+                self.outstanding = None;
+                self.log = Some(engine.log);
+                self.result = Some(result.clone());
+                Step::Done(result)
+            }
+            Err(Yield(req)) => {
+                self.outstanding = Some((*req).clone());
+                Step::Decision(*req)
+            }
+        }
+    }
 }
