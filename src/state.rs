@@ -99,6 +99,19 @@ fn default_active() -> String {
 }
 
 impl GameState {
+    /// A fresh game state over the given players and RNG (crowd meter 0, turn 0,
+    /// player `A` active).
+    pub fn new(players: BTreeMap<String, PlayerState>, rng: SeededRNG) -> Self {
+        Self {
+            players,
+            rng,
+            crowd_meter: 0,
+            active: default_active(),
+            turn_no: 0,
+            blank_guard: RefCell::new(HashSet::new()),
+        }
+    }
+
     /// The other player's key (two-player game).
     pub fn opponent_of(&self, key: &str) -> String {
         self.players

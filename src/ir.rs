@@ -119,6 +119,18 @@ pub enum AtkType {
     None,
 }
 
+impl AtkType {
+    /// The canonical name — identical to its serialized value.
+    pub fn name(self) -> &'static str {
+        match self {
+            AtkType::Strike => "Strike",
+            AtkType::Grapple => "Grapple",
+            AtkType::Submission => "Submission",
+            AtkType::None => "None",
+        }
+    }
+}
+
 /// Where a card sits in a play sequence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PlayOrder {
@@ -126,6 +138,18 @@ pub enum PlayOrder {
     Followup,
     Finish,
     None,
+}
+
+impl PlayOrder {
+    /// The canonical name — identical to its serialized value.
+    pub fn name(self) -> &'static str {
+        match self {
+            PlayOrder::Lead => "Lead",
+            PlayOrder::Followup => "Followup",
+            PlayOrder::Finish => "Finish",
+            PlayOrder::None => "None",
+        }
+    }
 }
 
 /// Numeric comparison operator.

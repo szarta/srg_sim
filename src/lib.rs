@@ -26,6 +26,7 @@
 
 pub mod cards;
 pub mod conditions;
+pub mod engine;
 pub mod error;
 pub mod finish;
 pub mod gamelog;
