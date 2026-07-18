@@ -1916,3 +1916,495 @@ da0099e73b9344f9a3197a13652623ec:
   raw_clause: draw 1 card OR take up to 4 cards from your discard pile and put them on top of your deck
   source: card
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3 coverage grind) — OnRoll -> Draw, the
+# proven D2/Bull turn-roll pattern (engine `_run_on_roll`).
+# ---------------------------------------------------------------------------
+
+# The Rising Sun (World Championship): "Whenever you roll Technique, draw 1 card."
+83a18825be1b4a83bcbc1392a5bcb585:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: whenever you roll Technique, draw 1 card
+  source: gimmick
+
+# El Frenetico (World Championship): "When your target rolls Strike for their
+# turn roll, draw 1 card." (trigger on the OPPONENT's roll; you draw.)
+ed652335019b4eee8341e33a86bad731:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: OPP
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your target rolls Strike for their turn roll, draw 1 card
+  source: gimmick
+
+# ---------------------------------------------------------------------------
+# Top-96: OnRoll -> ModifyRoll(NEXT) "next turn roll is +1" (multi-skill = one
+# effect per rolled skill). The proven D2/Bull comeback shape.
+# ---------------------------------------------------------------------------
+
+# Firestarter: "roll Technique or Strike -> next turn roll +1"
+279f7634d67d4759a912ff9ab8865a4e:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your turn roll, your next turn roll is +1
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Strike for your turn roll, your next turn roll is +1
+  source: gimmick
+
+# Funtime Bob (V1): "roll Technique or Grapple -> next turn roll +1"
+b7b746a51bf5436da9c4ba172c7ff504:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your turn roll, your next turn roll is +1
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Grapple
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Grapple for your turn roll, your next turn roll is +1
+  source: gimmick
+
+# The SRG Boss (V2): "roll Strike or Submission -> next turn roll +1"
+40ab70187ff14a7f8989d2b248d63b94:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Strike for your turn roll, your next turn roll is +1
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Submission
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Submission for your turn roll, your next turn roll is
+    +1
+  source: gimmick
+
+
+# ---------------------------------------------------------------------------
+# Top-96: RollGap comeback (Big Bad Bobby D) + conditional Static BuffSkill
+# gated by hand size (Johnny T, Mr. Poppintwist). Existing IR nodes.
+# ---------------------------------------------------------------------------
+
+# Big Bad Bobby D: "opp roll >=3 greater -> next roll +2"
+64f184e2aad14b30adda926175ee8e6e:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapAtLeast
+    k: 3
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 2
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: opponent's turn roll at least 3 greater (you rolled >=3 lower) -> next
+    turn roll +2
+  source: gimmick
+
+# Johnny T: "opp hand >=8 -> your Strike & Submission +1"
+c79de6acd1954441970f9b1901a55e01:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: '>='
+    vs: VALUE
+    value: 8
+    who: OPP
+  actions:
+  - '@type': BuffSkill
+    skill: Strike
+    delta: 1
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if opponent has 8+ cards in hand, your Strike is +1
+  source: gimmick
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: '>='
+    vs: VALUE
+    value: 8
+    who: OPP
+  actions:
+  - '@type': BuffSkill
+    skill: Submission
+    delta: 1
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if opponent has 8+ cards in hand, your Submission is +1
+  source: gimmick
+
+# Mr. Poppintwist: "your hand >=6 -> Grapple +2"
+7c61c4f8ca78491ba66c77a6a2778888:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: '>='
+    vs: VALUE
+    value: 6
+    who: SELF
+  actions:
+  - '@type': BuffSkill
+    skill: Grapple
+    delta: 2
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if you have 6+ cards in hand, your Grapple is +2
+  source: gimmick
+
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — on-Stop family (engine _run_on_stop_gimmicks).
+# OnStop dir=THEIRS = "when you Stop a card" (fires for the stopper), task #87.
+# ---------------------------------------------------------------------------
+
+# Gia de los Muertos (V1): "When you Stop a card, draw 1 card."
+a4b61c579c2d4ca59b5001ea5503fdef:
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you Stop a card, draw 1 card
+  source: gimmick
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — in-roll modifier gated on the OPPONENT's
+# rolled VALUE (engine _apply_in_roll_mods now feeds the in-progress roll
+# context to the condition; who=OPP reads the opponent's roll), task #89.
+# ---------------------------------------------------------------------------
+
+# Numer01: "When your opponent's turn roll is 10, your turn roll is +2." An in-roll
+# modifier on THIS roll (user-confirmed: opp 10 + you 8 -> 10 = bump; you 9/10 -> win).
+# InRoll(who=OPP) selects the opponent's roll context; RollValue(=,10) gates on it;
+# ModifyRoll(SELF,+2,THIS) lifts your own current roll.
+719cbdbaba434b719bd7fa7a2892813e:
+- '@type': Effect
+  trigger:
+    '@type': InRoll
+    skill: null
+    who: OPP
+    either: false
+  condition:
+    '@type': RollValue
+    cmp: '='
+    value: 10
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 2
+    when: THIS
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your opponent's turn roll is 10, your turn roll is +2
+  source: gimmick
+  optional: false
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — roll-LEAD-gated (new RollLeadAtLeast
+# condition; schema v2). "roll >= k greater than opponent", the mirror of
+# RollGapAtLeast — task #88.
+# ---------------------------------------------------------------------------
+
+# YamatoHama (Underworld): "When your turn roll is at least 3 greater than your
+# opponent's turn roll, bury 3 cards in your opponent's discard pile."
+# OnRoll(SELF) fires on your roll; RollLeadAtLeast(3) gates on rolling >=3 higher;
+# Bury(count=3, who=OPP) sends 3 of their discard to the bottom of their deck.
+2b02cdb188af4611b79c7a0e616ad692:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollLeadAtLeast
+    k: 3
+  actions:
+  - '@type': Bury
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 3
+    who: OPP
+    random: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your turn roll is at least 3 greater than your opponent's, bury 3 in their discard
+  source: gimmick
+  optional: false
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — existing-node quick-wins (no engine or
+# schema change): StartOfMatch Peek+Search, Static MaxHandSize, and the
+# already-supported owner-LOWER roll gap + RemoveFromPlay. Task follows #88/#89.
+# ---------------------------------------------------------------------------
+
+# Overdog V1 & V2 (Underworld, identical): "At the start of the match: Look at your
+# opponent's hand then search your deck for 1 Lead and add it to your hand. Your
+# maximum handsize is +10." Peek(OPP) = the look; Search(Lead->HAND); MaxHandSize(+10).
+5f78183903ba49eabae4c4ec9f0ffd11: &overdog
+- '@type': Effect
+  trigger:
+    '@type': StartOfMatch
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Peek
+    who: OPP
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Lead
+      tag: null
+      name: null
+      raw: null
+    dest: HAND
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'at the start of the match: look at your opponent''s hand then search your deck for 1 Lead and add it to your hand'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': MaxHandSize
+    delta: 10
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your maximum handsize is +10
+  source: gimmick
+  optional: false
+64639328a1d9437d8af22c5d648f4b70: *overdog
+
+# Zero Win Champion (Underworld): "When your turn roll is at least 3 less than your
+# opponent's turn roll: Discard 1 card they have in play." OnRoll(SELF)+RollGapAtLeast(3)
+# (owner rolled >=3 LOWER — the already-supported direction) -> RemoveFromPlay(OPP, 1).
+eae7c1b5fdc14e27bafc9106566cf89c:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapAtLeast
+    k: 3
+  actions:
+  - '@type': RemoveFromPlay
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    who: OPP
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your turn roll is at least 3 less than your opponent's turn roll, discard 1 card they have in play
+  source: gimmick
+  optional: false

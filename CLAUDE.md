@@ -46,6 +46,7 @@ Development tasks run through `invoke` (`tasks.py`), wrapping `cargo`:
 invoke check          # pre-commit (fmt + clippy + knots) + cargo test  (the CI gate)
 invoke test           # cargo test
 invoke build          # cargo build (--release for optimized)
+invoke overrides      # regen overrides.ir.json from ./overrides.yaml (the single source, on main)
 invoke conformance    # cross-language harness vs the Python oracle (parser + snapshot parity)
 invoke bump-version   # bump the crate version in Cargo.toml (dry-run with no args)
 ```

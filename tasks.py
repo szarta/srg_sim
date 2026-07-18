@@ -9,7 +9,9 @@ Usage:
 Install invoke: pip install invoke   (or use the shared venv's copy)
 """
 
+import os
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -21,6 +23,14 @@ SEMVER = r"\d+\.\d+\.\d+"
 # `invoke conformance`, read by tests/parser_parity.rs. Under target/ so it is
 # git-ignored and wiped by `cargo clean`.
 CARDS_IR = "target/conformance/cards.ir.json"
+
+
+def _oracle_overrides_path() -> Path:
+    """The Python oracle's overrides.yaml (`$SRG_PY`, default `~/data/srg_sim_python`).
+    `invoke conformance` overwrites it with this repo's copy so the oracle parses the
+    same override table — main is the single authoring source (substrate-split §6)."""
+    oracle = Path(os.environ.get("SRG_PY", Path.home() / "data" / "srg_sim_python"))
+    return oracle / "overrides.yaml"
 
 
 def _read_cargo_version() -> str:
@@ -46,12 +56,12 @@ def test(c):
 
 @task
 def overrides(c):
-    """Regenerate overrides.ir.json from the Python overrides.yaml (the source of truth).
+    """Regenerate overrides.ir.json from this repo's overrides.yaml (the source of truth).
 
-    The M-R3 coverage-growth loop: model a card/competitor gimmick in the oracle's
-    `overrides.yaml` (`~/data/srg_sim_python`), run this to refresh the embedded Rust
-    table, and rebuild. Both engines read one source, so parser parity holds
-    structurally. Verify with `invoke conformance`.
+    The M-R3 coverage-growth loop: model a card/competitor gimmick in `overrides.yaml`
+    (repo root, on main), run this to refresh the embedded Rust table, and rebuild.
+    `invoke conformance` mirrors the same file into the Python oracle, so parser parity
+    holds structurally with single-repo authoring.
     """
     c.run(f"{sys.executable} scripts/gen_overrides_ir.py overrides.ir.json", pty=True)
 
@@ -76,6 +86,12 @@ def conformance(c):
     design split), so log parity is owned by the frozen conformance corpus that Rust
     reproduces byte-for-byte in ``tests/engine_conformance.rs``.
     """
+    # Single-source authoring: mirror this repo's overrides.yaml into the oracle so its
+    # parser sees the same table as the Rust side (main is authoritative; §6).
+    oracle_overrides = _oracle_overrides_path()
+    if oracle_overrides.parent.is_dir():
+        shutil.copyfile("overrides.yaml", oracle_overrides)
+        print(f"synced overrides.yaml -> {oracle_overrides}")
     # sys.executable is the venv interpreter running invoke — it has the oracle's deps.
     c.run(f"{sys.executable} scripts/gen_cards_ir.py {CARDS_IR}", pty=True)
     c.run(
