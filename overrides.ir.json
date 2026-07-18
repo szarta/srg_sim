@@ -1236,6 +1236,38 @@
       }
     }
   ],
+  "83a18825be1b4a83bcbc1392a5bcb585": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "whenever you roll Technique, draw 1 card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
+        "who": "SELF"
+      }
+    }
+  ],
   "894c9965da684adb8ab5f532bafbff59": [
     {
       "@type": "Effect",
@@ -2412,6 +2444,38 @@
         "atk_type": null,
         "keyword": null,
         "name": null
+      }
+    }
+  ],
+  "ed652335019b4eee8341e33a86bad731": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your target rolls Strike for their turn roll, draw 1 card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Strike",
+        "who": "OPP"
       }
     }
   ],

@@ -45,6 +45,18 @@ def test(c):
 
 
 @task
+def overrides(c):
+    """Regenerate overrides.ir.json from the Python overrides.yaml (the source of truth).
+
+    The M-R3 coverage-growth loop: model a card/competitor gimmick in the oracle's
+    `overrides.yaml` (`~/data/srg_sim_python`), run this to refresh the embedded Rust
+    table, and rebuild. Both engines read one source, so parser parity holds
+    structurally. Verify with `invoke conformance`.
+    """
+    c.run(f"{sys.executable} scripts/gen_overrides_ir.py overrides.ir.json", pty=True)
+
+
+@task
 def conformance(c):
     """Cross-language conformance harness vs the Python oracle (substrate-split.md §6).
 
