@@ -18,7 +18,7 @@
 
 use crate::cards::{Card, Deck};
 use crate::conditions::{self, RollContext};
-use crate::gamelog::{CardMovement, Event, GameLog, Header, PlayerInfo};
+use crate::gamelog::{CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Duration, Effect, LoseKind,
     RollWhen, Skill, Trigger, Who,
@@ -1329,11 +1329,480 @@ impl Engine {
             .unwrap_or(0);
         flags.insert("extra_plays".to_owned(), json!(cur + 1));
     }
+
+    // -- turn loop ---------------------------------------------------------
+
+    /// One full turn: bump the counter, clear per-turn state, resolve the roll-off,
+    /// then the winner draws and takes their play action(s) (DESIGN.md §6). The
+    /// board persists across turns; a `PlayExtraCard` grant loops another action.
+    fn turn(&mut self) -> Eng<()> {
+        self.state.turn_no += 1;
+        self.clear_turn_freq();
+        for player in self.state.players.values_mut() {
+            player.flags.remove("extra_plays"); // "additional card this turn" is per-turn
+        }
+        let winner = self.turn_roll()?;
+        if self.ended() || !self.draw_for_turn(&winner)? {
+            return Ok(());
+        }
+        self.first_turn_option(&winner)?; // the once-per-player first-turn redraw (§6)
+        self.take_turn_action(&winner)?; // play ONE card (or pass+bury)
+        while !self.ended() && self.consume_extra_play(&winner) {
+            self.take_turn_action(&winner)?; // a PlayExtraCard granted another action
+        }
+        Ok(())
+    }
+
+    /// Spend one pending "additional card this turn" grant, if any.
+    fn consume_extra_play(&mut self, key: &str) -> bool {
+        let flags = &mut self.state.players.get_mut(key).unwrap().flags;
+        let cur = flags
+            .get("extra_plays")
+            .and_then(Value::as_i64)
+            .unwrap_or(0);
+        if cur <= 0 {
+            return false;
+        }
+        flags.insert("extra_plays".to_owned(), json!(cur - 1));
+        true
+    }
+
+    /// The once-per-player first-turn redraw (`_first_turn_option`) — filled in 72d
+    /// alongside setup/mulligan; a no-op stub for now so the turn loop compiles.
+    fn first_turn_option(&mut self, _key: &str) -> Eng<()> {
+        Ok(())
+    }
+
+    /// Play resolution + stops + finish/breakout (`_take_turn_action`) — filled in
+    /// 72d; a no-op stub for now so the turn loop compiles.
+    fn take_turn_action(&mut self, _active: &str) -> Eng<()> {
+        Ok(())
+    }
+
+    // -- roll-off ----------------------------------------------------------
+
+    /// Resolve the roll-off, set the active player, and fire the turn-roll gimmicks
+    /// (OnWinTurn/OnLoseTurn for the outcome, OnRoll for each side's roll — the
+    /// latter outcome-agnostic, DESIGN.md §6/§11).
+    fn turn_roll(&mut self) -> Eng<String> {
+        let winner = self.roll_off()?;
+        self.state.active = winner.clone();
+        let loser = self.state.opponent_of(&winner);
+        let ctx_w = self.roll_ctx.get(&winner).cloned().unwrap_or_default();
+        let ctx_l = self.roll_ctx.get(&loser).cloned().unwrap_or_default();
+        let eff_w = self.standing_effects(&winner);
+        self.run_effects(&eff_w, "OnWinTurn", &winner, Some(&ctx_w))?;
+        let eff_l = self.standing_effects(&loser);
+        self.run_effects(&eff_l, "OnLoseTurn", &loser, Some(&ctx_l))?;
+        self.run_on_roll("A")?;
+        self.run_on_roll("B")?;
+        Ok(winner)
+    }
+
+    /// Fire both players' `OnBump` effects for a bump just taken (a once-per-turn
+    /// guard keeps a bump-punish gimmick firing once even across repeated ties).
+    fn run_on_bump(&mut self) -> Eng<()> {
+        for key in ["A", "B"] {
+            let effects = self.standing_effects(key);
+            self.run_effects(&effects, "OnBump", key, None)?;
+        }
+        Ok(())
+    }
+
+    /// Fire `key`'s `OnRoll` effects for the deciding roll: matched by the roller's
+    /// skill (`None` = any) and gated by the roller's roll context.
+    fn run_on_roll(&mut self, key: &str) -> Eng<()> {
+        let opp = self.state.opponent_of(key);
+        let effects = self.standing_effects(key);
+        for eff in &effects {
+            let Trigger::OnRoll { skill, who } = &eff.trigger else {
+                continue;
+            };
+            let ctx_key = if *who == Who::SelfSide {
+                key
+            } else {
+                opp.as_str()
+            };
+            let ctx = self.roll_ctx.get(ctx_key).cloned().unwrap_or_default();
+            if skill.is_none() || ctx.skill == *skill {
+                self.fire_if_ready(eff, key, Some(&ctx))?;
+            }
+        }
+        Ok(())
+    }
+
+    fn roll_off(&mut self) -> Eng<String> {
+        let lowest = self.lowest_wins();
+        self.promote_pending(); // last turn's `when=NEXT` mods become THIS roll's (#50)
+        let (mut sa, mut va) = self.roll_for("A", true);
+        let (mut sb, mut vb) = self.roll_for("B", true);
+        // In-roll boosts (Soborno): after the skill is known, before the winner is
+        // decided, a player may pay a cost for +delta to THIS roll.
+        va = self.offer_roll_boost("A", sa, va, false)?;
+        vb = self.offer_roll_boost("B", sb, vb, false)?;
+        let (a, b) = self.apply_in_roll_mods(sa, va, sb, vb); // Tomato: roll-skill debuff
+        va = a;
+        vb = b;
+        self.consume_pending();
+        let mut bumps: i64 = 0;
+        while bumps < MAX_TIE_REROLLS {
+            if let Some((nsa, nva, nsb, nvb, nb)) = self.try_elective_bump(sa, va, sb, vb, bumps)? {
+                sa = nsa;
+                va = nva;
+                sb = nsb;
+                vb = nvb;
+                bumps = nb;
+                continue;
+            }
+            if va != vb {
+                break; // a decided roll: no value tie and no elected bump
+            }
+            if let Some(forced) = self.tie_winner() {
+                return Ok(self.finish_roll_off(sa, va, sb, vb, bumps, forced));
+            }
+            // Would-bump replacement (Rey Zerblade): pay a cost for +delta *instead*
+            // of the bump; if that breaks the tie, the bump is skipped.
+            va = self.offer_roll_boost("A", sa, va, true)?;
+            vb = self.offer_roll_boost("B", sb, vb, true)?;
+            if va != vb {
+                break;
+            }
+            let (nsa, nva, nsb, nvb, nb) = self.do_bump(bumps)?;
+            sa = nsa;
+            va = nva;
+            sb = nsb;
+            vb = nvb;
+            bumps = nb;
+        }
+        let winner = roll_winner(va, vb, lowest);
+        Ok(self.finish_roll_off(sa, va, sb, vb, bumps, winner))
+    }
+
+    /// Record the roll context, latch `turn_bumped`, log the `turn_result`, and
+    /// return the decided winner — the shared tail of every roll-off exit.
+    fn finish_roll_off(
+        &mut self,
+        sa: Skill,
+        va: i64,
+        sb: Skill,
+        vb: i64,
+        bumps: i64,
+        winner: String,
+    ) -> String {
+        self.record_roll_ctx(sa, va, sb, vb);
+        self.turn_bumped = bumps > 0;
+        let t = self.state.turn_no;
+        self.log(Event::TurnResult {
+            t,
+            winner: winner.clone(),
+            tie_bumps: bumps,
+        });
+        winner
+    }
+
+    /// The elective same-skill bump (Mastermind's "Ringside Ruckus"): both rolled
+    /// the same skill but different values, so the owner MAY spend a per-match
+    /// charge to bump instead of resolving. `Some(fresh roll)` if a bump was taken.
+    #[allow(clippy::type_complexity)]
+    fn try_elective_bump(
+        &mut self,
+        sa: Skill,
+        va: i64,
+        sb: Skill,
+        vb: i64,
+        bumps: i64,
+    ) -> Eng<Option<(Skill, i64, Skill, i64, i64)>> {
+        if va == vb || sa != sb {
+            return Ok(None);
+        }
+        let Some(owner) = self.elective_bump_owner() else {
+            return Ok(None);
+        };
+        if !self.elect_bump(&owner, va, vb)? {
+            return Ok(None);
+        }
+        Ok(Some(self.do_bump(bumps)?))
+    }
+
+    /// Perform a bump: both draw 1, fire OnBump punishes, and re-roll (pending mods
+    /// are dropped on a bump re-roll). Returns the fresh `(sa, va, sb, vb, bumps+1)`.
+    fn do_bump(&mut self, bumps: i64) -> Eng<(Skill, i64, Skill, i64, i64)> {
+        self.draw("A", 1, DeckEnd::Top)?;
+        self.draw("B", 1, DeckEnd::Top)?;
+        let bumps = bumps + 1;
+        self.run_on_bump()?; // bump-punish gimmicks (Mastermind: opp next roll -2)
+        let (sa, va) = self.roll_for("A", false);
+        let (sb, vb) = self.roll_for("B", false);
+        let (va, vb) = self.apply_in_roll_mods(sa, va, sb, vb); // debuff re-rolls too
+        Ok((sa, va, sb, vb, bumps))
+    }
+
+    /// A player holding an `ElectBumpOnSameSkill` grant with a per-match charge
+    /// still available (else `None`).
+    fn elective_bump_owner(&self) -> Option<String> {
+        for key in ["A", "B"] {
+            for eff in self.standing_effects(key) {
+                for a in &eff.actions {
+                    if let Action::ElectBumpOnSameSkill { uses } = a {
+                        let used = self.state.players[key]
+                            .freq_counters
+                            .get("match:elect_bump")
+                            .copied()
+                            .unwrap_or(0);
+                        if used < *uses {
+                            return Some(key.to_owned());
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Offer `owner` the elective same-skill bump and spend a charge if taken. The
+    /// options carry a `losing` hint so a policy can bump a loss into a re-roll.
+    fn elect_bump(&mut self, owner: &str, va: i64, vb: i64) -> Eng<bool> {
+        let (mine, theirs) = if owner == "A" { (va, vb) } else { (vb, va) };
+        let losing = mine < theirs;
+        let legal = vec![
+            json!({"kind": "yes", "point": "elect_bump", "losing": losing}),
+            json!({"kind": "no", "point": "elect_bump", "losing": losing}),
+        ];
+        if self.decide("elect_bump", owner, legal)?["kind"] != "yes" {
+            return Ok(false);
+        }
+        let fc = &mut self.state.players.get_mut(owner).unwrap().freq_counters;
+        let cur = fc.get("match:elect_bump").copied().unwrap_or(0);
+        fc.insert("match:elect_bump".to_owned(), cur + 1);
+        Ok(true)
+    }
+
+    /// Offer `key`'s in-roll boosts for a roll of `skill` and return the (maybe
+    /// boosted) value. `on_bump` selects the initial-roll boosts (Soborno) vs the
+    /// would-bump-tie ones (Rey Zerblade); taking one pays its cost then adds delta.
+    fn offer_roll_boost(&mut self, key: &str, skill: Skill, value: i64, on_bump: bool) -> Eng<i64> {
+        let effects = self.standing_effects(key);
+        let mut value = value;
+        for eff in &effects {
+            let Trigger::OnRollBoost {
+                skill: tskill,
+                delta,
+                on_bump: t_on_bump,
+            } = &eff.trigger
+            else {
+                continue;
+            };
+            if *t_on_bump != on_bump || (tskill.is_some() && *tskill != Some(skill)) {
+                continue;
+            }
+            if !(self.may_fire(eff, key)
+                && conditions::holds(&eff.condition, &self.state, key, None))
+            {
+                continue;
+            }
+            if eff.optional && !self.take_optional(eff, key)? {
+                continue;
+            }
+            self.mark_fired(eff, key);
+            self.apply_actions(eff, key)?; // pay the cost (e.g. a type-matched discard)
+            value += *delta;
+            self.log_effect(
+                key,
+                "RollBoost",
+                Some(key),
+                json!({"skill": skill.name(), "delta": *delta}),
+            );
+        }
+        Ok(value)
+    }
+
+    /// Apply automatic in-roll modifiers to the current roll (Tomato Tomato Jr.:
+    /// "when you or your target roll Power, your target's roll is -1"). Each matching
+    /// `InRoll` effect's `ModifyRoll(when=THIS)` deltas land on the named side — one
+    /// action, one application, so an `either`-gated debuff is capped, never doubled.
+    fn apply_in_roll_mods(&self, sa: Skill, va: i64, sb: Skill, vb: i64) -> (i64, i64) {
+        let mut vals: BTreeMap<&str, i64> = BTreeMap::from([("A", va), ("B", vb)]);
+        for owner in ["A", "B"] {
+            let opp = self.state.opponent_of(owner);
+            for eff in self.standing_effects(owner) {
+                if !matches!(eff.trigger, Trigger::InRoll { .. })
+                    || !self.in_roll_matches(&eff.trigger, owner, sa, sb)
+                    || !conditions::holds(&eff.condition, &self.state, owner, None)
+                {
+                    continue;
+                }
+                for a in &eff.actions {
+                    if let Action::ModifyRoll {
+                        who, delta, when, ..
+                    } = a
+                    {
+                        if *when == RollWhen::This {
+                            let target = if *who == Who::SelfSide {
+                                owner
+                            } else {
+                                opp.as_str()
+                            };
+                            *vals.get_mut(target).unwrap() += *delta;
+                        }
+                    }
+                }
+            }
+        }
+        (vals["A"], vals["B"])
+    }
+
+    /// Whether an `InRoll` trigger fires for this roll (skill gate; `either` fires
+    /// once if either side rolled the skill — a capped modifier).
+    fn in_roll_matches(&self, trig: &Trigger, owner: &str, sa: Skill, sb: Skill) -> bool {
+        let Trigger::InRoll { skill, who, either } = trig else {
+            return false;
+        };
+        let Some(want) = skill else {
+            return true;
+        };
+        if *either {
+            return sa == *want || sb == *want;
+        }
+        let opp = self.state.opponent_of(owner);
+        let roller = if *who == Who::SelfSide {
+            owner
+        } else {
+            opp.as_str()
+        };
+        let rolled = if roller == "A" { sa } else { sb };
+        rolled == *want
+    }
+
+    /// True iff either side's active gimmick declares the roll-off lowest-wins (a
+    /// Static `LowestRollWins`; blanking Fae restores highest-wins).
+    fn lowest_wins(&self) -> bool {
+        for key in ["A", "B"] {
+            for eff in self.standing_effects(key) {
+                if matches!(eff.trigger, Trigger::Static)
+                    && eff
+                        .actions
+                        .iter()
+                        .any(|a| matches!(a, Action::LowestRollWins))
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Stash each side's rolled skill + signed gap (opponent minus self, so a
+    /// positive gap means that side rolled lower) for roll-scoped conditions.
+    fn record_roll_ctx(&mut self, sa: Skill, va: i64, sb: Skill, vb: i64) {
+        self.roll_ctx = BTreeMap::from([
+            (
+                "A".to_owned(),
+                RollContext {
+                    skill: Some(sa),
+                    gap: Some(vb - va),
+                    value: Some(va),
+                },
+            ),
+            (
+                "B".to_owned(),
+                RollContext {
+                    skill: Some(sb),
+                    gap: Some(va - vb),
+                    value: Some(vb),
+                },
+            ),
+        ]);
+    }
+
+    fn roll_for(&mut self, key: &str, use_pending: bool) -> (Skill, i64) {
+        let skill = self.state.rng.roll();
+        let base = self.stat(key, skill);
+        let delta = if use_pending {
+            self.state.players[key].pending_roll_mods.this_turn
+        } else {
+            0
+        };
+        let mut mods = Vec::new();
+        if delta != 0 {
+            mods.push(RollMod {
+                src: "pending".to_owned(),
+                delta,
+            });
+        }
+        let value = base + delta;
+        let t = self.state.turn_no;
+        self.log(Event::Roll {
+            t,
+            player: key.to_owned(),
+            skill: skill.name().to_owned(),
+            base,
+            value,
+            mods,
+        });
+        (skill, value)
+    }
+
+    /// Fold a queued `when=NEXT` roll mod into the imminent roll (#50): promoting
+    /// `next -> this` at the START of the following roll-off makes such a mod land
+    /// on the immediately-following roll, not the turn after.
+    fn promote_pending(&mut self) {
+        for player in self.state.players.values_mut() {
+            player.pending_roll_mods.this_turn += player.pending_roll_mods.next_turn;
+            player.pending_roll_mods.next_turn = 0;
+        }
+    }
+
+    /// The initial roll spent `this`; clear it so a pending mod applies once (bump
+    /// re-rolls run with `use_pending=false`, so they never re-read it).
+    fn consume_pending(&mut self) {
+        for player in self.state.players.values_mut() {
+            player.pending_roll_mods.this_turn = 0;
+        }
+    }
+
+    /// The forced tie winner: the sole holder of a `win_tie` flag (consumed here),
+    /// or `None` if zero or both sides hold it (then the tie bumps).
+    fn tie_winner(&mut self) -> Option<String> {
+        let mut holders = Vec::new();
+        for (k, p) in self.state.players.iter_mut() {
+            if p.flags
+                .remove("win_tie")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+            {
+                holders.push(k.clone());
+            }
+        }
+        if holders.len() == 1 {
+            holders.into_iter().next()
+        } else {
+            None
+        }
+    }
+
+    /// Draw for the won turn; `Ok(false)` if the game ended by count-out (exhausting
+    /// deck+hand on a won turn is a win).
+    fn draw_for_turn(&mut self, key: &str) -> Eng<bool> {
+        let player = &self.state.players[key];
+        if player.deck.is_empty() && player.hand.is_empty() {
+            self.win(key, "count_out");
+            return Ok(false);
+        }
+        self.draw(key, 1, DeckEnd::Top)?;
+        Ok(true)
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Free helpers
 // ---------------------------------------------------------------------------
+
+/// The roll-off winner. Highest roll wins, unless a lowest-wins gimmick (Fae)
+/// flips it to the lowest; A holds the edge on a residual tie.
+fn roll_winner(va: i64, vb: i64, lowest: bool) -> String {
+    let a_wins = if lowest { va <= vb } else { va >= vb };
+    if a_wins { "A" } else { "B" }.to_owned()
+}
 
 fn deck_end_str(source: DeckEnd) -> &'static str {
     match source {
