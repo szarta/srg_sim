@@ -1141,6 +1141,41 @@
       }
     }
   ],
+  "719cbdbaba434b719bd7fa7a2892813e": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 2,
+          "per": null,
+          "per_who": "OPP",
+          "when": "THIS",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollValue",
+        "cmp": "=",
+        "value": 10
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent's turn roll is 10, your turn roll is +2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "InRoll",
+        "either": false,
+        "skill": null,
+        "who": "OPP"
+      }
+    }
+  ],
   "74d34bbeb78140aea7590c6a8f2d7d5a": [
     {
       "@type": "Effect",

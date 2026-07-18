@@ -2151,13 +2151,38 @@ impl Engine {
     /// action, one application, so an `either`-gated debuff is capped, never doubled.
     fn apply_in_roll_mods(&self, sa: Skill, va: i64, sb: Skill, vb: i64) -> (i64, i64) {
         let mut vals: BTreeMap<&str, i64> = BTreeMap::from([("A", va), ("B", vb)]);
+        // Roll context for the in-progress roll-off, so a value-gated in-roll modifier
+        // (Numer01: "when your opponent's turn roll is 10, your roll is +2") can read
+        // the current roll — the recorded `roll_ctx` is not written until the roll-off
+        // resolves. Which side's roll the condition reads follows the trigger's `who`,
+        // exactly as the OnRoll path does (see `RollValue`).
+        let ctx_a = RollContext {
+            skill: Some(sa),
+            gap: Some(vb - va),
+            value: Some(va),
+        };
+        let ctx_b = RollContext {
+            skill: Some(sb),
+            gap: Some(va - vb),
+            value: Some(vb),
+        };
         for owner in ["A", "B"] {
             let opp = self.state.opponent_of(owner);
             for eff in self.standing_effects(owner) {
                 if !matches!(eff.trigger, Trigger::InRoll { .. })
                     || !self.in_roll_matches(&eff.trigger, owner, sa, sb)
-                    || !conditions::holds(&eff.condition, &self.state, owner, None)
                 {
+                    continue;
+                }
+                let Trigger::InRoll { who, .. } = &eff.trigger else {
+                    continue;
+                };
+                let reads_self = *who == Who::SelfSide;
+                let cond_ctx = match (owner, reads_self) {
+                    ("A", true) | ("B", false) => &ctx_a,
+                    _ => &ctx_b,
+                };
+                if !conditions::holds(&eff.condition, &self.state, owner, Some(cond_ctx)) {
                     continue;
                 }
                 for a in &eff.actions {
