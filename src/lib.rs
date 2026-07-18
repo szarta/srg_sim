@@ -28,6 +28,7 @@ pub mod cards;
 pub mod conditions;
 pub mod error;
 pub mod finish;
+pub mod gamelog;
 pub mod ir;
 pub mod rng;
 pub mod skills;
