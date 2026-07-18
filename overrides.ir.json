@@ -974,6 +974,39 @@
       }
     }
   ],
+  "64f184e2aad14b30adda926175ee8e6e": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 2,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollGapAtLeast",
+        "k": 3
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "opponent's turn roll at least 3 greater (you rolled >=3 lower) -> next turn roll +2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
   "6aa7c08a48ba49c3baca127d5880cd0b": [
     {
       "@type": "Effect",
@@ -1225,6 +1258,42 @@
         "@type": "OnRoll",
         "skill": "Agility",
         "who": "SELF"
+      }
+    }
+  ],
+  "7c61c4f8ca78491ba66c77a6a2778888": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 2,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Grapple",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HandSizeCompare",
+        "cmp": ">=",
+        "value": 6,
+        "vs": "VALUE",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you have 6+ cards in hand, your Grapple is +2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -2216,6 +2285,76 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "c79de6acd1954441970f9b1901a55e01": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Strike",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HandSizeCompare",
+        "cmp": ">=",
+        "value": 8,
+        "vs": "VALUE",
+        "who": "OPP"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if opponent has 8+ cards in hand, your Strike is +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per_crowd": false,
+          "skill": "Submission",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HandSizeCompare",
+        "cmp": ">=",
+        "value": 8,
+        "vs": "VALUE",
+        "who": "OPP"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if opponent has 8+ cards in hand, your Submission is +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
