@@ -219,6 +219,64 @@
       }
     }
   ],
+  "13d73960938c418f9f0cecc7145ac830": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Flip",
+                  "n": 2,
+                  "who": "SELF"
+                }
+              ],
+              "label": "flip 2 cards"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AddFromDiscard",
+                  "filter": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "number": null,
+                    "play_order": "Finish",
+                    "raw": null,
+                    "tag": null
+                  }
+                }
+              ],
+              "label": "add 1 finish from your discard pile to your hand"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Strike for your turn roll: flip 2 cards or add 1 finish from your discard pile to your hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Strike",
+        "who": "SELF"
+      }
+    }
+  ],
   "1cf1f13bf01a404ea9117d3483eb2984": [
     {
       "@type": "Effect",
@@ -1107,6 +1165,64 @@
       }
     }
   ],
+  "6359a3a6d77d45ae8e05f43c37b5a001": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Flip",
+                  "n": 3,
+                  "who": "SELF"
+                }
+              ],
+              "label": "flip 3 cards"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AddFromDiscard",
+                  "filter": {
+                    "@type": "CardFilter",
+                    "atk_type": "Submission",
+                    "name": null,
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null
+                  }
+                }
+              ],
+              "label": "add 1 Submission from your discard pile to your hand"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Technique: flip 3 cards or add 1 Submission from your discard pile to your hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
+        "who": "SELF"
+      }
+    }
+  ],
   "64639328a1d9437d8af22c5d648f4b70": [
     {
       "@type": "Effect",
@@ -1951,6 +2067,64 @@
       "source": "card",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "98d943afc0ad4074a534d4e92ab0b9dc": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Flip",
+                  "n": 3,
+                  "who": "SELF"
+                }
+              ],
+              "label": "flip 3 cards"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AddFromDiscard",
+                  "filter": {
+                    "@type": "CardFilter",
+                    "atk_type": "Submission",
+                    "name": null,
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null
+                  }
+                }
+              ],
+              "label": "add 1 Submission from your discard pile to your hand"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Technique: flip 3 cards or add 1 Submission from your discard pile to your hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
+        "who": "SELF"
       }
     }
   ],
