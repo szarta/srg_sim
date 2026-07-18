@@ -394,8 +394,14 @@ split is clean.
   after the engine is dropped) is cheap insurance. Decide at M-R1 whether the Rust
   parser ships from day one or Python emits `cards.ir.json` until the Rust parser
   reaches parity.
-- **MCP server surface.** Which tools the MCP server exposes (open session, submit
-  decision, observe, analyze, coverage) — a small spec of its own, drafted at M-R1.
+- **MCP server surface.** ~~Which tools the MCP server exposes~~ — **resolved (task
+  77).** `mcp_server/` is a Python **FastMCP** server that shells out to the `srg`
+  binary (the house pattern; cf. `todo-sqlite-cli/mcp_server`), so no MCP/async deps
+  enter the Rust tree. Tools: `open_session` / `submit` / `observe` (the decision
+  protocol, over stateless `srg session open|submit|observe` steps — a `Session` is a
+  pure function of its snapshot, which the server threads per `session_id`), plus
+  `analyze` / `coverage`. Interactive drive is snapshot-in / snapshot-out; the model
+  only shuttles a small id.
 - **Timing/priority full spec (§8.3).** The response-window / simultaneous-trigger /
   priority-pass model — deferred to a follow-up doc; only the decision points are
   reserved now.

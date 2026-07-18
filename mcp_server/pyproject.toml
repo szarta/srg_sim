@@ -1,0 +1,11 @@
+[project]
+name = "srg-supershow-mcp"
+version = "0.1.0"
+description = "MCP server wrapping the srg Supershow match engine (shells out to the `srg` CLI)"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0.0",
+]
+
+[project.scripts]
+srg-mcp-server = "server:main"

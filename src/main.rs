@@ -10,7 +10,7 @@
 mod console;
 
 use clap::{Parser, Subcommand};
-use console::{commands, default_cards_path};
+use console::{commands, default_cards_path, session_cmd};
 use std::path::PathBuf;
 
 /// SRG Supershow match engine — command-line interface.
@@ -75,12 +75,67 @@ enum Command {
         #[arg(long)]
         cards: Option<PathBuf>,
     },
+    /// Drive a resumable match over the decision protocol (the MCP substrate).
+    Session {
+        #[command(subcommand)]
+        action: SessionAction,
+    },
     /// Print engine build info.
     Info,
 }
 
+/// Stateless, snapshot-threaded steps of a [`Session`] (see `src/console/session_cmd.rs`).
+#[derive(Subcommand)]
+enum SessionAction {
+    /// Open a match; print the first `{snapshot, step}` JSON.
+    Open {
+        deck_a: PathBuf,
+        deck_b: PathBuf,
+        #[arg(long, default_value_t = 0)]
+        seed: u64,
+        /// `remote` (a human/agent decides via submit) or a policy name (local AI).
+        #[arg(long, default_value = "remote")]
+        seat_a: String,
+        #[arg(long, default_value = "heuristic")]
+        seat_b: String,
+        #[arg(long, default_value = "")]
+        created: String,
+        #[arg(long)]
+        cards: Option<PathBuf>,
+    },
+    /// Answer the outstanding decision with `legal[K]` (snapshot on stdin).
+    Submit {
+        #[arg(long)]
+        choice_index: usize,
+    },
+    /// Re-print the current `{snapshot, step}` without advancing (snapshot on stdin).
+    Observe,
+}
+
 fn cards_or_default(cards: Option<PathBuf>) -> PathBuf {
     cards.unwrap_or_else(default_cards_path)
+}
+
+fn run_session(action: SessionAction) -> anyhow::Result<()> {
+    match action {
+        SessionAction::Open {
+            deck_a,
+            deck_b,
+            seed,
+            seat_a,
+            seat_b,
+            created,
+            cards,
+        } => session_cmd::open(
+            &cards_or_default(cards),
+            (&deck_a, &deck_b),
+            seed,
+            (&seat_a, &seat_b),
+            &created,
+        ),
+        SessionAction::Submit { choice_index } => session_cmd::submit(choice_index),
+        SessionAction::Observe => session_cmd::observe(),
+    }
 }
 
 fn main() -> anyhow::Result<()> {
@@ -124,6 +179,7 @@ fn main() -> anyhow::Result<()> {
             &policy_b,
         ),
         Command::Replay { log, cards } => commands::replay(&cards_or_default(cards), &log),
+        Command::Session { action } => run_session(action),
         Command::Info => {
             println!(
                 "srg-core {} — console CLI over srg-core (M-R1)",
