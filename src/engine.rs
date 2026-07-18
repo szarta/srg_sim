@@ -18,10 +18,10 @@
 
 use crate::cards::{Card, Deck};
 use crate::conditions::{self, RollContext};
-use crate::gamelog::{CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
+use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Duration, Effect, LoseKind,
-    RollWhen, Skill, Trigger, Who,
+    PlayOrder, RollWhen, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -1367,15 +1367,443 @@ impl Engine {
         true
     }
 
-    /// The once-per-player first-turn redraw (`_first_turn_option`) — filled in 72d
-    /// alongside setup/mulligan; a no-op stub for now so the turn loop compiles.
-    fn first_turn_option(&mut self, _key: &str) -> Eng<()> {
+    // -- setup / mulligan --------------------------------------------------
+
+    /// Match setup: StartOfMatch effects, shuffle, opening hands. The first-turn
+    /// redraw is NOT done here — it belongs to each player's own first won turn
+    /// (DESIGN.md §6), fired from the turn loop.
+    pub fn setup(&mut self) -> Eng<()> {
+        for key in ["A", "B"] {
+            let effects = self.standing_effects(key);
+            self.run_effects(&effects, "StartOfMatch", key, None)?;
+        }
+        for key in ["A", "B"] {
+            let deck = &mut self.state.players.get_mut(key).unwrap().deck;
+            self.state.rng.shuffle(deck);
+        }
+        for key in ["A", "B"] {
+            self.draw(key, OPENING_HAND, DeckEnd::Top)?;
+        }
         Ok(())
     }
 
-    /// Play resolution + stops + finish/breakout (`_take_turn_action`) — filled in
-    /// 72d; a no-op stub for now so the turn loop compiles.
-    fn take_turn_action(&mut self, _active: &str) -> Eng<()> {
+    /// Offer the first-turn redraw once per player, on the first won turn they would
+    /// take an action (DESIGN.md §6). Marked spent whether or not it fires, so a
+    /// player who bumps/loses the early rolls still gets it exactly once.
+    fn first_turn_option(&mut self, key: &str) -> Eng<()> {
+        if self.state.players[key]
+            .flags
+            .get("had_first_turn")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
+            return Ok(());
+        }
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .flags
+            .insert("had_first_turn".to_owned(), json!(true));
+        self.mulligan(key)
+    }
+
+    /// First-turn redraw (DESIGN.md §6): only with NO Leads in hand, a player MAY
+    /// reveal the whole hand, bury it to the bottom of the deck in an order they
+    /// choose, then draw UP TO that many. With a Lead in hand it is not offered.
+    fn mulligan(&mut self, key: &str) -> Eng<()> {
+        let hand = &self.state.players[key].hand;
+        if hand.is_empty() || hand.iter().any(|c| c.play_order == PlayOrder::Lead) {
+            return Ok(());
+        }
+        let legal = vec![json!({"kind": "redraw"}), json!({"kind": "keep"})];
+        if self.decide("mulligan", key, legal)?["kind"] != "redraw" {
+            return Ok(());
+        }
+        let revealed = std::mem::take(&mut self.state.players.get_mut(key).unwrap().hand);
+        let n = revealed.len();
+        let ordered = self.order_bury(key, revealed)?; // player picks the bury order
+        let uuids: Vec<String> = ordered.iter().map(|c| c.db_uuid.clone()).collect();
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .deck
+            .extend(ordered); // to the bottom
+        let t = self.state.turn_no;
+        self.log(Event::Bury(CardMovement {
+            t,
+            player: key.to_owned(),
+            cards: uuids,
+            source: Some("hand".to_owned()),
+            hidden: false, // the hand was REVEALED, so the moved cards are public
+        }));
+        let draw_n = self.mulligan_draw_count(key, n)?; // draw UP TO N
+        self.draw(key, draw_n, DeckEnd::Top)
+    }
+
+    /// Return `cards` in the owner's chosen bury order (last card forced).
+    fn order_bury(&mut self, key: &str, cards: Vec<Card>) -> Eng<Vec<Card>> {
+        let mut remaining = cards;
+        let mut ordered: Vec<Card> = Vec::new();
+        while remaining.len() > 1 {
+            let legal: Vec<Value> = remaining.iter().map(discard_option).collect();
+            let chosen = self.decide("mulligan_bury", key, legal)?;
+            let card = find_by_uuid(&remaining, &chosen);
+            let pos = remaining
+                .iter()
+                .position(|c| c.db_uuid == card.db_uuid)
+                .unwrap();
+            remaining.remove(pos);
+            ordered.push(card);
+        }
+        ordered.extend(remaining);
+        Ok(ordered)
+    }
+
+    /// How many to redraw: up to `n` (default policy takes the max — listed first).
+    fn mulligan_draw_count(&mut self, key: &str, n: usize) -> Eng<usize> {
+        let legal: Vec<Value> = (0..=n)
+            .rev()
+            .map(|i| json!({"kind": "draw", "n": i}))
+            .collect();
+        let chosen = self.decide("mulligan_draw", key, legal)?;
+        Ok(chosen["n"].as_u64().unwrap() as usize)
+    }
+
+    // -- attack sequence ---------------------------------------------------
+
+    /// Play ONE card advancing the persistent chain, or pass+bury (DESIGN.md §6).
+    /// Cards resolve into `in_play` and stay there across turns; an unstopped Finish
+    /// triggers the finish sequence.
+    fn take_turn_action(&mut self, active: &str) -> Eng<()> {
+        let defender = self.state.opponent_of(active);
+        let mut legal = self.playable_options(active);
+        legal.push(json!({"kind": "pass"}));
+        let choice = self.decide("turn_action", active, legal)?;
+        if choice["kind"] == "pass" {
+            return self.do_pass(active);
+        }
+        let number = choice["number"].as_i64().unwrap();
+        let card = self.take_from_hand(active, number);
+        let landed = self.resolve_play(active, &defender, card.clone())?;
+        if landed && card.play_order == PlayOrder::Finish {
+            self.finish_sequence(active, &defender, &card)?;
+        }
+        Ok(())
+    }
+
+    /// Passing recycles one card from discard to the bottom of the deck (§6).
+    fn do_pass(&mut self, active: &str) -> Eng<()> {
+        let pool: Vec<Card> = self.state.players[active].discard.clone();
+        if pool.is_empty() {
+            return Ok(());
+        }
+        let legal: Vec<Value> = pool.iter().map(card_option).collect();
+        let chosen = self.decide("bury", active, legal)?;
+        let card = find_by_uuid(&pool, &chosen);
+        self.bury_cards(active, &[card]);
+        Ok(())
+    }
+
+    /// Playable cards: those advancing the owner's own chain, plus any self-declaring
+    /// an `AlsoLead` whose condition currently holds.
+    fn playable_options(&self, key: &str) -> Vec<Value> {
+        let chain = &self.state.players[key].in_play;
+        self.state.players[key]
+            .hand
+            .iter()
+            .filter(|&c| playable(chain, c) || self.also_lead_now(key, c))
+            .map(card_option)
+            .collect()
+    }
+
+    /// Whether `card` may be played as a Lead this instant via an `AlsoLead`
+    /// self-declaration whose condition currently holds.
+    fn also_lead_now(&self, key: &str, card: &Card) -> bool {
+        card.effects.iter().any(|eff| {
+            eff.actions.iter().any(|a| {
+                matches!(a, Action::AlsoLead { condition }
+                    if conditions::holds(condition, &self.state, key, None))
+            })
+        })
+    }
+
+    // -- play resolution + stops ------------------------------------------
+
+    /// Resolve a played card: log it, offer the stop window FIRST (a stopped card
+    /// fires none of its text), then OnPlay, land it, OnHit + type-gated hit
+    /// gimmicks, and re-check hand caps. `Ok(true)` iff the card landed and the
+    /// match is still live.
+    fn resolve_play(&mut self, active: &str, defender: &str, card: Card) -> Eng<bool> {
+        let t = self.state.turn_no;
+        self.log(Event::Play {
+            t,
+            player: active.to_owned(),
+            card: card.db_uuid.clone(),
+            order: card.play_order.name().to_owned(),
+            atk_type: card.atk_type.name().to_owned(),
+        });
+        if let Some(stop) = self.offer_stop(defender, &card)? {
+            self.apply_stop(active, defender, card, stop)?;
+            return Ok(false);
+        }
+        let effects = card.effects.clone();
+        self.run_effects(&effects, "OnPlay", active, None)?;
+        if self.ended() {
+            return Ok(false);
+        }
+        self.state
+            .players
+            .get_mut(active)
+            .unwrap()
+            .in_play
+            .push(card.clone());
+        self.run_effects(&effects, "OnHit", active, None)?; // the card's own "when this hits"
+        self.run_hit_gimmicks(&card, active)?; // owner gimmick "when you hit a <type>" (D1)
+        self.enforce_hand_caps()?; // a new Static max-handsize mod may force a discard
+        Ok(!self.ended())
+    }
+
+    /// Fire `key`'s standing type-gated `OnHit` gimmicks for a card of `card`'s
+    /// attack type that just hit (D1). A card's own untyped OnHit already resolved
+    /// via `run_effects`, so it is not re-fired.
+    fn run_hit_gimmicks(&mut self, card: &Card, key: &str) -> Eng<()> {
+        let atk = card.atk_type;
+        let effects = self.standing_effects(key);
+        for eff in &effects {
+            if let Trigger::OnHit {
+                atk_type: Some(want),
+                ..
+            } = &eff.trigger
+            {
+                if *want == atk {
+                    self.fire_if_ready(eff, key, None)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Offer `defender` the stop window for `card`; return the chosen stopper (taken
+    /// from hand) or `None`. The `none` option carries what is being defended so a
+    /// policy can reserve stops for the real threat.
+    fn offer_stop(&mut self, defender: &str, card: &Card) -> Eng<Option<Card>> {
+        let stops = self.legal_stops(defender, card);
+        if stops.is_empty() {
+            return Ok(None);
+        }
+        let mut legal = vec![json!({
+            "kind": "none",
+            "vs_order": card.play_order.name(),
+            "vs_type": card.atk_type.name(),
+        })];
+        legal.extend(stops.iter().map(stop_option));
+        let choice = self.decide("stop", defender, legal)?;
+        if choice["kind"] == "none" {
+            return Ok(None);
+        }
+        let number = choice["number"].as_i64().unwrap();
+        Ok(Some(self.take_from_hand(defender, number)))
+    }
+
+    fn legal_stops(&self, defender: &str, attack: &Card) -> Vec<Card> {
+        self.state.players[defender]
+            .hand
+            .iter()
+            .filter(|c| self.card_can_stop(defender, c, attack))
+            .cloned()
+            .collect()
+    }
+
+    /// Text-driven stop (DESIGN.md §6): a card can stop `attack` iff one of its
+    /// parsed `Stop` effects matches the attack's order/type and that effect's
+    /// condition holds from the defender's view. An attack `Unstoppable` by the
+    /// stopper's play order cannot be stopped by it.
+    fn card_can_stop(&self, defender: &str, stopper: &Card, attack: &Card) -> bool {
+        if is_unstoppable_by(attack, stopper) {
+            return false;
+        }
+        stopper.effects.iter().any(|eff| {
+            eff.actions.iter().any(|action| {
+                matches!(action, Action::Stop { .. })
+                    && stop_matches(action, attack)
+                    && conditions::holds(&eff.condition, &self.state, defender, None)
+            })
+        })
+    }
+
+    /// Apply a stop: the stopped ATTACK goes to the attacker's discard; the stopping
+    /// card enters the defender's board and persists (bypassing the play-sequence
+    /// gate). Fires the stop's OnHit + hit gimmicks, then both sides' OnStop.
+    fn apply_stop(&mut self, active: &str, defender: &str, attack: Card, stop: Card) -> Eng<()> {
+        self.state
+            .players
+            .get_mut(active)
+            .unwrap()
+            .discard
+            .push(attack.clone());
+        self.state
+            .players
+            .get_mut(defender)
+            .unwrap()
+            .in_play
+            .push(stop.clone());
+        let t = self.state.turn_no;
+        self.log(Event::Stop {
+            t,
+            player: defender.to_owned(),
+            card: stop.db_uuid.clone(),
+            stopped: attack.db_uuid.clone(),
+            reason: format!("{} stops {}", stop.atk_type.name(), attack.atk_type.name()),
+        });
+        let stop_effects = stop.effects.clone();
+        let attack_effects = attack.effects.clone();
+        self.run_effects(&stop_effects, "OnHit", defender, None)?;
+        self.run_hit_gimmicks(&stop, defender)?; // a stop entering play is itself a hit
+        self.run_effects(&attack_effects, "OnStop", active, None)?;
+        self.run_effects(&stop_effects, "OnStop", defender, None)?;
+        Ok(())
+    }
+
+    // -- finish sequence + breakout ---------------------------------------
+
+    /// The finish roll: base stat + the whole in-play combo's printed bonuses for the
+    /// rolled skill + flat Finish-roll bonuses + crowd meter. Auto-success, else the
+    /// defender's breakout attempt decides win vs. resume (DESIGN.md §5/§6).
+    fn finish_sequence(&mut self, finisher: &str, defender: &str, card: &Card) -> Eng<()> {
+        let skill = self.state.rng.roll();
+        let base = self.stat(finisher, skill);
+        let combo: i64 = {
+            let in_play = &self.state.players[finisher].in_play;
+            in_play
+                .iter()
+                .map(|c| self.card_finish_bonus(c, skill))
+                .sum()
+        };
+        let bonus = combo + self.finish_roll_bonus(finisher, skill);
+        let cm = self.state.crowd_meter;
+        let value = base + bonus + cm;
+        let auto = crate::finish::is_auto_success(value, cm);
+        self.log_finish_attempt(finisher, card, skill, bonus, value, cm, auto);
+        if !auto && self.breakout(defender, value) {
+            self.on_broken_out(finisher)?; // defender broke out; the match resumes
+            return Ok(());
+        }
+        self.win(finisher, "finish");
+        Ok(())
+    }
+
+    /// A single in-play card's Finish-roll combo bonus for `skill`, doubled when the
+    /// card declares `DoubleFinishIfBumped` and this turn's roll-off bumped.
+    fn card_finish_bonus(&self, card: &Card, skill: Skill) -> i64 {
+        let mut bonus = card.bonus_for(skill);
+        if self.turn_bumped
+            && card.effects.iter().any(|eff| {
+                eff.actions
+                    .iter()
+                    .any(|a| matches!(a, Action::DoubleFinishIfBumped))
+            })
+        {
+            bonus *= 2;
+        }
+        bonus
+    }
+
+    /// "+N to your Finish rolls" from the finisher's live effects (in-play combo,
+    /// gimmick, entrance), each gated by its condition and by its `when_skill`.
+    fn finish_roll_bonus(&self, key: &str, skill: Skill) -> i64 {
+        let mut total = 0;
+        for eff in self.standing_effects(key) {
+            if !conditions::holds(&eff.condition, &self.state, key, None) {
+                continue;
+            }
+            for a in &eff.actions {
+                if let Action::FinishRollBonus {
+                    delta, when_skill, ..
+                } = a
+                {
+                    if when_skill.is_none() || *when_skill == Some(skill) {
+                        total += *delta;
+                    }
+                }
+            }
+        }
+        total
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn log_finish_attempt(
+        &mut self,
+        finisher: &str,
+        card: &Card,
+        skill: Skill,
+        bonus: i64,
+        value: i64,
+        cm: i64,
+        auto: bool,
+    ) {
+        let mut bonus_map = BTreeMap::new();
+        if bonus != 0 {
+            bonus_map.insert(skill.name().to_owned(), bonus);
+        }
+        let t = self.state.turn_no;
+        self.log(Event::FinishAttempt {
+            t,
+            player: finisher.to_owned(),
+            finish: card.db_uuid.clone(),
+            value,
+            crowd_meter: cm,
+            auto_success: auto,
+            bonus: bonus_map,
+        });
+    }
+
+    /// Up to `BREAKOUT_ATTEMPTS` defender rolls; the first that beats the finish
+    /// value breaks out. Returns whether the defender broke out.
+    fn breakout(&mut self, defender: &str, finish_value: i64) -> bool {
+        let cm = self.state.crowd_meter;
+        let mut rolls: Vec<BreakoutRoll> = Vec::new();
+        let mut broke = false;
+        for _ in 0..BREAKOUT_ATTEMPTS {
+            let skill = self.state.rng.roll();
+            let val = self.stat(defender, skill);
+            let success = crate::finish::stat_breaks_out(val, finish_value, 0, cm);
+            rolls.push(BreakoutRoll {
+                skill: skill.name().to_owned(),
+                value: val,
+                penalty: 0,
+                success,
+            });
+            if success {
+                broke = true;
+                break;
+            }
+        }
+        let t = self.state.turn_no;
+        self.log(Event::Breakout {
+            t,
+            defender: defender.to_owned(),
+            broke_out: broke,
+            rolls,
+        });
+        broke
+    }
+
+    /// Breakout aftermath: ALL cards in play on BOTH sides clear to discard (§5),
+    /// crowd meter +1, then both players' `OnBreakout` gimmicks fire.
+    fn on_broken_out(&mut self, _finisher: &str) -> Eng<()> {
+        for key in ["A", "B"] {
+            self.discard_in_play(key);
+        }
+        self.state.crowd_meter += 1;
+        let t = self.state.turn_no;
+        let value = self.state.crowd_meter;
+        self.log(Event::CrowdMeter { t, delta: 1, value });
+        for key in ["A", "B"] {
+            let effects = self.standing_effects(key);
+            self.run_effects(&effects, "OnBreakout", key, None)?;
+        }
         Ok(())
     }
 
@@ -1871,6 +2299,46 @@ fn discard_option(card: &Card) -> Value {
         "card": card.db_uuid,
         "order": card.play_order.name(),
     })
+}
+
+/// Whether a `Stop` action's order/type filter covers this attack (`None` = any).
+fn stop_matches(stop: &Action, attack: &Card) -> bool {
+    let Action::Stop {
+        order, atk_type, ..
+    } = stop
+    else {
+        return false;
+    };
+    if let Some(o) = order {
+        if *o != attack.play_order {
+            return false;
+        }
+    }
+    atk_type.is_none() || *atk_type == Some(attack.atk_type)
+}
+
+/// Whether `attack` declares itself `Unstoppable` against `stopper` — an
+/// `Unstoppable` whose `by_order` is the stopper's play order (or `None` = by
+/// anything). "Cannot be stopped by Follow Ups".
+fn is_unstoppable_by(attack: &Card, stopper: &Card) -> bool {
+    attack.effects.iter().any(|eff| {
+        eff.actions.iter().any(|a| {
+            matches!(a, Action::Unstoppable { by_order }
+                if by_order.is_none() || *by_order == Some(stopper.play_order))
+        })
+    })
+}
+
+/// Whether `card` is a legal play given the player's own persistent board (the
+/// order-only chain, DESIGN.md §6): a Lead always; a Follow Up needs a Lead; a
+/// Finish needs a Follow Up. Type is irrelevant to the chain.
+fn playable(board: &[Card], card: &Card) -> bool {
+    match card.play_order {
+        PlayOrder::Lead => true,
+        PlayOrder::Followup => board.iter().any(|c| c.play_order == PlayOrder::Lead),
+        PlayOrder::Finish => board.iter().any(|c| c.play_order == PlayOrder::Followup),
+        PlayOrder::None => false,
+    }
 }
 
 /// Whether `card` can act as a Stop — carries at least one `Stop` action (its
