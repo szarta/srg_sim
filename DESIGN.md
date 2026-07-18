@@ -144,7 +144,10 @@ RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw ne
 RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
 CountsAsInPlay(selector, count=2)  # Static self-decl: this card counts as `count` cards matching `selector`
 ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP)  # delta scales by count of `per` cards in play
-BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY)
+BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?, cap?, per?, per_zone=IN_PLAY)
+                                                 # per=CardFilter -> bonus = delta * (count of the target's cards
+                                                 # in per_zone {IN_PLAY|DISCARD} matching per), clamped to cap
+                                                 # ("+1 for each card in play with 'Chin' in the name, Max +3"); schema v7
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 Reroll(who, once=True)        WinTie(who)                   Bump(who)
 ElectBumpOnSameSkill(uses=2)  # Static roll-off grant: owner MAY bump on a same-skill roll, N times/match

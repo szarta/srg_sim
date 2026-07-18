@@ -56,7 +56,9 @@
     "cap": null,
     "delta": 0,
     "duration": "WHILE_IN_PLAY",
+    "per": null,
     "per_crowd": false,
+    "per_zone": "IN_PLAY",
     "skill": "Power",
     "target_highest": false,
     "who": "SELF"

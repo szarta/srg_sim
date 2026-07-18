@@ -284,7 +284,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Power",
           "target_highest": false,
           "who": "SELF"
@@ -294,7 +296,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Agility",
           "target_highest": false,
           "who": "SELF"
@@ -304,7 +308,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Technique",
           "target_highest": false,
           "who": "SELF"
@@ -401,6 +407,54 @@
         "@type": "OnRoll",
         "skill": "Strike",
         "who": "SELF"
+      }
+    }
+  ],
+  "1886db488a2540c18d7fc450b201f9b0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": 3,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Chin",
+              "Jaw",
+              "Face"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Technique",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your Technique is +1 for each card you have in play with \"Chin\", \"Jaw\", or \"Face\" in the name (Max +3)",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -636,7 +690,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Power",
           "target_highest": false,
           "who": "SELF"
@@ -646,7 +702,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Technique",
           "target_highest": false,
           "who": "SELF"
@@ -656,7 +714,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Agility",
           "target_highest": false,
           "who": "SELF"
@@ -1188,7 +1248,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Agility",
           "target_highest": false,
           "who": "SELF"
@@ -1814,7 +1876,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Strike",
           "target_highest": false,
           "who": "SELF"
@@ -2041,7 +2105,9 @@
           "cap": null,
           "delta": 2,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Grapple",
           "target_highest": false,
           "who": "SELF"
@@ -2077,7 +2143,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Power",
           "target_highest": false,
           "who": "SELF"
@@ -2390,6 +2458,53 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "899418d2d50c4082a5a5c99455d8de0b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": 2,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Buster",
+              "Call"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_crowd": false,
+          "per_zone": "DISCARD",
+          "skill": "Grapple",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your Grapple is +1 for each card in your discard pile with \"Buster\" or \"Call\" in the name (Max +2)",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -2748,7 +2863,9 @@
           "cap": null,
           "delta": -1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Power",
           "target_highest": true,
           "who": "OPP"
@@ -2810,7 +2927,9 @@
           "cap": 5,
           "delta": 0,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": true,
+          "per_zone": "IN_PLAY",
           "skill": "Grapple",
           "target_highest": false,
           "who": "SELF"
@@ -3379,7 +3498,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Strike",
           "target_highest": false,
           "who": "SELF"
@@ -3413,7 +3534,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Submission",
           "target_highest": false,
           "who": "SELF"
@@ -3470,6 +3593,53 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "c9c7ebf148884c038fa00763434c6244": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": 2,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Swift",
+              "Microphone"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_crowd": false,
+          "per_zone": "DISCARD",
+          "skill": "Technique",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your Technique is +1 for each card in your discard pile with \"Swift\" or \"Microphone\" in the name (Max +2)",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -3601,7 +3771,9 @@
           "cap": null,
           "delta": 1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Agility",
           "target_highest": false,
           "who": "SELF"
@@ -3669,7 +3841,9 @@
           "cap": null,
           "delta": -1,
           "duration": "WHILE_IN_PLAY",
+          "per": null,
           "per_crowd": false,
+          "per_zone": "IN_PLAY",
           "skill": "Agility",
           "target_highest": false,
           "who": "OPP"

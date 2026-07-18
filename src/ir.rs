@@ -195,6 +195,16 @@ pub enum BuryFrom {
     Hand,
 }
 
+/// Which zone a [`Action::BuffSkill`] `per`-count ranges over — "for each card
+/// you have **in play**" vs "in your **discard** pile".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CountZone {
+    #[default]
+    InPlay,
+    Discard,
+}
+
 /// Direction of a stop relative to the acting player.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -519,6 +529,13 @@ pub enum Action {
         target_highest: bool,
         per_crowd: bool,
         cap: Option<i64>,
+        /// When set, the bonus is `delta * (count of the target's cards in
+        /// `per_zone` matching this filter)`, clamped to `cap` — "your Technique is
+        /// +1 for each card you have in play with 'Chin' in the name (Max +3)".
+        #[serde(default)]
+        per: Option<CardFilter>,
+        #[serde(default)]
+        per_zone: CountZone,
     },
     MaxHandSize {
         delta: i64,
@@ -835,6 +852,13 @@ pub enum IrNode {
         target_highest: bool,
         per_crowd: bool,
         cap: Option<i64>,
+        /// When set, the bonus is `delta * (count of the target's cards in
+        /// `per_zone` matching this filter)`, clamped to `cap` — "your Technique is
+        /// +1 for each card you have in play with 'Chin' in the name (Max +3)".
+        #[serde(default)]
+        per: Option<CardFilter>,
+        #[serde(default)]
+        per_zone: CountZone,
     },
     MaxHandSize {
         delta: i64,

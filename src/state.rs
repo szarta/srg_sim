@@ -16,7 +16,7 @@
 
 use crate::cards::{Card, Competitor, EntranceCard};
 use crate::conditions;
-use crate::ir::{Action, Condition, Skill, Trigger, Who};
+use crate::ir::{Action, CardFilter, Condition, CountZone, Skill, Trigger, Who};
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
 use serde::{Deserialize, Serialize};
@@ -244,6 +244,8 @@ impl GameState {
                     target_highest,
                     per_crowd,
                     cap,
+                    per,
+                    per_zone,
                     ..
                 } = action
                 {
@@ -254,6 +256,8 @@ impl GameState {
                             *per_crowd,
                             *cap,
                             *delta,
+                            per.as_ref(),
+                            *per_zone,
                             target,
                         );
                         *stats = stats.with(sk, stats.get(sk) + d);
@@ -267,6 +271,7 @@ impl GameState {
     /// variants: `target_highest` retargets to the target's highest base skill
     /// (ties broken by canonical skill order), `per_crowd` uses the Crowd Meter
     /// as the delta, clamped to `cap` when set.
+    #[allow(clippy::too_many_arguments)]
     fn resolve_buff(
         &self,
         skill: Skill,
@@ -274,6 +279,8 @@ impl GameState {
         per_crowd: bool,
         cap: Option<i64>,
         delta: i64,
+        per: Option<&CardFilter>,
+        per_zone: CountZone,
         target: &str,
     ) -> (Skill, i64) {
         let sk = if target_highest {
@@ -290,10 +297,28 @@ impl GameState {
         };
         let d = if per_crowd {
             cap.map_or(self.crowd_meter, |c| self.crowd_meter.min(c))
+        } else if let Some(filter) = per {
+            // "+delta for each card in `per_zone` matching `filter`", clamped to cap.
+            let n = self.count_in_zone(filter, per_zone, target);
+            let raw = n * delta;
+            cap.map_or(raw, |c| raw.min(c))
         } else {
             delta
         };
         (sk, d)
+    }
+
+    /// Count the target's cards in `zone` matching `filter` (Static per-count buffs).
+    fn count_in_zone(&self, filter: &CardFilter, zone: CountZone, target: &str) -> i64 {
+        let player = &self.players[target];
+        match zone {
+            CountZone::InPlay => conditions::count_in_play(&player.in_play, filter, None),
+            CountZone::Discard => player
+                .discard
+                .iter()
+                .filter(|c| conditions::card_matches(c, filter))
+                .count() as i64,
+        }
     }
 
     /// Derived maximum hand size for `key` (`base` + active Static hand mods),

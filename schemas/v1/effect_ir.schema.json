@@ -265,8 +265,21 @@
         "duration": {
           "$ref": "#/$defs/Duration"
         },
+        "per": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "per_crowd": {
           "type": "boolean"
+        },
+        "per_zone": {
+          "$ref": "#/$defs/CountZone"
         },
         "skill": {
           "$ref": "#/$defs/Skill"
@@ -286,7 +299,9 @@
         "duration",
         "target_highest",
         "per_crowd",
-        "cap"
+        "cap",
+        "per",
+        "per_zone"
       ],
       "type": "object"
     },
@@ -598,6 +613,13 @@
         "=",
         "<",
         "<="
+      ],
+      "type": "string"
+    },
+    "CountZone": {
+      "enum": [
+        "IN_PLAY",
+        "DISCARD"
       ],
       "type": "string"
     },
@@ -2577,5 +2599,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 6
+  "version": 7
 }

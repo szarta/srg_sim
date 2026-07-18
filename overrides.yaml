@@ -2906,3 +2906,112 @@ a2895b52164743edbdd083272279e147:
   raw_clause: 'once during your turn when you hit a card with "Lock" in the name: draw 1 card or you may play 1 additional card this turn'
   source: gimmick
   optional: false
+
+# ===========================================================================
+# Top-96: name-substring family, Phase 3 — per-count BuffSkill (schema v7).
+# BuffSkill.per (CardFilter) + per_zone {IN_PLAY|DISCARD}: bonus = delta * (count
+# of the target's cards in that zone matching per), clamped to cap ("Max +N").
+# Combines with name_contains (Phase 1) for the keyword-synergy static buffs.
+# ===========================================================================
+
+# Uncle Awesome V2 (World Championship): "Your Technique is +1 for each card you
+# have in play with 'Chin', 'Jaw', or 'Face' in the name (Max +3)."
+1886db488a2540c18d7fc450b201f9b0:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Technique
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    cap: 3
+    per_zone: IN_PLAY
+    per:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: ['Chin', 'Jaw', 'Face']
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your Technique is +1 for each card you have in play with "Chin", "Jaw", or "Face" in the name (Max +3)
+  source: gimmick
+
+# Ring Admiral Grumpy Thunder (World Championship): "Your Grapple skill is +1 for
+# each card you have in your discard pile with 'Buster' or 'Call' in the name (Max +2)."
+899418d2d50c4082a5a5c99455d8de0b:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Grapple
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    cap: 2
+    per_zone: DISCARD
+    per:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: ['Buster', 'Call']
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your Grapple is +1 for each card in your discard pile with "Buster" or "Call" in the name (Max +2)
+  source: gimmick
+
+# Tortured Vigilante (World Championship): "Your Technique skill is +1 for each
+# card in your discard pile with 'Swift' or 'Microphone' in the name (Max +2)."
+c9c7ebf148884c038fa00763434c6244:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Technique
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    cap: 2
+    per_zone: DISCARD
+    per:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: ['Swift', 'Microphone']
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your Technique is +1 for each card in your discard pile with "Swift" or "Microphone" in the name (Max +2)
+  source: gimmick
