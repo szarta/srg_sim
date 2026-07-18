@@ -2218,3 +2218,28 @@ c79de6acd1954441970f9b1901a55e01:
   raw_clause: if you have 6+ cards in hand, your Grapple is +2
   source: gimmick
 
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — on-Stop family (engine _run_on_stop_gimmicks).
+# OnStop dir=THEIRS = "when you Stop a card" (fires for the stopper), task #87.
+# ---------------------------------------------------------------------------
+
+# Gia de los Muertos (V1): "When you Stop a card, draw 1 card."
+a4b61c579c2d4ca59b5001ea5503fdef:
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you Stop a card, draw 1 card
+  source: gimmick

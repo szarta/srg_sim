@@ -688,8 +688,22 @@ class Engine:
         )
         self._run_effects(stop.effects, fx.OnHit, defender)
         self._run_hit_gimmicks(stop, defender)  # a stop entering play is itself a hit
-        self._run_effects(attack.effects, fx.OnStop, active)
-        self._run_effects(stop.effects, fx.OnStop, defender)
+        self._run_effects(attack.effects, fx.OnStop, active)  # attack card: "if this is stopped"
+        self._run_effects(stop.effects, fx.OnStop, defender)  # stop card: "when this stops"
+        # Standing competitor/entrance OnStop, dir-aware from each owner's POV: the
+        # attacker's card was stopped (YOURS), the defender stopped a card (THEIRS =
+        # "when you Stop a card", e.g. Gia).
+        self._run_on_stop_gimmicks(active, fx.Direction.YOURS)
+        self._run_on_stop_gimmicks(defender, fx.Direction.THEIRS)
+
+    def _run_on_stop_gimmicks(self, key: str, direction: fx.Direction) -> None:
+        """Fire ``key``'s standing (gimmick/entrance) ``OnStop`` effects whose ``dir``
+        matches — THEIRS for the stopper ("when you Stop a card"), YOURS for the
+        stopped attacker. Unlike :meth:`_run_effects` (trigger-type match only), this
+        consults ``OnStop.dir``."""
+        for eff in self._gimmick_standing_effects(key):
+            if isinstance(eff.trigger, fx.OnStop) and eff.trigger.dir is direction:
+                self._fire_if_ready(eff, key, None)
 
     # -- finish sequence + breakout ---------------------------------------
 
@@ -814,6 +828,16 @@ class Engine:
     def _standing_effects(self, key: str) -> tuple[fx.Effect, ...]:
         """All effects currently able to fire for ``key``: gimmick (unless blanked),
         entrance, and in-play cards."""
+        out = list(self._gimmick_standing_effects(key))
+        for card in self.state.players[key].in_play:
+            out.extend(card.effects)
+        return tuple(out)
+
+    def _gimmick_standing_effects(self, key: str) -> tuple[fx.Effect, ...]:
+        """The persistent standing effects that are *not* a played card: competitor
+        gimmick (unless blanked, flip-aware) + entrance. Fired for standing ``OnStop``
+        gimmicks in a stop exchange, where re-scanning in-play cards would re-fire the
+        stop card that just entered play (:meth:`_apply_stop`)."""
         player = self.state.players[key]
         out: list[fx.Effect] = []
         if not self.state.is_gimmick_blanked(key):
@@ -822,8 +846,6 @@ class Engine:
                 gimmick = tuple(fx.flip_signs(e) for e in gimmick)
             out.extend(gimmick)
         out.extend(player.entrance.effects)
-        for card in player.in_play:
-            out.extend(card.effects)
         return tuple(out)
 
     def _gimmick_signs_flipped(self, key: str) -> bool:
