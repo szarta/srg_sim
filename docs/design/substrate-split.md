@@ -262,6 +262,16 @@ its weight; nothing external forces its longevity. Two phases:
 The Python engine's 640 tests and the verbatim-ported `fae_comp` finish/stop math are
 what make the oracle *trustworthy*; Rust inherits that validation by matching it.
 
+> **Realized scope (task 75, `invoke conformance`).** Steps 3–4 run live against the
+> oracle at `~/data/srg_sim_python` (`tests/parser_parity.rs` over the whole DB, and
+> `tests/session.rs::snapshot_restores_at_every_boundary`). Step 2 (whole-log parity)
+> is **not** re-run against that oracle: the `python` branch kept `random.Random`
+> (MT19937) rather than adopting the §5 splitmix64 stream, an accepted split — so the
+> two engines' logs cannot be byte-identical at a shared seed. Log parity is therefore
+> owned Phase-2-style by the frozen splitmix64 corpus, which Rust reproduces in
+> `tests/engine_conformance.rs`. The parser is RNG-independent, so step 3 is unaffected
+> and is the genuine cross-language log-free check.
+
 **Phase 2 — freeze & deprecate.** Once Rust passes Phase 1 across the top-96, the
 Python engine is retired. Its outputs are **frozen into a golden-log corpus** (the
 fixtures + their canonical logs). Rust then regresses against the frozen corpus in CI.

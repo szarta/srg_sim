@@ -137,6 +137,64 @@ fn local_seats_run_to_done() {
     }
 }
 
+/// Snapshot/replay state parity *at every decision boundary* (substrate-split.md §6,
+/// task 75): at each park, `restore(snapshot)` must reproduce the exact outstanding
+/// request the live session holds, and at `Done` the exact log — the session is a pure
+/// function of its snapshot, boundary for boundary, not just at the endpoints.
+#[test]
+fn snapshot_restores_at_every_boundary() {
+    for fx in fixtures() {
+        let (mut session, mut step) = Session::open(
+            fx.deck_a,
+            fx.deck_b,
+            seats(&fx.policies, true),
+            fx.seed,
+            String::new(),
+            fx.kind,
+        )
+        .expect("open");
+        let mut cursors: BTreeMap<String, usize> = BTreeMap::new();
+        let mut boundaries = 0usize;
+        while let Step::Decision(req) = step {
+            // Restoring here must land on the identical outstanding request.
+            let (_restored, restored_step) =
+                Session::restore(session.snapshot()).expect("restore mid-run");
+            match restored_step {
+                Step::Decision(r) => assert_eq!(
+                    r.request_id, req.request_id,
+                    "{}: boundary {boundaries} restored to a different request",
+                    fx.label
+                ),
+                Step::Done(_) => panic!(
+                    "{}: restore finished early at boundary {boundaries}",
+                    fx.label
+                ),
+            }
+            boundaries += 1;
+            let idx = cursors.entry(req.viewer.clone()).or_default();
+            let chosen = fx.decisions[&req.viewer][*idx].clone();
+            *idx += 1;
+            step = session.submit(DecisionResponse {
+                request_id: req.request_id,
+                chosen,
+            });
+        }
+        assert!(
+            boundaries > 0,
+            "{}: expected at least one decision",
+            fx.label
+        );
+        // Terminal boundary: the finished session restores to the same log.
+        let (done, done_step) = Session::restore(session.snapshot()).expect("restore done");
+        assert!(
+            matches!(done_step, Step::Done(_)),
+            "{}: restore not done",
+            fx.label
+        );
+        assert_log_eq(&fx.label, &done.log().expect("log").canonical(), &fx.log);
+    }
+}
+
 /// A snapshot taken after `Done` restores to a byte-identical log; a snapshot taken
 /// while parked restores to the same outstanding request.
 #[test]
