@@ -8,16 +8,27 @@
 //! reads as 0 exactly like `dict.get(skill, 0)`.
 
 use crate::ir::Skill;
+use serde::{Deserialize, Serialize};
 
 /// The six stat values of a competitor (or a sparse delta block, all-zero by
 /// default).
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+///
+/// Serializes as `{"Power": …, "Agility": …, …}` — the exact form the Python
+/// `Stats.to_dict()` produces — so it doubles as the domain-model stat block
+/// (`cards::Competitor::stats`) and the derived-stats view.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Skills {
+    #[serde(rename = "Power")]
     pub power: i64,
+    #[serde(rename = "Agility")]
     pub agility: i64,
+    #[serde(rename = "Technique")]
     pub technique: i64,
+    #[serde(rename = "Submission")]
     pub submission: i64,
+    #[serde(rename = "Grapple")]
     pub grapple: i64,
+    #[serde(rename = "Strike")]
     pub strike: i64,
 }
 

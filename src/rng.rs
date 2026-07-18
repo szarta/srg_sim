@@ -121,3 +121,18 @@ pub struct RngSnapshot {
     pub seed: u64,
     pub state: u64,
 }
+
+// A `SeededRNG` serializes *as* its snapshot (`{"seed", "state"}`), so a
+// `GameState` embedding one round-trips exactly like the Python `rng.snapshot()`
+// form (DESIGN.md §5).
+impl Serialize for SeededRNG {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        self.snapshot().serialize(s)
+    }
+}
+
+impl<'de> Deserialize<'de> for SeededRNG {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        RngSnapshot::deserialize(d).map(|snap| SeededRNG::restore(&snap))
+    }
+}

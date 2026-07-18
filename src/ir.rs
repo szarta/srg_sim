@@ -73,8 +73,10 @@ type_tag!(ChoiceOptionTag, "ChoiceOption");
 // Scalar enums
 // ---------------------------------------------------------------------------
 
-/// The six skills (three attributes + three attack types).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// The six skills (three attributes + three attack types). `Ord` follows the
+/// canonical declaration order (`Power < Agility < … < Strike`), so a
+/// `BTreeMap<Skill, _>` serializes finish bonuses in that fixed order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Skill {
     Power,
     Agility,
@@ -109,7 +111,7 @@ impl Skill {
 }
 
 /// Attack type of a card (or `None` for non-attack cards).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AtkType {
     Strike,
     Grapple,
@@ -118,7 +120,7 @@ pub enum AtkType {
 }
 
 /// Where a card sits in a play sequence.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PlayOrder {
     Lead,
     Followup,
@@ -127,7 +129,7 @@ pub enum PlayOrder {
 }
 
 /// Numeric comparison operator.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Comparator {
     #[serde(rename = ">")]
     Gt,
@@ -142,7 +144,7 @@ pub enum Comparator {
 }
 
 /// Which end of a deck a draw/recur touches.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DeckEnd {
     Top,
@@ -150,7 +152,7 @@ pub enum DeckEnd {
 }
 
 /// Destination zone for a search.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Dest {
     Hand,
@@ -158,7 +160,7 @@ pub enum Dest {
 }
 
 /// Direction of a stop relative to the acting player.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Direction {
     Yours,
@@ -166,7 +168,7 @@ pub enum Direction {
 }
 
 /// How long a modifier persists.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Duration {
     WhileInPlay,
@@ -175,7 +177,7 @@ pub enum Duration {
 }
 
 /// Where an effect originates.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum EffectSource {
     Card,
@@ -184,7 +186,7 @@ pub enum EffectSource {
 }
 
 /// How often an effect may fire.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Frequency {
     Unlimited,
@@ -194,7 +196,7 @@ pub enum Frequency {
 }
 
 /// A forced-loss condition.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum LoseKind {
     Disqualification,
@@ -202,7 +204,7 @@ pub enum LoseKind {
 }
 
 /// Whether a roll modifier applies to this roll or the next.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RollWhen {
     This,
@@ -210,14 +212,14 @@ pub enum RollWhen {
 }
 
 /// Text-blank expiry window.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Until {
     EndOfTurn,
 }
 
 /// Comparison operand for skill/hand-size compares.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Vs {
     Opp,
@@ -226,7 +228,7 @@ pub enum Vs {
 }
 
 /// Which player a node targets. `SELF` is the acting player.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Who {
     #[serde(rename = "SELF")]
     SelfSide,
