@@ -972,6 +972,72 @@
       }
     }
   ],
+  "5f78183903ba49eabae4c4ec9f0ffd11": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Peek",
+          "who": "OPP"
+        },
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": "Lead",
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "at the start of the match: look at your opponent's hand then search your deck for 1 Lead and add it to your hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfMatch"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "MaxHandSize",
+          "delta": 10,
+          "duration": "WHILE_IN_PLAY",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your maximum handsize is +10",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "62cf9e40d92c4d0da09cb4185c8540f0": [
     {
       "@type": "Effect",
@@ -1011,6 +1077,72 @@
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
+      }
+    }
+  ],
+  "64639328a1d9437d8af22c5d648f4b70": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Peek",
+          "who": "OPP"
+        },
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": "Lead",
+            "raw": null,
+            "tag": null
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "at the start of the match: look at your opponent's hand then search your deck for 1 Lead and add it to your hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfMatch"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "MaxHandSize",
+          "delta": 10,
+          "duration": "WHILE_IN_PLAY",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your maximum handsize is +10",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -2875,6 +3007,45 @@
         "atk_type": null,
         "keyword": null,
         "name": null
+      }
+    }
+  ],
+  "eae7c1b5fdc14e27bafc9106566cf89c": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RemoveFromPlay",
+          "count": 1,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "RollGapAtLeast",
+        "k": 3
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your turn roll is at least 3 less than your opponent's turn roll, discard 1 card they have in play",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
       }
     }
   ],
