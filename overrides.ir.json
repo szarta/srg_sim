@@ -1179,6 +1179,35 @@
       }
     }
   ],
+  "68d8df0c31a04446bb8734cbe82be583": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "once": true,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollValue",
+        "cmp": ">=",
+        "value": 9
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once a turn roll: when your opponent rolls 9 or 10 for their turn roll, you may re-roll your turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "6aa7c08a48ba49c3baca127d5880cd0b": [
     {
       "@type": "Effect",

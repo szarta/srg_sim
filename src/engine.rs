@@ -841,6 +841,7 @@ impl Engine {
             | Action::FlipGimmickSigns { .. }
             | Action::CountsAsInPlay { .. }
             | Action::ElectBumpOnSameSkill { .. }
+            | Action::Reroll { .. }
             | Action::Unstoppable { .. }
             | Action::AlsoLead { .. }
             | Action::DoubleFinishIfBumped
@@ -1972,6 +1973,11 @@ impl Engine {
         let (a, b) = self.apply_in_roll_mods(sa, va, sb, vb); // Tomato: roll-skill debuff
         va = a;
         vb = b;
+        let (nsa, nva, nsb, nvb) = self.offer_rerolls(sa, va, sb, vb)?; // Dunn/Jay White
+        sa = nsa;
+        va = nva;
+        sb = nsb;
+        vb = nvb;
         self.consume_pending();
         let mut bumps: i64 = 0;
         while bumps < MAX_TIE_REROLLS {
@@ -2063,7 +2069,79 @@ impl Engine {
         let (sa, va) = self.roll_for("A", false);
         let (sb, vb) = self.roll_for("B", false);
         let (va, vb) = self.apply_in_roll_mods(sa, va, sb, vb); // debuff re-rolls too
+        let (sa, va, sb, vb) = self.offer_rerolls(sa, va, sb, vb)?; // re-roll offered post-bump too
         Ok((sa, va, sb, vb, bumps))
+    }
+
+    /// Offer each side its once-per-turn turn-roll re-roll (Dunn, Jay White). A taken
+    /// re-roll REPLACES that side's (skill, value) with a fresh die — kept even if
+    /// worse — and spends the `ONCE_PER_TURN` charge; declining leaves it for a later
+    /// roll in the same roll-off (initial or any bump). Re-checked each call, so Jay
+    /// White keys on the opponent's *current* roll. Boosts/in-roll mods are not
+    /// re-applied to a re-rolled die (no re-roll competitor also carries those).
+    fn offer_rerolls(
+        &mut self,
+        sa: Skill,
+        va: i64,
+        sb: Skill,
+        vb: i64,
+    ) -> Eng<(Skill, i64, Skill, i64)> {
+        // opponent-of-owner roll context: a re-roll gate reads the OPPONENT's roll
+        // (Jay White "when your opponent rolls 9/10"; Dunn's gate ignores it).
+        let ctx_a = RollContext {
+            skill: Some(sa),
+            gap: Some(vb - va),
+            value: Some(va),
+        };
+        let ctx_b = RollContext {
+            skill: Some(sb),
+            gap: Some(va - vb),
+            value: Some(vb),
+        };
+        let (sa, va) = self.offer_reroll("A", sa, va, &ctx_b)?;
+        let (sb, vb) = self.offer_reroll("B", sb, vb, &ctx_a)?;
+        Ok((sa, va, sb, vb))
+    }
+
+    /// One side's re-roll offer: the first standing effect whose action is a `Reroll`,
+    /// whose gate holds (against the opponent's roll `opp_ctx`) and whose once-per-turn
+    /// charge is unspent, is offered to the owner; if taken it re-rolls and returns the
+    /// fresh `(skill, value)`.
+    fn offer_reroll(
+        &mut self,
+        key: &str,
+        skill: Skill,
+        value: i64,
+        opp_ctx: &RollContext,
+    ) -> Eng<(Skill, i64)> {
+        let effects = self.standing_effects(key);
+        for eff in &effects {
+            if !eff
+                .actions
+                .iter()
+                .any(|a| matches!(a, Action::Reroll { .. }))
+            {
+                continue;
+            }
+            if !(self.may_fire(eff, key)
+                && conditions::holds(&eff.condition, &self.state, key, Some(opp_ctx)))
+            {
+                continue;
+            }
+            if eff.optional && !self.take_optional(eff, key)? {
+                continue; // declined "you may" — charge left for a later roll
+            }
+            self.mark_fired(eff, key);
+            let (ns, nv) = self.roll_for(key, false);
+            self.log_effect(
+                key,
+                "Reroll",
+                Some(key),
+                json!({"skill": ns.name(), "value": nv}),
+            );
+            return Ok((ns, nv));
+        }
+        Ok((skill, value))
     }
 
     /// A player holding an `ElectBumpOnSameSkill` grant with a per-match charge
