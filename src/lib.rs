@@ -27,8 +27,10 @@
 pub mod error;
 pub mod finish;
 pub mod ir;
+pub mod rng;
 pub mod skills;
 pub mod stops;
 
 pub use error::{Result, SrgError};
+pub use rng::SeededRNG;
 pub use skills::Skills;
