@@ -28,7 +28,9 @@ from srg_sim.effects import (
     Always,
     BlankGimmick,
     BuffSkill,
+    CardFilter,
     Condition,
+    CountZone,
     Effect,
     MaxHandSize,
     Static,
@@ -239,9 +241,19 @@ class GameState:
             skill_key = buff.skill.value
         if buff.per_crowd:
             delta = self.crowd_meter if buff.cap is None else min(self.crowd_meter, buff.cap)
+        elif buff.per is not None:
+            # "+delta for each card in `per_zone` matching `per`", clamped to cap.
+            raw = self._count_in_zone(buff.per, buff.per_zone, target) * buff.delta
+            delta = raw if buff.cap is None else min(raw, buff.cap)
         else:
             delta = buff.delta
         return skill_key, delta
+
+    def _count_in_zone(self, filt: CardFilter, zone: CountZone, target: str) -> int:
+        """Count the target's cards in ``zone`` matching ``filt`` (per-count buffs)."""
+        player = self.players[target]
+        cards = player.in_play if zone is CountZone.IN_PLAY else player.discard
+        return sum(1 for c in cards if conditions.card_matches(c, filt))
 
     def effective_stat(self, key: str, skill: Skill, holds: ConditionHolds | None = None) -> int:
         """The single derived value for ``skill`` (convenience over :meth:`effective_stats`)."""

@@ -207,6 +207,14 @@ class BuryFrom(Enum):
     HAND = "HAND"
 
 
+class CountZone(Enum):
+    """Zone a :class:`BuffSkill` ``per``-count ranges over — "for each card you have
+    **in play**" vs "in your **discard** pile"."""
+
+    IN_PLAY = "IN_PLAY"
+    DISCARD = "DISCARD"
+
+
 class Until(Enum):
     END_OF_TURN = "END_OF_TURN"
 
@@ -679,6 +687,11 @@ class BuffSkill(IRNode):
     target_highest: bool = False
     per_crowd: bool = False
     cap: int | None = None
+    # When set, the bonus is ``delta * (count of the target's cards in ``per_zone``
+    # matching ``per``)``, clamped to ``cap`` — "+1 for each card you have in play
+    # with 'Chin' in the name (Max +3)".
+    per: CardFilter | None = None
+    per_zone: CountZone = CountZone.IN_PLAY
 
 
 @dataclass(frozen=True)
