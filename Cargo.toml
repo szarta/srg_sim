@@ -23,6 +23,9 @@ exclude = [
 [lib]
 name = "srg_core"
 path = "src/lib.rs"
+# `cdylib` for the `wasm32` browser build (wasm-bindgen); `rlib` for the native
+# consumers (the `srg` bin, tests, future crates).
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "srg"
@@ -36,6 +39,9 @@ default = ["cli"]
 # The console CLI: the YAML card-DB loader (`src/console`). Off for lib-only or
 # `wasm32` consumers that sync the DB as JSON and never touch `serde_yaml_ng`.
 cli = ["dep:serde_yaml_ng"]
+# The `wasm32` web presentation bindings (`src/wasm.rs`): a wasm-bindgen face over
+# the Session. Enabled only for the browser build; native builds never pull it.
+wasm = ["dep:wasm-bindgen"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -50,6 +56,8 @@ num-rational = { version = "0.4", default-features = false }
 regex = "1"
 # Card-DB YAML loader for the console consumer only (optional, `cli` feature).
 serde_yaml_ng = { version = "0.10", optional = true }
+# WASM/JS bindings for the web presentation only (optional, `wasm` feature).
+wasm-bindgen = { version = "0.2", optional = true }
 
 [dev-dependencies]
 tempfile = "3"

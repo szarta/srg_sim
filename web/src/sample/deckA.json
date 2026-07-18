@@ -1,0 +1,915 @@
+{
+ "cards": [
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-01",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": "Lead",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 1",
+   "number": 1,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-02",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": "Lead",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 2",
+   "number": 2,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-03",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": "Lead",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 3",
+   "number": 3,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-04",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": "Followup",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 4",
+   "number": 4,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-05",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": "Followup",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 5",
+   "number": 5,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-06",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": "Followup",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 6",
+   "number": 6,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-07",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 7",
+   "number": 7,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-08",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 8",
+   "number": 8,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-09",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 9",
+   "number": 9,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-10",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 10",
+   "number": 10,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-11",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 11",
+   "number": 11,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-12",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 12",
+   "number": 12,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-13",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "SkillCompare",
+      "cmp": ">",
+      "skill": "Strike",
+      "value": null,
+      "vs": "OPP_SAME",
+      "vs_skill": null,
+      "who": "SELF"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 13",
+   "number": 13,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-14",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "SkillCompare",
+      "cmp": ">",
+      "skill": "Grapple",
+      "value": null,
+      "vs": "OPP_SAME",
+      "vs_skill": null,
+      "who": "SELF"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 14",
+   "number": 14,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-15",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "SkillCompare",
+      "cmp": ">",
+      "skill": "Submission",
+      "value": null,
+      "vs": "OPP_SAME",
+      "vs_skill": null,
+      "who": "SELF"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 15",
+   "number": 15,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-16",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 16",
+   "number": 16,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-17",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 17",
+   "number": 17,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-18",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 18",
+   "number": 18,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-19",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "HasInPlay",
+      "cmp": ">=",
+      "count": 1,
+      "filter": {
+       "@type": "CardFilter",
+       "atk_type": "Grapple",
+       "name": null,
+       "number": null,
+       "play_order": null,
+       "raw": null,
+       "tag": null
+      },
+      "who": "OPP"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 19",
+   "number": 19,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-20",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "HasInPlay",
+      "cmp": ">=",
+      "count": 1,
+      "filter": {
+       "@type": "CardFilter",
+       "atk_type": "Submission",
+       "name": null,
+       "number": null,
+       "play_order": null,
+       "raw": null,
+       "tag": null
+      },
+      "who": "OPP"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 20",
+   "number": 20,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-21",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "HasInPlay",
+      "cmp": ">=",
+      "count": 1,
+      "filter": {
+       "@type": "CardFilter",
+       "atk_type": "Strike",
+       "name": null,
+       "number": null,
+       "play_order": null,
+       "raw": null,
+       "tag": null
+      },
+      "who": "OPP"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 21",
+   "number": 21,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-22",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 22",
+   "number": 22,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-23",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 23",
+   "number": 23,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-24",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "A Card 24",
+   "number": 24,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-25",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 25",
+   "number": 25,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-26",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 26",
+   "number": 26,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-27",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "A Card 27",
+   "number": 27,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "A-28",
+   "effects": [],
+   "finish_bonuses": {
+    "Strike": 2
+   },
+   "name": "A Card 28",
+   "number": 28,
+   "play_order": "Finish",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "A-29",
+   "effects": [],
+   "finish_bonuses": {
+    "Grapple": 2
+   },
+   "name": "A Card 29",
+   "number": 29,
+   "play_order": "Finish",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "A-30",
+   "effects": [],
+   "finish_bonuses": {
+    "Submission": 2
+   },
+   "name": "A Card 30",
+   "number": 30,
+   "play_order": "Finish",
+   "raw_text": "",
+   "tags": []
+  }
+ ],
+ "competitor": {
+  "db_uuid": "c-bull",
+  "division": "Worlds",
+  "effects": [
+   {
+    "@type": "Effect",
+    "actions": [
+     {
+      "@type": "ModifyRoll",
+      "delta": 1,
+      "per": null,
+      "per_who": "OPP",
+      "when": "NEXT",
+      "who": "SELF"
+     }
+    ],
+    "condition": {
+     "@type": "RollGapExactly",
+     "k": 3
+    },
+    "duration": "INSTANT",
+    "frequency": {
+     "@type": "FrequencyGuard",
+     "kind": "UNLIMITED",
+     "n": null
+    },
+    "optional": false,
+    "raw_clause": "",
+    "source": "gimmick",
+    "trigger": {
+     "@type": "OnRoll",
+     "skill": null,
+     "who": "SELF"
+    }
+   },
+   {
+    "@type": "Effect",
+    "actions": [
+     {
+      "@type": "ModifyRoll",
+      "delta": 2,
+      "per": null,
+      "per_who": "OPP",
+      "when": "NEXT",
+      "who": "SELF"
+     }
+    ],
+    "condition": {
+     "@type": "RollGapExactly",
+     "k": 4
+    },
+    "duration": "INSTANT",
+    "frequency": {
+     "@type": "FrequencyGuard",
+     "kind": "UNLIMITED",
+     "n": null
+    },
+    "optional": false,
+    "raw_clause": "",
+    "source": "gimmick",
+    "trigger": {
+     "@type": "OnRoll",
+     "skill": null,
+     "who": "SELF"
+    }
+   },
+   {
+    "@type": "Effect",
+    "actions": [
+     {
+      "@type": "ModifyRoll",
+      "delta": 3,
+      "per": null,
+      "per_who": "OPP",
+      "when": "NEXT",
+      "who": "SELF"
+     }
+    ],
+    "condition": {
+     "@type": "RollGapAtLeast",
+     "k": 5
+    },
+    "duration": "INSTANT",
+    "frequency": {
+     "@type": "FrequencyGuard",
+     "kind": "UNLIMITED",
+     "n": null
+    },
+    "optional": false,
+    "raw_clause": "",
+    "source": "gimmick",
+    "trigger": {
+     "@type": "OnRoll",
+     "skill": null,
+     "who": "SELF"
+    }
+   }
+  ],
+  "gimmick_text": "",
+  "name": "The Bull",
+  "related_finishes": [],
+  "stats": {
+   "Agility": 5,
+   "Grapple": 9,
+   "Power": 10,
+   "Strike": 7,
+   "Submission": 8,
+   "Technique": 6
+  }
+ },
+ "entrance": {
+  "db_uuid": "A-ent",
+  "effects": [],
+  "name": "A Entrance",
+  "raw_text": ""
+ }
+}

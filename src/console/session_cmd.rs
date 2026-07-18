@@ -10,7 +10,7 @@
 
 use super::loader::{overrides, CardIndex};
 use anyhow::{anyhow, bail, Context, Result};
-use serde_json::{json, Value};
+use serde_json::json;
 use srg_core::engine::{DecisionResponse, Step};
 use srg_core::session::{Seat, Session, SessionSnapshot};
 use std::collections::BTreeMap;
@@ -30,7 +30,7 @@ pub fn open(
     let ov = overrides()?;
     let da = index.load_playable(decks.0, &ov)?;
     let db = index.load_playable(decks.1, &ov)?;
-    let (seat_a, seat_b) = (seat(seats.0), seat(seats.1));
+    let (seat_a, seat_b) = (Seat::from_spec(seats.0), Seat::from_spec(seats.1));
     // A remote seat means a human/agent takes at least one decision — the §8 "real" mark.
     let kind = if is_remote(&seat_a) || is_remote(&seat_b) {
         "real"
@@ -74,19 +74,6 @@ pub fn observe() -> Result<()> {
 // helpers
 // ---------------------------------------------------------------------------
 
-/// `"remote"` → a wire seat (human/agent); anything else names a local AI policy.
-fn seat(value: &str) -> Seat {
-    if value == "remote" {
-        Seat::Remote {
-            policy: "remote".to_owned(),
-        }
-    } else {
-        Seat::Local {
-            policy: value.to_owned(),
-        }
-    }
-}
-
 fn is_remote(seat: &Seat) -> bool {
     matches!(seat, Seat::Remote { .. })
 }
@@ -104,31 +91,10 @@ fn read_snapshot() -> Result<SessionSnapshot> {
 fn emit(session: &Session, step: &Step) -> Result<()> {
     let out = json!({
         "snapshot": session.snapshot(),
-        "step": step_json(step),
+        "step": step.to_json(),
     });
     println!("{}", serde_json::to_string(&out)?);
     Ok(())
-}
-
-/// The protocol `Step` as JSON (the engine's own types don't derive `Serialize`).
-fn step_json(step: &Step) -> Value {
-    match step {
-        Step::Decision(r) => json!({
-            "kind": "decision",
-            "request": {
-                "request_id": r.request_id,
-                "seq": r.seq,
-                "viewer": r.viewer,
-                "point": r.point,
-                "legal": r.legal,
-                "observable_state": r.observable_state,
-            },
-        }),
-        Step::Done(res) => json!({
-            "kind": "done",
-            "result": { "winner": res.winner, "reason": res.reason, "turns": res.turns },
-        }),
-    }
 }
 
 #[cfg(test)]
@@ -138,8 +104,8 @@ mod tests {
 
     #[test]
     fn seat_maps_remote_and_local() {
-        assert!(matches!(seat("remote"), Seat::Remote { .. }));
-        match seat("smart") {
+        assert!(matches!(Seat::from_spec("remote"), Seat::Remote { .. }));
+        match Seat::from_spec("smart") {
             Seat::Local { policy } => assert_eq!(policy, "smart"),
             _ => panic!("a policy name is a local seat"),
         }
@@ -153,7 +119,7 @@ mod tests {
             reason: "finish".into(),
             turns: 12,
         });
-        let j = step_json(&step);
+        let j = step.to_json();
         assert_eq!(j["kind"], "done");
         assert_eq!(j["result"]["winner"], "A");
         assert_eq!(j["result"]["reason"], "finish");
@@ -170,7 +136,7 @@ mod tests {
             legal: vec![json!({"kind": "pass"})],
             observable_state: json!({"turn": 1}),
         });
-        let j = step_json(&step);
+        let j = step.to_json();
         assert_eq!(j["kind"], "decision");
         assert_eq!(j["request"]["request_id"], "r1");
         assert_eq!(j["request"]["viewer"], "A");

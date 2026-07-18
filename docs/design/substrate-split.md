@@ -309,6 +309,14 @@ Each phase ends green (conformance for engine phases; a working consumer for the
 - **M-R2 — web presentation (WASM).** Compile `srg-core` to WASM; build the web
   presentation layer on `session` + `observable_state`. Server-authoritative PvP runs
   the same crate natively.
+  - **Foundation delivered (task 78).** `wasm` feature → `src/wasm.rs` (a wasm-bindgen
+    `WasmSession` over the Session, JSON in/out, sharing `Step::to_json` with the CLI);
+    `crate-type=["cdylib","rlib"]`; `invoke wasm` builds `web/src/pkg` via wasm-bindgen.
+    `web/` is a Vite + React 19 + Tailwind v4 app (matching the card-search frontend):
+    board-vs-board render of `observable_state`, inspectable discard stacks, and
+    decision-by-click, driven purely over the Session. **Next increment:** drag-drop
+    card play and syncing decks/cards as JSON from get-diced.com (today the client uses
+    a bundled sample deck).
 - **M-R3 — cutover & deprecate.** Rust passes conformance on the top-96 → freeze the
   golden corpus, retire the Python engine (§6 Phase 2). Report tooling stays Python or
   migrates into the web layer.

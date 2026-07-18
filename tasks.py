@@ -78,6 +78,27 @@ def build(c, release=False):
     c.run("cargo build --release" if release else "cargo build", pty=True)
 
 
+@task
+def wasm(c):
+    """Build the web WASM package: srg-core (wasm feature) -> web/src/pkg (wasm-bindgen).
+
+    Needs the wasm32 target (`rustup target add wasm32-unknown-unknown`) and a
+    `wasm-bindgen` CLI matching the wasm-bindgen crate version
+    (`cargo install wasm-bindgen-cli --version <v>`). The output (`web/src/pkg`) is a
+    generated artifact — git-ignored, rebuilt from the crate, never vendored.
+    """
+    c.run(
+        "cargo build --lib --release --no-default-features --features wasm "
+        "--target wasm32-unknown-unknown",
+        pty=True,
+    )
+    c.run(
+        "wasm-bindgen --target web --no-typescript --out-dir web/src/pkg "
+        "target/wasm32-unknown-unknown/release/srg_core.wasm",
+        pty=True,
+    )
+
+
 @task(name="bump-version")
 def bump_version(c, new_version=None):
     """Bump the crate version in Cargo.toml. With no --new-version, prints current."""

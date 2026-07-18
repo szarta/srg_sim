@@ -1,0 +1,22 @@
+{
+  "name": "srg-supershow-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Web presentation layer over srg-core (WASM Session) — M-R2",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@vitejs/plugin-react": "^4.6.0",
+    "tailwindcss": "^4.1.11",
+    "vite": "^7.0.4"
+  }
+}

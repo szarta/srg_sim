@@ -38,6 +38,8 @@ pub mod session;
 pub mod skills;
 pub mod state;
 pub mod stops;
+#[cfg(feature = "wasm")]
+pub mod wasm;
 
 pub use error::{Result, SrgError};
 pub use rng::SeededRNG;

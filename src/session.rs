@@ -56,6 +56,21 @@ impl Seat {
             Seat::Remote { policy } | Seat::Local { policy } => policy,
         }
     }
+
+    /// Parse a seat spec: `"remote"` is a wire seat (a human/agent decides via the
+    /// protocol); any other value names a local AI [`policy`](crate::policy). The
+    /// console (`srg session`) and the WASM bindings both open seats this way.
+    pub fn from_spec(spec: &str) -> Seat {
+        if spec == "remote" {
+            Seat::Remote {
+                policy: "remote".to_owned(),
+            }
+        } else {
+            Seat::Local {
+                policy: spec.to_owned(),
+            }
+        }
+    }
 }
 
 /// Why [`Session::open`] refused to start a match (fail-closed, DESIGN.md §3.1).

@@ -74,6 +74,35 @@ pub enum Step {
     Done(GameResult),
 }
 
+impl Step {
+    /// The step as JSON — the single wire contract every consumer reads (`srg
+    /// session`, the WASM bindings, and through them the MCP server and the web
+    /// client). `Step`/`DecisionRequest`/`GameResult` don't derive `Serialize`, so
+    /// this is the one place that shape is defined.
+    ///
+    /// `{"kind":"decision","request":{request_id, seq, viewer, point, legal,
+    /// observable_state}}` or `{"kind":"done","result":{winner, reason, turns}}`.
+    pub fn to_json(&self) -> Value {
+        match self {
+            Step::Decision(r) => serde_json::json!({
+                "kind": "decision",
+                "request": {
+                    "request_id": r.request_id,
+                    "seq": r.seq,
+                    "viewer": r.viewer,
+                    "point": r.point,
+                    "legal": r.legal,
+                    "observable_state": r.observable_state,
+                },
+            }),
+            Step::Done(res) => serde_json::json!({
+                "kind": "done",
+                "result": { "winner": res.winner, "reason": res.reason, "turns": res.turns },
+            }),
+        }
+    }
+}
+
 /// The internal suspension signal: propagated up through `?` when the decider
 /// has no answer for the outstanding decision, so the driver can surface it. The
 /// request is boxed to keep the `Err` variant of [`Eng`] small.

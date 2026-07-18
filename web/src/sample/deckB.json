@@ -1,0 +1,845 @@
+{
+ "cards": [
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-01",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": "Lead",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 1",
+   "number": 1,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-02",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": "Lead",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 2",
+   "number": 2,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-03",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": "Lead",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 3",
+   "number": 3,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-04",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": "Followup",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 4",
+   "number": 4,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-05",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": "Followup",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 5",
+   "number": 5,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-06",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": "Followup",
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 6",
+   "number": 6,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-07",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 7",
+   "number": 7,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-08",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 8",
+   "number": 8,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-09",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 9",
+   "number": 9,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-10",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 10",
+   "number": 10,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-11",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 11",
+   "number": 11,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-12",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 12",
+   "number": 12,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-13",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "SkillCompare",
+      "cmp": ">",
+      "skill": "Strike",
+      "value": null,
+      "vs": "OPP_SAME",
+      "vs_skill": null,
+      "who": "SELF"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 13",
+   "number": 13,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-14",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "SkillCompare",
+      "cmp": ">",
+      "skill": "Grapple",
+      "value": null,
+      "vs": "OPP_SAME",
+      "vs_skill": null,
+      "who": "SELF"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 14",
+   "number": 14,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-15",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "SkillCompare",
+      "cmp": ">",
+      "skill": "Submission",
+      "value": null,
+      "vs": "OPP_SAME",
+      "vs_skill": null,
+      "who": "SELF"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 15",
+   "number": 15,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-16",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 16",
+   "number": 16,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-17",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 17",
+   "number": 17,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-18",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 18",
+   "number": 18,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-19",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "HasInPlay",
+      "cmp": ">=",
+      "count": 1,
+      "filter": {
+       "@type": "CardFilter",
+       "atk_type": "Grapple",
+       "name": null,
+       "number": null,
+       "play_order": null,
+       "raw": null,
+       "tag": null
+      },
+      "who": "OPP"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 19",
+   "number": 19,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-20",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "HasInPlay",
+      "cmp": ">=",
+      "count": 1,
+      "filter": {
+       "@type": "CardFilter",
+       "atk_type": "Submission",
+       "name": null,
+       "number": null,
+       "play_order": null,
+       "raw": null,
+       "tag": null
+      },
+      "who": "OPP"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 20",
+   "number": 20,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-21",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "HasInPlay",
+      "cmp": ">=",
+      "count": 1,
+      "filter": {
+       "@type": "CardFilter",
+       "atk_type": "Strike",
+       "name": null,
+       "number": null,
+       "play_order": null,
+       "raw": null,
+       "tag": null
+      },
+      "who": "OPP"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 21",
+   "number": 21,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-22",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 22",
+   "number": 22,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-23",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 23",
+   "number": 23,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-24",
+   "effects": [],
+   "finish_bonuses": {},
+   "name": "B Card 24",
+   "number": 24,
+   "play_order": "Followup",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-25",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Grapple",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 25",
+   "number": 25,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-26",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Submission",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 26",
+   "number": 26,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-27",
+   "effects": [
+    {
+     "@type": "Effect",
+     "actions": [
+      {
+       "@type": "Stop",
+       "atk_type": "Strike",
+       "order": null,
+       "source_is_skillreq": false
+      }
+     ],
+     "condition": {
+      "@type": "Always"
+     },
+     "duration": "INSTANT",
+     "frequency": {
+      "@type": "FrequencyGuard",
+      "kind": "UNLIMITED",
+      "n": null
+     },
+     "optional": false,
+     "raw_clause": "",
+     "source": "card",
+     "trigger": {
+      "@type": "Static"
+     }
+    }
+   ],
+   "finish_bonuses": {},
+   "name": "B Card 27",
+   "number": 27,
+   "play_order": "Lead",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Strike",
+   "db_uuid": "B-28",
+   "effects": [],
+   "finish_bonuses": {
+    "Strike": 2
+   },
+   "name": "B Card 28",
+   "number": 28,
+   "play_order": "Finish",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Grapple",
+   "db_uuid": "B-29",
+   "effects": [],
+   "finish_bonuses": {
+    "Grapple": 2
+   },
+   "name": "B Card 29",
+   "number": 29,
+   "play_order": "Finish",
+   "raw_text": "",
+   "tags": []
+  },
+  {
+   "atk_type": "Submission",
+   "db_uuid": "B-30",
+   "effects": [],
+   "finish_bonuses": {
+    "Submission": 2
+   },
+   "name": "B Card 30",
+   "number": 30,
+   "play_order": "Finish",
+   "raw_text": "",
+   "tags": []
+  }
+ ],
+ "competitor": {
+  "db_uuid": "c-fae",
+  "division": "Worlds",
+  "effects": [
+   {
+    "@type": "Effect",
+    "actions": [
+     {
+      "@type": "LowestRollWins"
+     }
+    ],
+    "condition": {
+     "@type": "Always"
+    },
+    "duration": "WHILE_GIMMICK_ACTIVE",
+    "frequency": {
+     "@type": "FrequencyGuard",
+     "kind": "UNLIMITED",
+     "n": null
+    },
+    "optional": false,
+    "raw_clause": "",
+    "source": "gimmick",
+    "trigger": {
+     "@type": "Static"
+    }
+   }
+  ],
+  "gimmick_text": "",
+  "name": "Fae Dragon",
+  "related_finishes": [],
+  "stats": {
+   "Agility": 6,
+   "Grapple": 5,
+   "Power": 10,
+   "Strike": 8,
+   "Submission": 9,
+   "Technique": 7
+  }
+ },
+ "entrance": {
+  "db_uuid": "B-ent",
+  "effects": [],
+  "name": "B Entrance",
+  "raw_text": ""
+ }
+}
