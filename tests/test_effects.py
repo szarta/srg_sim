@@ -74,6 +74,8 @@ from srg_sim.effects import (
     RemoveFromPlay,
     Reroll,
     RevealAndDiscard,
+    RevealDest,
+    RevealRoute,
     RollGapAtLeast,
     RollGapExactly,
     RollLeadAtLeast,
@@ -159,6 +161,14 @@ SAMPLES: list[IRNode] = [
     RemoveFromPlay(CardFilter(play_order=PlayOrder.FOLLOWUP), Who.OPP, 1),
     Peek(Who.OPP),
     Scry(deck=Who.SELF, top=2, to_hand=1, bury=1, reveal=True, rest=ScryRest.CHOOSE),
+    RevealRoute(
+        deck=Who.OPP,
+        match_atk=AtkType.STRIKE,
+        on_match=RevealDest.FLIP,
+        on_fail=RevealDest.BURY,
+        fail_optional=True,
+        reveal=True,
+    ),
     RecurToDeckTop(CardFilter(play_order=PlayOrder.FINISH), 3),
     CountsAsInPlay(  # "counts as 2 Lead Strikes in play" (Double Cross)
         CardFilter(play_order=PlayOrder.LEAD, atk_type=AtkType.STRIKE), 2

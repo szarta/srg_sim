@@ -234,6 +234,17 @@ class ScryRest(Enum):
     CHOOSE = "CHOOSE"
 
 
+class RevealDest(Enum):
+    """Where a :class:`RevealRoute` sends the revealed card. ``HAND`` = the deck
+    owner's hand; ``FLIP`` = mill it to the discard pile; ``BURY`` = the deck bottom;
+    ``LEAVE`` = keep it on top (the declined "you may" branch)."""
+
+    LEAVE = "LEAVE"
+    HAND = "HAND"
+    FLIP = "FLIP"
+    BURY = "BURY"
+
+
 class Until(Enum):
     END_OF_TURN = "END_OF_TURN"
 
@@ -699,6 +710,25 @@ class Scry(IRNode):
     to_hand: int = 0
     bury: int = 0
     rest: ScryRest = ScryRest.RETURN
+
+
+@dataclass(frozen=True)
+class RevealRoute(IRNode):
+    """Reveal the top card of ``deck``'s deck and route it by a runtime predicate: if
+    its ``atk_type`` equals ``match_atk`` it goes to ``on_match``, otherwise to
+    ``on_fail`` (an optional "you may flip/bury it" is taken only when worthwhile if
+    ``fail_optional`` — shed junk off your own deck, disrupt a valuable card on an
+    opponent's). Destinations: HAND (deck owner's hand), FLIP (mill to discard), BURY
+    (deck bottom), LEAVE (keep on top). One effect per rolled skill, ``match_atk``
+    baked to that skill's move type (Candy MaM, Flame Fighter).
+    """
+
+    deck: Who
+    match_atk: AtkType
+    on_match: RevealDest
+    on_fail: RevealDest
+    fail_optional: bool = False
+    reveal: bool = False
 
 
 @dataclass(frozen=True)

@@ -1418,6 +1418,61 @@ class Engine:
             )
         )
 
+    def _act_reveal_route(self, action: fx.RevealRoute, key: str) -> None:
+        # Reveal the top card and route it by a runtime predicate: atk_type match ->
+        # on_match, else on_fail. A `fail_optional` fail branch ("you may flip/bury")
+        # is taken only when worthwhile — shed junk on your own deck, disrupt a
+        # valuable card on an opponent's — otherwise the card is left on top.
+        owner = key if action.deck is fx.Who.SELF else self.state.opponent_of(key)
+        sabotage = owner != key
+        deck = self.state.players[owner].deck
+        if not deck:
+            return
+        card = deck.pop(0)  # top of the deck
+        matched = card.atk_type is action.match_atk
+        self._log_effect(
+            key,
+            "RevealRoute",
+            owner,
+            {"card": card.db_uuid if action.reveal else None, "matched": matched},
+        )
+        if matched:
+            dest = action.on_match
+        elif action.fail_optional:
+            worth = _scry_value(card) >= 2 if sabotage else _scry_value(card) < 2
+            dest = action.on_fail if worth else fx.RevealDest.LEAVE
+        else:
+            dest = action.on_fail
+        self._route_revealed(owner, card, dest)
+
+    def _route_revealed(self, owner: str, card: Card, dest: fx.RevealDest) -> None:
+        # Land a single revealed card in its chosen destination and log the move.
+        player = self.state.players[owner]
+        if dest is fx.RevealDest.HAND:
+            player.hand.append(card)
+            self._log(
+                gl.Draw(
+                    t=self.state.turn_no, player=owner, cards=[card.db_uuid], source="deck"
+                )
+            )
+            self._hand_cap(owner)
+        elif dest is fx.RevealDest.FLIP:
+            player.discard.append(card)
+            self._log(
+                gl.Discard(
+                    t=self.state.turn_no, player=owner, cards=[card.db_uuid], source="deck"
+                )
+            )
+        elif dest is fx.RevealDest.BURY:
+            player.deck.append(card)  # bottom
+            self._log(
+                gl.Bury(
+                    t=self.state.turn_no, player=owner, cards=[card.db_uuid], source="deck"
+                )
+            )
+        else:  # LEAVE
+            player.deck.insert(0, card)  # back on top
+
     def _act_choice(self, action: fx.Choice, key: str) -> None:
         # Pick exactly ONE branch of an "A or B" effect; the acting player decides
         # (a `choice` decision point), then that branch's actions resolve in order.
@@ -1707,5 +1762,6 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.PlayExtraCard: Engine._act_play_extra_card,
     fx.Peek: Engine._act_peek,
     fx.Scry: Engine._act_scry,
+    fx.RevealRoute: Engine._act_reveal_route,
     fx.Choice: Engine._act_choice,
 }
