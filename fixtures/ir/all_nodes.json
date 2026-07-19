@@ -553,5 +553,8 @@
   },
   {
     "@type": "SwapHandDiscard"
+  },
+  {
+    "@type": "SameRolledSkill"
   }
 ]

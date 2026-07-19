@@ -529,6 +529,10 @@ pub enum Condition {
         who: Who,
         value: i64,
     },
+    /// The owner and their target rolled the **same skill** for this turn-roll (Hex,
+    /// Nic Nemeth). Reads the post-roll context's `skill` vs `opp_skill`; needs a
+    /// roll context (false without one, and in single-sided re-roll/switch contexts).
+    SameRolledSkill,
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
@@ -986,6 +990,10 @@ pub enum IrNode {
         who: Who,
         value: i64,
     },
+    /// The owner and their target rolled the **same skill** for this turn-roll (Hex,
+    /// Nic Nemeth). Reads the post-roll context's `skill` vs `opp_skill`; needs a
+    /// roll context (false without one, and in single-sided re-roll/switch contexts).
+    SameRolledSkill,
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,

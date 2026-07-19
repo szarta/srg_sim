@@ -700,6 +700,57 @@
       }
     }
   ],
+  "192be5ede94a4727b1865fcdd845743f": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Discard",
+          "count": 1,
+          "per": null,
+          "per_who": "SELF",
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "SELF"
+        },
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "SameRolledSkill"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once per turn roll: when you and your target roll the same skill, you may discard 1 card from your hand to draw 2 cards",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
   "19c81a08844f41168571930dd9142b4d": [
     {
       "@type": "Effect",
@@ -5720,6 +5771,38 @@
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
+      }
+    }
+  ],
+  "e515d26515954e709e0f81a86f5231cb": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 2,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "SameRolledSkill"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you and your target roll the same skill for your turn roll, your next turn roll is +2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
       }
     }
   ],

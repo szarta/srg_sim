@@ -133,6 +133,9 @@ RollLeadAtLeast(k)           # self rolled >= k HIGHER than opp (gap <= -k) — 
 RollValue(cmp, value)        # the actual number rolled this turn, read via the trigger's `who` (Mrs. Apocalypse, Numer01)
 PrintedRollValue(who, value) # the rolled skill's PRINTED (base, unbuffed) stat on the who-side's competitor == value
                              # ("rolls their printed 8 skill" — Collin); needs a roll ctx, who follows the trigger. schema v17
+SameRolledSkill              # you and your target rolled the SAME skill this turn-roll (Hex, Nic Nemeth):
+                             # RollContext.skill == .opp_skill (new field carrying the other side's rolled skill,
+                             # set only in the post-roll/pair contexts). Needs a roll ctx. schema v18
 OppWonLastRoll               # the opponent won the PREVIOUS turn's roll-off (GameState.last_roll_winner); false on turn 1 (Dunn re-roll). schema v3.
 Always
 ```

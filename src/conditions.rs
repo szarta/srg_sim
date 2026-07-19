@@ -27,6 +27,11 @@ pub struct RollContext {
     pub skill: Option<Skill>,
     pub gap: Option<i64>,
     pub value: Option<i64>,
+    /// The *other* side's rolled skill this turn-roll — set only in the recorded
+    /// post-roll context (`record_roll_ctx`), so `SameRolledSkill` ("you and your
+    /// target rolled the same skill") can compare the two. `None` in the in-progress
+    /// / re-roll contexts, which are single-sided.
+    pub opp_skill: Option<Skill>,
 }
 
 fn cmp_apply(cmp: Comparator, a: i64, b: i64) -> bool {
@@ -292,6 +297,9 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 state.players[&subject].competitor.stats.get(sk) == *value
             })
         }),
+        Condition::SameRolledSkill => {
+            roll.is_some_and(|r| r.skill.is_some() && r.skill == r.opp_skill)
+        }
         Condition::OppWonLastRoll => {
             state.last_roll_winner.as_deref() == Some(state.opponent_of(owner).as_str())
         }

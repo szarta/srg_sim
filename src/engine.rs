@@ -2686,11 +2686,13 @@ impl Engine {
             skill: Some(sa),
             gap: Some(vb - va),
             value: Some(va),
+            opp_skill: Some(sb),
         };
         let ctx_b = RollContext {
             skill: Some(sb),
             gap: Some(va - vb),
             value: Some(vb),
+            opp_skill: Some(sa),
         };
         // Each side may spend a re-roll; the target die (own, the opponent's, or a
         // chosen player's) is re-rolled in place.
@@ -2783,6 +2785,7 @@ impl Engine {
                 skill: Some(skill),
                 gap: None,
                 value: Some(self.stat(owner, skill)),
+                opp_skill: None,
             };
             if !(self.may_fire(eff, owner)
                 && conditions::holds(&eff.condition, &self.state, owner, Some(&ctx)))
@@ -2975,11 +2978,13 @@ impl Engine {
             skill: Some(sa),
             gap: Some(vb - va),
             value: Some(va),
+            opp_skill: Some(sb),
         };
         let ctx_b = RollContext {
             skill: Some(sb),
             gap: Some(va - vb),
             value: Some(vb),
+            opp_skill: Some(sa),
         };
         for owner in ["A", "B"] {
             let opp = self.state.opponent_of(owner);
@@ -3070,6 +3075,7 @@ impl Engine {
                     skill: Some(sa),
                     gap: Some(vb - va),
                     value: Some(va),
+                    opp_skill: Some(sb),
                 },
             ),
             (
@@ -3078,6 +3084,7 @@ impl Engine {
                     skill: Some(sb),
                     gap: Some(va - vb),
                     value: Some(vb),
+                    opp_skill: Some(sa),
                 },
             ),
         ]);

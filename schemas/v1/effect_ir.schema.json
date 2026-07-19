@@ -77,6 +77,9 @@
             },
             {
               "$ref": "#/$defs/PrintedRollValue"
+            },
+            {
+              "$ref": "#/$defs/SameRolledSkill"
             }
           ]
         }
@@ -161,6 +164,9 @@
               },
               {
                 "$ref": "#/$defs/PrintedRollValue"
+              },
+              {
+                "$ref": "#/$defs/SameRolledSkill"
               }
             ]
           },
@@ -1093,6 +1099,9 @@
             },
             {
               "$ref": "#/$defs/PrintedRollValue"
+            },
+            {
+              "$ref": "#/$defs/SameRolledSkill"
             }
           ]
         },
@@ -1701,6 +1710,9 @@
         },
         {
           "$ref": "#/$defs/SwapHandDiscard"
+        },
+        {
+          "$ref": "#/$defs/SameRolledSkill"
         }
       ]
     },
@@ -1898,6 +1910,9 @@
             },
             {
               "$ref": "#/$defs/PrintedRollValue"
+            },
+            {
+              "$ref": "#/$defs/SameRolledSkill"
             }
           ]
         }
@@ -2188,6 +2203,9 @@
               },
               {
                 "$ref": "#/$defs/PrintedRollValue"
+              },
+              {
+                "$ref": "#/$defs/SameRolledSkill"
               }
             ]
           },
@@ -2515,6 +2533,18 @@
       ],
       "type": "string"
     },
+    "SameRolledSkill": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SameRolledSkill"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "Scry": {
       "additionalProperties": false,
       "properties": {
@@ -2647,6 +2677,9 @@
             },
             {
               "$ref": "#/$defs/PrintedRollValue"
+            },
+            {
+              "$ref": "#/$defs/SameRolledSkill"
             }
           ]
         },
@@ -2969,5 +3002,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 17
+  "version": 18
 }
