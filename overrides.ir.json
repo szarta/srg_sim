@@ -458,6 +458,117 @@
       }
     }
   ],
+  "18ec1811ed0f4626b8ff2009207e9e7c": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Power",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Technique",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "And",
+        "items": [
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Strike",
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "OPP"
+          },
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Submission",
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "OPP"
+          },
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Grapple",
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "OPP"
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent has a Strike, Submission, and Grapple in play, your Power, Technique, and Agility are +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "191fdd8ac35641ba930ccdfcea5e94fd": [
     {
       "@type": "Effect",
@@ -644,6 +755,117 @@
       "optional": false,
       "raw_clause": "if you have \"Enjoy Everything\" in play, your opponent's Gimmick is blank",
       "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "23399bbbb04044748fda782de8e3169c": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Strike",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Submission",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Grapple",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "And",
+        "items": [
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Strike",
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "OPP"
+          },
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Submission",
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "OPP"
+          },
+          {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Grapple",
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "OPP"
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent has a Strike, Submission, and Grapple in play, your Strike, Submission, and Grapple are +1",
+      "source": "gimmick",
       "trigger": {
         "@type": "Static"
       }

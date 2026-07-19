@@ -3127,3 +3127,185 @@ e38cced416cc45e0a9e1367935fd590a:
     n: null
   raw_clause: when you have 3 cards in play with "Drop" in the name, this match has no disqualification
   source: gimmick
+
+# ===========================================================================
+# Top-96: opponent-has-all-three-types static buff (pure override — And of three
+# HasInPlay(OPP, <type>) -> BuffSkill x3; all existing nodes).
+# ===========================================================================
+# Grinch Pitt (WC) buffs P/T/A; Snake Pitt V2 (WC) buffs S/Sub/G — same trigger.
+18ec1811ed0f4626b8ff2009207e9e7c:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': And
+    items:
+    - '@type': HasInPlay
+      who: OPP
+      cmp: '>='
+      count: 1
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Strike
+        play_order: null
+        tag: null
+        name: null
+        raw: null
+        name_contains: []
+        text_contains: []
+    - '@type': HasInPlay
+      who: OPP
+      cmp: '>='
+      count: 1
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Submission
+        play_order: null
+        tag: null
+        name: null
+        raw: null
+        name_contains: []
+        text_contains: []
+    - '@type': HasInPlay
+      who: OPP
+      cmp: '>='
+      count: 1
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Grapple
+        play_order: null
+        tag: null
+        name: null
+        raw: null
+        name_contains: []
+        text_contains: []
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: false
+    cap: null
+    per: null
+    per_zone: IN_PLAY
+  - '@type': BuffSkill
+    skill: Technique
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: false
+    cap: null
+    per: null
+    per_zone: IN_PLAY
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: false
+    cap: null
+    per: null
+    per_zone: IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your opponent has a Strike, Submission, and Grapple in play, your
+    Power, Technique, and Agility are +1
+  source: gimmick
+23399bbbb04044748fda782de8e3169c:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': And
+    items:
+    - '@type': HasInPlay
+      who: OPP
+      cmp: '>='
+      count: 1
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Strike
+        play_order: null
+        tag: null
+        name: null
+        raw: null
+        name_contains: []
+        text_contains: []
+    - '@type': HasInPlay
+      who: OPP
+      cmp: '>='
+      count: 1
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Submission
+        play_order: null
+        tag: null
+        name: null
+        raw: null
+        name_contains: []
+        text_contains: []
+    - '@type': HasInPlay
+      who: OPP
+      cmp: '>='
+      count: 1
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Grapple
+        play_order: null
+        tag: null
+        name: null
+        raw: null
+        name_contains: []
+        text_contains: []
+  actions:
+  - '@type': BuffSkill
+    skill: Strike
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: false
+    cap: null
+    per: null
+    per_zone: IN_PLAY
+  - '@type': BuffSkill
+    skill: Submission
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: false
+    cap: null
+    per: null
+    per_zone: IN_PLAY
+  - '@type': BuffSkill
+    skill: Grapple
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    target_highest: false
+    per_crowd: false
+    cap: null
+    per: null
+    per_zone: IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your opponent has a Strike, Submission, and Grapple in play, your
+    Strike, Submission, and Grapple are +1
+  source: gimmick
