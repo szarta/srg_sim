@@ -339,36 +339,54 @@ class Engine:
         opponent's *current* roll. Boosts/in-roll mods are not re-applied to a re-rolled
         die (no re-roll competitor also carries those — DESIGN.md §11)."""
         vals = {"A": (sa, va), "B": (sb, vb)}
-        # opponent-of-owner roll context: a re-roll gate reads the OPPONENT's roll
-        # (Jay White "when your opponent rolls 9/10"; Dunn's OppWonLastRoll ignores it).
         ctx = {
             "A": conditions.RollContext(skill=sa, gap=vb - va, value=va),
             "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb),
         }
-        for key in ("A", "B"):
-            opp = self.state.opponent_of(key)
-            vals[key] = self._offer_reroll(key, vals[key], ctx[opp])
+        # Each side may spend a re-roll; the target die (own, the opponent's, or a
+        # chosen player's) is re-rolled in place.
+        for owner in ("A", "B"):
+            target = self._offer_reroll(owner, ctx[owner], ctx[self.state.opponent_of(owner)])
+            if target is not None:
+                skill, value = self._roll_for(target, use_pending=False)
+                self._log_effect(owner, "Reroll", target, {"skill": skill.value, "value": value})
+                vals[target] = (skill, value)
         return vals["A"][0], vals["A"][1], vals["B"][0], vals["B"][1]
 
     def _offer_reroll(
-        self, key: str, current: tuple[Skill, int], opp_ctx: conditions.RollContext
-    ) -> tuple[Skill, int]:
-        """One side's re-roll offer: the first standing effect whose action is a
-        :class:`~srg_sim.effects.Reroll`, whose gate holds (against the opponent's roll
-        ``opp_ctx``) and whose once-per-turn charge is unspent, is offered to the owner;
-        if taken it re-rolls and returns the fresh (skill, value)."""
-        for eff in self._standing_effects(key):
-            if not any(isinstance(a, fx.Reroll) for a in eff.actions):
+        self, owner: str, own_ctx: conditions.RollContext, opp_ctx: conditions.RollContext
+    ) -> str | None:
+        """``owner``'s re-roll offer: the first standing ``Reroll`` effect whose gate holds
+        and whose charge is unspent is offered; returns the KEY of the player whose die
+        should be re-rolled (own / opponent / a chosen player), or ``None`` if none fires.
+        The gate reads the opponent's roll for an ``InRoll(who=OPP)`` trigger (Jay White),
+        else the owner's (Reverend "when you roll …")."""
+        for eff in self._standing_effects(owner):
+            reroll = next((a for a in eff.actions if isinstance(a, fx.Reroll)), None)
+            if reroll is None:
                 continue
-            if not (self._may_fire(eff, key) and conditions.holds(eff.condition, self.state, key, opp_ctx)):
+            gate_ctx = (
+                opp_ctx
+                if isinstance(eff.trigger, fx.InRoll) and eff.trigger.who is fx.Who.OPP
+                else own_ctx
+            )
+            if not (self._may_fire(eff, owner) and conditions.holds(eff.condition, self.state, owner, gate_ctx)):
                 continue
-            if eff.optional and not self._take_optional(eff, key):
+            if eff.optional and not self._take_optional(eff, owner):
                 continue  # declined "you may" — charge left for a later roll
-            self._mark_fired(eff, key)
-            skill, value = self._roll_for(key, use_pending=False)
-            self._log_effect(key, "Reroll", key, {"skill": skill.value, "value": value})
-            return (skill, value)  # one re-roll per turn — stop after the first taken
-        return current
+            self._mark_fired(eff, owner)
+            if reroll.choose:
+                return self._decide_reroll_target(owner)
+            if reroll.who is fx.Who.OPP:
+                return self.state.opponent_of(owner)
+            return owner
+        return None
+
+    def _decide_reroll_target(self, owner: str) -> str:
+        """"Choose any player to re-roll" (Grim Librarian): the owner picks which side."""
+        legal = [{"kind": "reroll_target", "target": "OPP"}, {"kind": "reroll_target", "target": "SELF"}]
+        chosen = self._decide("reroll_target", owner, legal)
+        return owner if chosen["target"] == "SELF" else self.state.opponent_of(owner)
 
     def _elective_bump_owner(self) -> str | None:
         """A player who holds an ``ElectBumpOnSameSkill`` grant with a per-match charge

@@ -724,6 +724,9 @@ class MaxHandSize(IRNode):
 class Reroll(IRNode):
     who: Who
     once: bool = True
+    # "Choose any player to re-roll" (Grim Librarian): the owner picks which side
+    # re-rolls (overrides ``who``).
+    choose: bool = False
 
 
 @dataclass(frozen=True)
