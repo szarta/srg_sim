@@ -183,6 +183,7 @@ BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?
                                                  # in per_zone {IN_PLAY|DISCARD} matching per), clamped to cap
                                                  # ("+1 for each card in play with 'Chin' in the name, Max +3"); schema v7
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
+AddText(name_contains=[...], effects=[Effect...])  # Static gimmick: the owner's played cards whose title matches (case-insensitive OR) gain `effects` (their own triggers, usually OnPlay), injected at play time alongside the card's own. El Super Santa/Sabu. schema v25
 Reroll(who, once=True, choose=False, when=THIS)  # who=SELF/OPP die; choose=owner picks a player;
                               # when=NEXT grants a one-shot re-roll for the owner's next turn roll
                               # (schema v9 choose, v10 when). Structural read in the roll-off.

@@ -4901,3 +4901,92 @@ b5a305c0f693405f8cb43b4e5864e559:
   raw_clause: +1 Agility on turn rolls.
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Added-text family (schema v25): a Static AddText gimmick grants extra effects
+# to the owner's played cards whose title matches name_contains (case-insensitive
+# OR). Injected at play time alongside the card's own effects (engine
+# injected_text / _injected_text); the injected effects carry their own triggers.
+# ---------------------------------------------------------------------------
+
+# El Super Santa (World Championship): 'Your cards with "Super" in the name have
+# the added text: "Draw 2 cards".' AddText([Super]) -> OnPlay Draw 2.
+9c5ed320ddcc4a8bb3e330b1f4e9e395:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddText
+    name_contains: [Super]
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnPlay
+      condition:
+        '@type': Always
+      actions:
+      - '@type': Draw
+        n: 2
+        source: TOP
+        who: SELF
+        per: null
+        per_who: SELF
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: 'added text: Draw 2 cards'
+      source: gimmick
+      optional: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Your cards with "Super" in the name have the added text: "Draw 2 cards".'
+  source: gimmick
+  optional: false
+
+# Sabu (World Championship): 'Your cards with "Death", "Dive", or "Chair" in the
+# name have the added text "Draw 2 cards."' AddText([Death,Dive,Chair]) -> OnPlay Draw 2.
+bb3bee34d3df4e1384ba7c77b2a826f3:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddText
+    name_contains: [Death, Dive, Chair]
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnPlay
+      condition:
+        '@type': Always
+      actions:
+      - '@type': Draw
+        n: 2
+        source: TOP
+        who: SELF
+        per: null
+        per_who: SELF
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: 'added text: Draw 2 cards'
+      source: gimmick
+      optional: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your cards with "Death", "Dive", or "Chair" in the name have the added text "Draw 2 cards."
+  source: gimmick
+  optional: false

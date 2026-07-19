@@ -902,6 +902,7 @@ impl Engine {
             | Action::ConsideredCompare { .. }
             | Action::SuppressOpponentDraw
             | Action::SwitchRolledSkill { .. }
+            | Action::AddText { .. }
             | Action::MaxHandSize { .. } => {}
             // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
             // `This` re-roll is structural (read in the roll-off), a no-op here.
@@ -2315,7 +2316,11 @@ impl Engine {
             self.apply_stop(active, defender, card, stop)?;
             return Ok(false);
         }
-        let effects = card.effects.clone();
+        // The card's own effects plus any "added text" its owner's active gimmick
+        // grants to cards of this name (El Super Santa / Sabu). Injected effects
+        // carry their own triggers (OnPlay/OnHit) and dispatch identically.
+        let mut effects = card.effects.clone();
+        effects.extend(self.injected_text(active, &card));
         self.run_effects(&effects, "OnPlay", active, None)?;
         if self.ended() {
             return Ok(false);
@@ -2366,6 +2371,38 @@ impl Engine {
             }
         }
         Ok(())
+    }
+
+    /// "Added text" effects `key`'s active gimmicks grant to `card` (El Super Santa:
+    /// cards with "Super" in the name gain "Draw 2"). Collects `AddText` actions from
+    /// `key`'s standing Static effects whose condition holds and whose `name_contains`
+    /// matches the card's title (case-insensitive OR), returning the effects to run
+    /// alongside the card's own. Empty when no gimmick text applies.
+    fn injected_text(&self, key: &str, card: &Card) -> Vec<Effect> {
+        let mut out = Vec::new();
+        for eff in self.standing_effects(key) {
+            if !matches!(eff.trigger, Trigger::Static)
+                || !conditions::holds(&eff.condition, &self.state, key, None)
+            {
+                continue;
+            }
+            for action in &eff.actions {
+                if let Action::AddText {
+                    name_contains,
+                    effects,
+                } = action
+                {
+                    let gate = CardFilter {
+                        name_contains: name_contains.clone(),
+                        ..Default::default()
+                    };
+                    if conditions::card_matches(card, &gate) {
+                        out.extend(effects.iter().cloned());
+                    }
+                }
+            }
+        }
+        out
     }
 
     /// Offer `defender` the stop window for `card`; return the chosen stopper (taken
@@ -3521,6 +3558,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::ModifyRoll { .. } => "ModifyRoll",
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",
+        Action::AddText { .. } => "AddText",
         Action::Reroll { .. } => "Reroll",
         Action::SwitchRolledSkill { .. } => "SwitchRolledSkill",
         Action::WinTie { .. } => "WinTie",

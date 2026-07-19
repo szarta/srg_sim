@@ -16,6 +16,32 @@
       ],
       "type": "object"
     },
+    "AddText": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "AddText"
+        },
+        "effects": {
+          "items": {
+            "$ref": "#/$defs/Effect"
+          },
+          "type": "array"
+        },
+        "name_contains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "name_contains",
+        "effects"
+      ],
+      "type": "object"
+    },
     "AlsoLead": {
       "additionalProperties": false,
       "properties": {
@@ -638,6 +664,9 @@
               },
               {
                 "$ref": "#/$defs/RevealForDraw"
+              },
+              {
+                "$ref": "#/$defs/AddText"
               }
             ]
           },
@@ -1080,6 +1109,9 @@
               },
               {
                 "$ref": "#/$defs/RevealForDraw"
+              },
+              {
+                "$ref": "#/$defs/AddText"
               }
             ]
           },
@@ -1769,6 +1801,9 @@
         },
         {
           "$ref": "#/$defs/RevealForDraw"
+        },
+        {
+          "$ref": "#/$defs/AddText"
         }
       ]
     },
@@ -3142,5 +3177,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 24
+  "version": 25
 }

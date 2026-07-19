@@ -750,6 +750,10 @@ pub enum Action {
         who: Who,
         duration: Duration,
     },
+    AddText {
+        name_contains: Vec<String>,
+        effects: Vec<Effect>,
+    },
     Reroll {
         /// Whose die is re-rolled: `SelfSide` (your own — Dunn/Jay White) or `Opp`
         /// ("force your opponent to re-roll" — Reverend/Macho Manny). Overridden by
@@ -1231,6 +1235,10 @@ pub enum IrNode {
         delta: i64,
         who: Who,
         duration: Duration,
+    },
+    AddText {
+        name_contains: Vec<String>,
+        effects: Vec<Effect>,
     },
     Reroll {
         /// Whose die is re-rolled: `SelfSide` (your own — Dunn/Jay White) or `Opp`

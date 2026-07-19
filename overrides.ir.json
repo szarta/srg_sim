@@ -3937,6 +3937,64 @@
       }
     }
   ],
+  "9c5ed320ddcc4a8bb3e330b1f4e9e395": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddText",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "n": 2,
+                  "per": null,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "added text: Draw 2 cards",
+              "source": "gimmick",
+              "trigger": {
+                "@type": "OnPlay"
+              }
+            }
+          ],
+          "name_contains": [
+            "Super"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your cards with \"Super\" in the name have the added text: \"Draw 2 cards\".",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "9d97eac40c3048e392de35c0f3812a46": [
     {
       "@type": "Effect",
@@ -5079,6 +5137,66 @@
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
+      }
+    }
+  ],
+  "bb3bee34d3df4e1384ba7c77b2a826f3": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddText",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "n": 2,
+                  "per": null,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "added text: Draw 2 cards",
+              "source": "gimmick",
+              "trigger": {
+                "@type": "OnPlay"
+              }
+            }
+          ],
+          "name_contains": [
+            "Death",
+            "Dive",
+            "Chair"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your cards with \"Death\", \"Dive\", or \"Chair\" in the name have the added text \"Draw 2 cards.\"",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
