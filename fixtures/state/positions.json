@@ -890,6 +890,10 @@
             "pending_roll_mods": {
               "next": 0,
               "this": 0
+            },
+            "reroll_grants": {
+              "this": 0,
+              "next": 0
             }
           },
           "B": {
@@ -1188,6 +1192,10 @@
             "pending_roll_mods": {
               "next": 0,
               "this": 0
+            },
+            "reroll_grants": {
+              "this": 0,
+              "next": 0
             }
           }
         },
@@ -3205,6 +3213,10 @@
             "pending_roll_mods": {
               "next": 0,
               "this": 0
+            },
+            "reroll_grants": {
+              "this": 0,
+              "next": 0
             }
           },
           "B": {
@@ -3785,6 +3797,10 @@
             "pending_roll_mods": {
               "next": 0,
               "this": 0
+            },
+            "reroll_grants": {
+              "this": 0,
+              "next": 0
             }
           }
         },
@@ -5136,6 +5152,10 @@
             "pending_roll_mods": {
               "next": 0,
               "this": 0
+            },
+            "reroll_grants": {
+              "this": 0,
+              "next": 0
             }
           },
           "B": {
@@ -5434,6 +5454,10 @@
             "pending_roll_mods": {
               "next": 0,
               "this": 0
+            },
+            "reroll_grants": {
+              "this": 0,
+              "next": 0
             }
           }
         },

@@ -53,6 +53,11 @@ pub struct PlayerState {
     pub in_play: Vec<Card>,
     #[serde(default)]
     pub pending_roll_mods: RollMods,
+    /// One-shot "re-roll your NEXT turn roll" grants (King Brian Cage). `next` is
+    /// set when the granting effect fires; promoted to `this` at the owner's next
+    /// turn start; an unused grant expires (never accumulates).
+    #[serde(default)]
+    pub reroll_grants: RollMods,
     #[serde(default)]
     pub freq_counters: BTreeMap<String, i64>,
     #[serde(default)]

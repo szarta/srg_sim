@@ -149,7 +149,10 @@ BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?
                                                  # in per_zone {IN_PLAY|DISCARD} matching per), clamped to cap
                                                  # ("+1 for each card in play with 'Chin' in the name, Max +3"); schema v7
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
-Reroll(who, once=True)        WinTie(who)                   Bump(who)
+Reroll(who, once=True, choose=False, when=THIS)  # who=SELF/OPP die; choose=owner picks a player;
+                              # when=NEXT grants a one-shot re-roll for the owner's next turn roll
+                              # (schema v9 choose, v10 when). Structural read in the roll-off.
+WinTie(who)                   Bump(who)
 ElectBumpOnSameSkill(uses=2)  # Static roll-off grant: owner MAY bump on a same-skill roll, N times/match
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
 Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)

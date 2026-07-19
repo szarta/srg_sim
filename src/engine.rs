@@ -318,6 +318,7 @@ impl Engine {
                         discard: Vec::new(),
                         in_play: Vec::new(),
                         pending_roll_mods: Default::default(),
+                        reroll_grants: Default::default(),
                         freq_counters: BTreeMap::new(),
                         gimmick_blanked: false,
                         gimmick_flipped: false,
@@ -846,12 +847,23 @@ impl Engine {
             | Action::FlipGimmickSigns { .. }
             | Action::CountsAsInPlay { .. }
             | Action::ElectBumpOnSameSkill { .. }
-            | Action::Reroll { .. }
             | Action::Unstoppable { .. }
             | Action::AlsoLead { .. }
             | Action::DoubleFinishIfBumped
             | Action::DisqualificationRule { .. }
             | Action::MaxHandSize { .. } => {}
+            // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
+            // `This` re-roll is structural (read in the roll-off), a no-op here.
+            Action::Reroll { when, .. } => {
+                if *when == RollWhen::Next {
+                    self.state
+                        .players
+                        .get_mut(key)
+                        .unwrap()
+                        .reroll_grants
+                        .next_turn += 1;
+                }
+            }
             other => {
                 let raw = format!("{other:?}");
                 self.log_unsupported(
@@ -1511,6 +1523,10 @@ impl Engine {
         self.clear_turn_freq();
         for player in self.state.players.values_mut() {
             player.flags.remove("extra_plays"); // "additional card this turn" is per-turn
+                                                // Promote a "re-roll your next turn roll" grant to this turn (SET, not
+                                                // accumulate); an unused grant expires.
+            player.reroll_grants.this_turn = player.reroll_grants.next_turn;
+            player.reroll_grants.next_turn = 0;
         }
         let winner = self.turn_roll()?;
         if self.ended() || !self.draw_for_turn(&winner)? {
@@ -2273,8 +2289,15 @@ impl Engine {
     ) -> Eng<Option<String>> {
         let effects = self.standing_effects(owner);
         for eff in &effects {
+            // Only a THIS re-roll is offered structurally; a NEXT re-roll is a
+            // deferred grant (handled by `act_reroll` + `reroll_grants`), not fired here.
             let Some((who, choose)) = eff.actions.iter().find_map(|a| match a {
-                Action::Reroll { who, choose, .. } => Some((*who, *choose)),
+                Action::Reroll {
+                    who,
+                    choose,
+                    when: RollWhen::This,
+                    ..
+                } => Some((*who, *choose)),
                 _ => None,
             }) else {
                 continue;
@@ -2301,7 +2324,25 @@ impl Engine {
             };
             return Ok(Some(target));
         }
+        // A granted "re-roll your next turn roll" (King Brian Cage): a one-shot
+        // optional self-re-roll, usable at any roll point until spent.
+        if self.state.players[owner].reroll_grants.this_turn > 0 && self.offer_yes_no(owner)? {
+            self.state
+                .players
+                .get_mut(owner)
+                .unwrap()
+                .reroll_grants
+                .this_turn -= 1;
+            return Ok(Some(owner.to_owned()));
+        }
         Ok(None)
+    }
+
+    /// A bare optional yes/no offer to `key` (no backing effect) — the policy's
+    /// `optional` read decides.
+    fn offer_yes_no(&mut self, key: &str) -> Eng<bool> {
+        let legal = vec![json!({"kind": "yes"}), json!({"kind": "no"})];
+        Ok(self.decide("optional", key, legal)?["kind"] == "yes")
     }
 
     /// "Choose any player to re-roll" (Grim Librarian): the owner picks which side.

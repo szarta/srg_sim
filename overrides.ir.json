@@ -1047,6 +1047,7 @@
           "@type": "Reroll",
           "choose": false,
           "once": true,
+          "when": "THIS",
           "who": "OPP"
         }
       ],
@@ -1572,6 +1573,37 @@
       }
     }
   ],
+  "44a083f3214148959e40c125bb5eb7b2": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "choose": false,
+          "once": true,
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Power for your turn roll: you may re-roll your next turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
   "51537506696946a2ad10662229ccd96f": [
     {
       "@type": "Effect",
@@ -1737,6 +1769,7 @@
           "@type": "Reroll",
           "choose": false,
           "once": true,
+          "when": "THIS",
           "who": "SELF"
         }
       ],
@@ -2038,6 +2071,7 @@
           "@type": "Reroll",
           "choose": false,
           "once": true,
+          "when": "THIS",
           "who": "SELF"
         }
       ],
@@ -2812,6 +2846,37 @@
       }
     }
   ],
+  "8ddf0b4f072e4799bcb6df6b22e84b18": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "choose": false,
+          "once": true,
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Power for your turn roll: you may re-roll your next turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
   "93766c996abf4f4c94d3479e78232e3b": [
     {
       "@type": "Effect",
@@ -3229,6 +3294,7 @@
           "@type": "Reroll",
           "choose": false,
           "once": true,
+          "when": "THIS",
           "who": "OPP"
         }
       ],
@@ -3508,6 +3574,7 @@
           "@type": "Reroll",
           "choose": false,
           "once": true,
+          "when": "THIS",
           "who": "SELF"
         }
       ],
@@ -3751,6 +3818,7 @@
           "@type": "Reroll",
           "choose": true,
           "once": true,
+          "when": "THIS",
           "who": "SELF"
         }
       ],
@@ -4040,6 +4108,7 @@
           "@type": "Reroll",
           "choose": false,
           "once": true,
+          "when": "THIS",
           "who": "SELF"
         }
       ],
@@ -4630,6 +4699,7 @@
           "@type": "Reroll",
           "choose": true,
           "once": true,
+          "when": "THIS",
           "who": "SELF"
         }
       ],

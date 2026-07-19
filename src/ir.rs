@@ -262,9 +262,10 @@ pub enum LoseKind {
 }
 
 /// Whether a roll modifier applies to this roll or the next.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RollWhen {
+    #[default]
     This,
     Next,
 }
@@ -564,6 +565,11 @@ pub enum Action {
         /// (overrides `who`). Grim Librarian.
         #[serde(default)]
         choose: bool,
+        /// `This` re-rolls the current roll (structural, read in the roll-off);
+        /// `Next` grants a one-shot re-roll for the owner's NEXT turn roll ("you
+        /// may re-roll your next turn roll" — King Brian Cage / El Gato Shinobi).
+        #[serde(default)]
+        when: RollWhen,
     },
     WinTie {
         who: Who,
@@ -901,6 +907,11 @@ pub enum IrNode {
         /// (overrides `who`). Grim Librarian.
         #[serde(default)]
         choose: bool,
+        /// `This` re-rolls the current roll (structural, read in the roll-off);
+        /// `Next` grants a one-shot re-roll for the owner's NEXT turn roll ("you
+        /// may re-roll your next turn roll" — King Brian Cage / El Gato Shinobi).
+        #[serde(default)]
+        when: RollWhen,
     },
     WinTie {
         who: Who,

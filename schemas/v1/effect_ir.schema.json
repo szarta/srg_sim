@@ -2168,6 +2168,9 @@
         "once": {
           "type": "boolean"
         },
+        "when": {
+          "$ref": "#/$defs/RollWhen"
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
@@ -2176,7 +2179,8 @@
         "@type",
         "who",
         "once",
-        "choose"
+        "choose",
+        "when"
       ],
       "type": "object"
     },
@@ -2639,5 +2643,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 9
+  "version": 10
 }
