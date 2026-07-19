@@ -147,6 +147,11 @@ Scry(deck, top=0, bottom=0, reveal=False, to_hand=0, bury=0, rest=RETURN|CHOOSE)
                               # best -> deck owner's hand, buries `bury` (worst on own deck, best on an opponent's
                               # = sabotage), rest RETURN (reorder on top) or CHOOSE (keep good on top, bury junk).
                               # reveal=public (logged) vs private "look at". Perfect Assistant/Split/Ricky Riot/Oracle
+RevealRoute(deck, match_atk, on_match, on_fail, fail_optional=False, reveal=False)  # schema v12: reveal top 1;
+                              # if revealed.atk_type == match_atk -> on_match, else on_fail (an optional "you may
+                              # flip/bury it" is taken only when worth it — shed junk on your own deck, disrupt a
+                              # valuable card on an opponent's). Dest in {HAND, FLIP=mill, BURY=bottom, LEAVE=on top}.
+                              # One effect per rolled skill (match_atk baked). Candy MaM / Flame Fighter
 CountsAsInPlay(selector, count=2)  # Static self-decl: this card counts as `count` cards matching `selector`
 ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP)  # delta scales by count of `per` cards in play
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?, cap?, per?, per_zone=IN_PLAY)

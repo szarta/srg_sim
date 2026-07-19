@@ -18,8 +18,9 @@ use crate::cards::{Card, Deck};
 use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
-    Action, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction, DqScope,
-    Duration, Effect, LoseKind, PlayOrder, RollWhen, ScryRest, Skill, Trigger, Who,
+    Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction,
+    DqScope, Duration, Effect, LoseKind, PlayOrder, RevealDest, RollWhen, ScryRest, Skill, Trigger,
+    Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -837,6 +838,22 @@ impl Engine {
                 bury,
                 rest,
             } => self.act_scry(*deck, *top, *bottom, *reveal, *to_hand, *bury, *rest, key)?,
+            Action::RevealRoute {
+                deck,
+                match_atk,
+                on_match,
+                on_fail,
+                fail_optional,
+                reveal,
+            } => self.act_reveal_route(
+                *deck,
+                *match_atk,
+                *on_match,
+                *on_fail,
+                *fail_optional,
+                *reveal,
+                key,
+            )?,
             Action::ModifyRoll {
                 who,
                 delta,
@@ -1577,6 +1594,102 @@ impl Engine {
             source: Some("deck".to_owned()),
             hidden: false,
         }));
+    }
+
+    /// Reveal the top card of `deck`'s deck and route it by a runtime predicate: if
+    /// its `atk_type` equals `match_atk` it goes to `on_match`, else to `on_fail`.
+    /// A `fail_optional` fail branch ("you may flip/bury it") is taken only when
+    /// worthwhile — shed junk on your own deck, disrupt a valuable card on an
+    /// opponent's — otherwise the card is left on top.
+    #[allow(clippy::too_many_arguments)]
+    fn act_reveal_route(
+        &mut self,
+        deck: Who,
+        match_atk: AtkType,
+        on_match: RevealDest,
+        on_fail: RevealDest,
+        fail_optional: bool,
+        reveal: bool,
+        key: &str,
+    ) -> Eng<()> {
+        let owner = self.target(deck, key);
+        let sabotage = owner != key;
+        let card = {
+            let d = &mut self.state.players.get_mut(&owner).unwrap().deck;
+            if d.is_empty() {
+                return Ok(());
+            }
+            d.remove(0) // top of the deck
+        };
+        let matched = card.atk_type == match_atk;
+        self.log_effect(
+            key,
+            "RevealRoute",
+            Some(&owner),
+            json!({"card": if reveal { json!(card.db_uuid) } else { Value::Null },
+                   "matched": matched}),
+        );
+        let dest = if matched {
+            on_match
+        } else if fail_optional {
+            // Take the "you may" only when it helps: dump a low-value card off your
+            // own deck to dig; push a high-value card down an opponent's.
+            let worth = if sabotage {
+                scry_value(&card) >= 2
+            } else {
+                scry_value(&card) < 2
+            };
+            if worth {
+                on_fail
+            } else {
+                RevealDest::Leave
+            }
+        } else {
+            on_fail
+        };
+        self.route_revealed(&owner, card, dest)
+    }
+
+    /// Land a single revealed card in its chosen destination and log the move.
+    fn route_revealed(&mut self, owner: &str, card: Card, dest: RevealDest) -> Eng<()> {
+        let uuid = card.db_uuid.clone();
+        let t = self.state.turn_no;
+        let player = self.state.players.get_mut(owner).unwrap();
+        match dest {
+            RevealDest::Hand => {
+                player.hand.push(card);
+                self.log(Event::Draw(CardMovement {
+                    t,
+                    player: owner.to_owned(),
+                    cards: vec![uuid],
+                    source: Some("deck".to_owned()),
+                    hidden: false,
+                }));
+                return self.hand_cap(owner);
+            }
+            RevealDest::Flip => {
+                player.discard.push(card);
+                self.log(Event::Discard(CardMovement {
+                    t,
+                    player: owner.to_owned(),
+                    cards: vec![uuid],
+                    source: Some("deck".to_owned()),
+                    hidden: false,
+                }));
+            }
+            RevealDest::Bury => {
+                player.deck.push(card); // bottom
+                self.log(Event::Bury(CardMovement {
+                    t,
+                    player: owner.to_owned(),
+                    cards: vec![uuid],
+                    source: Some("deck".to_owned()),
+                    hidden: false,
+                }));
+            }
+            RevealDest::Leave => player.deck.insert(0, card), // back on top
+        }
+        Ok(())
     }
 
     fn act_choice(&mut self, options: &[ChoiceOption], key: &str) -> Eng<()> {
@@ -2964,6 +3077,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RevealAndDiscard { .. } => "RevealAndDiscard",
         Action::Peek { .. } => "Peek",
         Action::Scry { .. } => "Scry",
+        Action::RevealRoute { .. } => "RevealRoute",
         Action::ModifyRoll { .. } => "ModifyRoll",
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",

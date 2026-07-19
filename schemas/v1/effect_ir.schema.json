@@ -523,6 +523,9 @@
                 "$ref": "#/$defs/Scry"
               },
               {
+                "$ref": "#/$defs/RevealRoute"
+              },
+              {
                 "$ref": "#/$defs/ModifyRoll"
               },
               {
@@ -885,6 +888,9 @@
               },
               {
                 "$ref": "#/$defs/Scry"
+              },
+              {
+                "$ref": "#/$defs/RevealRoute"
               },
               {
                 "$ref": "#/$defs/ModifyRoll"
@@ -1532,6 +1538,9 @@
         },
         {
           "$ref": "#/$defs/Scry"
+        },
+        {
+          "$ref": "#/$defs/RevealRoute"
         },
         {
           "$ref": "#/$defs/PlayExtraCard"
@@ -2213,6 +2222,51 @@
       ],
       "type": "object"
     },
+    "RevealDest": {
+      "enum": [
+        "LEAVE",
+        "HAND",
+        "FLIP",
+        "BURY"
+      ],
+      "type": "string"
+    },
+    "RevealRoute": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RevealRoute"
+        },
+        "deck": {
+          "$ref": "#/$defs/Who"
+        },
+        "fail_optional": {
+          "type": "boolean"
+        },
+        "match_atk": {
+          "$ref": "#/$defs/AtkType"
+        },
+        "on_fail": {
+          "$ref": "#/$defs/RevealDest"
+        },
+        "on_match": {
+          "$ref": "#/$defs/RevealDest"
+        },
+        "reveal": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "@type",
+        "deck",
+        "match_atk",
+        "on_match",
+        "on_fail",
+        "fail_optional",
+        "reveal"
+      ],
+      "type": "object"
+    },
     "RollGapAtLeast": {
       "additionalProperties": false,
       "properties": {
@@ -2699,5 +2753,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 11
+  "version": 12
 }

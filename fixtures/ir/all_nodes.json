@@ -368,6 +368,15 @@
     "top": 2
   },
   {
+    "@type": "RevealRoute",
+    "deck": "OPP",
+    "fail_optional": true,
+    "match_atk": "Strike",
+    "on_fail": "BURY",
+    "on_match": "FLIP",
+    "reveal": true
+  },
+  {
     "@type": "PlayExtraCard",
     "order": null
   },

@@ -3501,6 +3501,101 @@
       }
     }
   ],
+  "ae2b1fde64e343da8848984231aa5c83": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealRoute",
+          "deck": "OPP",
+          "fail_optional": true,
+          "match_atk": "Strike",
+          "on_fail": "BURY",
+          "on_match": "FLIP",
+          "reveal": true
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when you roll Strike, your opponent reveals the top card of their deck; if the move type matches the rolled skill, flip it, if not you may bury it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Strike",
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealRoute",
+          "deck": "OPP",
+          "fail_optional": true,
+          "match_atk": "Submission",
+          "on_fail": "BURY",
+          "on_match": "FLIP",
+          "reveal": true
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when you roll Submission, your opponent reveals the top card of their deck; if the move type matches the rolled skill, flip it, if not you may bury it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Submission",
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealRoute",
+          "deck": "OPP",
+          "fail_optional": true,
+          "match_atk": "Grapple",
+          "on_fail": "BURY",
+          "on_match": "FLIP",
+          "reveal": true
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when you roll Grapple, your opponent reveals the top card of their deck; if the move type matches the rolled skill, flip it, if not you may bury it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Grapple",
+        "who": "SELF"
+      }
+    }
+  ],
   "aebe9e8baa0046ddbde13690b7c18455": [
     {
       "@type": "Effect",
@@ -4608,6 +4703,101 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "OPP"
+      }
+    }
+  ],
+  "e1e8ae66adc2457a8d87a4a1d9820442": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealRoute",
+          "deck": "SELF",
+          "fail_optional": true,
+          "match_atk": "Strike",
+          "on_fail": "FLIP",
+          "on_match": "HAND",
+          "reveal": true
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when you roll Strike, reveal the top card of your deck; if the move type matches the rolled skill, add it to your hand, if not you may flip it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Strike",
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealRoute",
+          "deck": "SELF",
+          "fail_optional": true,
+          "match_atk": "Submission",
+          "on_fail": "FLIP",
+          "on_match": "HAND",
+          "reveal": true
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when you roll Submission, reveal the top card of your deck; if the move type matches the rolled skill, add it to your hand, if not you may flip it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Submission",
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealRoute",
+          "deck": "SELF",
+          "fail_optional": true,
+          "match_atk": "Grapple",
+          "on_fail": "FLIP",
+          "on_match": "HAND",
+          "reveal": true
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when you roll Grapple, reveal the top card of your deck; if the move type matches the rolled skill, add it to your hand, if not you may flip it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Grapple",
+        "who": "SELF"
       }
     }
   ],

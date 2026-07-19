@@ -230,6 +230,19 @@ pub enum ScryRest {
     Choose,
 }
 
+/// Where a [`Action::RevealRoute`] sends the revealed card. `Hand` = the deck
+/// owner's hand; `Flip` = mill it to the discard pile; `Bury` = the deck bottom;
+/// `Leave` = keep it on top (the declined "you may" branch).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RevealDest {
+    #[default]
+    Leave,
+    Hand,
+    Flip,
+    Bury,
+}
+
 /// Direction of a stop relative to the acting player.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -562,6 +575,23 @@ pub enum Action {
         bury: i64,
         #[serde(default)]
         rest: ScryRest,
+    },
+    /// Reveal the top card of `deck`'s deck and route it by a runtime predicate: if
+    /// the card's `atk_type` equals `match_atk` it goes to `on_match`, otherwise to
+    /// `on_fail` (taken only when worthwhile if `fail_optional` — "you may flip/bury
+    /// it"). Destinations: HAND (deck owner's hand), FLIP (mill to discard), BURY
+    /// (deck bottom), LEAVE (keep on top). Covers "reveal the top card; if the move
+    /// type matches the rolled skill …" gimmicks (Candy MaM, Flame Fighter) — one
+    /// effect per rolled skill, `match_atk` baked to that skill's move type.
+    RevealRoute {
+        deck: Who,
+        match_atk: AtkType,
+        on_match: RevealDest,
+        on_fail: RevealDest,
+        #[serde(default)]
+        fail_optional: bool,
+        #[serde(default)]
+        reveal: bool,
     },
     ModifyRoll {
         who: Who,
@@ -927,6 +957,23 @@ pub enum IrNode {
         bury: i64,
         #[serde(default)]
         rest: ScryRest,
+    },
+    /// Reveal the top card of `deck`'s deck and route it by a runtime predicate: if
+    /// the card's `atk_type` equals `match_atk` it goes to `on_match`, otherwise to
+    /// `on_fail` (taken only when worthwhile if `fail_optional` — "you may flip/bury
+    /// it"). Destinations: HAND (deck owner's hand), FLIP (mill to discard), BURY
+    /// (deck bottom), LEAVE (keep on top). Covers "reveal the top card; if the move
+    /// type matches the rolled skill …" gimmicks (Candy MaM, Flame Fighter) — one
+    /// effect per rolled skill, `match_atk` baked to that skill's move type.
+    RevealRoute {
+        deck: Who,
+        match_atk: AtkType,
+        on_match: RevealDest,
+        on_fail: RevealDest,
+        #[serde(default)]
+        fail_optional: bool,
+        #[serde(default)]
+        reveal: bool,
     },
     ModifyRoll {
         who: Who,
