@@ -75,6 +75,7 @@ from srg_sim.effects import (
     Reroll,
     RevealAndDiscard,
     RevealDest,
+    RevealFrom,
     RevealRoute,
     RollGapAtLeast,
     RollGapExactly,
@@ -87,6 +88,7 @@ from srg_sim.effects import (
     Search,
     SetFinishRoll,
     ShuffleDeck,
+    ShuffleHandDraw,
     ShuffleIntoDeck,
     SkillCompare,
     StartOfMatch,
@@ -168,7 +170,10 @@ SAMPLES: list[IRNode] = [
         on_fail=RevealDest.BURY,
         fail_optional=True,
         reveal=True,
+        reveal_from=RevealFrom.CHOOSE,
+        match_parity=True,
     ),
+    ShuffleHandDraw(who=Who.SELF, count=4, choose=True),
     RecurToDeckTop(CardFilter(play_order=PlayOrder.FINISH), 3),
     CountsAsInPlay(  # "counts as 2 Lead Strikes in play" (Double Cross)
         CardFilter(play_order=PlayOrder.LEAD, atk_type=AtkType.STRIKE), 2

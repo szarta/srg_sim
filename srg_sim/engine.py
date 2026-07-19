@@ -1428,8 +1428,12 @@ class Engine:
         deck = self.state.players[owner].deck
         if not deck:
             return
-        card = deck.pop(0)  # top of the deck
-        matched = card.atk_type is action.match_atk
+        # `CHOOSE` (top or bottom) is a blind pick — resolve it to the top.
+        card = deck.pop() if action.reveal_from is fx.RevealFrom.BOTTOM else deck.pop(0)
+        if action.match_parity is not None:
+            matched = (card.number % 2 == 0) == action.match_parity
+        else:
+            matched = card.atk_type is action.match_atk
         self._log_effect(
             key,
             "RevealRoute",
@@ -1472,6 +1476,33 @@ class Engine:
             )
         else:  # LEAVE
             player.deck.insert(0, card)  # back on top
+
+    def _act_shuffle_hand_draw(self, action: fx.ShuffleHandDraw, key: str) -> None:
+        # Shuffle a player's hand into their deck, shuffle, then draw `count` — a
+        # mid-match hand refresh (Cyclone V2, on a bump). `choose` lets the actor
+        # pick which player ("either player"); the default policy picks itself.
+        if action.choose:
+            target = self._decide_reshuffle_target(key)
+        else:
+            target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        player = self.state.players[target]
+        hand = player.hand
+        if hand:
+            uuids = [c.db_uuid for c in hand]
+            player.deck.extend(hand)
+            player.hand = []
+            self._log(
+                gl.Bury(t=self.state.turn_no, player=target, cards=uuids, source="hand")
+            )
+        self.state.rng.shuffle(player.deck)
+        self._draw(target, max(action.count, 0))
+
+    def _decide_reshuffle_target(self, key: str) -> str:
+        # "Either player" pick — the actor chooses itself or its opponent; the
+        # default policy takes the first (itself).
+        opp = self.state.opponent_of(key)
+        legal = [{"kind": "seat", "seat": key}, {"kind": "seat", "seat": opp}]
+        return self._decide("reshuffle_target", key, legal)["seat"]
 
     def _act_choice(self, action: fx.Choice, key: str) -> None:
         # Pick exactly ONE branch of an "A or B" effect; the acting player decides
@@ -1763,5 +1794,6 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.Peek: Engine._act_peek,
     fx.Scry: Engine._act_scry,
     fx.RevealRoute: Engine._act_reveal_route,
+    fx.ShuffleHandDraw: Engine._act_shuffle_hand_draw,
     fx.Choice: Engine._act_choice,
 }

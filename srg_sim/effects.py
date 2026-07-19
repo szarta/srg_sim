@@ -245,6 +245,16 @@ class RevealDest(Enum):
     BURY = "BURY"
 
 
+class RevealFrom(Enum):
+    """Which end of the deck a :class:`RevealRoute` reveals from. ``CHOOSE`` is the
+    actor's pick ("the top or bottom card"), resolved blind to the top since the card
+    is not yet known."""
+
+    TOP = "TOP"
+    BOTTOM = "BOTTOM"
+    CHOOSE = "CHOOSE"
+
+
 class Until(Enum):
     END_OF_TURN = "END_OF_TURN"
 
@@ -729,6 +739,21 @@ class RevealRoute(IRNode):
     on_fail: RevealDest
     fail_optional: bool = False
     reveal: bool = False
+    reveal_from: RevealFrom = RevealFrom.TOP
+    # True=even, False=odd -> number-parity predicate (Smart Mark's blind odd/even
+    # guess); None keeps the atk_type==match_atk predicate.
+    match_parity: bool | None = None
+
+
+@dataclass(frozen=True)
+class ShuffleHandDraw(IRNode):
+    """Shuffle a player's hand back into their deck, shuffle it, then draw ``count``
+    fresh cards — a mid-match hand refresh (Cyclone V2, on a bump). ``choose`` lets
+    the actor pick which player ("either player"); otherwise ``who`` selects."""
+
+    who: Who
+    count: int
+    choose: bool = False
 
 
 @dataclass(frozen=True)
