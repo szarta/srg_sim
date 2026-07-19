@@ -225,6 +225,44 @@ def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
     assert len(eng.state.players["A"].hand) == a2
 
 
+def test_on_breakout_who_opp_recurs_spotlights_only_when_opponent_breaks_out() -> None:
+    # "If your opponent breaks out, shuffle up to 3 Spotlight cards from your discard
+    # into your deck." OnBreakout(who=OPP) fires for A only when B (the opponent) broke
+    # out; the recur runs while A's card is still in play (before the board clears).
+    def fresh() -> Engine:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng.setup()
+        recur = Card(
+            db_uuid="r", name="R", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD,
+            effects=(
+                fx.Effect(
+                    trigger=fx.OnBreakout(who=fx.Who.OPP),
+                    actions=tuple(
+                        fx.ShuffleIntoDeck(selector=fx.CardFilter(tag="Spotlight")) for _ in range(3)
+                    ),
+                ),
+            ),
+        )
+        eng.state.players["A"].in_play = [recur]
+        eng.state.players["A"].deck = []
+        sp = [Card(db_uuid=f"s{i}", name="S", number=1, atk_type=AtkType.STRIKE,
+                   play_order=PlayOrder.LEAD, tags=("Spotlight",)) for i in range(2)]
+        plain = Card(db_uuid="p", name="P", number=2, atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD)
+        eng.state.players["A"].discard = [*sp, plain]
+        return eng
+
+    # A finished; B (the opponent) broke out -> recur fires: 2 spotlights leave A's discard.
+    eng = fresh()
+    eng._on_broken_out("A")
+    assert sum(1 for c in eng.state.players["A"].discard if "Spotlight" in c.tags) == 0
+    assert sum(1 for c in eng.state.players["A"].deck if "Spotlight" in c.tags) == 2
+    assert any(c.db_uuid == "p" for c in eng.state.players["A"].discard)  # plain card stays
+    # B finished; A broke out -> A's OnBreakout(who=OPP) does NOT fire.
+    eng = fresh()
+    eng._on_broken_out("B")
+    assert sum(1 for c in eng.state.players["A"].discard if "Spotlight" in c.tags) == 2
+
+
 def test_finish_roll_bonus_per_spotlight_in_opponent_discard() -> None:
     # "Your Finish rolls are +1 for each Spotlight in your opponent's discard pile":
     # FinishRollBonus.per counts per_who's cards in per_zone matching the filter.

@@ -998,14 +998,25 @@ class Engine:
         return broke
 
     def _on_broken_out(self, finisher: str) -> None:
+        # OnBreakout fires FIRST, while sources are still in play — a card-based recur
+        # ("if your opponent breaks out, shuffle Spotlights…") needs its card present
+        # before the boards clear. `who` selects whose breakout fires it (None = any);
+        # the defender is the breaker. A no-op for decks without OnBreakout, so the
+        # frozen corpus (which has none) is byte-identical.
+        breaker = self.state.opponent_of(finisher)
+        for key in ("A", "B"):
+            for eff in self._standing_effects(key):
+                if not isinstance(eff.trigger, fx.OnBreakout):
+                    continue
+                who = eff.trigger.who
+                target = key if who is fx.Who.SELF else self.state.opponent_of(key)
+                if who is None or target == breaker:
+                    self._fire_if_ready(eff, key, None)
         # Breakout: ALL cards in play on BOTH sides clear to discard (§5), CM +1.
         for key in ("A", "B"):
             self._discard_in_play(key)
         self.state.crowd_meter += 1
         self._log(gl.CrowdMeter(t=self.state.turn_no, delta=1, value=self.state.crowd_meter))
-        # "After a breakout, ..." gimmicks fire for both players (Copy Kat: turn over).
-        for key in ("A", "B"):
-            self._run_effects(self._standing_effects(key), fx.OnBreakout, key)
 
     # -- end of turn -------------------------------------------------------
 

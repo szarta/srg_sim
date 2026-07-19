@@ -458,10 +458,12 @@ class OnBury(IRNode):
 @dataclass(frozen=True)
 class OnBreakout(IRNode):
     """After a breakout resolves — the shared match event that clears both boards and
-    bumps the Crowd Meter (SUPERSHOW_MECHANICS §5). Fires for both players regardless
-    of who finished or who broke out, so a "after a breakout, ..." gimmick (Copy Kat:
-    "turn this card over") lives here. Gate with :class:`GimmickFlipped` so a one-way
-    transform fires only while still on its front."""
+    bumps the Crowd Meter (SUPERSHOW_MECHANICS §5). ``who`` selects whose breakout
+    fires it: ``None`` = any breakout ("after a breakout, ..." — Copy Kat: "turn this
+    card over"); ``SELF`` = you broke out; ``OPP`` = your opponent broke out. Gate with
+    :class:`GimmickFlipped` so a one-way transform fires only while still on its front."""
+
+    who: Who | None = None
 
 
 @dataclass(frozen=True)
