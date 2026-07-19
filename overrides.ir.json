@@ -120,6 +120,43 @@
       }
     }
   ],
+  "014bc171e93a4ed9a4d26d6d7fab3039": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleDeck",
+          "who": "SELF"
+        },
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when a card or Gimmick causes you to bury any number of cards, shuffle your deck then draw 1 card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnBury",
+        "also_discard": false,
+        "from_hand_only": false,
+        "who": "SELF"
+      }
+    }
+  ],
   "05c82b62b0484199bd4ba46b8e32d8e9": [
     {
       "@type": "Effect",
@@ -1224,6 +1261,39 @@
       "trigger": {
         "@type": "OnRoll",
         "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
+  "2e4a3c658deb43499e6e3e398d0def13": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you bury or discard any number of cards from your hand from a card effect or Gimmick, draw 1 card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnBury",
+        "also_discard": true,
+        "from_hand_only": true,
         "who": "SELF"
       }
     }

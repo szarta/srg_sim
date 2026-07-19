@@ -1096,6 +1096,9 @@
             },
             {
               "$ref": "#/$defs/Static"
+            },
+            {
+              "$ref": "#/$defs/OnBury"
             }
           ]
         }
@@ -1631,6 +1634,9 @@
         },
         {
           "$ref": "#/$defs/SwitchRolledSkill"
+        },
+        {
+          "$ref": "#/$defs/OnBury"
         }
       ]
     },
@@ -1856,6 +1862,30 @@
       },
       "required": [
         "@type"
+      ],
+      "type": "object"
+    },
+    "OnBury": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnBury"
+        },
+        "also_discard": {
+          "type": "boolean"
+        },
+        "from_hand_only": {
+          "type": "boolean"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "from_hand_only",
+        "also_discard"
       ],
       "type": "object"
     },
@@ -2834,5 +2864,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 14
+  "version": 15
 }

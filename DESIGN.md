@@ -95,6 +95,11 @@ OnBump                       # when the owner bumps (a tied roll: both draw + re
                              #   Both sides bump on a tie, so each owner's OnBump fires;
                              #   bump-punish gimmicks (Mastermind: "opp next roll -2") live
                              #   here. Gate repeats with a once-per-turn frequency.
+OnBury(who, from_hand_only?, also_discard?)  # when an EFFECT/Gimmick causes the owner to bury cards
+                             #   (Cyclone V1) — fires after act_bury/act_discard only, NOT the
+                             #   mechanical pass-and-recycle or hand-cap trim (they bypass those
+                             #   paths). from_hand_only limits to hand buries; also_discard also fires
+                             #   on an effect-caused hand discard (Tommy "bury or discard"). schema v15
 StartOfTurn / StartOfMatch
 Static                       # always-on passive (e.g. "+1 to Power"); duration-scoped, see below
 ```

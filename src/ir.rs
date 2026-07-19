@@ -410,6 +410,21 @@ pub enum Trigger {
         text_contains: Vec<String>,
     },
     OnBump,
+    /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
+    /// V1) / "when you bury OR discard cards from your hand from a card effect or
+    /// Gimmick" (Tommy Stillwell). Fires ONLY after an EFFECT-caused bury (`act_bury`)
+    /// / effect-caused hand discard (`act_discard`) — never the mechanical pass-and-
+    /// recycle (`do_pass`) or the hand-cap trim, which bypass those paths. `who` =
+    /// whose bury fires it (SELF = "causes you"). `from_hand_only` limits to hand
+    /// buries (Tommy); `also_discard` additionally fires on an effect-caused hand
+    /// DISCARD (Tommy's "bury or discard"). Fires once per bury/discard event.
+    OnBury {
+        who: Who,
+        #[serde(default)]
+        from_hand_only: bool,
+        #[serde(default)]
+        also_discard: bool,
+    },
     StartOfTurn,
     StartOfMatch,
     OnBreakout,
@@ -838,6 +853,21 @@ pub enum IrNode {
         text_contains: Vec<String>,
     },
     OnBump,
+    /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
+    /// V1) / "when you bury OR discard cards from your hand from a card effect or
+    /// Gimmick" (Tommy Stillwell). Fires ONLY after an EFFECT-caused bury (`act_bury`)
+    /// / effect-caused hand discard (`act_discard`) — never the mechanical pass-and-
+    /// recycle (`do_pass`) or the hand-cap trim, which bypass those paths. `who` =
+    /// whose bury fires it (SELF = "causes you"). `from_hand_only` limits to hand
+    /// buries (Tommy); `also_discard` additionally fires on an effect-caused hand
+    /// DISCARD (Tommy's "bury or discard"). Fires once per bury/discard event.
+    OnBury {
+        who: Who,
+        #[serde(default)]
+        from_hand_only: bool,
+        #[serde(default)]
+        also_discard: bool,
+    },
     StartOfTurn,
     StartOfMatch,
     OnBreakout,

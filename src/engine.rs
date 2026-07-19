@@ -565,7 +565,7 @@ impl Engine {
         count: usize,
         random: bool,
         selector: Option<&crate::ir::CardFilter>,
-    ) -> Eng<()> {
+    ) -> Eng<usize> {
         let filt = selector.cloned().unwrap_or_default();
         let mut dropped: Vec<Card> = Vec::new();
         for _ in 0..count {
@@ -589,6 +589,7 @@ impl Engine {
             }
             dropped.push(card);
         }
+        let n = dropped.len();
         if !dropped.is_empty() {
             let cards = dropped.iter().map(|c| c.db_uuid.clone()).collect();
             self.state
@@ -606,7 +607,7 @@ impl Engine {
                 hidden: false,
             }));
         }
-        Ok(())
+        Ok(n)
     }
 
     fn choose_discard(&mut self, key: &str, pool: &[Card]) -> Eng<Card> {
@@ -976,7 +977,11 @@ impl Engine {
     ) -> Eng<()> {
         let target = self.target(who, key);
         if source == BuryFrom::Hand {
-            return self.bury_from_hand(&target, count.max(0) as usize, random, selector);
+            let n = self.bury_from_hand(&target, count.max(0) as usize, random, selector)?;
+            if n > 0 {
+                self.run_on_bury(&target, true, false)?; // effect-caused hand bury
+            }
+            return Ok(());
         }
         // Discard source: recycle the top `count` of the discard pile (optionally
         // randomized) to the bottom of the deck. Selector is ignored (the pass-and-
@@ -992,6 +997,7 @@ impl Engine {
         }
         if !cards.is_empty() {
             self.bury_cards(&target, &cards);
+            self.run_on_bury(&target, false, false)?; // effect-caused discard-pile bury
         }
         Ok(())
     }
@@ -1006,7 +1012,7 @@ impl Engine {
         count: usize,
         random: bool,
         selector: &CardFilter,
-    ) -> Eng<()> {
+    ) -> Eng<usize> {
         let mut buried: Vec<Card> = Vec::new();
         for _ in 0..count {
             let pool: Vec<Card> = self.state.players[key]
@@ -1029,6 +1035,7 @@ impl Engine {
             }
             buried.push(card);
         }
+        let n = buried.len();
         if !buried.is_empty() {
             let uuids = buried.iter().map(|c| c.db_uuid.clone()).collect();
             let player = self.state.players.get_mut(key).unwrap();
@@ -1044,7 +1051,7 @@ impl Engine {
                 hidden: false,
             }));
         }
-        Ok(())
+        Ok(n)
     }
 
     fn act_flip(&mut self, n: i64, who: Who, key: &str) {
@@ -1087,7 +1094,11 @@ impl Engine {
             count *= self.per_multiplier(per, per_who, key);
         }
         if count != 0 {
-            self.discard_from_hand(&target, count.max(0) as usize, random, Some(selector))?;
+            let n =
+                self.discard_from_hand(&target, count.max(0) as usize, random, Some(selector))?;
+            if n > 0 {
+                self.run_on_bury(&target, true, true)?; // effect-caused hand discard (Tommy)
+            }
         }
         Ok(())
     }
@@ -2260,6 +2271,43 @@ impl Engine {
         Ok(())
     }
 
+    /// Fire standing `OnBury` gimmicks after an EFFECT-caused bury/discard landed on
+    /// `buried_by` (The Cyclone V1, Tommy Stillwell). `from_hand` = the cards left the
+    /// hand (vs the discard pile); `is_discard` = the event was a discard (vs a bury).
+    /// Scans BOTH players so a `who=OPP` ("when your opponent buries") variant works;
+    /// fires once per event. The mechanical pass-and-recycle bury and the hand-cap trim
+    /// bypass `act_bury`/`act_discard`, so they never reach here (DESIGN.md §3).
+    fn run_on_bury(&mut self, buried_by: &str, from_hand: bool, is_discard: bool) -> Eng<()> {
+        let opp = self.state.opponent_of(buried_by);
+        for owner in [buried_by.to_owned(), opp] {
+            let effects = self.standing_effects(&owner);
+            for eff in &effects {
+                let Trigger::OnBury {
+                    who,
+                    from_hand_only,
+                    also_discard,
+                } = &eff.trigger
+                else {
+                    continue;
+                };
+                // SELF fires when the effect's owner is the burier; OPP when the
+                // burier is the owner's opponent.
+                let dir_ok = (*who == Who::SelfSide) == (owner.as_str() == buried_by);
+                if !dir_ok {
+                    continue;
+                }
+                if is_discard && !*also_discard {
+                    continue; // a discard only fires the "bury or discard" variant
+                }
+                if *from_hand_only && !from_hand {
+                    continue; // hand-only variant ignores discard-pile buries
+                }
+                self.fire_if_ready(eff, &owner, None)?;
+            }
+        }
+        Ok(())
+    }
+
     // -- finish sequence + breakout ---------------------------------------
 
     /// The finish roll: base stat + the whole in-play combo's printed bonuses for the
@@ -3119,6 +3167,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnStop { .. } => "OnStop",
         Trigger::OnHit { .. } => "OnHit",
         Trigger::OnBump => "OnBump",
+        Trigger::OnBury { .. } => "OnBury",
         Trigger::StartOfTurn => "StartOfTurn",
         Trigger::StartOfMatch => "StartOfMatch",
         Trigger::OnBreakout => "OnBreakout",
