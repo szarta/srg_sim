@@ -19,12 +19,13 @@ use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction, DqScope,
-    Duration, Effect, LoseKind, PlayOrder, RollWhen, Skill, Trigger, Who,
+    Duration, Effect, LoseKind, PlayOrder, RollWhen, ScryRest, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
 use crate::state::{GameState, PlayerState};
 use serde_json::{json, Value};
+use std::cmp::Reverse;
 use std::collections::BTreeMap;
 
 pub const OPENING_HAND: usize = 3;
@@ -827,6 +828,15 @@ impl Engine {
                 self.act_reveal_and_discard(*count, *who, key)
             }
             Action::Peek { who } => self.act_peek(*who, key),
+            Action::Scry {
+                deck,
+                top,
+                bottom,
+                reveal,
+                to_hand,
+                bury,
+                rest,
+            } => self.act_scry(*deck, *top, *bottom, *reveal, *to_hand, *bury, *rest, key)?,
             Action::ModifyRoll {
                 who,
                 delta,
@@ -1412,6 +1422,161 @@ impl Engine {
                 .insert("peek".to_owned(), Value::Object(peek));
         }
         self.log_effect(key, "Peek", Some(&target), json!({"hand_size": hand_size}));
+    }
+
+    /// Look at / reveal cards from the top (and/or bottom) of `deck`'s deck and
+    /// route them by value. The effect owner (`key`) is the actor: it takes the
+    /// `to_hand` best cards to the deck owner's hand, buries `bury` of them to the
+    /// deck bottom (the *worst* on its own deck, the *best* on an opponent's —
+    /// sabotage), and disposes of the rest per `rest`. `reveal` makes the seen
+    /// cards public (logged); a private "look at" logs only the count.
+    #[allow(clippy::too_many_arguments)]
+    fn act_scry(
+        &mut self,
+        deck: Who,
+        top: i64,
+        bottom: i64,
+        reveal: bool,
+        to_hand: i64,
+        bury: i64,
+        rest: ScryRest,
+        key: &str,
+    ) -> Eng<()> {
+        let owner = self.target(deck, key);
+        let sabotage = owner != key; // scrying an opponent's deck hurts, not helps
+
+        // Pull the revealed window off the deck: `top` from the front, `bottom`
+        // from the back (top = front of the Vec, the draw end).
+        let mut revealed: Vec<Card> = Vec::new();
+        {
+            let d = &mut self.state.players.get_mut(&owner).unwrap().deck;
+            let tn = (top.max(0) as usize).min(d.len());
+            revealed.extend(d.drain(..tn));
+            let bn = (bottom.max(0) as usize).min(d.len());
+            let cut = d.len() - bn;
+            revealed.extend(d.drain(cut..));
+        }
+        if revealed.is_empty() {
+            return Ok(());
+        }
+
+        // Reveal (public) lists the card ids; a private "look at" logs only the
+        // count — private info stays out of the log (the Peek convention).
+        let seen = if reveal {
+            json!(revealed
+                .iter()
+                .map(|c| c.db_uuid.clone())
+                .collect::<Vec<_>>())
+        } else {
+            Value::Null
+        };
+        self.log_effect(
+            key,
+            "Scry",
+            Some(&owner),
+            json!({"count": revealed.len(), "revealed": seen, "public": reveal}),
+        );
+
+        // Rank by value (Finish > stop > other), best first.
+        revealed.sort_by_key(|c| Reverse(scry_value(c)));
+
+        // Take the `to_hand` best cards to the deck owner's hand.
+        let take = (to_hand.max(0) as usize).min(revealed.len());
+        if take > 0 {
+            let taken: Vec<Card> = revealed.drain(..take).collect();
+            let uuids: Vec<String> = taken.iter().map(|c| c.db_uuid.clone()).collect();
+            self.state
+                .players
+                .get_mut(&owner)
+                .unwrap()
+                .hand
+                .extend(taken);
+            let t = self.state.turn_no;
+            self.log(Event::Draw(CardMovement {
+                t,
+                player: owner.clone(),
+                cards: uuids,
+                source: Some("deck".to_owned()),
+                hidden: !reveal,
+            }));
+        }
+
+        // Bury `bury` cards to the deck bottom: the worst on your own deck, the
+        // best on an opponent's.
+        let bn = (bury.max(0) as usize).min(revealed.len());
+        if bn > 0 {
+            let buried: Vec<Card> = if sabotage {
+                revealed.drain(..bn).collect()
+            } else {
+                let cut = revealed.len() - bn;
+                revealed.drain(cut..).collect()
+            };
+            self.scry_to_bottom(&owner, &buried);
+        }
+
+        // Dispose of the leftovers, then re-cap the (possibly grown) hand.
+        self.scry_dispose(&owner, revealed, rest, sabotage);
+        self.hand_cap(&owner)
+    }
+
+    /// Route each scry leftover: `Return` puts them all back on top (best on top of
+    /// your own deck, worst on top when sabotaging); `Choose` keeps the valuable
+    /// ones on top and buries the junk (inverted when sabotaging).
+    fn scry_dispose(&mut self, owner: &str, cards: Vec<Card>, rest: ScryRest, sabotage: bool) {
+        if cards.is_empty() {
+            return;
+        }
+        match rest {
+            ScryRest::Return => {
+                let mut ordered = cards;
+                ordered.sort_by_key(|c| Reverse(scry_value(c))); // best first
+                if sabotage {
+                    ordered.reverse(); // feed the opponent their worst first
+                }
+                self.scry_to_top(owner, ordered);
+            }
+            ScryRest::Choose => {
+                let (keep, bury): (Vec<Card>, Vec<Card>) = cards
+                    .into_iter()
+                    .partition(|c| (scry_value(c) >= 2) != sabotage);
+                if !bury.is_empty() {
+                    self.scry_to_bottom(owner, &bury);
+                }
+                self.scry_to_top(owner, keep);
+            }
+        }
+    }
+
+    /// Put `cards` back on top of `owner`'s deck, `cards[0]` ending up topmost.
+    fn scry_to_top(&mut self, owner: &str, cards: Vec<Card>) {
+        if cards.is_empty() {
+            return;
+        }
+        let d = &mut self.state.players.get_mut(owner).unwrap().deck;
+        for card in cards.into_iter().rev() {
+            d.insert(0, card);
+        }
+    }
+
+    /// Send `cards` to the bottom of `owner`'s deck and log the bury.
+    fn scry_to_bottom(&mut self, owner: &str, cards: &[Card]) {
+        if cards.is_empty() {
+            return;
+        }
+        self.state
+            .players
+            .get_mut(owner)
+            .unwrap()
+            .deck
+            .extend(cards.iter().cloned());
+        let t = self.state.turn_no;
+        self.log(Event::Bury(CardMovement {
+            t,
+            player: owner.to_owned(),
+            cards: cards.iter().map(|c| c.db_uuid.clone()).collect(),
+            source: Some("deck".to_owned()),
+            hidden: false,
+        }));
     }
 
     fn act_choice(&mut self, options: &[ChoiceOption], key: &str) -> Eng<()> {
@@ -2768,6 +2933,19 @@ fn is_stop_card(card: &Card) -> bool {
         .any(|eff| eff.actions.iter().any(|a| matches!(a, Action::Stop { .. })))
 }
 
+/// Value a scried card by how much the actor wants it kept/drawn: a Finish (a
+/// win condition) over a stop (defense) over a plain card. Mirrors the
+/// discard-recycle read so scry keeps the deck's best on top / in hand.
+fn scry_value(card: &Card) -> i64 {
+    if card.play_order == PlayOrder::Finish {
+        3
+    } else if is_stop_card(card) {
+        2
+    } else {
+        1
+    }
+}
+
 /// The action's Python class name — the tail of an `unsupported` event's reason
 /// when an action reaches the executor without a modeled handler.
 fn action_name(action: &Action) -> &'static str {
@@ -2785,6 +2963,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RemoveFromPlay { .. } => "RemoveFromPlay",
         Action::RevealAndDiscard { .. } => "RevealAndDiscard",
         Action::Peek { .. } => "Peek",
+        Action::Scry { .. } => "Scry",
         Action::ModifyRoll { .. } => "ModifyRoll",
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",

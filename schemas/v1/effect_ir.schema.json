@@ -520,6 +520,9 @@
                 "$ref": "#/$defs/Peek"
               },
               {
+                "$ref": "#/$defs/Scry"
+              },
+              {
                 "$ref": "#/$defs/ModifyRoll"
               },
               {
@@ -879,6 +882,9 @@
               },
               {
                 "$ref": "#/$defs/Peek"
+              },
+              {
+                "$ref": "#/$defs/Scry"
               },
               {
                 "$ref": "#/$defs/ModifyRoll"
@@ -1523,6 +1529,9 @@
         },
         {
           "$ref": "#/$defs/Peek"
+        },
+        {
+          "$ref": "#/$defs/Scry"
         },
         {
           "$ref": "#/$defs/PlayExtraCard"
@@ -2295,6 +2304,53 @@
       ],
       "type": "string"
     },
+    "Scry": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Scry"
+        },
+        "bottom": {
+          "type": "integer"
+        },
+        "bury": {
+          "type": "integer"
+        },
+        "deck": {
+          "$ref": "#/$defs/Who"
+        },
+        "rest": {
+          "$ref": "#/$defs/ScryRest"
+        },
+        "reveal": {
+          "type": "boolean"
+        },
+        "to_hand": {
+          "type": "integer"
+        },
+        "top": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "deck",
+        "top",
+        "bottom",
+        "reveal",
+        "to_hand",
+        "bury",
+        "rest"
+      ],
+      "type": "object"
+    },
+    "ScryRest": {
+      "enum": [
+        "RETURN",
+        "CHOOSE"
+      ],
+      "type": "string"
+    },
     "Search": {
       "additionalProperties": false,
       "properties": {
@@ -2643,5 +2699,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 10
+  "version": 11
 }

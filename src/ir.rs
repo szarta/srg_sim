@@ -217,6 +217,19 @@ pub enum DqScope {
     Match,
 }
 
+/// What a [`Action::Scry`] does with revealed cards that are neither taken to
+/// hand nor buried by the fixed `bury` count. `Return` puts them back on top of
+/// the deck (the actor reorders by value); `Choose` lets the actor decide, per
+/// card, between returning it on top and burying it to the deck bottom
+/// (Ricky Riot's "put the other back on top or bury it").
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ScryRest {
+    #[default]
+    Return,
+    Choose,
+}
+
 /// Direction of a stop relative to the acting player.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -526,6 +539,29 @@ pub enum Action {
     },
     Peek {
         who: Who,
+    },
+    /// Look at / reveal cards from the top (and/or bottom) of `deck`'s deck, then
+    /// route them: the effect owner (the "actor") takes `to_hand` of them to the
+    /// deck owner's hand, buries `bury` to the deck bottom, and disposes of the
+    /// leftovers per `rest`. The actor picks by card value — best-to-hand, and
+    /// bury the *worst* on their own deck or the *best* on an opponent's deck
+    /// (sabotage, e.g. The Oracle). `reveal=true` makes the seen cards public
+    /// (logged); `reveal=false` is a private "look at". Covers reveal-top-of-deck
+    /// gimmicks (Perfect Assistant, Split, Ricky Riot, The Oracle).
+    Scry {
+        deck: Who,
+        #[serde(default)]
+        top: i64,
+        #[serde(default)]
+        bottom: i64,
+        #[serde(default)]
+        reveal: bool,
+        #[serde(default)]
+        to_hand: i64,
+        #[serde(default)]
+        bury: i64,
+        #[serde(default)]
+        rest: ScryRest,
     },
     ModifyRoll {
         who: Who,
@@ -868,6 +904,29 @@ pub enum IrNode {
     },
     Peek {
         who: Who,
+    },
+    /// Look at / reveal cards from the top (and/or bottom) of `deck`'s deck, then
+    /// route them: the effect owner (the "actor") takes `to_hand` of them to the
+    /// deck owner's hand, buries `bury` to the deck bottom, and disposes of the
+    /// leftovers per `rest`. The actor picks by card value — best-to-hand, and
+    /// bury the *worst* on their own deck or the *best* on an opponent's deck
+    /// (sabotage, e.g. The Oracle). `reveal=true` makes the seen cards public
+    /// (logged); `reveal=false` is a private "look at". Covers reveal-top-of-deck
+    /// gimmicks (Perfect Assistant, Split, Ricky Riot, The Oracle).
+    Scry {
+        deck: Who,
+        #[serde(default)]
+        top: i64,
+        #[serde(default)]
+        bottom: i64,
+        #[serde(default)]
+        reveal: bool,
+        #[serde(default)]
+        to_hand: i64,
+        #[serde(default)]
+        bury: i64,
+        #[serde(default)]
+        rest: ScryRest,
     },
     ModifyRoll {
         who: Who,

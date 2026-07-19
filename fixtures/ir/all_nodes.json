@@ -358,6 +358,16 @@
     "who": "SELF"
   },
   {
+    "@type": "Scry",
+    "bottom": 0,
+    "bury": 1,
+    "deck": "SELF",
+    "rest": "RETURN",
+    "reveal": true,
+    "to_hand": 1,
+    "top": 2
+  },
+  {
     "@type": "PlayExtraCard",
     "order": null
   },

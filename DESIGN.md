@@ -142,6 +142,11 @@ ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
 RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
+Scry(deck, top=0, bottom=0, reveal=False, to_hand=0, bury=0, rest=RETURN|CHOOSE)  # schema v11: look at/reveal
+                              # `top`+`bottom` cards of `deck`'s deck; the effect owner (actor) takes `to_hand`
+                              # best -> deck owner's hand, buries `bury` (worst on own deck, best on an opponent's
+                              # = sabotage), rest RETURN (reorder on top) or CHOOSE (keep good on top, bury junk).
+                              # reveal=public (logged) vs private "look at". Perfect Assistant/Split/Ricky Riot/Oracle
 CountsAsInPlay(selector, count=2)  # Static self-decl: this card counts as `count` cards matching `selector`
 ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP)  # delta scales by count of `per` cards in play
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?, cap?, per?, per_zone=IN_PLAY)

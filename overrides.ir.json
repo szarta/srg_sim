@@ -1441,6 +1441,40 @@
       }
     }
   ],
+  "3f3f8b5b536443bb8552f182a2bf9fa0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Scry",
+          "bottom": 1,
+          "bury": 1,
+          "deck": "SELF",
+          "rest": "RETURN",
+          "reveal": false,
+          "to_hand": 1,
+          "top": 1
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Agility for your turn roll: look at the top and bottom card of your deck, add 1 to your hand and bury the other",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Agility",
+        "who": "SELF"
+      }
+    }
+  ],
   "40ab70187ff14a7f8989d2b248d63b94": [
     {
       "@type": "Effect",
@@ -1761,6 +1795,39 @@
       }
     }
   ],
+  "583629e3e0fe43c28fbdd39f40a61ff8": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Scry",
+          "bottom": 0,
+          "bury": 1,
+          "deck": "SELF",
+          "rest": "RETURN",
+          "reveal": true,
+          "to_hand": 1,
+          "top": 2
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent stops your card: reveal the top 2 cards of your deck, add 1 to your hand and bury the other",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "YOURS"
+      }
+    }
+  ],
   "5c61b09db55549b6a957926b3ae14a4b": [
     {
       "@type": "Effect",
@@ -1787,6 +1854,41 @@
       "source": "gimmick",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "5cf0d256efd841b3b5c220e2487db443": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Scry",
+          "bottom": 0,
+          "bury": 0,
+          "deck": "SELF",
+          "rest": "CHOOSE",
+          "reveal": false,
+          "to_hand": 1,
+          "top": 2
+        }
+      ],
+      "condition": {
+        "@type": "RollGapAtLeast",
+        "k": 3
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your turn roll is at least 3 less than your opponent's turn roll: look at the top 2 cards of your deck, add 1 to your hand, put the other back on top or bury it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
       }
     }
   ],
@@ -3943,6 +4045,72 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "c4a7dc18e187401ba7632cc682b14879": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Scry",
+          "bottom": 0,
+          "bury": 1,
+          "deck": "SELF",
+          "rest": "RETURN",
+          "reveal": false,
+          "to_hand": 0,
+          "top": 3
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when a player rolls Power, look at the top 3 cards of their deck, bury 1 and put the others back on top in any order",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Scry",
+          "bottom": 0,
+          "bury": 1,
+          "deck": "OPP",
+          "rest": "RETURN",
+          "reveal": false,
+          "to_hand": 0,
+          "top": 3
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when a player rolls Power, look at the top 3 cards of their deck, bury 1 and put the others back on top in any order (opponent roller)",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "OPP"
       }
     }
   ],
