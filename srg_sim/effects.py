@@ -974,6 +974,16 @@ class Stop(IRNode):
 
 
 @dataclass(frozen=True)
+class StopRequiresTag(IRNode):
+    """A passive marker paired with a sibling :class:`Stop` in the same effect: the
+    stop is only legal when the attacked card carries ``tag`` — "Stop any Grapple
+    with a Spotlight" (Stop(atk_type=Grapple) + StopRequiresTag("Spotlight")). Read
+    by ``_card_can_stop``; never executed as a mutation."""
+
+    tag: str = ""
+
+
+@dataclass(frozen=True)
 class Unstoppable(IRNode):
     """A static self-declaration that the source card cannot be stopped by stops of
     play-order ``by_order`` ("Cannot be stopped by Follow Ups"); ``by_order=None``
@@ -1317,6 +1327,7 @@ Action = (
     | Bump
     | ElectBumpOnSameSkill
     | Stop
+    | StopRequiresTag
     | BlankGimmick
     | FlipGimmick
     | BlankText

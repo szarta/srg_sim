@@ -108,6 +108,7 @@ from srg_sim.effects import (
     StartOfTurn,
     Static,
     Stop,
+    StopRequiresTag,
     Unstoppable,
     Unsupported,
     Until,
@@ -214,6 +215,7 @@ SAMPLES: list[IRNode] = [
     Bump(Who.OPP),
     ElectBumpOnSameSkill(uses=2),  # Ringside Ruckus entrance: elective same-skill bump
     Stop(PlayOrder.LEAD, AtkType.GRAPPLE, source_is_skillreq=True),
+    StopRequiresTag("Spotlight"),
     BlankGimmick(Who.OPP),
     FlipGimmick(Who.SELF),
     FlipGimmickSigns(Who.OPP),

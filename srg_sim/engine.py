@@ -833,11 +833,13 @@ class Engine:
         if _is_unstoppable_by(attack, stopper):
             return False
         return any(
-            isinstance(action, fx.Stop)
-            and _stop_matches(action, attack)
-            and conditions.holds(eff.condition, self.state, defender)
+            conditions.holds(eff.condition, self.state, defender)
+            and _attacker_meets_tag_gates(eff, attack)
+            and any(
+                isinstance(action, fx.Stop) and _stop_matches(action, attack)
+                for action in eff.actions
+            )
             for eff in stopper.effects
-            for action in eff.actions
         )
 
     def _apply_stop(self, active: str, defender: str, attack: Card, stop: Card) -> None:
@@ -1920,6 +1922,17 @@ def _stop_matches(stop: fx.Stop, attack: Card) -> bool:
     return stop.atk_type is None or stop.atk_type is attack.atk_type
 
 
+def _attacker_meets_tag_gates(eff: fx.Effect, attack: Card) -> bool:
+    """Whether ``attack`` satisfies every ``StopRequiresTag`` gate in a stop ``eff`` —
+    a passive marker paired with a sibling ``Stop``, requiring the attacked card carry
+    the named tag ("Stop any Grapple with a Spotlight"). No gate ⇒ always true."""
+    return all(
+        attack.tags.__contains__(a.tag)
+        for a in eff.actions
+        if isinstance(a, fx.StopRequiresTag)
+    )
+
+
 def _is_stop_card(card: Card) -> bool:
     """Whether ``card`` can act as a Stop — carries at least one ``Stop`` action (its
     online condition is not checked; a revealed Stop is discarded regardless)."""
@@ -2002,6 +2015,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.ElectBumpOnSameSkill: Engine._act_noop,  # Static, read in the roll-off; never executed
     fx.SwitchRolledSkill: Engine._act_noop,  # Static, read in both roll paths; never executed
     fx.AddText: Engine._act_noop,  # Static, read via _injected_text at play time; never executed
+    fx.StopRequiresTag: Engine._act_noop,  # marker, read via _card_can_stop; never executed
     fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed

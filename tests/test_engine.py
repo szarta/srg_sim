@@ -225,6 +225,31 @@ def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
     assert len(eng.state.players["A"].hand) == a2
 
 
+def test_stop_requires_tag_gates_on_the_attacker_being_a_spotlight() -> None:
+    # "Stop any Grapple with a Spotlight": the stop is legal only vs a Grapple that
+    # carries the Spotlight tag (StopRequiresTag marker paired with the Stop).
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    stopper = Card(
+        db_uuid="st", name="Stopper", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD,
+        effects=(
+            fx.Effect(
+                trigger=fx.OnPlay(),
+                actions=(fx.Stop(atk_type=AtkType.GRAPPLE), fx.StopRequiresTag(tag="Spotlight")),
+            ),
+        ),
+    )
+    spot_grapple = Card(db_uuid="sg", name="G", number=2, atk_type=AtkType.GRAPPLE,
+                        play_order=PlayOrder.LEAD, tags=("Spotlight",))
+    plain_grapple = Card(db_uuid="pg", name="G2", number=2, atk_type=AtkType.GRAPPLE,
+                         play_order=PlayOrder.LEAD)
+    spot_strike = Card(db_uuid="ss", name="S", number=1, atk_type=AtkType.STRIKE,
+                       play_order=PlayOrder.LEAD, tags=("Spotlight",))
+    assert eng._card_can_stop("B", stopper, spot_grapple)  # Grapple + Spotlight -> stoppable
+    assert not eng._card_can_stop("B", stopper, plain_grapple)  # Grapple, no Spotlight -> not
+    assert not eng._card_can_stop("B", stopper, spot_strike)  # Spotlight but wrong type -> not
+
+
 def test_spotlight_tag_injected_at_load() -> None:
     # The DB `spotlight: true` flag folds into a synthetic "Spotlight" tag so gimmicks
     # match it via CardFilter(tag="Spotlight") — no Effect-IR change.
