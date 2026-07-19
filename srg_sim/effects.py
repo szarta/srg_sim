@@ -1036,6 +1036,13 @@ class ConsideredCompare(IRNode):
 
 
 @dataclass(frozen=True)
+class SuppressOpponentDraw(IRNode):
+    """A Static declaration: "your opponent does not draw for your card effects"
+    (Sami "The Draw" Callihan). Read at ``_act_draw`` — a ``Draw(who=OPP)`` resolved
+    by the declaring player is voided. Not executed as a mutation."""
+
+
+@dataclass(frozen=True)
 class CrowdMeter(IRNode):
     delta: int
 
@@ -1272,6 +1279,7 @@ Action = (
     | BlankText
     | LoseBy
     | ConsideredCompare
+    | SuppressOpponentDraw
     | CrowdMeter
     | PlayExtraCard
     | SetFinishRoll

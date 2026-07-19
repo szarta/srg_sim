@@ -1103,7 +1103,28 @@ class Engine:
         if action.per is not None:
             n *= self._per_multiplier(action.per, action.per_who, key)
         if n:
-            self._draw(target, n, action.source)
+            # "Your opponent does not draw for your card effects" (Sami "The Draw"):
+            # a draw this player's effect grants the opponent is voided.
+            if action.who is fx.Who.OPP and self._suppresses_opp_draw(key):
+                self._log_effect(key, "SuppressOpponentDraw", target, {"n": n})
+            else:
+                self._draw(target, n, action.source)
+
+    def _suppresses_opp_draw(self, key: str) -> bool:
+        """Whether ``key`` holds an active "your opponent does not draw for your card
+        effects" declaration (Sami "The Draw") — a Static ``SuppressOpponentDraw`` on
+        ``key``'s own gimmick (unless blanked), entrance, or in-play, condition holding."""
+        for effects, active in self.state._buff_sources(key, self.state.players[key]):
+            if not active:
+                continue
+            for eff in effects:
+                if (
+                    isinstance(eff.trigger, fx.Static)
+                    and any(isinstance(a, fx.SuppressOpponentDraw) for a in eff.actions)
+                    and conditions.holds(eff.condition, self.state, key)
+                ):
+                    return True
+        return False
 
     def _act_shuffle_deck(self, action: fx.ShuffleDeck, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
@@ -1901,6 +1922,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.LoseBy: Engine._act_lose_by,
     fx.DisqualificationRule: Engine._act_noop,  # Static, read via _is_dq_immune; never executed
     fx.ConsideredCompare: Engine._act_noop,  # Static, read in conditions.holds; never executed
+    fx.SuppressOpponentDraw: Engine._act_noop,  # Static, read in _act_draw; never executed
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed

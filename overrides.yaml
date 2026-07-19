@@ -4706,3 +4706,28 @@ e515d26515954e709e0f81a86f5231cb:
   raw_clause: 'when you roll Submission: add 1 card any player has in play to their hand'
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #105): SuppressOpponentDraw static flag (schema v21) = "your
+# opponent does not draw for your card effects". Read at act_draw — a
+# Draw(who=OPP) resolved by the declaring player is voided (logged, not drawn).
+# ---------------------------------------------------------------------------
+
+# Sami "The Draw" Callihan (World Championship): "Your opponent does not draw for
+# your card effects." Static SuppressOpponentDraw declaration.
+20c146c8c0854329807a89143269a8fb:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': SuppressOpponentDraw
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your opponent does not draw for your card effects
+  source: gimmick
+  optional: false

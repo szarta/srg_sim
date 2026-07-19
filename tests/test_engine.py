@@ -175,6 +175,34 @@ def test_opponent_draw_action_draws_for_the_opponent() -> None:
     assert len(eng.state.players["B"].hand) == before + 2
 
 
+def test_suppress_opponent_draw_voids_only_the_opponents_effect_draw() -> None:
+    # Sami "The Draw": "your opponent does not draw for your card effects." A's
+    # Draw(who=OPP) is voided; A's own draws and the raw amount are unaffected.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    # Baseline: no flag -> Draw(who=OPP) gives B two cards.
+    before = len(eng.state.players["B"].hand)
+    eng._act_draw(fx.Draw(n=2, who=fx.Who.OPP), "A")
+    assert len(eng.state.players["B"].hand) == before + 2
+    # Give A the SuppressOpponentDraw flag -> A's Draw(who=OPP) is voided.
+    flag = fx.Effect(
+        trigger=fx.Static(),
+        actions=(fx.SuppressOpponentDraw(),),
+        source=fx.EffectSource.GIMMICK,
+    )
+    eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, effects=(flag,))
+    b2 = len(eng.state.players["B"].hand)
+    eng._act_draw(fx.Draw(n=2, who=fx.Who.OPP), "A")
+    assert len(eng.state.players["B"].hand) == b2  # suppressed
+    # A's OWN draw is unaffected, and B drawing for B's own effect is unaffected.
+    a2 = len(eng.state.players["A"].hand)
+    eng._act_draw(fx.Draw(n=1, who=fx.Who.SELF), "A")
+    assert len(eng.state.players["A"].hand) == a2 + 1
+    a3 = len(eng.state.players["A"].hand)
+    eng._act_draw(fx.Draw(n=1, who=fx.Who.OPP), "B")  # B's effect makes A draw — allowed
+    assert len(eng.state.players["A"].hand) == a3 + 1
+
+
 def test_return_to_hand_bounces_to_the_owners_hand() -> None:
     # Fox Assassin V2: "add 1 card any player has in play to their hand" — a bounced
     # card returns to its OWNER's hand, from either board when choose=True.
