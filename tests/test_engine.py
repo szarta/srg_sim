@@ -225,6 +225,35 @@ def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
     assert len(eng.state.players["A"].hand) == a2
 
 
+def test_spotlight_count_gates_a_conditional_finish_bonus() -> None:
+    # "If you have 3+ Spotlight cards in play, +2 to Technique": HasInPlay over the
+    # synthetic Spotlight tag gates a FinishRollBonus. Pure override, no new node.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    cond = fx.HasInPlay(
+        who=fx.Who.SELF, filter=fx.CardFilter(tag="Spotlight"), count=3, cmp=fx.Comparator.GE
+    )
+
+    def spot(i: int) -> Card:
+        return Card(db_uuid=f"s{i}", name=f"S{i}", number=1, atk_type=AtkType.STRIKE,
+                    play_order=PlayOrder.LEAD, tags=("Spotlight",))
+
+    made = Card(
+        db_uuid="m", name="M", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD,
+        effects=(
+            fx.Effect(
+                trigger=fx.Static(), condition=cond,
+                actions=(fx.FinishRollBonus(delta=2, when_skill=Skill.TECHNIQUE),),
+            ),
+        ),
+    )
+    eng.state.players["A"].in_play = [spot(1), spot(2), spot(3), made]
+    assert eng._finish_roll_bonus("A", Skill.TECHNIQUE) == 2  # 3 spotlights -> +2
+    assert eng._finish_roll_bonus("A", Skill.POWER) == 0  # wrong finish skill
+    eng.state.players["A"].in_play = [spot(1), made]
+    assert eng._finish_roll_bonus("A", Skill.TECHNIQUE) == 0  # only 1 spotlight -> no bonus
+
+
 def test_blank_text_blanks_opponent_spotlights() -> None:
     # "Your opponent's Spotlights are blank": while A holds the declaring card in play,
     # B's Spotlight cards fire no effects and cannot stop.

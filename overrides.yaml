@@ -5321,3 +5321,72 @@ feeaf7eaf73f47618bd94f8549cff5ae:
   raw_clause: Your opponent's Spotlights are blank.
   source: card
   optional: false
+
+# Count-based Spotlight buff (main-deck): 2 plain FinishBonus + a conditional
+# FinishRollBonus(Technique,+2) gated on HasInPlay(tag=Spotlight,>=3). schema-neutral.
+aa049f5ef34e463db3ec2c3a8fb1e343:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Agility
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Submission
+    delta: 3
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +3 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+    count: 3
+    cmp: '>='
+  actions:
+  - '@type': FinishRollBonus
+    delta: 2
+    when_skill: Technique
+    either: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If you have 3 or more Spotlight cards in play, +2 to Technique.
+  source: card
+  optional: false
