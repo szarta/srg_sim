@@ -80,6 +80,9 @@
             },
             {
               "$ref": "#/$defs/SameRolledSkill"
+            },
+            {
+              "$ref": "#/$defs/DuringTurn"
             }
           ]
         }
@@ -167,6 +170,9 @@
               },
               {
                 "$ref": "#/$defs/SameRolledSkill"
+              },
+              {
+                "$ref": "#/$defs/DuringTurn"
               }
             ]
           },
@@ -896,6 +902,22 @@
       ],
       "type": "string"
     },
+    "DuringTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "DuringTurn"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
     "Effect": {
       "additionalProperties": false,
       "properties": {
@@ -1102,6 +1124,9 @@
             },
             {
               "$ref": "#/$defs/SameRolledSkill"
+            },
+            {
+              "$ref": "#/$defs/DuringTurn"
             }
           ]
         },
@@ -1713,6 +1738,9 @@
         },
         {
           "$ref": "#/$defs/SameRolledSkill"
+        },
+        {
+          "$ref": "#/$defs/DuringTurn"
         }
       ]
     },
@@ -1913,6 +1941,9 @@
             },
             {
               "$ref": "#/$defs/SameRolledSkill"
+            },
+            {
+              "$ref": "#/$defs/DuringTurn"
             }
           ]
         }
@@ -2206,6 +2237,9 @@
               },
               {
                 "$ref": "#/$defs/SameRolledSkill"
+              },
+              {
+                "$ref": "#/$defs/DuringTurn"
               }
             ]
           },
@@ -2680,6 +2714,9 @@
             },
             {
               "$ref": "#/$defs/SameRolledSkill"
+            },
+            {
+              "$ref": "#/$defs/DuringTurn"
             }
           ]
         },
@@ -3002,5 +3039,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 18
+  "version": 19
 }

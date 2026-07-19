@@ -4600,3 +4600,67 @@ e515d26515954e709e0f81a86f5231cb:
   raw_clause: 'once per turn roll: when you and your target roll the same skill, you may discard 1 card from your hand to draw 2 cards'
   source: gimmick
   optional: true
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #105): DuringTurn{who} condition (schema v19) = it is currently
+# who's turn (state.active == who-side). Gates a continuous effect to a turn
+# phase. Reads GameState.active (the roll-off winner takes the turn).
+# ---------------------------------------------------------------------------
+
+# La Fenix (Underworld): "During your opponent's turn: Your Power, Technique, and
+# Agility skills are +1 for each card you have in play with 'Ash', 'Fire', or
+# 'Burn' in the name (Max +3)." Three per-count BuffSkills (Max 3, IN_PLAY,
+# name_contains OR-list) gated on DuringTurn(OPP). Boosts La Fenix's stops during
+# the opponent's turn. Uses the existing per-count BuffSkill (schema v7).
+92d9e53180de40039d33b076e18b9127:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': DuringTurn
+    who: OPP
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    cap: 3
+    per_zone: IN_PLAY
+    per: &lafenix_filter
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains:
+      - Ash
+      - Fire
+      - Burn
+      text_contains: []
+  - '@type': BuffSkill
+    skill: Technique
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    cap: 3
+    per_zone: IN_PLAY
+    per: *lafenix_filter
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    cap: 3
+    per_zone: IN_PLAY
+    per: *lafenix_filter
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: during your opponent's turn, your Power, Technique, and Agility skills are +1 for each card you have in play with "Ash", "Fire", or "Burn" in the name (Max +3)
+  source: gimmick
+  optional: false

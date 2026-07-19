@@ -307,5 +307,6 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             let subject = who_key(state, owner, *who);
             state.players[&subject].gimmick_flipped
         }
+        Condition::DuringTurn { who } => state.active == who_key(state, owner, *who),
     }
 }

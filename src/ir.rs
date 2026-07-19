@@ -539,6 +539,12 @@ pub enum Condition {
     GimmickFlipped {
         who: Who,
     },
+    /// It is currently `who`'s turn — the active player (roll-off winner) is the
+    /// `who`-side. Gates a continuous effect to a turn phase ("during your opponent's
+    /// turn: …" — La Fenix). Reads `GameState.active`.
+    DuringTurn {
+        who: Who,
+    },
 }
 
 // ---------------------------------------------------------------------------
@@ -998,6 +1004,9 @@ pub enum IrNode {
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
     GimmickFlipped {
+        who: Who,
+    },
+    DuringTurn {
         who: Who,
     },
 

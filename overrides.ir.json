@@ -3443,6 +3443,107 @@
       }
     }
   ],
+  "92d9e53180de40039d33b076e18b9127": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": 3,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Ash",
+              "Fire",
+              "Burn"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Power",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": 3,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Ash",
+              "Fire",
+              "Burn"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Technique",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": 3,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Ash",
+              "Fire",
+              "Burn"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "DuringTurn",
+        "who": "OPP"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "during your opponent's turn, your Power, Technique, and Agility skills are +1 for each card you have in play with \"Ash\", \"Fire\", or \"Burn\" in the name (Max +3)",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "93766c996abf4f4c94d3479e78232e3b": [
     {
       "@type": "Effect",
