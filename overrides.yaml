@@ -4664,3 +4664,45 @@ e515d26515954e709e0f81a86f5231cb:
   raw_clause: during your opponent's turn, your Power, Technique, and Agility skills are +1 for each card you have in play with "Ash", "Fire", or "Burn" in the name (Max +3)
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #105): ReturnToHand action (schema v20) = bounce matching
+# in-play cards back to their OWNER's hand. who picks the board; choose=true
+# lets the actor pick from EITHER board ("any player has in play"). 29 DB
+# cards use "in play to (their) hand".
+# ---------------------------------------------------------------------------
+
+# Fox Assassin (V2) (Underworld): "When you roll Submission: Add 1 card any
+# player has in play to their hand." OnRoll(Submission) -> ReturnToHand any card
+# on either board (choose=true) -> that card's owner's hand.
+483f70a0f19841288d1d8ea046225744:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Submission
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ReturnToHand
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+    who: SELF
+    count: 1
+    choose: true
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Submission: add 1 card any player has in play to their hand'
+  source: gimmick
+  optional: false

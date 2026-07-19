@@ -1890,6 +1890,47 @@
       }
     }
   ],
+  "483f70a0f19841288d1d8ea046225744": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ReturnToHand",
+          "choose": true,
+          "count": 1,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Submission: add 1 card any player has in play to their hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Submission",
+        "who": "SELF"
+      }
+    }
+  ],
   "504e8e4759024076b094608d6b8172a6": [
     {
       "@type": "Effect",

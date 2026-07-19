@@ -618,6 +618,17 @@ pub enum Action {
         who: Who,
         count: i64,
     },
+    /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): return matching
+    /// in-play cards to their OWNER's hand (bounce). `who` picks the board; `choose`
+    /// (like [`ShuffleHandDraw`]) lets the actor pick from EITHER board — "any player
+    /// has in play". A no-op when no matching card exists.
+    ReturnToHand {
+        selector: CardFilter,
+        who: Who,
+        count: i64,
+        #[serde(default)]
+        choose: bool,
+    },
     RevealAndDiscard {
         count: i64,
         who: Who,
@@ -1070,6 +1081,17 @@ pub enum IrNode {
         selector: CardFilter,
         who: Who,
         count: i64,
+    },
+    /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): return matching
+    /// in-play cards to their OWNER's hand (bounce). `who` picks the board; `choose`
+    /// (like [`ShuffleHandDraw`]) lets the actor pick from EITHER board — "any player
+    /// has in play". A no-op when no matching card exists.
+    ReturnToHand {
+        selector: CardFilter,
+        who: Who,
+        count: i64,
+        #[serde(default)]
+        choose: bool,
     },
     RevealAndDiscard {
         count: i64,

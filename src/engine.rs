@@ -827,6 +827,12 @@ impl Engine {
                 who,
                 count,
             } => self.act_remove_from_play(selector, *who, *count, key)?,
+            Action::ReturnToHand {
+                selector,
+                who,
+                count,
+                choose,
+            } => self.act_return_to_hand(selector, *who, *count, *choose, key)?,
             Action::RevealAndDiscard { count, who } => {
                 self.act_reveal_and_discard(*count, *who, key)
             }
@@ -1360,6 +1366,61 @@ impl Engine {
                 cards: vec![card.db_uuid],
                 source: Some("in_play".to_owned()),
                 hidden: false,
+            }));
+        }
+        Ok(())
+    }
+
+    /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): bounce matching
+    /// in-play cards back to their OWNER's hand. `choose` lets the actor pick from
+    /// either board ("any player has in play"); otherwise the pick is over `who`'s.
+    fn act_return_to_hand(
+        &mut self,
+        selector: &CardFilter,
+        who: Who,
+        count: i64,
+        choose: bool,
+        key: &str,
+    ) -> Eng<()> {
+        let boards: Vec<String> = if choose {
+            vec![key.to_owned(), self.state.opponent_of(key)]
+        } else {
+            vec![self.target(who, key)]
+        };
+        for _ in 0..count.max(0) {
+            let legal: Vec<Value> = boards
+                .iter()
+                .flat_map(|b| {
+                    self.state.players[b]
+                        .in_play
+                        .iter()
+                        .filter(|c| conditions::card_matches(c, selector))
+                        .map(move |c| {
+                            let mut opt = card_option(c);
+                            opt["owner"] = json!(b);
+                            opt
+                        })
+                })
+                .collect();
+            if legal.is_empty() {
+                break;
+            }
+            let chosen = self.decide("return_to_hand", key, legal)?;
+            let owner = chosen["owner"].as_str().unwrap().to_owned();
+            let uuid = chosen["card"].as_str().unwrap().to_owned();
+            let player = self.state.players.get_mut(&owner).unwrap();
+            let Some(pos) = player.in_play.iter().position(|c| c.db_uuid == uuid) else {
+                break;
+            };
+            let card = player.in_play.remove(pos);
+            player.hand.push(card);
+            let t = self.state.turn_no;
+            self.log(Event::Search(CardMovement {
+                t,
+                player: owner,
+                cards: vec![uuid],
+                source: Some("in_play".to_owned()),
+                hidden: false, // in-play (public) -> hand: which card left play is visible
             }));
         }
         Ok(())
@@ -3327,6 +3388,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RecurToDeckTop { .. } => "RecurToDeckTop",
         Action::CountsAsInPlay { .. } => "CountsAsInPlay",
         Action::RemoveFromPlay { .. } => "RemoveFromPlay",
+        Action::ReturnToHand { .. } => "ReturnToHand",
         Action::RevealAndDiscard { .. } => "RevealAndDiscard",
         Action::Peek { .. } => "Peek",
         Action::Scry { .. } => "Scry",

@@ -629,6 +629,9 @@
               },
               {
                 "$ref": "#/$defs/SwapHandDiscard"
+              },
+              {
+                "$ref": "#/$defs/ReturnToHand"
               }
             ]
           },
@@ -1061,6 +1064,9 @@
               },
               {
                 "$ref": "#/$defs/SwapHandDiscard"
+              },
+              {
+                "$ref": "#/$defs/ReturnToHand"
               }
             ]
           },
@@ -1741,6 +1747,9 @@
         },
         {
           "$ref": "#/$defs/DuringTurn"
+        },
+        {
+          "$ref": "#/$defs/ReturnToHand"
         }
       ]
     },
@@ -2392,6 +2401,34 @@
       ],
       "type": "object"
     },
+    "ReturnToHand": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ReturnToHand"
+        },
+        "choose": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "who",
+        "count",
+        "choose"
+      ],
+      "type": "object"
+    },
     "RevealAndDiscard": {
       "additionalProperties": false,
       "properties": {
@@ -3039,5 +3076,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 19
+  "version": 20
 }

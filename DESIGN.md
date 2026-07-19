@@ -152,6 +152,8 @@ Flip(n, who=SELF)             Search(filter, dest=HAND|DISCARD, count=1)  Shuffl
                               # exactly like ModifyRoll (authored OnPlay for "for each OTHER … in play")
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
+ReturnToHand(selector, who, count=1, choose=False)  # bounce matching in-play cards to their OWNER's hand;
+                             # choose=True picks from EITHER board ("any player has in play" — Fox Assassin V2). schema v20
 SwapHandDiscard               # "switch 1 card in your hand with 1 in your discard" (Collin, Mr. Rey): 1 hand card
                              # out (-> discard, shed point) + 1 discard card in (-> hand, tutor point); no-op if a zone is empty. schema v17
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)

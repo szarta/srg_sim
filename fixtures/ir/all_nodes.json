@@ -560,5 +560,22 @@
   {
     "@type": "DuringTurn",
     "who": "OPP"
+  },
+  {
+    "@type": "ReturnToHand",
+    "choose": true,
+    "count": 1,
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    },
+    "who": "OPP"
   }
 ]
