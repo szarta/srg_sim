@@ -4869,3 +4869,35 @@ f4a3aea48e544fac9e4edf24b5d07235:
   raw_clause: when you roll Grapple for your turn roll, your opponent randomly reveals 1 card in their hand; if its move type is Grapple, draw 1
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# AJ Styles (Underworld): "+1 Agility on turn rolls." The turn-roll skill is a
+# random die (roll_for), so the buff cannot bias which skill is rolled — it only
+# lifts the value when Agility comes up. InRoll(skill=Agility, SELF) ->
+# ModifyRoll(SELF, +1, THIS): an automatic in-roll bonus on the current turn roll
+# (turn-roll only, not finish/breakout — apply_in_roll_mods runs only there).
+# ---------------------------------------------------------------------------
+b5a305c0f693405f8cb43b4e5864e559:
+- '@type': Effect
+  trigger:
+    '@type': InRoll
+    skill: Agility
+    who: SELF
+    either: false
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: THIS
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 Agility on turn rolls.
+  source: gimmick
+  optional: false
