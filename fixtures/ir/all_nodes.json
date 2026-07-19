@@ -624,5 +624,9 @@
         }
       }
     ]
+  },
+  {
+    "@type": "StopRequiresTag",
+    "tag": "Spotlight"
   }
 ]

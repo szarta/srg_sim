@@ -903,6 +903,7 @@ impl Engine {
             | Action::SuppressOpponentDraw
             | Action::SwitchRolledSkill { .. }
             | Action::AddText { .. }
+            | Action::StopRequiresTag { .. }
             | Action::MaxHandSize { .. } => {}
             // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
             // `This` re-roll is structural (read in the roll-off), a no-op here.
@@ -2445,11 +2446,11 @@ impl Engine {
             return false;
         }
         stopper.effects.iter().any(|eff| {
-            eff.actions.iter().any(|action| {
-                matches!(action, Action::Stop { .. })
-                    && stop_matches(action, attack)
-                    && conditions::holds(&eff.condition, &self.state, defender, None)
-            })
+            conditions::holds(&eff.condition, &self.state, defender, None)
+                && attacker_meets_tag_gates(eff, attack)
+                && eff.actions.iter().any(|action| {
+                    matches!(action, Action::Stop { .. }) && stop_matches(action, attack)
+                })
         })
     }
 
@@ -3448,6 +3449,16 @@ fn discard_option(card: &Card) -> Value {
 }
 
 /// Whether a `Stop` action's order/type filter covers this attack (`None` = any).
+/// Whether `attack` satisfies every `StopRequiresTag` gate in a stop `eff` — a
+/// passive marker paired with a sibling `Stop`, requiring the attacked card carry
+/// the named tag ("Stop any Grapple **with a Spotlight**"). No gate ⇒ always true.
+fn attacker_meets_tag_gates(eff: &Effect, attack: &Card) -> bool {
+    eff.actions.iter().all(|a| match a {
+        Action::StopRequiresTag { tag } => attack.tags.contains(tag),
+        _ => true,
+    })
+}
+
 fn stop_matches(stop: &Action, attack: &Card) -> bool {
     let Action::Stop {
         order, atk_type, ..
@@ -3559,6 +3570,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",
         Action::AddText { .. } => "AddText",
+        Action::StopRequiresTag { .. } => "StopRequiresTag",
         Action::Reroll { .. } => "Reroll",
         Action::SwitchRolledSkill { .. } => "SwitchRolledSkill",
         Action::WinTie { .. } => "WinTie",

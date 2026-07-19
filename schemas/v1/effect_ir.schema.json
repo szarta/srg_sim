@@ -667,6 +667,9 @@
               },
               {
                 "$ref": "#/$defs/AddText"
+              },
+              {
+                "$ref": "#/$defs/StopRequiresTag"
               }
             ]
           },
@@ -1112,6 +1115,9 @@
               },
               {
                 "$ref": "#/$defs/AddText"
+              },
+              {
+                "$ref": "#/$defs/StopRequiresTag"
               }
             ]
           },
@@ -1804,6 +1810,9 @@
         },
         {
           "$ref": "#/$defs/AddText"
+        },
+        {
+          "$ref": "#/$defs/StopRequiresTag"
         }
       ]
     },
@@ -3048,6 +3057,22 @@
       ],
       "type": "object"
     },
+    "StopRequiresTag": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "StopRequiresTag"
+        },
+        "tag": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "tag"
+      ],
+      "type": "object"
+    },
     "SuppressOpponentDraw": {
       "additionalProperties": false,
       "properties": {
@@ -3177,5 +3202,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 25
+  "version": 26
 }

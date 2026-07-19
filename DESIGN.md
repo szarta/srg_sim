@@ -194,6 +194,7 @@ SwitchRolledSkill(from_skill, to)  # "when you roll from_skill for your turn/Fin
 WinTie(who)                   Bump(who)
 ElectBumpOnSameSkill(uses=2)  # Static roll-off grant: owner MAY bump on a same-skill roll, N times/match
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
+StopRequiresTag(tag)          # marker paired with a sibling Stop in the same effect: the stop is legal only vs an attacker carrying `tag` — "Stop any Grapple with a Spotlight" (read by card_can_stop). schema v26
 Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)
 AlsoLead(condition)           # Static self-decl: also playable as a Lead while `condition` holds
 BlankText(card, until=END_OF_TURN)             LoseBy(kind=DISQUALIFICATION|PINFALL, who)

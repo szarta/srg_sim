@@ -794,6 +794,9 @@ pub enum Action {
         atk_type: Option<AtkType>,
         source_is_skillreq: bool,
     },
+    StopRequiresTag {
+        tag: String,
+    },
     BlankGimmick {
         who: Who,
         duration: Duration,
@@ -1279,6 +1282,9 @@ pub enum IrNode {
         order: Option<PlayOrder>,
         atk_type: Option<AtkType>,
         source_is_skillreq: bool,
+    },
+    StopRequiresTag {
+        tag: String,
     },
     BlankGimmick {
         who: Who,

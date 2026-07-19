@@ -2625,6 +2625,148 @@
       }
     }
   ],
+  "6c58b85d2d2b49dba62dde6e07830877": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Grapple",
+          "order": null,
+          "source_is_skillreq": false
+        },
+        {
+          "@type": "StopRequiresTag",
+          "tag": "Spotlight"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Stop any Grapple with a Spotlight.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "count": 1,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "DISCARD",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "You may bury 1 card in your opponent's discard pile (the printed Spotlight selector is not modeled; buries the top of the pile).",
+      "source": "card",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "THEIRS"
+      }
+    }
+  ],
+  "6d75ae044d4a47b29dc492c1916249e5": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Strike",
+          "order": "Finish",
+          "source_is_skillreq": false
+        },
+        {
+          "@type": "StopRequiresTag",
+          "tag": "Spotlight"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Stop any Finish Strike with a Spotlight.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "count": 2,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "DISCARD",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Bury 2 cards in your opponent's discard pile.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "THEIRS"
+      }
+    }
+  ],
   "6ecc1c7f012c48cc9403fffcedb33a1b": [
     {
       "@type": "Effect",
@@ -3154,6 +3296,77 @@
       }
     }
   ],
+  "8654b1e29d304283ae7d57025f416bdf": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Grapple",
+          "order": "Finish",
+          "source_is_skillreq": false
+        },
+        {
+          "@type": "StopRequiresTag",
+          "tag": "Spotlight"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Stop any Finish Grapple with a Spotlight.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "count": 2,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "DISCARD",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Bury 2 cards in your opponent's discard pile.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "THEIRS"
+      }
+    }
+  ],
   "87b26269da2d464da1bbf43c3f7b2d32": [
     {
       "@type": "Effect",
@@ -3556,6 +3769,77 @@
         "@type": "OnRoll",
         "skill": "Power",
         "who": "SELF"
+      }
+    }
+  ],
+  "90a42698903e4468bab2c42d61cf3bc2": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Strike",
+          "order": null,
+          "source_is_skillreq": false
+        },
+        {
+          "@type": "StopRequiresTag",
+          "tag": "Spotlight"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Stop any Strike with a Spotlight.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "count": 1,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "DISCARD",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "You may bury 1 card in your opponent's discard pile (the printed Spotlight selector is not modeled; buries the top of the pile).",
+      "source": "card",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "THEIRS"
       }
     }
   ],
@@ -6631,6 +6915,77 @@
       "source": "gimmick",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "feeaf7eaf73f47618bd94f8549cff5ae": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Submission",
+          "order": "Finish",
+          "source_is_skillreq": false
+        },
+        {
+          "@type": "StopRequiresTag",
+          "tag": "Spotlight"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Stop any Finish Submission with a Spotlight.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "count": 2,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "DISCARD",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Bury 2 cards in your opponent's discard pile.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "THEIRS"
       }
     }
   ],
