@@ -225,6 +225,39 @@ def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
     assert len(eng.state.players["A"].hand) == a2
 
 
+def test_finish_roll_bonus_per_spotlight_in_opponent_discard() -> None:
+    # "Your Finish rolls are +1 for each Spotlight in your opponent's discard pile":
+    # FinishRollBonus.per counts per_who's cards in per_zone matching the filter.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    made = Card(
+        db_uuid="m", name="M", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD,
+        effects=(
+            fx.Effect(
+                trigger=fx.Static(),
+                actions=(fx.FinishRollBonus(
+                    delta=1, per=fx.CardFilter(tag="Spotlight"),
+                    per_who=fx.Who.OPP, per_zone=fx.CountZone.DISCARD,
+                ),),
+            ),
+        ),
+    )
+    eng.state.players["A"].in_play = [made]
+
+    def spot(i: int) -> Card:
+        return Card(db_uuid=f"s{i}", name="S", number=1, atk_type=AtkType.STRIKE,
+                    play_order=PlayOrder.LEAD, tags=("Spotlight",))
+
+    plain = Card(db_uuid="p", name="P", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    eng.state.players["B"].discard = [spot(1), spot(2), plain]  # 2 spotlights in OPP discard
+    assert eng._finish_roll_bonus("A", Skill.POWER) == 2  # any skill; +1 per spotlight
+    eng.state.players["B"].discard = []
+    assert eng._finish_roll_bonus("A", Skill.POWER) == 0
+    # per_who=OPP: spotlights in A's OWN discard must not count.
+    eng.state.players["A"].discard = [spot(1), spot(2)]
+    assert eng._finish_roll_bonus("A", Skill.POWER) == 0
+
+
 def test_spotlight_count_gates_a_conditional_finish_bonus() -> None:
     # "If you have 3+ Spotlight cards in play, +2 to Technique": HasInPlay over the
     # synthetic Spotlight tag gates a FinishRollBonus. Pure override, no new node.

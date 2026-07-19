@@ -950,12 +950,17 @@ class Engine:
         for eff in self._standing_effects(key):
             if not conditions.holds(eff.condition, self.state, key):
                 continue
-            total += sum(
-                a.delta
-                for a in eff.actions
-                if isinstance(a, fx.FinishRollBonus)
-                and (a.when_skill is None or a.when_skill is skill)
-            )
+            for a in eff.actions:
+                if isinstance(a, fx.FinishRollBonus) and (
+                    a.when_skill is None or a.when_skill is skill
+                ):
+                    # Flat delta, or delta * (count of per_who's cards in per_zone
+                    # matching the filter) — "+1 per Spotlight in play".
+                    if a.per is None:
+                        total += a.delta
+                    else:
+                        who = key if a.per_who is fx.Who.SELF else self.state.opponent_of(key)
+                        total += a.delta * self.state._count_in_zone(a.per, a.per_zone, who)
         return total
 
     def _log_finish_attempt(

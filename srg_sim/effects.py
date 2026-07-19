@@ -1133,6 +1133,11 @@ class FinishRollBonus(IRNode):
     delta: int
     when_skill: Skill | None = None  # None = any skill; else only when this skill is rolled
     either: bool = False  # applies to whichever player makes the Finish roll (Spin Wheel Kick)
+    # When set, the bonus is ``delta * (count of per_who's cards in per_zone matching
+    # this filter)`` — "your Finish roll is +1 for each Spotlight you have in play".
+    per: CardFilter | None = None
+    per_who: Who = Who.SELF
+    per_zone: CountZone = CountZone.IN_PLAY
 
 
 @dataclass(frozen=True)
