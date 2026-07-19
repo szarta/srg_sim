@@ -225,6 +225,45 @@ def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
     assert len(eng.state.players["A"].hand) == a2
 
 
+def test_spotlight_tag_injected_at_load() -> None:
+    # The DB `spotlight: true` flag folds into a synthetic "Spotlight" tag so gimmicks
+    # match it via CardFilter(tag="Spotlight") — no Effect-IR change.
+    from srg_sim.loader import _build_card
+
+    rec = {"db_uuid": "s", "name": "Cuddle Time", "deck_card_number": 1, "spotlight": True}
+    assert "Spotlight" in _build_card(rec).tags
+    plain = {"db_uuid": "p", "name": "Plain", "deck_card_number": 2, "tags": ["Old School"]}
+    assert "Spotlight" not in _build_card(plain).tags
+
+
+def test_search_for_a_spotlight_card_finds_it_by_tag() -> None:
+    # I Was Made for the Spotlight: "Search your deck for a Spotlight card, add to hand."
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    spot = Card(
+        db_uuid="sp", name="Restoration Potion", number=1, atk_type=AtkType.STRIKE,
+        play_order=PlayOrder.LEAD, tags=("Spotlight",),
+    )
+    plain = Card(
+        db_uuid="pl", name="Plain", number=2, atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD
+    )
+    eng.state.players["A"].deck = [plain, spot]
+    made = Card(
+        db_uuid="made", name="I Was Made for the Spotlight", number=7, atk_type=AtkType.STRIKE,
+        play_order=PlayOrder.LEAD,
+        effects=(
+            fx.Effect(
+                trigger=fx.OnPlay(),
+                actions=(fx.Search(filter=fx.CardFilter(tag="Spotlight"), dest=fx.Dest.HAND),),
+            ),
+        ),
+    )
+    eng.state.players["B"].hand = []  # no stop
+    eng._resolve_play("A", "B", made)
+    assert spot in eng.state.players["A"].hand  # the Spotlight card was searched to hand
+    assert spot not in eng.state.players["A"].deck
+
+
 def test_add_text_injects_effects_into_matching_named_cards() -> None:
     # El Super Santa: cards with "Super" in the name gain the added text "Draw 2".
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")

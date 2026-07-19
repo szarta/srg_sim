@@ -162,10 +162,21 @@ def _build_card(rec: dict[str, Any]) -> Card:
         atk_type=_atk(rec.get("atk_type")),
         play_order=_order(rec.get("play_order")),
         finish_bonuses=(),  # filled by rules_parser
-        tags=tuple(rec.get("tags") or ()),
+        tags=_card_tags(rec),
         raw_text=_rules_text(rec),
         effects=(),  # filled by rules_parser
     )
+
+
+def _card_tags(rec: dict[str, Any]) -> tuple[str, ...]:
+    """A card's tags, with the DB ``spotlight: true`` flag folded in as a synthetic
+    ``"Spotlight"`` tag so gimmicks that reference "a Spotlight" match it through the
+    ordinary ``CardFilter(tag=...)`` predicate — no Effect-IR change. Entrances get
+    the same treatment (a later phase)."""
+    tags = tuple(rec.get("tags") or ())
+    if rec.get("spotlight") is True and "Spotlight" not in tags:
+        tags = (*tags, "Spotlight")
+    return tags
 
 
 def _build_competitor(rec: dict[str, Any]) -> Competitor:
