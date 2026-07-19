@@ -74,6 +74,9 @@
             },
             {
               "$ref": "#/$defs/GimmickFlipped"
+            },
+            {
+              "$ref": "#/$defs/PrintedRollValue"
             }
           ]
         }
@@ -155,6 +158,9 @@
               },
               {
                 "$ref": "#/$defs/GimmickFlipped"
+              },
+              {
+                "$ref": "#/$defs/PrintedRollValue"
               }
             ]
           },
@@ -608,6 +614,9 @@
               },
               {
                 "$ref": "#/$defs/ConsideredCompare"
+              },
+              {
+                "$ref": "#/$defs/SwapHandDiscard"
               }
             ]
           },
@@ -1021,6 +1030,9 @@
               },
               {
                 "$ref": "#/$defs/ConsideredCompare"
+              },
+              {
+                "$ref": "#/$defs/SwapHandDiscard"
               }
             ]
           },
@@ -1078,6 +1090,9 @@
             },
             {
               "$ref": "#/$defs/GimmickFlipped"
+            },
+            {
+              "$ref": "#/$defs/PrintedRollValue"
             }
           ]
         },
@@ -1680,6 +1695,12 @@
         },
         {
           "$ref": "#/$defs/ConsideredCompare"
+        },
+        {
+          "$ref": "#/$defs/PrintedRollValue"
+        },
+        {
+          "$ref": "#/$defs/SwapHandDiscard"
         }
       ]
     },
@@ -1874,6 +1895,9 @@
             },
             {
               "$ref": "#/$defs/GimmickFlipped"
+            },
+            {
+              "$ref": "#/$defs/PrintedRollValue"
             }
           ]
         }
@@ -2161,6 +2185,9 @@
               },
               {
                 "$ref": "#/$defs/GimmickFlipped"
+              },
+              {
+                "$ref": "#/$defs/PrintedRollValue"
               }
             ]
           },
@@ -2220,6 +2247,26 @@
         "None"
       ],
       "type": "string"
+    },
+    "PrintedRollValue": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "PrintedRollValue"
+        },
+        "value": {
+          "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "value"
+      ],
+      "type": "object"
     },
     "RecurToDeckTop": {
       "additionalProperties": false,
@@ -2597,6 +2644,9 @@
             },
             {
               "$ref": "#/$defs/GimmickFlipped"
+            },
+            {
+              "$ref": "#/$defs/PrintedRollValue"
             }
           ]
         },
@@ -2802,6 +2852,18 @@
       ],
       "type": "object"
     },
+    "SwapHandDiscard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SwapHandDiscard"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "SwitchRolledSkill": {
       "additionalProperties": false,
       "properties": {
@@ -2907,5 +2969,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 16
+  "version": 17
 }

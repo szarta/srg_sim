@@ -818,6 +818,7 @@ impl Engine {
             Action::ShuffleDeck { who } => self.act_shuffle_deck(*who, key),
             Action::ShuffleIntoDeck { selector } => self.act_shuffle_into_deck(selector, key)?,
             Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
+            Action::SwapHandDiscard => self.act_swap_hand_discard(key)?,
             Action::RecurToDeckTop { selector, count } => {
                 self.act_recur_to_deck_top(selector, *count, key)?
             }
@@ -1244,6 +1245,40 @@ impl Engine {
             hidden: false, // discard (public) -> hand: which card left discard is visible
         }));
         self.hand_cap(key)
+    }
+
+    /// "Switch 1 card in your hand with 1 card in your discard pile" (Collin, Mr. Rey):
+    /// the owner picks one hand card out (→ discard, via the `discard`/shed point) and
+    /// one discard card in (→ hand, via the `target`/tutor point). A no-op if either
+    /// zone is empty. Even hand/discard sizes are preserved (a 1-for-1 swap).
+    fn act_swap_hand_discard(&mut self, key: &str) -> Eng<()> {
+        let hand: Vec<Card> = self.state.players[key].hand.clone();
+        let discard: Vec<Card> = self.state.players[key].discard.clone();
+        if hand.is_empty() || discard.is_empty() {
+            return Ok(());
+        }
+        let out = self.pick_from(key, &hand, "discard")?; // hand card leaving
+        let into = self.pick_from(key, &discard, "target")?; // discard card entering
+        let player = self.state.players.get_mut(key).unwrap();
+        if let Some(pos) = player.hand.iter().position(|c| c.db_uuid == out.db_uuid) {
+            player.hand.remove(pos);
+        }
+        if let Some(pos) = player
+            .discard
+            .iter()
+            .position(|c| c.db_uuid == into.db_uuid)
+        {
+            player.discard.remove(pos);
+        }
+        player.hand.push(into.clone());
+        player.discard.push(out.clone());
+        self.log_effect(
+            key,
+            "SwapHandDiscard",
+            Some(key),
+            json!({"hand_out": out.db_uuid, "discard_in": into.db_uuid}),
+        );
+        Ok(())
     }
 
     /// Put up to `count` matching cards from discard on top of the deck; the owner
@@ -3281,6 +3316,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::ShuffleDeck { .. } => "ShuffleDeck",
         Action::ShuffleIntoDeck { .. } => "ShuffleIntoDeck",
         Action::AddFromDiscard { .. } => "AddFromDiscard",
+        Action::SwapHandDiscard => "SwapHandDiscard",
         Action::RecurToDeckTop { .. } => "RecurToDeckTop",
         Action::CountsAsInPlay { .. } => "CountsAsInPlay",
         Action::RemoveFromPlay { .. } => "RemoveFromPlay",

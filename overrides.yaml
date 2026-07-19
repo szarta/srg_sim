@@ -4492,3 +4492,38 @@ c138c28b4b8b48bbb5272e9ceaede716:
   raw_clause: you are considered to have fewer cards in your hand than your opponent
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #106): hand<->discard swap family. New action SwapHandDiscard
+# (schema v17) = pick 1 hand card out (-> discard) + 1 discard card in (->
+# hand); no-op if either zone empty; "you may" = optional. New condition
+# PrintedRollValue{who, value} = the rolled skill's PRINTED (base) stat on the
+# who-side's competitor == value ("rolls their printed 8 skill"), who follows
+# the trigger like RollValue. Mr. Rey (dba1b354…) DEFERRED -> task #106-follow:
+# needs a deferred "once on the NEXT turn" optional-action grant (timing hook).
+# ---------------------------------------------------------------------------
+
+# Collin the Chrononaut (World Championship): "Once during any player's turn:
+# When your opponents roll their printed 8 skill for their turn roll, you may
+# switch 1 card in your hand with 1 card in your discard pile." OnRoll(who=OPP)
+# + PrintedRollValue(who=OPP, 8), once per turn, optional swap.
+8054b1c0587a4d949e9a73b9bdd144ed:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: OPP
+  condition:
+    '@type': PrintedRollValue
+    who: OPP
+    value: 8
+  actions:
+  - '@type': SwapHandDiscard
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once during any player''s turn: when your opponents roll their printed 8 skill for their turn roll, you may switch 1 card in your hand with 1 card in your discard pile'
+  source: gimmick
+  optional: true

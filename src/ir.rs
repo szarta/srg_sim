@@ -521,6 +521,14 @@ pub enum Condition {
         cmp: Comparator,
         value: i64,
     },
+    /// The rolled skill's **printed** (base, unbuffed) stat on the `who`-side's
+    /// competitor equals `value` — "when your opponent rolls their printed 8 skill"
+    /// (Collin the Chrononaut). Needs a roll context; `who` picks whose printed stat
+    /// to read (the roller), following the trigger's `who` like `RollValue`.
+    PrintedRollValue {
+        who: Who,
+        value: i64,
+    },
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
@@ -555,6 +563,12 @@ pub enum Action {
         #[serde(default)]
         source: BuryFrom,
     },
+    /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
+    /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
+    /// (→ hand). A no-op if either zone is empty. The "you may" lives on
+    /// [`Effect::optional`]. Picks route to the `discard` (shed) / `target` (tutor)
+    /// decision points.
+    SwapHandDiscard,
     Flip {
         n: i64,
         who: Who,
@@ -964,6 +978,14 @@ pub enum IrNode {
         cmp: Comparator,
         value: i64,
     },
+    /// The rolled skill's **printed** (base, unbuffed) stat on the `who`-side's
+    /// competitor equals `value` — "when your opponent rolls their printed 8 skill"
+    /// (Collin the Chrononaut). Needs a roll context; `who` picks whose printed stat
+    /// to read (the roller), following the trigger's `who` like `RollValue`.
+    PrintedRollValue {
+        who: Who,
+        value: i64,
+    },
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
@@ -987,6 +1009,12 @@ pub enum IrNode {
         #[serde(default)]
         source: BuryFrom,
     },
+    /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
+    /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
+    /// (→ hand). A no-op if either zone is empty. The "you may" lives on
+    /// [`Effect::optional`]. Picks route to the `discard` (shed) / `target` (tutor)
+    /// decision points.
+    SwapHandDiscard,
     Flip {
         n: i64,
         who: Who,

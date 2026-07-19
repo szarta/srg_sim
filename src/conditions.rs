@@ -286,6 +286,12 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
         Condition::RollValue { cmp, value } => {
             roll.is_some_and(|r| r.value.is_some_and(|v| cmp_apply(*cmp, v, *value)))
         }
+        Condition::PrintedRollValue { who, value } => roll.is_some_and(|r| {
+            r.skill.is_some_and(|sk| {
+                let subject = who_key(state, owner, *who);
+                state.players[&subject].competitor.stats.get(sk) == *value
+            })
+        }),
         Condition::OppWonLastRoll => {
             state.last_roll_winner.as_deref() == Some(state.opponent_of(owner).as_str())
         }

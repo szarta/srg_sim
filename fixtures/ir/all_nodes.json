@@ -545,5 +545,13 @@
     "@type": "ConsideredCompare",
     "domain": "SKILL",
     "order": "GREATER"
+  },
+  {
+    "@type": "PrintedRollValue",
+    "value": 8,
+    "who": "OPP"
+  },
+  {
+    "@type": "SwapHandDiscard"
   }
 ]

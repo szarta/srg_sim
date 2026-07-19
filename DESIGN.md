@@ -131,6 +131,8 @@ HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
 RollWasSkill(skill) / RollGapExactly(k) / RollGapAtLeast(k)   # gap = opp - self, positive = self rolled lower
 RollLeadAtLeast(k)           # self rolled >= k HIGHER than opp (gap <= -k) — mirror of RollGapAtLeast (YamatoHama). schema v2.
 RollValue(cmp, value)        # the actual number rolled this turn, read via the trigger's `who` (Mrs. Apocalypse, Numer01)
+PrintedRollValue(who, value) # the rolled skill's PRINTED (base, unbuffed) stat on the who-side's competitor == value
+                             # ("rolls their printed 8 skill" — Collin); needs a roll ctx, who follows the trigger. schema v17
 OppWonLastRoll               # the opponent won the PREVIOUS turn's roll-off (GameState.last_roll_winner); false on turn 1 (Dunn re-roll). schema v3.
 Always
 ```
@@ -145,6 +147,8 @@ Flip(n, who=SELF)             Search(filter, dest=HAND|DISCARD, count=1)  Shuffl
                               # exactly like ModifyRoll (authored OnPlay for "for each OTHER … in play")
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
+SwapHandDiscard               # "switch 1 card in your hand with 1 in your discard" (Collin, Mr. Rey): 1 hand card
+                             # out (-> discard, shed point) + 1 discard card in (-> hand, tutor point); no-op if a zone is empty. schema v17
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
 RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
 Scry(deck, top=0, bottom=0, reveal=False, to_hand=0, bury=0, rest=RETURN|CHOOSE)  # schema v11: look at/reveal

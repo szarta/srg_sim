@@ -2910,6 +2910,35 @@
       }
     }
   ],
+  "8054b1c0587a4d949e9a73b9bdd144ed": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "SwapHandDiscard"
+        }
+      ],
+      "condition": {
+        "@type": "PrintedRollValue",
+        "value": 8,
+        "who": "OPP"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once during any player's turn: when your opponents roll their printed 8 skill for their turn roll, you may switch 1 card in your hand with 1 card in your discard pile",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "OPP"
+      }
+    }
+  ],
   "831eb73c2ab9435794db4413c7e2521b": [
     {
       "@type": "Effect",
