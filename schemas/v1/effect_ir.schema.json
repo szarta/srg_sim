@@ -2162,6 +2162,9 @@
         "@type": {
           "const": "Reroll"
         },
+        "choose": {
+          "type": "boolean"
+        },
         "once": {
           "type": "boolean"
         },
@@ -2172,7 +2175,8 @@
       "required": [
         "@type",
         "who",
-        "once"
+        "once",
+        "choose"
       ],
       "type": "object"
     },
@@ -2635,5 +2639,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 8
+  "version": 9
 }

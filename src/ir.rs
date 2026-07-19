@@ -555,8 +555,15 @@ pub enum Action {
         duration: Duration,
     },
     Reroll {
+        /// Whose die is re-rolled: `SelfSide` (your own — Dunn/Jay White) or `Opp`
+        /// ("force your opponent to re-roll" — Reverend/Macho Manny). Overridden by
+        /// `choose`.
         who: Who,
         once: bool,
+        /// "Choose any player to re-roll": the owner picks which side re-rolls
+        /// (overrides `who`). Grim Librarian.
+        #[serde(default)]
+        choose: bool,
     },
     WinTie {
         who: Who,
@@ -885,8 +892,15 @@ pub enum IrNode {
         duration: Duration,
     },
     Reroll {
+        /// Whose die is re-rolled: `SelfSide` (your own — Dunn/Jay White) or `Opp`
+        /// ("force your opponent to re-roll" — Reverend/Macho Manny). Overridden by
+        /// `choose`.
         who: Who,
         once: bool,
+        /// "Choose any player to re-roll": the owner picks which side re-rolls
+        /// (overrides `who`). Grim Librarian.
+        #[serde(default)]
+        choose: bool,
     },
     WinTie {
         who: Who,

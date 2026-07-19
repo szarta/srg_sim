@@ -2217,13 +2217,11 @@ impl Engine {
     /// re-applied to a re-rolled die (no re-roll competitor also carries those).
     fn offer_rerolls(
         &mut self,
-        sa: Skill,
-        va: i64,
-        sb: Skill,
-        vb: i64,
+        mut sa: Skill,
+        mut va: i64,
+        mut sb: Skill,
+        mut vb: i64,
     ) -> Eng<(Skill, i64, Skill, i64)> {
-        // opponent-of-owner roll context: a re-roll gate reads the OPPONENT's roll
-        // (Jay White "when your opponent rolls 9/10"; Dunn's gate ignores it).
         let ctx_a = RollContext {
             skill: Some(sa),
             gap: Some(vb - va),
@@ -2234,50 +2232,90 @@ impl Engine {
             gap: Some(va - vb),
             value: Some(vb),
         };
-        let (sa, va) = self.offer_reroll("A", sa, va, &ctx_b)?;
-        let (sb, vb) = self.offer_reroll("B", sb, vb, &ctx_a)?;
+        // Each side may spend a re-roll; the target die (own, the opponent's, or a
+        // chosen player's) is re-rolled in place.
+        for owner in ["A", "B"] {
+            let (own_ctx, opp_ctx) = if owner == "A" {
+                (&ctx_a, &ctx_b)
+            } else {
+                (&ctx_b, &ctx_a)
+            };
+            if let Some(target) = self.offer_reroll(owner, own_ctx, opp_ctx)? {
+                let (ns, nv) = self.roll_for(&target, false);
+                self.log_effect(
+                    owner,
+                    "Reroll",
+                    Some(&target),
+                    json!({"skill": ns.name(), "value": nv}),
+                );
+                if target == "A" {
+                    sa = ns;
+                    va = nv;
+                } else {
+                    sb = ns;
+                    vb = nv;
+                }
+            }
+        }
         Ok((sa, va, sb, vb))
     }
 
-    /// One side's re-roll offer: the first standing effect whose action is a `Reroll`,
-    /// whose gate holds (against the opponent's roll `opp_ctx`) and whose once-per-turn
-    /// charge is unspent, is offered to the owner; if taken it re-rolls and returns the
-    /// fresh `(skill, value)`.
+    /// `owner`'s re-roll offer: the first standing `Reroll` effect whose gate holds
+    /// and whose charge is unspent is offered; returns the KEY of the player whose die
+    /// should be re-rolled (own / opponent / a chosen player), or `None` if none fires.
+    /// The gate reads the opponent's roll for an `InRoll{who=OPP}` trigger (Jay White
+    /// "when your opponent rolls 9/10"), else the owner's (Reverend "when you roll …").
     fn offer_reroll(
         &mut self,
-        key: &str,
-        skill: Skill,
-        value: i64,
+        owner: &str,
+        own_ctx: &RollContext,
         opp_ctx: &RollContext,
-    ) -> Eng<(Skill, i64)> {
-        let effects = self.standing_effects(key);
+    ) -> Eng<Option<String>> {
+        let effects = self.standing_effects(owner);
         for eff in &effects {
-            if !eff
-                .actions
-                .iter()
-                .any(|a| matches!(a, Action::Reroll { .. }))
+            let Some((who, choose)) = eff.actions.iter().find_map(|a| match a {
+                Action::Reroll { who, choose, .. } => Some((*who, *choose)),
+                _ => None,
+            }) else {
+                continue;
+            };
+            let gate_ctx = match eff.trigger {
+                Trigger::InRoll { who: Who::Opp, .. } => opp_ctx,
+                _ => own_ctx,
+            };
+            if !(self.may_fire(eff, owner)
+                && conditions::holds(&eff.condition, &self.state, owner, Some(gate_ctx)))
             {
                 continue;
             }
-            if !(self.may_fire(eff, key)
-                && conditions::holds(&eff.condition, &self.state, key, Some(opp_ctx)))
-            {
-                continue;
-            }
-            if eff.optional && !self.take_optional(eff, key)? {
+            if eff.optional && !self.take_optional(eff, owner)? {
                 continue; // declined "you may" — charge left for a later roll
             }
-            self.mark_fired(eff, key);
-            let (ns, nv) = self.roll_for(key, false);
-            self.log_effect(
-                key,
-                "Reroll",
-                Some(key),
-                json!({"skill": ns.name(), "value": nv}),
-            );
-            return Ok((ns, nv));
+            self.mark_fired(eff, owner);
+            let target = if choose {
+                self.decide_reroll_target(owner)?
+            } else if who == Who::Opp {
+                self.state.opponent_of(owner)
+            } else {
+                owner.to_owned()
+            };
+            return Ok(Some(target));
         }
-        Ok((skill, value))
+        Ok(None)
+    }
+
+    /// "Choose any player to re-roll" (Grim Librarian): the owner picks which side.
+    fn decide_reroll_target(&mut self, owner: &str) -> Eng<String> {
+        let legal = vec![
+            json!({"kind": "reroll_target", "target": "OPP"}),
+            json!({"kind": "reroll_target", "target": "SELF"}),
+        ];
+        let chosen = self.decide("reroll_target", owner, legal)?;
+        Ok(if chosen["target"] == "SELF" {
+            owner.to_owned()
+        } else {
+            self.state.opponent_of(owner)
+        })
     }
 
     /// A player holding an `ElectBumpOnSameSkill` grant with a per-match charge

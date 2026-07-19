@@ -1039,6 +1039,47 @@
       }
     }
   ],
+  "289c8f5092744a71a376e27dd231bd04": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "choose": false,
+          "once": true,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "RollWasSkill",
+            "skill": "Agility"
+          },
+          {
+            "@type": "RollWasSkill",
+            "skill": "Grapple"
+          }
+        ]
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once per turn roll: when you roll Agility or Grapple, you may force your opponent to re-roll their turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "InRoll",
+        "either": false,
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
   "2b02cdb188af4611b79c7a0e616ad692": [
     {
       "@type": "Effect",
@@ -1694,6 +1735,7 @@
       "actions": [
         {
           "@type": "Reroll",
+          "choose": false,
           "once": true,
           "who": "SELF"
         }
@@ -1994,6 +2036,7 @@
       "actions": [
         {
           "@type": "Reroll",
+          "choose": false,
           "once": true,
           "who": "SELF"
         }
@@ -2013,7 +2056,10 @@
       "raw_clause": "once a turn roll: when your opponent rolls 9 or 10 for their turn roll, you may re-roll your turn roll",
       "source": "gimmick",
       "trigger": {
-        "@type": "Static"
+        "@type": "InRoll",
+        "either": false,
+        "skill": null,
+        "who": "OPP"
       }
     }
   ],
@@ -3175,6 +3221,34 @@
       }
     }
   ],
+  "a09bc1774f984c6287207df2a01a4eee": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "choose": false,
+          "once": true,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "OppWonLastRoll"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once a turn roll, if your opponent won the last turn roll, you may have your opponent re-roll their turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "a2895b52164743edbdd083272279e147": [
     {
       "@type": "Effect",
@@ -3432,6 +3506,7 @@
       "actions": [
         {
           "@type": "Reroll",
+          "choose": false,
           "once": true,
           "who": "SELF"
         }
@@ -3664,6 +3739,38 @@
       "trigger": {
         "@type": "OnRoll",
         "skill": "Grapple",
+        "who": "SELF"
+      }
+    }
+  ],
+  "b95f873118b944b0b07a8af9c8731752": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "choose": true,
+          "once": true,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollWasSkill",
+        "skill": "Technique"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once per turn roll, when you roll Technique: you may choose any player to re-roll their turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "InRoll",
+        "either": false,
+        "skill": null,
         "who": "SELF"
       }
     }
@@ -3931,6 +4038,7 @@
       "actions": [
         {
           "@type": "Reroll",
+          "choose": false,
           "once": true,
           "who": "SELF"
         }
@@ -4511,6 +4619,38 @@
         "@type": "OnRoll",
         "skill": "Strike",
         "who": "OPP"
+      }
+    }
+  ],
+  "eea0b5bfc97b49dd8dacc7c787ad62a3": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "choose": true,
+          "once": true,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "RollWasSkill",
+        "skill": "Technique"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll, when you roll Technique: choose any player to re-roll their turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "InRoll",
+        "either": false,
+        "skill": null,
+        "who": "SELF"
       }
     }
   ],

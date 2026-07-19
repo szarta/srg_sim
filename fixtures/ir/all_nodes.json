@@ -394,6 +394,7 @@
   },
   {
     "@type": "Reroll",
+    "choose": false,
     "once": false,
     "who": "SELF"
   },

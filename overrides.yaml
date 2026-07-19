@@ -2406,7 +2406,10 @@ eae7c1b5fdc14e27bafc9106566cf89c:
 68d8df0c31a04446bb8734cbe82be583:
 - '@type': Effect
   trigger:
-    '@type': Static
+    '@type': InRoll
+    who: OPP
+    skill: null
+    either: false
   condition:
     '@type': RollValue
     cmp: '>='
@@ -3309,3 +3312,114 @@ e38cced416cc45e0a9e1367935fd590a:
   raw_clause: when your opponent has a Strike, Submission, and Grapple in play, your
     Strike, Submission, and Grapple are +1
   source: gimmick
+
+# ===========================================================================
+# Top-96: reroll family Phase A — force-opponent + choose-player re-rolls
+# (schema v9). Reroll now honors who=OPP (re-roll the opponent's die) and gains
+# choose=true ("choose any player to re-roll"). The gate reads the owner's roll
+# for an InRoll{who=SELF} trigger ("when you roll X"), the opponent's for
+# InRoll{who=OPP} (Jay White, migrated). Deferred NEXT-roll re-roll = Phase B.
+# ===========================================================================
+
+# Macho Manny (WC): "Once a turn roll, if your opponent won the last turn roll,
+# you may have your opponent re-roll their turn roll."
+a09bc1774f984c6287207df2a01a4eee:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': OppWonLastRoll
+  actions:
+  - '@type': Reroll
+    who: OPP
+    once: true
+    choose: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: once a turn roll, if your opponent won the last turn roll, you may have your opponent re-roll their turn roll
+  source: gimmick
+  optional: true
+
+# Reverend Good Brain (WC): "Once per turn roll: When you roll Agility or Grapple,
+# you may force your opponent to re-roll their turn roll."
+289c8f5092744a71a376e27dd231bd04:
+- '@type': Effect
+  trigger:
+    '@type': InRoll
+    who: SELF
+    skill: null
+    either: false
+  condition:
+    '@type': Or
+    items:
+    - '@type': RollWasSkill
+      skill: Agility
+    - '@type': RollWasSkill
+      skill: Grapple
+  actions:
+  - '@type': Reroll
+    who: OPP
+    once: true
+    choose: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once per turn roll: when you roll Agility or Grapple, you may force your opponent to re-roll their turn roll'
+  source: gimmick
+  optional: true
+
+# Grim Librarian V1 (WC): "Once per turn roll, when you roll Technique: Choose any
+# player to re-roll their turn roll." (mandatory choice.)
+eea0b5bfc97b49dd8dacc7c787ad62a3: &grim
+- '@type': Effect
+  trigger:
+    '@type': InRoll
+    who: SELF
+    skill: null
+    either: false
+  condition:
+    '@type': RollWasSkill
+    skill: Technique
+  actions:
+  - '@type': Reroll
+    who: SELF
+    once: true
+    choose: true
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once per turn roll, when you roll Technique: choose any player to re-roll their turn roll'
+  source: gimmick
+  optional: false
+
+# Grim Librarian V2 (WC): same, but "You MAY choose any player" (optional).
+b95f873118b944b0b07a8af9c8731752:
+- '@type': Effect
+  trigger:
+    '@type': InRoll
+    who: SELF
+    skill: null
+    either: false
+  condition:
+    '@type': RollWasSkill
+    skill: Technique
+  actions:
+  - '@type': Reroll
+    who: SELF
+    once: true
+    choose: true
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once per turn roll, when you roll Technique: you may choose any player to re-roll their turn roll'
+  source: gimmick
+  optional: true
