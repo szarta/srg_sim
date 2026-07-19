@@ -150,6 +150,12 @@ def _h_not(c: fx.Not, s: GameState, o: str, r: RollContext | None) -> bool:
 
 def _h_skill(c: fx.SkillCompare, s: GameState, o: str, r: RollContext | None) -> bool:
     subject = _who(s, o, c.who)
+    # "Your skills are considered higher than your opponent's" (RaRa Perre): a
+    # vs-opponent skill comparison of `subject` resolves a fixed way.
+    if c.vs is not fx.Vs.VALUE:
+        order = _considered_compare(s, subject, fx.CompareDomain.SKILL)
+        if order is not None:
+            return _forced_cmp(c.cmp, order)
     left = _skill_value(s, subject, c.skill)
     if c.vs is fx.Vs.VALUE:
         right = c.value or 0
@@ -160,9 +166,46 @@ def _h_skill(c: fx.SkillCompare, s: GameState, o: str, r: RollContext | None) ->
 
 def _h_handsize(c: fx.HandSizeCompare, s: GameState, o: str, r: RollContext | None) -> bool:
     subject = _who(s, o, c.who)
+    # "You are considered to have fewer cards in hand" (Theo V2): a vs-opponent
+    # hand-size comparison of `subject` resolves a fixed way.
+    if c.vs is not fx.Vs.VALUE:
+        order = _considered_compare(s, subject, fx.CompareDomain.HAND)
+        if order is not None:
+            return _forced_cmp(c.cmp, order)
     left = len(s.players[subject].hand)
     right = (c.value or 0) if c.vs is fx.Vs.VALUE else len(s.players[s.opponent_of(subject)].hand)
     return _CMP[c.cmp](left, right)
+
+
+def _forced_cmp(cmp: fx.Comparator, order: fx.CompareOrder) -> bool:
+    """Resolve a comparison whose left side is forced by a ``ConsideredCompare``
+    override: ``GREATER`` = the subject is treated as strictly higher/more (``>``/``>=``
+    hold, else fail); ``LESS`` as strictly lower/fewer. Strict, so ``=`` never holds."""
+    if order is fx.CompareOrder.GREATER:
+        return cmp in (fx.Comparator.GT, fx.Comparator.GE)
+    return cmp in (fx.Comparator.LT, fx.Comparator.LE)
+
+
+def _considered_compare(
+    s: GameState, key: str, domain: fx.CompareDomain
+) -> fx.CompareOrder | None:
+    """The active ``ConsideredCompare`` override of ``key`` for ``domain``, if any
+    (RaRa Perre, Theo V2). Scans ``key``'s own active static declarations (competitor
+    gimmick unless blanked, entrance, in-play), honoring each declaration's condition."""
+    for effects, active in s._buff_sources(key, s.players[key]):
+        if not active:
+            continue
+        for eff in effects:
+            if not isinstance(eff.trigger, fx.Static):
+                continue
+            for a in eff.actions:
+                if (
+                    isinstance(a, fx.ConsideredCompare)
+                    and a.domain is domain
+                    and holds(eff.condition, s, key)
+                ):
+                    return a.order
+    return None
 
 
 def _h_crowd(c: fx.CrowdMeterCompare, s: GameState, o: str, r: RollContext | None) -> bool:

@@ -103,6 +103,55 @@ def test_skill_compare_reflects_active_buffs() -> None:
     assert holds(cond, s, "A")
 
 
+# --- considered-compare meta-override (task #104) --------------------------
+
+
+def _state_with_considered(domain: fx.CompareDomain, order: fx.CompareOrder) -> GameState:
+    """`_state()` but A's competitor declares a `ConsideredCompare` override."""
+    decl = fx.Effect(
+        trigger=fx.Static(),
+        actions=(fx.ConsideredCompare(domain=domain, order=order),),
+        duration=fx.Duration.WHILE_IN_PLAY,
+    )
+    s = _state()
+    comp = s.players["A"].competitor
+    s.players["A"].competitor = Competitor("cA", "A", "W", A_STATS, effects=(decl,))
+    assert comp is not s.players["A"].competitor
+    return s
+
+
+def test_considered_skill_greater_is_strict() -> None:
+    # A.Submission 8 < B.Submission 9: naturally `<` True, `>`/`=` False.
+    s = _state()
+    lt = fx.SkillCompare(Skill.SUBMISSION, fx.Comparator.LT, fx.Who.SELF, fx.Vs.OPP_SAME)
+    assert holds(lt, s, "A")
+    # RaRa Perre: A's skills considered GREATER — `>`/`>=` hold, `<`/`<=`/`=` fail.
+    g = _state_with_considered(fx.CompareDomain.SKILL, fx.CompareOrder.GREATER)
+    gt = fx.SkillCompare(Skill.SUBMISSION, fx.Comparator.GT, fx.Who.SELF, fx.Vs.OPP_SAME)
+    eq = fx.SkillCompare(Skill.SUBMISSION, fx.Comparator.EQ, fx.Who.SELF, fx.Vs.OPP_SAME)
+    assert holds(gt, g, "A")
+    assert not holds(lt, g, "A")
+    assert not holds(eq, g, "A")
+    # Scoped to A: a B-owned compare (subject=B) is unaffected (B.Sub 9 > A.Sub 8).
+    assert holds(fx.SkillCompare(Skill.SUBMISSION, fx.Comparator.GT, fx.Who.SELF, fx.Vs.OPP_SAME), g, "B")
+
+
+def test_considered_hand_less_is_strict() -> None:
+    # Theo V2: A's hand considered fewer — `<`/`<=` hold, `>`/`=` fail, any sizes.
+    l = _state_with_considered(fx.CompareDomain.HAND, fx.CompareOrder.LESS)
+    l.players["A"].hand = [_card(1), _card(2), _card(3)]  # A has MORE, yet…
+    l.players["B"].hand = [_card(1)]
+    lt = fx.HandSizeCompare(fx.Comparator.LT, fx.Vs.OPP, who=fx.Who.SELF)
+    gt = fx.HandSizeCompare(fx.Comparator.GT, fx.Vs.OPP, who=fx.Who.SELF)
+    assert holds(lt, l, "A")  # forced fewer despite the larger hand
+    assert not holds(gt, l, "A")
+    # A SKILL override must not touch a HandSizeCompare.
+    g = _state_with_considered(fx.CompareDomain.SKILL, fx.CompareOrder.GREATER)
+    g.players["A"].hand = [_card(1)]
+    g.players["B"].hand = [_card(1), _card(2)]
+    assert holds(fx.HandSizeCompare(fx.Comparator.LT, fx.Vs.OPP, who=fx.Who.SELF), g, "A")  # real 1<2
+
+
 # --- hand size / crowd meter -----------------------------------------------
 
 

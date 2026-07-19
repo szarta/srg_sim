@@ -22,7 +22,10 @@ from srg_sim.effects import (
     CardFilter,
     Choice,
     ChoiceOption,
+    CompareDomain,
+    CompareOrder,
     Comparator,
+    ConsideredCompare,
     CountsAsInPlay,
     CrowdMeter,
     CrowdMeterCompare,
@@ -202,6 +205,7 @@ SAMPLES: list[IRNode] = [
     BlankText(CardFilter(name="Gimmick"), Until.END_OF_TURN),
     LoseBy(LoseKind.PINFALL, Who.SELF),
     DisqualificationRule(enabled=False, scope=DqScope.MATCH),
+    ConsideredCompare(domain=CompareDomain.SKILL, order=CompareOrder.GREATER),  # RaRa Perre
     CrowdMeter(1),
     PlayExtraCard(PlayOrder.FINISH),
     SetFinishRoll(11, CrowdMeterCompare(Comparator.GT, 0)),

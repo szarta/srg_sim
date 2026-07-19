@@ -224,6 +224,24 @@ class DqScope(Enum):
     MATCH = "MATCH"
 
 
+class CompareDomain(Enum):
+    """Which comparison :class:`ConsideredCompare` overrides — ``SKILL`` forces every
+    ``SkillCompare`` of the declaring player vs the opponent; ``HAND`` every
+    ``HandSizeCompare``."""
+
+    SKILL = "SKILL"
+    HAND = "HAND"
+
+
+class CompareOrder(Enum):
+    """How :class:`ConsideredCompare` resolves the subject vs the opponent —
+    ``GREATER`` = always considered higher/more (RaRa Perre); ``LESS`` = always
+    considered lower/fewer (Theo the Greek Neo V2)."""
+
+    GREATER = "GREATER"
+    LESS = "LESS"
+
+
 class ScryRest(Enum):
     """What a :class:`Scry` does with revealed cards that are neither taken to hand
     nor buried by the fixed ``bury`` count. ``RETURN`` puts them back on top of the
@@ -959,6 +977,17 @@ class DisqualificationRule(IRNode):
 
 
 @dataclass(frozen=True)
+class ConsideredCompare(IRNode):
+    """A Static meta-comparison override "for card effects": the declaring player's
+    ``domain`` comparison vs the opponent always resolves as ``order`` regardless of
+    the real values (RaRa Perre "skills considered higher"; Theo V2 "considered fewer
+    cards in hand"). Read in ``conditions.holds``, not executed."""
+
+    domain: CompareDomain
+    order: CompareOrder
+
+
+@dataclass(frozen=True)
 class CrowdMeter(IRNode):
     delta: int
 
@@ -1189,6 +1218,7 @@ Action = (
     | FlipGimmick
     | BlankText
     | LoseBy
+    | ConsideredCompare
     | CrowdMeter
     | PlayExtraCard
     | SetFinishRoll

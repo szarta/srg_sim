@@ -1854,6 +1854,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.FlipGimmick: Engine._act_flip_gimmick,
     fx.LoseBy: Engine._act_lose_by,
     fx.DisqualificationRule: Engine._act_noop,  # Static, read via _is_dq_immune; never executed
+    fx.ConsideredCompare: Engine._act_noop,  # Static, read in conditions.holds; never executed
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
