@@ -3829,3 +3829,318 @@ b69620138a614df0bea6b3bddcc2123d:
   raw_clause: 'when you bump, you may have either player shuffle their hand into their deck and then add the top 4 cards of their deck to their hand'
   source: gimmick
   optional: true
+
+# ---------------------------------------------------------------------------
+# Top-96 one-off gimmicks (M-R3) — pure-override quick wins (existing nodes,
+# NO schema/engine change). Task #79 grind.
+# ---------------------------------------------------------------------------
+
+# Fae Dragon: the player with the lowest turn roll wins.
+c37902890fa44033ad8ca1412ba9ae3d:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': LowestRollWins
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: the player with the lowest turn roll wins the turn roll
+  source: gimmick
+  optional: false
+
+# Prof Leonardo Magette: roll Technique -> opp reveals 1, discards it if a Stop = RevealAndDiscard.
+19c81a08844f41168571930dd9142b4d:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': RevealAndDiscard
+    count: 1
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your turn roll, your opponent randomly reveals a card in their hand; if it is a stop, they discard it
+  source: gimmick
+  optional: false
+
+# Snake Pitt (V1): fewer cards in hand than opp -> Power/Agility/Technique +1.
+8ae46f2366614e28ac5d20571c09d455:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: <
+    vs: OPP
+    value: null
+    who: SELF
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: 1
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you have fewer cards in hand than your opponent, your Power is +1
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: <
+    vs: OPP
+    value: null
+    who: SELF
+  actions:
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you have fewer cards in hand than your opponent, your Agility is +1
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HandSizeCompare
+    cmp: <
+    vs: OPP
+    value: null
+    who: SELF
+  actions:
+  - '@type': BuffSkill
+    skill: Technique
+    delta: 1
+    who: SELF
+    target_highest: false
+    per_crowd: false
+    cap: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you have fewer cards in hand than your opponent, your Technique is +1
+  source: gimmick
+  optional: false
+
+# Joe Hendry: roll Power -> search deck for a 'Joe Hendry' card to hand, shuffle.
+87b26269da2d464da1bbf43c3f7b2d32:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains:
+      - Joe Hendry
+      text_contains: []
+    dest: HAND
+  - '@type': ShuffleDeck
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Power for your turn roll, search your deck for 1 Joe Hendry card and add it to your hand; shuffle your deck
+  source: gimmick
+  optional: false
+
+# The Grump: opp rolls 8 or 9 -> their next turn roll -1.
+ed9f1e55e6094478bf87e93f209347a4:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: OPP
+  condition:
+    '@type': Or
+    items:
+    - '@type': RollValue
+      cmp: '='
+      value: 8
+    - '@type': RollValue
+      cmp: '='
+      value: 9
+  actions:
+  - '@type': ModifyRoll
+    who: OPP
+    delta: -1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your opponent rolls 8 or 9 for their turn roll, their next turn roll is -1
+  source: gimmick
+  optional: false
+
+# Joey Janela: once a turn roll, if opp rolls 10 -> add 1 from discard to hand.
+ad44636cda7a4a82bb63a06c9f78db7b:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: OPP
+  condition:
+    '@type': RollValue
+    cmp: '='
+    value: 10
+  actions:
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once a turn roll: if your opponent''s roll is 10, add 1 card from your discard pile to your hand'
+  source: gimmick
+  optional: false
+
+# MVP: roll 6 -> add an MVP Finish from discard OR opp's next turn roll -1.
+b724c6a2db604a95971f30f7a424d2de:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollValue
+    cmp: '='
+    value: 6
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: add 1 MVP Finish from discard to hand
+      actions:
+      - '@type': AddFromDiscard
+        filter:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: Finish
+          tag: null
+          name: null
+          raw: null
+          name_contains:
+          - MVP
+          text_contains: []
+    - '@type': ChoiceOption
+      label: opponent's next turn roll is -1
+      actions:
+      - '@type': ModifyRoll
+        who: OPP
+        delta: -1
+        when: NEXT
+        per: null
+        per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll 6 for your turn roll, add 1 MVP Finish from your discard pile to your hand or your opponent's next turn roll is -1
+  source: gimmick
+  optional: false
+
+# Loudmouth Leo Larynx: roll 10 -> add an LLL Finish from discard OR your next turn roll +1.
+def74dd5530540ce8a9e903bc10fd620:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollValue
+    cmp: '='
+    value: 10
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: add 1 Loudmouth Leo Larynx Finish from discard to hand
+      actions:
+      - '@type': AddFromDiscard
+        filter:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: Finish
+          tag: null
+          name: null
+          raw: null
+          name_contains:
+          - Loudmouth Leo Larynx
+          text_contains: []
+    - '@type': ChoiceOption
+      label: your next turn roll is +1
+      actions:
+      - '@type': ModifyRoll
+        who: SELF
+        delta: 1
+        when: NEXT
+        per: null
+        per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll 10 for your turn roll add 1 Loudmouth Leo Larynx Finish from your discard pile to your hand or your next turn roll is +1
+  source: gimmick
+  optional: false

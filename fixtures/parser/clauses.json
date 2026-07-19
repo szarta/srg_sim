@@ -1937,9 +1937,7 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "The player with the lowest turn roll wins the turn roll.",
-              "reason": "no grammar match"
+              "@type": "LowestRollWins"
             }
           ],
           "condition": {
@@ -1952,10 +1950,10 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "The player with the lowest turn roll wins the turn roll.",
+          "raw_clause": "the player with the lowest turn roll wins the turn roll",
           "source": "gimmick",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "Static"
           }
         }
       ],
@@ -7554,7 +7552,7 @@
   ],
   "coverage_golden": {
     "grammar": 116,
-    "override": 55,
+    "override": 56,
     "top_unparsed": [
       [
         "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
@@ -7638,7 +7636,7 @@
       ]
     ],
     "total": 217,
-    "unsupported": 46
+    "unsupported": 45
   },
   "coverage_records": [
     {

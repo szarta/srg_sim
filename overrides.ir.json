@@ -623,6 +623,35 @@
       }
     }
   ],
+  "19c81a08844f41168571930dd9142b4d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealAndDiscard",
+          "count": 1,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Technique for your turn roll, your opponent randomly reveals a card in their hand; if it is a stop, they discard it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
+        "who": "SELF"
+      }
+    }
+  ],
   "1cf1f13bf01a404ea9117d3483eb2984": [
     {
       "@type": "Effect",
@@ -2770,6 +2799,52 @@
       }
     }
   ],
+  "87b26269da2d464da1bbf43c3f7b2d32": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Joe Hendry"
+            ],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        },
+        {
+          "@type": "ShuffleDeck",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Power for your turn roll, search your deck for 1 Joe Hendry card and add it to your hand; shuffle your deck",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
   "894c9965da684adb8ab5f532bafbff59": [
     {
       "@type": "Effect",
@@ -2945,6 +3020,116 @@
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
+      }
+    }
+  ],
+  "8ae46f2366614e28ac5d20571c09d455": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Power",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HandSizeCompare",
+        "cmp": "<",
+        "value": null,
+        "vs": "OPP",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you have fewer cards in hand than your opponent, your Power is +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HandSizeCompare",
+        "cmp": "<",
+        "value": null,
+        "vs": "OPP",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you have fewer cards in hand than your opponent, your Agility is +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Technique",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HandSizeCompare",
+        "cmp": "<",
+        "value": null,
+        "vs": "OPP",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you have fewer cards in hand than your opponent, your Technique is +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -3536,6 +3721,46 @@
       }
     }
   ],
+  "ad44636cda7a4a82bb63a06c9f78db7b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddFromDiscard",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "RollValue",
+        "cmp": "=",
+        "value": 10
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once a turn roll: if your opponent's roll is 10, add 1 card from your discard pile to your hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "OPP"
+      }
+    }
+  ],
   "ae2b1fde64e343da8848984231aa5c83": [
     {
       "@type": "Effect",
@@ -4014,6 +4239,73 @@
       }
     }
   ],
+  "b724c6a2db604a95971f30f7a424d2de": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AddFromDiscard",
+                  "filter": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [
+                      "MVP"
+                    ],
+                    "number": null,
+                    "play_order": "Finish",
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  }
+                }
+              ],
+              "label": "add 1 MVP Finish from discard to hand"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ModifyRoll",
+                  "delta": -1,
+                  "per": null,
+                  "per_who": "OPP",
+                  "when": "NEXT",
+                  "who": "OPP"
+                }
+              ],
+              "label": "opponent's next turn roll is -1"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "RollValue",
+        "cmp": "=",
+        "value": 6
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll 6 for your turn roll, add 1 MVP Finish from your discard pile to your hand or your opponent's next turn roll is -1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
   "b7b746a51bf5436da9c4ba172c7ff504": [
     {
       "@type": "Effect",
@@ -4209,6 +4501,31 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "c37902890fa44033ad8ca1412ba9ae3d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "LowestRollWins"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "the player with the lowest turn roll wins the turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -4654,6 +4971,73 @@
       "source": "card",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "def74dd5530540ce8a9e903bc10fd620": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AddFromDiscard",
+                  "filter": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [
+                      "Loudmouth Leo Larynx"
+                    ],
+                    "number": null,
+                    "play_order": "Finish",
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  }
+                }
+              ],
+              "label": "add 1 Loudmouth Leo Larynx Finish from discard to hand"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ModifyRoll",
+                  "delta": 1,
+                  "per": null,
+                  "per_who": "OPP",
+                  "when": "NEXT",
+                  "who": "SELF"
+                }
+              ],
+              "label": "your next turn roll is +1"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "RollValue",
+        "cmp": "=",
+        "value": 10
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll 10 for your turn roll add 1 Loudmouth Leo Larynx Finish from your discard pile to your hand or your next turn roll is +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
       }
     }
   ],
@@ -5120,6 +5504,50 @@
       "trigger": {
         "@type": "OnRoll",
         "skill": "Strike",
+        "who": "OPP"
+      }
+    }
+  ],
+  "ed9f1e55e6094478bf87e93f209347a4": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": -1,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "RollValue",
+            "cmp": "=",
+            "value": 8
+          },
+          {
+            "@type": "RollValue",
+            "cmp": "=",
+            "value": 9
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent rolls 8 or 9 for their turn roll, their next turn roll is -1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
         "who": "OPP"
       }
     }
