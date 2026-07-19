@@ -166,6 +166,10 @@ MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, 
 Reroll(who, once=True, choose=False, when=THIS)  # who=SELF/OPP die; choose=owner picks a player;
                               # when=NEXT grants a one-shot re-roll for the owner's next turn roll
                               # (schema v9 choose, v10 when). Structural read in the roll-off.
+SwitchRolledSkill(from_skill, to)  # "when you roll from_skill for your turn/Finish roll, you may switch it
+                              # to `to`" (Scott Prime; schema v14). Structural read in BOTH roll paths; the
+                              # "you may" lives on Effect.optional. Turn die keeps its mods (value recomputed
+                              # on `to`'s stat); a switched Finish die recomputes base+combo from `to`.
 WinTie(who)                   Bump(who)
 ElectBumpOnSameSkill(uses=2)  # Static roll-off grant: owner MAY bump on a same-skill roll, N times/match
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)

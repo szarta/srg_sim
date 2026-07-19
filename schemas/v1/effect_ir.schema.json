@@ -602,6 +602,9 @@
               },
               {
                 "$ref": "#/$defs/DisqualificationRule"
+              },
+              {
+                "$ref": "#/$defs/SwitchRolledSkill"
               }
             ]
           },
@@ -975,6 +978,9 @@
               },
               {
                 "$ref": "#/$defs/DisqualificationRule"
+              },
+              {
+                "$ref": "#/$defs/SwitchRolledSkill"
               }
             ]
           },
@@ -1622,6 +1628,9 @@
         },
         {
           "$ref": "#/$defs/DisqualificationRule"
+        },
+        {
+          "$ref": "#/$defs/SwitchRolledSkill"
         }
       ]
     },
@@ -2720,6 +2729,26 @@
       ],
       "type": "object"
     },
+    "SwitchRolledSkill": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SwitchRolledSkill"
+        },
+        "from_skill": {
+          "$ref": "#/$defs/Skill"
+        },
+        "to": {
+          "$ref": "#/$defs/Skill"
+        }
+      },
+      "required": [
+        "@type",
+        "from_skill",
+        "to"
+      ],
+      "type": "object"
+    },
     "Unstoppable": {
       "additionalProperties": false,
       "properties": {
@@ -2805,5 +2834,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 13
+  "version": 14
 }

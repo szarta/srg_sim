@@ -529,5 +529,10 @@
   {
     "@type": "WinTie",
     "who": "SELF"
+  },
+  {
+    "@type": "SwitchRolledSkill",
+    "from_skill": "Technique",
+    "to": "Power"
   }
 ]

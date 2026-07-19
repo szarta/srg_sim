@@ -70,8 +70,8 @@ fn all_nodes_covers_every_type() {
     tags.dedup();
     assert_eq!(
         tags.len(),
-        76,
-        "expected 76 distinct node types, got {}",
+        77,
+        "expected 77 distinct node types, got {}",
         tags.len()
     );
 }

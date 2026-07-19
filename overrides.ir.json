@@ -1742,6 +1742,33 @@
       }
     }
   ],
+  "504e8e4759024076b094608d6b8172a6": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "SwitchRolledSkill",
+          "from_skill": "Technique",
+          "to": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "when you roll Technique for your turn roll or Finish roll, you may switch it to Power",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "51537506696946a2ad10662229ccd96f": [
     {
       "@type": "Effect",
@@ -5807,6 +5834,33 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "fe3b3d76b2334b528c57bd0375ea82cd": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "SwitchRolledSkill",
+          "from_skill": "Agility",
+          "to": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "when you roll Agility for your turn roll or Finish roll, you may switch it to Power",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],

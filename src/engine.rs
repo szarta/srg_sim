@@ -885,6 +885,7 @@ impl Engine {
             | Action::AlsoLead { .. }
             | Action::DoubleFinishIfBumped
             | Action::DisqualificationRule { .. }
+            | Action::SwitchRolledSkill { .. }
             | Action::MaxHandSize { .. } => {}
             // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
             // `This` re-roll is structural (read in the roll-off), a no-op here.
@@ -2265,7 +2266,18 @@ impl Engine {
     /// rolled skill + flat Finish-roll bonuses + crowd meter. Auto-success, else the
     /// defender's breakout attempt decides win vs. resume (DESIGN.md §5/§6).
     fn finish_sequence(&mut self, finisher: &str, defender: &str, card: &Card) -> Eng<()> {
-        let skill = self.state.rng.roll();
+        let mut skill = self.state.rng.roll();
+        // Switch-rolled-skill also applies to the Finish roll (Scott Prime): switch
+        // before base/combo are computed so they recompute from the new skill.
+        if let Some(to) = self.find_switch(finisher, skill)? {
+            self.log_effect(
+                finisher,
+                "SwitchRolledSkill",
+                Some(finisher),
+                json!({"from": skill.name(), "to": to.name(), "roll": "finish"}),
+            );
+            skill = to;
+        }
         let base = self.stat(finisher, skill);
         let combo: i64 = {
             let in_play = &self.state.players[finisher].in_play;
@@ -2458,6 +2470,13 @@ impl Engine {
         self.promote_pending(); // last turn's `when=NEXT` mods become THIS roll's (#50)
         let (mut sa, mut va) = self.roll_for("A", true);
         let (mut sb, mut vb) = self.roll_for("B", true);
+        // Switch-rolled-skill (Scott Prime): "you may switch the rolled skill to
+        // Power" — offered before boosts/mods so they land on the switched skill.
+        let (nsa, nva, nsb, nvb) = self.offer_switches(sa, va, sb, vb)?;
+        sa = nsa;
+        va = nva;
+        sb = nsb;
+        vb = nvb;
         // In-roll boosts (Soborno): after the skill is known, before the winner is
         // decided, a player may pay a cost for +delta to THIS roll.
         va = self.offer_roll_boost("A", sa, va, false)?;
@@ -2560,6 +2579,7 @@ impl Engine {
         self.run_on_bump()?; // bump-punish gimmicks (Mastermind: opp next roll -2)
         let (sa, va) = self.roll_for("A", false);
         let (sb, vb) = self.roll_for("B", false);
+        let (sa, va, sb, vb) = self.offer_switches(sa, va, sb, vb)?; // a bump re-roll is a turn roll too
         let (va, vb) = self.apply_in_roll_mods(sa, va, sb, vb); // debuff re-rolls too
         let (sa, va, sb, vb) = self.offer_rerolls(sa, va, sb, vb)?; // re-roll offered post-bump too
         Ok((sa, va, sb, vb, bumps))
@@ -2614,6 +2634,84 @@ impl Engine {
             }
         }
         Ok((sa, va, sb, vb))
+    }
+
+    /// Offer each side its "switch the rolled skill" option (Scott Prime). A taken
+    /// switch replaces that side's rolled `(skill, value)` — the die keeps its roll
+    /// mods (value is recomputed on the new skill's stat). Offered at every turn-roll
+    /// point (initial roll + each bump re-roll), mirroring `offer_rerolls`.
+    fn offer_switches(
+        &mut self,
+        mut sa: Skill,
+        mut va: i64,
+        mut sb: Skill,
+        mut vb: i64,
+    ) -> Eng<(Skill, i64, Skill, i64)> {
+        for owner in ["A", "B"] {
+            let (skill, value) = if owner == "A" { (sa, va) } else { (sb, vb) };
+            if let Some((ns, nv)) = self.offer_switch(owner, skill, value)? {
+                if owner == "A" {
+                    sa = ns;
+                    va = nv;
+                } else {
+                    sb = ns;
+                    vb = nv;
+                }
+            }
+        }
+        Ok((sa, va, sb, vb))
+    }
+
+    /// `owner`'s turn-roll switch: if a standing `SwitchRolledSkill` fires for the
+    /// rolled `skill`, recompute the value on the new skill (`value` minus the old
+    /// skill's stat plus the new one's, preserving any roll mods) and log it.
+    fn offer_switch(&mut self, owner: &str, skill: Skill, value: i64) -> Eng<Option<(Skill, i64)>> {
+        let Some(to) = self.find_switch(owner, skill)? else {
+            return Ok(None);
+        };
+        let nv = value - self.stat(owner, skill) + self.stat(owner, to);
+        self.log_effect(
+            owner,
+            "SwitchRolledSkill",
+            Some(owner),
+            json!({"from": skill.name(), "to": to.name(), "value": nv}),
+        );
+        Ok(Some((to, nv)))
+    }
+
+    /// The first standing `SwitchRolledSkill` effect whose `from` matches the rolled
+    /// `skill`, whose gate holds, and whose optional offer is taken; returns its `to`
+    /// skill (the switched-to skill), or `None`. Shared by the turn roll-off and the
+    /// Finish roll (both trigger "when you roll `from`").
+    fn find_switch(&mut self, owner: &str, skill: Skill) -> Eng<Option<Skill>> {
+        let effects = self.standing_effects(owner);
+        for eff in &effects {
+            let Some((from, to)) = eff.actions.iter().find_map(|a| match a {
+                Action::SwitchRolledSkill { from_skill, to } => Some((*from_skill, *to)),
+                _ => None,
+            }) else {
+                continue;
+            };
+            if skill != from {
+                continue;
+            }
+            let ctx = RollContext {
+                skill: Some(skill),
+                gap: None,
+                value: Some(self.stat(owner, skill)),
+            };
+            if !(self.may_fire(eff, owner)
+                && conditions::holds(&eff.condition, &self.state, owner, Some(&ctx)))
+            {
+                continue;
+            }
+            if eff.optional && !self.take_optional(eff, owner)? {
+                continue; // declined "you may switch"
+            }
+            self.mark_fired(eff, owner);
+            return Ok(Some(to));
+        }
+        Ok(None)
     }
 
     /// `owner`'s re-roll offer: the first standing `Reroll` effect whose gate holds
@@ -3145,6 +3243,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",
         Action::Reroll { .. } => "Reroll",
+        Action::SwitchRolledSkill { .. } => "SwitchRolledSkill",
         Action::WinTie { .. } => "WinTie",
         Action::Bump { .. } => "Bump",
         Action::ElectBumpOnSameSkill { .. } => "ElectBumpOnSameSkill",

@@ -4319,3 +4319,55 @@ df55bc41f35640b28b35de866e6a12da:
   raw_clause: when you roll Submission for your turn roll, shuffle 1 card from your discard pile into your deck and draw 1 card
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #101): switch-rolled-skill family. "When you roll <S> for your
+# turn roll OR Finish roll, you may switch it to Power." New action
+# SwitchRolledSkill{from_skill, to} (schema v14), read structurally in BOTH roll
+# paths (the turn roll-off + the Finish roll) — a no-op in apply_action. Fires
+# when the rolled skill == from_skill; "you may" = optional. Trigger is Static
+# (find_switch scans standing effects regardless of trigger and gates on the
+# action's from_skill). UNLIMITED (no once-per-turn cap in the text). Policy
+# caveat: the optional switch is decided generically by the controller policy
+# (may switch even when Power is no better) — strategic tuning is a follow-up.
+# ---------------------------------------------------------------------------
+
+# Scott Prime V1 (World Championship): roll Technique -> may switch to Power.
+504e8e4759024076b094608d6b8172a6:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': SwitchRolledSkill
+    from_skill: Technique
+    to: Power
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your turn roll or Finish roll, you may switch it to Power
+  source: gimmick
+  optional: true
+
+# Scott Prime V2 (World Championship): roll Agility -> may switch to Power.
+fe3b3d76b2334b528c57bd0375ea82cd:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': SwitchRolledSkill
+    from_skill: Agility
+    to: Power
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Agility for your turn roll or Finish roll, you may switch it to Power
+  source: gimmick
+  optional: true

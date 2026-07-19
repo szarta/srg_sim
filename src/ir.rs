@@ -666,6 +666,16 @@ pub enum Action {
         #[serde(default)]
         when: RollWhen,
     },
+    /// "When you roll `from` for your turn roll or Finish roll, you may switch it to
+    /// `to`" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn
+    /// roll-off and the Finish roll), a no-op in `apply_action`; fires when the
+    /// rolled skill == `from`. The "you may" lives on the [`Effect::optional`] flag.
+    /// A switched turn die keeps its roll mods (value is recomputed on `to`'s stat);
+    /// a switched Finish die recomputes base + combo from `to`.
+    SwitchRolledSkill {
+        from_skill: Skill,
+        to: Skill,
+    },
     WinTie {
         who: Who,
     },
@@ -1064,6 +1074,16 @@ pub enum IrNode {
         /// may re-roll your next turn roll" — King Brian Cage / El Gato Shinobi).
         #[serde(default)]
         when: RollWhen,
+    },
+    /// "When you roll `from` for your turn roll or Finish roll, you may switch it to
+    /// `to`" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn
+    /// roll-off and the Finish roll), a no-op in `apply_action`; fires when the
+    /// rolled skill == `from`. The "you may" lives on the [`Effect::optional`] flag.
+    /// A switched turn die keeps its roll mods (value is recomputed on `to`'s stat);
+    /// a switched Finish die recomputes base + combo from `to`.
+    SwitchRolledSkill {
+        from_skill: Skill,
+        to: Skill,
     },
     WinTie {
         who: Who,
