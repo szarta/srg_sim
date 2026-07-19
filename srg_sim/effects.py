@@ -224,6 +224,16 @@ class DqScope(Enum):
     MATCH = "MATCH"
 
 
+class ScryRest(Enum):
+    """What a :class:`Scry` does with revealed cards that are neither taken to hand
+    nor buried by the fixed ``bury`` count. ``RETURN`` puts them back on top of the
+    deck (the actor reorders by value); ``CHOOSE`` lets the actor decide, per card,
+    between returning it on top and burying it to the deck bottom."""
+
+    RETURN = "RETURN"
+    CHOOSE = "CHOOSE"
+
+
 class Until(Enum):
     END_OF_TURN = "END_OF_TURN"
 
@@ -669,6 +679,26 @@ class Peek(IRNode):
     """
 
     who: Who = Who.OPP
+
+
+@dataclass(frozen=True)
+class Scry(IRNode):
+    """Look at / reveal cards from the top (and/or bottom) of ``deck``'s deck, then
+    route them by value. The effect owner (the "actor") takes ``to_hand`` of them to
+    the deck owner's hand, buries ``bury`` to the deck bottom (the *worst* on its own
+    deck, the *best* on an opponent's — sabotage, e.g. The Oracle), and disposes of
+    the leftovers per ``rest``. ``reveal`` makes the seen cards public (logged);
+    ``reveal=False`` is a private "look at". Covers reveal-top-of-deck gimmicks
+    (Perfect Assistant, Split, Ricky Riot, The Oracle).
+    """
+
+    deck: Who
+    top: int = 0
+    bottom: int = 0
+    reveal: bool = False
+    to_hand: int = 0
+    bury: int = 0
+    rest: ScryRest = ScryRest.RETURN
 
 
 @dataclass(frozen=True)

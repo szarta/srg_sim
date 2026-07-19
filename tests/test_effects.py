@@ -77,6 +77,8 @@ from srg_sim.effects import (
     RollGapAtLeast,
     RollGapExactly,
     RollLeadAtLeast,
+    Scry,
+    ScryRest,
     RollValue,
     RollWasSkill,
     RollWhen,
@@ -156,6 +158,7 @@ SAMPLES: list[IRNode] = [
     AddFromDiscard(CardFilter(atk_type=AtkType.SUBMISSION)),
     RemoveFromPlay(CardFilter(play_order=PlayOrder.FOLLOWUP), Who.OPP, 1),
     Peek(Who.OPP),
+    Scry(deck=Who.SELF, top=2, to_hand=1, bury=1, reveal=True, rest=ScryRest.CHOOSE),
     RecurToDeckTop(CardFilter(play_order=PlayOrder.FINISH), 3),
     CountsAsInPlay(  # "counts as 2 Lead Strikes in play" (Double Cross)
         CardFilter(play_order=PlayOrder.LEAD, atk_type=AtkType.STRIKE), 2

@@ -1322,6 +1322,102 @@ class Engine:
         self.state.players[key].flags["peek"] = {target: self.state.turn_no}
         self._log_effect(key, "Peek", target, {"hand_size": len(self.state.players[target].hand)})
 
+    def _act_scry(self, action: fx.Scry, key: str) -> None:
+        # Look at / reveal cards from the top (and/or bottom) of the target deck and
+        # route them by value. The effect owner (`key`) is the actor: it keeps the
+        # best cards, buries the worst on its own deck (or the best on an opponent's
+        # — sabotage), and disposes of the rest per `rest`. Reveals are engine-side
+        # (like _act_reveal_and_discard); `reveal` only controls log visibility.
+        owner = key if action.deck is fx.Who.SELF else self.state.opponent_of(key)
+        sabotage = owner != key
+        deck = self.state.players[owner].deck
+
+        revealed: list[Card] = []
+        tn = min(max(action.top, 0), len(deck))
+        revealed.extend(deck[:tn])
+        del deck[:tn]
+        bn = min(max(action.bottom, 0), len(deck))
+        if bn:
+            revealed.extend(deck[len(deck) - bn :])
+            del deck[len(deck) - bn :]
+        if not revealed:
+            return
+
+        seen = [c.db_uuid for c in revealed] if action.reveal else None
+        self._log_effect(
+            key, "Scry", owner, {"count": len(revealed), "revealed": seen, "public": action.reveal}
+        )
+
+        revealed.sort(key=_scry_value, reverse=True)  # best first
+
+        take = min(max(action.to_hand, 0), len(revealed))
+        if take:
+            taken = revealed[:take]
+            del revealed[:take]
+            self.state.players[owner].hand.extend(taken)
+            self._log(
+                gl.Draw(
+                    t=self.state.turn_no,
+                    player=owner,
+                    cards=[c.db_uuid for c in taken],
+                    source="deck",
+                    hidden=not action.reveal,
+                )
+            )
+
+        b = min(max(action.bury, 0), len(revealed))
+        if b:
+            if sabotage:
+                buried = revealed[:b]
+                del revealed[:b]
+            else:
+                buried = revealed[len(revealed) - b :]
+                del revealed[len(revealed) - b :]
+            self._scry_to_bottom(owner, buried)
+
+        self._scry_dispose(owner, revealed, action.rest, sabotage)
+        self._hand_cap(owner)
+
+    def _scry_dispose(
+        self, owner: str, cards: list[Card], rest: fx.ScryRest, sabotage: bool
+    ) -> None:
+        # Route the leftovers: RETURN puts them all back on top (best on top of your
+        # own deck, worst on top when sabotaging); CHOOSE keeps the valuable ones on
+        # top and buries the junk (inverted when sabotaging).
+        if not cards:
+            return
+        if rest is fx.ScryRest.RETURN:
+            cards.sort(key=_scry_value, reverse=True)  # best first
+            if sabotage:
+                cards.reverse()
+            self._scry_to_top(owner, cards)
+        else:  # CHOOSE
+            keep = [c for c in cards if (_scry_value(c) >= 2) != sabotage]
+            junk = [c for c in cards if (_scry_value(c) >= 2) == sabotage]
+            if junk:
+                self._scry_to_bottom(owner, junk)
+            self._scry_to_top(owner, keep)
+
+    def _scry_to_top(self, owner: str, cards: list[Card]) -> None:
+        # Put `cards` back on top of `owner`'s deck, cards[0] ending up topmost.
+        deck = self.state.players[owner].deck
+        for card in reversed(cards):
+            deck.insert(0, card)
+
+    def _scry_to_bottom(self, owner: str, cards: list[Card]) -> None:
+        # Send `cards` to the bottom of `owner`'s deck and log the bury.
+        if not cards:
+            return
+        self.state.players[owner].deck.extend(cards)
+        self._log(
+            gl.Bury(
+                t=self.state.turn_no,
+                player=owner,
+                cards=[c.db_uuid for c in cards],
+                source="deck",
+            )
+        )
+
     def _act_choice(self, action: fx.Choice, key: str) -> None:
         # Pick exactly ONE branch of an "A or B" effect; the acting player decides
         # (a `choice` decision point), then that branch's actions resolve in order.
@@ -1540,6 +1636,17 @@ def _is_stop_card(card: Card) -> bool:
     return any(isinstance(a, fx.Stop) for eff in card.effects for a in eff.actions)
 
 
+def _scry_value(card: Card) -> int:
+    """Value a scried card by how much the actor wants it kept/drawn: a Finish (a win
+    condition) over a stop (defense) over a plain card. Mirrors the discard-recycle
+    read so scry keeps the deck's best on top / in hand."""
+    if card.play_order is PlayOrder.FINISH:
+        return 3
+    if _is_stop_card(card):
+        return 2
+    return 1
+
+
 def _is_unstoppable_by(attack: Card, stopper: Card) -> bool:
     """Whether ``attack`` declares itself ``Unstoppable`` against ``stopper`` — i.e. it
     carries an :class:`fx.Unstoppable` whose ``by_order`` is the stopper's play order
@@ -1599,5 +1706,6 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.RemoveFromPlay: Engine._act_remove_from_play,
     fx.PlayExtraCard: Engine._act_play_extra_card,
     fx.Peek: Engine._act_peek,
+    fx.Scry: Engine._act_scry,
     fx.Choice: Engine._act_choice,
 }

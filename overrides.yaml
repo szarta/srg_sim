@@ -3458,3 +3458,153 @@ b95f873118b944b0b07a8af9c8731752:
 # El Gato Shinobi (WC): identical — "When you roll Power for your turn roll: You
 # may re-roll your next turn roll."
 44a083f3214148959e40c125bb5eb7b2: *nextreroll
+
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — reveal-top-of-deck / SCRY family
+# (engine _act_scry, schema v11): look at/reveal top(+bottom) N of a deck, take
+# the best to hand, bury the worst (or an opponent's best = sabotage), return or
+# choose the rest. Actor = effect owner; picks are engine-side by card value.
+# ---------------------------------------------------------------------------
+
+# The Perfect Assistant (WC): "When your opponent stops your card: Reveal the top
+# 2 cards of your deck, add 1 to your hand and bury the other." Your card being
+# stopped = OnStop(dir=YOURS). reveal=true (public "Reveal"); take 1 best, bury 1.
+583629e3e0fe43c28fbdd39f40a61ff8:
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: YOURS
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    deck: SELF
+    top: 2
+    bottom: 0
+    reveal: true
+    to_hand: 1
+    bury: 1
+    rest: RETURN
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when your opponent stops your card: reveal the top 2 cards of your deck, add 1 to your hand and bury the other'
+  source: gimmick
+  optional: false
+
+# Split (WC): "When you roll Agility for your turn roll: Look at the top and bottom
+# card of your deck, add 1 to your hand and bury the other." OnRoll(Agility,SELF);
+# reveal=false ("Look at"); top=1 + bottom=1; take 1 best, bury 1.
+3f3f8b5b536443bb8552f182a2bf9fa0:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Agility
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    deck: SELF
+    top: 1
+    bottom: 1
+    reveal: false
+    to_hand: 1
+    bury: 1
+    rest: RETURN
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Agility for your turn roll: look at the top and bottom card of your deck, add 1 to your hand and bury the other'
+  source: gimmick
+  optional: false
+
+# Ricky Riot (V1) (Underworld): "When your turn roll is at least 3 less than your
+# opponent's turn roll: Look at the top 2 cards of your deck, add 1 to your hand,
+# put the other back on top or bury it." Same OnRoll(SELF)+RollGapAtLeast(3) as
+# Zero Win. reveal=false; take 1 best; rest=CHOOSE (return-on-top or bury the other).
+5cf0d256efd841b3b5c220e2487db443:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapAtLeast
+    k: 3
+  actions:
+  - '@type': Scry
+    deck: SELF
+    top: 2
+    bottom: 0
+    reveal: false
+    to_hand: 1
+    bury: 0
+    rest: CHOOSE
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when your turn roll is at least 3 less than your opponent''s turn roll: look at the top 2 cards of your deck, add 1 to your hand, put the other back on top or bury it'
+  source: gimmick
+  optional: false
+
+# The Oracle (WC): "Once per turn roll: When a player rolls Power, look at the top 3
+# cards of their deck, bury 1 and put the others back on top in any order." "A
+# player" = either roller -> TWO effects (SELF + OPP). On your own deck: bury your
+# worst. On the opponent's (deck=OPP): sabotage -> bury their best, return worst on
+# top. to_hand=0; reveal=false; ONCE_PER_TURN guard = "once per turn roll".
+c4a7dc18e187401ba7632cc682b14879:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    deck: SELF
+    top: 3
+    bottom: 0
+    reveal: false
+    to_hand: 0
+    bury: 1
+    rest: RETURN
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once per turn roll: when a player rolls Power, look at the top 3 cards of their deck, bury 1 and put the others back on top in any order'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: OPP
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    deck: OPP
+    top: 3
+    bottom: 0
+    reveal: false
+    to_hand: 0
+    bury: 1
+    rest: RETURN
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once per turn roll: when a player rolls Power, look at the top 3 cards of their deck, bury 1 and put the others back on top in any order (opponent roller)'
+  source: gimmick
+  optional: false
