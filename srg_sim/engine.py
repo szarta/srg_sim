@@ -1197,30 +1197,37 @@ class Engine:
         return next(c for c in cards if c.db_uuid == chosen["card"])
 
     def _act_search(self, action: fx.Search, key: str) -> None:
-        # Tutor: the searcher picks a matching deck card into hand, then shuffles
-        # the deck (you looked through it). "put it on top" tutors are modelled as
-        # into-hand — a close, stronger approximation. dest=DISCARD is a separate
+        # Tutor: the searcher picks a matching deck card, then shuffles the deck (you
+        # looked through it). dest=HAND puts it in hand; dest=DECK_TOP puts it back on
+        # TOP of the shuffled deck (Heartache Kid); dest=DISCARD is a separate
         # mill-to-discard line (Destiny's Call V2; DESIGN.md §3, #49).
         if action.dest is fx.Dest.DISCARD:
             self._search_to_discard(action, key)
             return
         player = self.state.players[key]
         matches = [c for c in player.deck if conditions.card_matches(c, action.filter)]
-        if matches:
-            card = self._pick_from(key, matches, "target")
+        card = self._pick_from(key, matches, "target") if matches else None
+        if card is not None:
             player.deck.remove(card)
-            player.hand.append(card)
+        # The picked card is out of the deck for the shuffle either way, so a HAND
+        # search shuffles identically to before (byte-for-byte parity).
+        self.state.rng.shuffle(player.deck)
+        if card is not None:
+            if action.dest is fx.Dest.DECK_TOP:
+                player.deck.insert(0, card)  # top of deck
+            else:
+                player.hand.append(card)
             self._log(
                 gl.Search(
                     t=self.state.turn_no,
                     player=key,
                     cards=[card.db_uuid],
                     source="deck",
-                    hidden=True,  # deck -> hand: both private, opponent sees only counts
+                    hidden=True,  # deck -> hand/deck: both private, opponent sees only counts
                 )
             )
-        self.state.rng.shuffle(player.deck)
-        self._hand_cap(key)
+        if action.dest is fx.Dest.HAND:
+            self._hand_cap(key)
 
     def _search_to_discard(self, action: fx.Search, key: str) -> None:
         # "Search your deck for up to N cards and put them into your discard pile."

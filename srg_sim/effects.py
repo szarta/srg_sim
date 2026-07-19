@@ -196,6 +196,8 @@ class LoseKind(Enum):
 class Dest(Enum):
     HAND = "HAND"
     DISCARD = "DISCARD"
+    # Put the searched card on TOP of the (shuffled) deck (Heartache Kid).
+    DECK_TOP = "DECK_TOP"
 
 
 class BuryFrom(Enum):

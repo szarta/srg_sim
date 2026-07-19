@@ -4731,3 +4731,43 @@ e515d26515954e709e0f81a86f5231cb:
   raw_clause: your opponent does not draw for your card effects
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #105): Search dest=DECK_TOP (schema v22) = search the deck for a
+# matching card, shuffle the deck, put the card on TOP. 49 DB cards do "search
+# your deck ... put it on top".
+# ---------------------------------------------------------------------------
+
+# Heartache Kid Mr. L.F.F. (World Championship): "When you roll Technique for
+# your turn roll, you may search your deck for a Strike and put it on top of
+# your shuffled deck." OnRoll(Technique), optional -> Search(Strike, DECK_TOP).
+8d1c80c7bbf34977ae298f810ac15af8:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Strike
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+    dest: DECK_TOP
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your turn roll, you may search your deck for a Strike and put it on top of your shuffled deck
+  source: gimmick
+  optional: true
