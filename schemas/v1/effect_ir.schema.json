@@ -526,6 +526,9 @@
                 "$ref": "#/$defs/RevealRoute"
               },
               {
+                "$ref": "#/$defs/ShuffleHandDraw"
+              },
+              {
                 "$ref": "#/$defs/ModifyRoll"
               },
               {
@@ -891,6 +894,9 @@
               },
               {
                 "$ref": "#/$defs/RevealRoute"
+              },
+              {
+                "$ref": "#/$defs/ShuffleHandDraw"
               },
               {
                 "$ref": "#/$defs/ModifyRoll"
@@ -1541,6 +1547,9 @@
         },
         {
           "$ref": "#/$defs/RevealRoute"
+        },
+        {
+          "$ref": "#/$defs/ShuffleHandDraw"
         },
         {
           "$ref": "#/$defs/PlayExtraCard"
@@ -2231,6 +2240,14 @@
       ],
       "type": "string"
     },
+    "RevealFrom": {
+      "enum": [
+        "TOP",
+        "BOTTOM",
+        "CHOOSE"
+      ],
+      "type": "string"
+    },
     "RevealRoute": {
       "additionalProperties": false,
       "properties": {
@@ -2246,6 +2263,12 @@
         "match_atk": {
           "$ref": "#/$defs/AtkType"
         },
+        "match_parity": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "on_fail": {
           "$ref": "#/$defs/RevealDest"
         },
@@ -2254,15 +2277,20 @@
         },
         "reveal": {
           "type": "boolean"
+        },
+        "reveal_from": {
+          "$ref": "#/$defs/RevealFrom"
         }
       },
       "required": [
         "@type",
         "deck",
-        "match_atk",
-        "on_match",
-        "on_fail",
         "fail_optional",
+        "reveal_from",
+        "match_atk",
+        "match_parity",
+        "on_fail",
+        "on_match",
         "reveal"
       ],
       "type": "object"
@@ -2517,6 +2545,30 @@
       ],
       "type": "object"
     },
+    "ShuffleHandDraw": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ShuffleHandDraw"
+        },
+        "choose": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "count",
+        "choose"
+      ],
+      "type": "object"
+    },
     "ShuffleIntoDeck": {
       "additionalProperties": false,
       "properties": {
@@ -2753,5 +2805,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 12
+  "version": 13
 }

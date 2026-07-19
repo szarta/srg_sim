@@ -3769,3 +3769,63 @@ ae2b1fde64e343da8848984231aa5c83:
   raw_clause: 'once per turn roll: when you roll Grapple, your opponent reveals the top card of their deck; if the move type matches the rolled skill, flip it, if not you may bury it'
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 competitor gimmicks (M-R3) — RevealRoute parity + ShuffleHandDraw.
+# Task #100 Phase 2b/2c.
+# ---------------------------------------------------------------------------
+
+# Smart Mark Sterling (Underworld): "During your turn roll: When you roll Technique:
+# Choose odd or even and reveal the top or bottom card of your deck; if it matches the
+# number parity, add it to your hand, if not, you may bury it." OnRoll(Technique,SELF);
+# RevealRoute parity predicate — reveal_from=CHOOSE (blind->top), match_parity=true
+# (guess even), match->HAND, fail->BURY (may). match_atk unused (None) in parity mode.
+a9091bdff29143e3a4352eb281739624:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': RevealRoute
+    deck: SELF
+    match_atk: "None"
+    on_match: HAND
+    on_fail: BURY
+    fail_optional: true
+    reveal: true
+    reveal_from: CHOOSE
+    match_parity: true
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'during your turn roll: when you roll Technique, choose odd or even and reveal the top or bottom card of your deck; if it matches the number parity, add it to your hand, if not you may bury it'
+  source: gimmick
+  optional: false
+
+# The Cyclone (V2) (WC): "When you bump, you may have either player shuffle their hand
+# into their deck and then add the top 4 cards of their deck to their hand." OnBump +
+# ShuffleHandDraw(count=4, choose=true=either player); optional=true = "you may".
+b69620138a614df0bea6b3bddcc2123d:
+- '@type': Effect
+  trigger:
+    '@type': OnBump
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleHandDraw
+    who: SELF
+    count: 4
+    choose: true
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'when you bump, you may have either player shuffle their hand into their deck and then add the top 4 cards of their deck to their hand'
+  source: gimmick
+  optional: true

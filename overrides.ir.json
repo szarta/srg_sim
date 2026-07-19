@@ -3501,6 +3501,41 @@
       }
     }
   ],
+  "a9091bdff29143e3a4352eb281739624": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealRoute",
+          "deck": "SELF",
+          "fail_optional": true,
+          "match_atk": "None",
+          "match_parity": true,
+          "on_fail": "BURY",
+          "on_match": "HAND",
+          "reveal": true,
+          "reveal_from": "CHOOSE"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "during your turn roll: when you roll Technique, choose odd or even and reveal the top or bottom card of your deck; if it matches the number parity, add it to your hand, if not you may bury it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
+        "who": "SELF"
+      }
+    }
+  ],
   "ae2b1fde64e343da8848984231aa5c83": [
     {
       "@type": "Effect",
@@ -3510,9 +3545,11 @@
           "deck": "OPP",
           "fail_optional": true,
           "match_atk": "Strike",
+          "match_parity": null,
           "on_fail": "BURY",
           "on_match": "FLIP",
-          "reveal": true
+          "reveal": true,
+          "reveal_from": "TOP"
         }
       ],
       "condition": {
@@ -3541,9 +3578,11 @@
           "deck": "OPP",
           "fail_optional": true,
           "match_atk": "Submission",
+          "match_parity": null,
           "on_fail": "BURY",
           "on_match": "FLIP",
-          "reveal": true
+          "reveal": true,
+          "reveal_from": "TOP"
         }
       ],
       "condition": {
@@ -3572,9 +3611,11 @@
           "deck": "OPP",
           "fail_optional": true,
           "match_atk": "Grapple",
+          "match_parity": null,
           "on_fail": "BURY",
           "on_match": "FLIP",
-          "reveal": true
+          "reveal": true,
+          "reveal_from": "TOP"
         }
       ],
       "condition": {
@@ -3942,6 +3983,34 @@
         "text_contains": [
           "Disqualification"
         ]
+      }
+    }
+  ],
+  "b69620138a614df0bea6b3bddcc2123d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleHandDraw",
+          "choose": true,
+          "count": 4,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "when you bump, you may have either player shuffle their hand into their deck and then add the top 4 cards of their deck to their hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnBump"
       }
     }
   ],
@@ -4715,9 +4784,11 @@
           "deck": "SELF",
           "fail_optional": true,
           "match_atk": "Strike",
+          "match_parity": null,
           "on_fail": "FLIP",
           "on_match": "HAND",
-          "reveal": true
+          "reveal": true,
+          "reveal_from": "TOP"
         }
       ],
       "condition": {
@@ -4746,9 +4817,11 @@
           "deck": "SELF",
           "fail_optional": true,
           "match_atk": "Submission",
+          "match_parity": null,
           "on_fail": "FLIP",
           "on_match": "HAND",
-          "reveal": true
+          "reveal": true,
+          "reveal_from": "TOP"
         }
       ],
       "condition": {
@@ -4777,9 +4850,11 @@
           "deck": "SELF",
           "fail_optional": true,
           "match_atk": "Grapple",
+          "match_parity": null,
           "on_fail": "FLIP",
           "on_match": "HAND",
-          "reveal": true
+          "reveal": true,
+          "reveal_from": "TOP"
         }
       ],
       "condition": {

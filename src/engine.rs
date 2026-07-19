@@ -19,8 +19,8 @@ use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction,
-    DqScope, Duration, Effect, LoseKind, PlayOrder, RevealDest, RollWhen, ScryRest, Skill, Trigger,
-    Who,
+    DqScope, Duration, Effect, LoseKind, PlayOrder, RevealDest, RevealFrom, RollWhen, ScryRest,
+    Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -845,6 +845,8 @@ impl Engine {
                 on_fail,
                 fail_optional,
                 reveal,
+                reveal_from,
+                match_parity,
             } => self.act_reveal_route(
                 *deck,
                 *match_atk,
@@ -852,8 +854,13 @@ impl Engine {
                 *on_fail,
                 *fail_optional,
                 *reveal,
+                *reveal_from,
+                *match_parity,
                 key,
             )?,
+            Action::ShuffleHandDraw { who, count, choose } => {
+                self.act_shuffle_hand_draw(*who, *count, *choose, key)?
+            }
             Action::ModifyRoll {
                 who,
                 delta,
@@ -1610,6 +1617,8 @@ impl Engine {
         on_fail: RevealDest,
         fail_optional: bool,
         reveal: bool,
+        reveal_from: RevealFrom,
+        match_parity: Option<bool>,
         key: &str,
     ) -> Eng<()> {
         let owner = self.target(deck, key);
@@ -1619,9 +1628,17 @@ impl Engine {
             if d.is_empty() {
                 return Ok(());
             }
-            d.remove(0) // top of the deck
+            // `Choose` (top or bottom) is a blind pick — resolve it to the top.
+            match reveal_from {
+                RevealFrom::Bottom => d.pop().unwrap(),
+                _ => d.remove(0),
+            }
         };
-        let matched = card.atk_type == match_atk;
+        // Parity predicate (Smart Mark's odd/even guess) overrides the atk_type one.
+        let matched = match match_parity {
+            Some(even) => (card.number % 2 == 0) == even,
+            None => card.atk_type == match_atk,
+        };
         self.log_effect(
             key,
             "RevealRoute",
@@ -1690,6 +1707,51 @@ impl Engine {
             RevealDest::Leave => player.deck.insert(0, card), // back on top
         }
         Ok(())
+    }
+
+    /// Shuffle a player's hand back into their deck, shuffle, then draw `count` — a
+    /// mid-match hand refresh (Cyclone V2, on a bump). `choose` lets the actor pick
+    /// which player ("either player"); the default policy picks itself.
+    fn act_shuffle_hand_draw(&mut self, who: Who, count: i64, choose: bool, key: &str) -> Eng<()> {
+        let target = if choose {
+            self.decide_reshuffle_target(key)?
+        } else {
+            self.target(who, key)
+        };
+        let hand: Vec<Card> =
+            std::mem::take(&mut self.state.players.get_mut(&target).unwrap().hand);
+        if !hand.is_empty() {
+            let uuids: Vec<String> = hand.iter().map(|c| c.db_uuid.clone()).collect();
+            let t = self.state.turn_no;
+            self.state
+                .players
+                .get_mut(&target)
+                .unwrap()
+                .deck
+                .extend(hand);
+            self.log(Event::Bury(CardMovement {
+                t,
+                player: target.clone(),
+                cards: uuids,
+                source: Some("hand".to_owned()),
+                hidden: false,
+            }));
+        }
+        let deck = &mut self.state.players.get_mut(&target).unwrap().deck;
+        self.state.rng.shuffle(deck);
+        self.draw(&target, count.max(0) as usize, DeckEnd::Top)
+    }
+
+    /// "Either player" pick for [`Self::act_shuffle_hand_draw`] — the actor chooses
+    /// itself or its opponent; the default policy takes the first (itself).
+    fn decide_reshuffle_target(&mut self, key: &str) -> Eng<String> {
+        let opp = self.state.opponent_of(key);
+        let legal = vec![
+            json!({"kind": "seat", "seat": key}),
+            json!({"kind": "seat", "seat": opp}),
+        ];
+        let chosen = self.decide("reshuffle_target", key, legal)?;
+        Ok(chosen["seat"].as_str().unwrap().to_owned())
     }
 
     fn act_choice(&mut self, options: &[ChoiceOption], key: &str) -> Eng<()> {
@@ -3078,6 +3140,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::Peek { .. } => "Peek",
         Action::Scry { .. } => "Scry",
         Action::RevealRoute { .. } => "RevealRoute",
+        Action::ShuffleHandDraw { .. } => "ShuffleHandDraw",
         Action::ModifyRoll { .. } => "ModifyRoll",
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",

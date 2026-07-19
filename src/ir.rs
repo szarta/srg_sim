@@ -243,6 +243,18 @@ pub enum RevealDest {
     Bury,
 }
 
+/// Which end of the deck a [`Action::RevealRoute`] reveals from. `Choose` is the
+/// actor's pick ("the top or bottom card") — resolved blind to the top, since the
+/// card is not yet known.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RevealFrom {
+    #[default]
+    Top,
+    Bottom,
+    Choose,
+}
+
 /// Direction of a stop relative to the acting player.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -592,6 +604,23 @@ pub enum Action {
         fail_optional: bool,
         #[serde(default)]
         reveal: bool,
+        #[serde(default)]
+        reveal_from: RevealFrom,
+        /// When set, the predicate is a number-parity match instead of `atk_type`:
+        /// `Some(true)` = the revealed card matches iff its number is even,
+        /// `Some(false)` iff odd (the actor's blind odd/even guess — Smart Mark
+        /// Sterling). `None` keeps the `atk_type == match_atk` predicate.
+        #[serde(default)]
+        match_parity: Option<bool>,
+    },
+    /// Shuffle a player's hand back into their deck, shuffle it, then draw `count`
+    /// fresh cards — a mid-match hand refresh (Cyclone V2, on a bump). `choose`
+    /// lets the actor pick which player ("either player"); otherwise `who` selects.
+    ShuffleHandDraw {
+        who: Who,
+        count: i64,
+        #[serde(default)]
+        choose: bool,
     },
     ModifyRoll {
         who: Who,
@@ -974,6 +1003,23 @@ pub enum IrNode {
         fail_optional: bool,
         #[serde(default)]
         reveal: bool,
+        #[serde(default)]
+        reveal_from: RevealFrom,
+        /// When set, the predicate is a number-parity match instead of `atk_type`:
+        /// `Some(true)` = the revealed card matches iff its number is even,
+        /// `Some(false)` iff odd (the actor's blind odd/even guess — Smart Mark
+        /// Sterling). `None` keeps the `atk_type == match_atk` predicate.
+        #[serde(default)]
+        match_parity: Option<bool>,
+    },
+    /// Shuffle a player's hand back into their deck, shuffle it, then draw `count`
+    /// fresh cards — a mid-match hand refresh (Cyclone V2, on a bump). `choose`
+    /// lets the actor pick which player ("either player"); otherwise `who` selects.
+    ShuffleHandDraw {
+        who: Who,
+        count: i64,
+        #[serde(default)]
+        choose: bool,
     },
     ModifyRoll {
         who: Who,

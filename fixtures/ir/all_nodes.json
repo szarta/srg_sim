@@ -372,9 +372,17 @@
     "deck": "OPP",
     "fail_optional": true,
     "match_atk": "Strike",
+    "match_parity": null,
     "on_fail": "BURY",
     "on_match": "FLIP",
-    "reveal": true
+    "reveal": true,
+    "reveal_from": "TOP"
+  },
+  {
+    "@type": "ShuffleHandDraw",
+    "choose": true,
+    "count": 4,
+    "who": "SELF"
   },
   {
     "@type": "PlayExtraCard",
