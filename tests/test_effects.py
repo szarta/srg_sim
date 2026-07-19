@@ -73,6 +73,7 @@ from srg_sim.effects import (
     RecurToDeckTop,
     RemoveFromPlay,
     Reroll,
+    SwitchRolledSkill,
     RevealAndDiscard,
     RevealDest,
     RevealFrom,
@@ -188,6 +189,7 @@ SAMPLES: list[IRNode] = [
     BuffSkill(Skill.GRAPPLE, 0, Who.SELF, target_highest=True, per_crowd=True, cap=5),
     MaxHandSize(-1, Who.OPP),
     Reroll(Who.OPP, once=False),
+    SwitchRolledSkill(from_skill=Skill.TECHNIQUE, to=Skill.POWER),  # Scott Prime
     WinTie(Who.SELF),
     Bump(Who.OPP),
     ElectBumpOnSameSkill(uses=2),  # Ringside Ruckus entrance: elective same-skill bump

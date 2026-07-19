@@ -280,6 +280,9 @@ class Engine:
         self._promote_pending()  # last turn's `when=NEXT` mods become THIS roll's (#50)
         sa, va = self._roll_for("A", use_pending=True)
         sb, vb = self._roll_for("B", use_pending=True)
+        # Switch-rolled-skill (Scott Prime): "you may switch the rolled skill to Power"
+        # — offered before boosts/mods so they land on the switched skill.
+        sa, va, sb, vb = self._offer_switches(sa, va, sb, vb)
         # In-roll boosts (Soborno): after the skill is known, before the winner is
         # decided, a player may pay a cost for +delta to THIS roll — so it can flip
         # the outcome or break a tie. A no-op for competitors without such a gimmick.
@@ -331,6 +334,7 @@ class Engine:
         self._run_on_bump()  # bump-punish gimmicks (Mastermind: opp next roll -2)
         sa, va = self._roll_for("A", use_pending=False)
         sb, vb = self._roll_for("B", use_pending=False)
+        sa, va, sb, vb = self._offer_switches(sa, va, sb, vb)  # a bump re-roll is a turn roll too
         va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # debuff re-rolls too
         sa, va, sb, vb = self._offer_rerolls(sa, va, sb, vb)  # re-roll offered post-bump too
         return sa, va, sb, vb, bumps
@@ -356,6 +360,47 @@ class Engine:
                 self._log_effect(owner, "Reroll", target, {"skill": skill.value, "value": value})
                 vals[target] = (skill, value)
         return vals["A"][0], vals["A"][1], vals["B"][0], vals["B"][1]
+
+    def _offer_switches(self, sa: Skill, va: int, sb: Skill, vb: int) -> tuple[Skill, int, Skill, int]:
+        """Offer each side its "switch the rolled skill" option (Scott Prime). A taken
+        switch replaces that side's rolled (skill, value) — the die keeps its roll mods
+        (value recomputed on the new skill's stat). Offered at every turn-roll point
+        (initial roll + each bump re-roll), mirroring ``_offer_rerolls``."""
+        vals = {"A": (sa, va), "B": (sb, vb)}
+        for owner in ("A", "B"):
+            skill, value = vals[owner]
+            switched = self._offer_switch(owner, skill, value)
+            if switched is not None:
+                vals[owner] = switched
+        return vals["A"][0], vals["A"][1], vals["B"][0], vals["B"][1]
+
+    def _offer_switch(self, owner: str, skill: Skill, value: int) -> tuple[Skill, int] | None:
+        """``owner``'s turn-roll switch: if a standing ``SwitchRolledSkill`` fires for the
+        rolled ``skill``, recompute the value on the new skill (``value`` minus the old
+        skill's stat plus the new one's, preserving roll mods) and log it."""
+        to = self._find_switch(owner, skill)
+        if to is None:
+            return None
+        nv = value - self._stat(owner, skill) + self._stat(owner, to)
+        self._log_effect(owner, "SwitchRolledSkill", owner, {"from": skill.value, "to": to.value, "value": nv})
+        return to, nv
+
+    def _find_switch(self, owner: str, skill: Skill) -> Skill | None:
+        """The first standing ``SwitchRolledSkill`` effect whose ``from_skill`` matches the
+        rolled ``skill``, whose gate holds, and whose optional offer is taken; returns its
+        ``to`` skill, or ``None``. Shared by the turn roll-off and the Finish roll."""
+        for eff in self._standing_effects(owner):
+            switch = next((a for a in eff.actions if isinstance(a, fx.SwitchRolledSkill)), None)
+            if switch is None or switch.from_skill is not skill:
+                continue
+            ctx = conditions.RollContext(skill=skill, gap=None, value=self._stat(owner, skill))
+            if not (self._may_fire(eff, owner) and conditions.holds(eff.condition, self.state, owner, ctx)):
+                continue
+            if eff.optional and not self._take_optional(eff, owner):
+                continue  # declined "you may switch"
+            self._mark_fired(eff, owner)
+            return switch.to
+        return None
 
     def _offer_reroll(
         self, owner: str, own_ctx: conditions.RollContext, opp_ctx: conditions.RollContext
@@ -810,6 +855,12 @@ class Engine:
 
     def _finish_sequence(self, finisher: str, defender: str, card: Card) -> None:
         skill = self.state.rng.roll()
+        # Switch-rolled-skill also applies to the Finish roll (Scott Prime): switch
+        # before base/combo are computed so they recompute from the new skill.
+        to = self._find_switch(finisher, skill)
+        if to is not None:
+            self._log_effect(finisher, "SwitchRolledSkill", finisher, {"from": skill.value, "to": to.value, "roll": "finish"})
+            skill = to
         base = self._stat(finisher, skill)
         # The whole in-play combo pays off: sum every card's printed bonus for the
         # rolled skill, plus any flat "+N to your Finish rolls" (DESIGN.md §5). A card
@@ -1778,6 +1829,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
     fx.ElectBumpOnSameSkill: Engine._act_noop,  # Static, read in the roll-off; never executed
+    fx.SwitchRolledSkill: Engine._act_noop,  # Static, read in both roll paths; never executed
     fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed

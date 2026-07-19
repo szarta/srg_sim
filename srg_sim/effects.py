@@ -818,6 +818,22 @@ class Reroll(IRNode):
 
 
 @dataclass(frozen=True)
+class SwitchRolledSkill(IRNode):
+    """"When you roll ``from_skill`` for your turn roll or Finish roll, you may switch
+    it to ``to``" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn
+    roll-off and the Finish roll), a no-op in ``_ACTIONS``; fires when the rolled
+    skill == ``from_skill``. The "you may" lives on the ``Effect.optional`` flag. A
+    switched turn die keeps its roll mods (value recomputed on ``to``'s stat); a
+    switched Finish die recomputes base + combo from ``to``.
+
+    The field is ``from_skill`` (not ``from``) because ``from`` is a Python keyword
+    and ``to_dict`` emits field names verbatim — same rename as ``reveal_from``."""
+
+    from_skill: Skill
+    to: Skill
+
+
+@dataclass(frozen=True)
 class WinTie(IRNode):
     who: Who
 
@@ -1147,6 +1163,7 @@ Action = (
     | BuffSkill
     | MaxHandSize
     | Reroll
+    | SwitchRolledSkill
     | WinTie
     | Bump
     | ElectBumpOnSameSkill
