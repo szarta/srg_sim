@@ -1432,26 +1432,29 @@ class Engine:
             )
 
     def _act_reveal_for_draw(self, action: fx.RevealForDraw, key: str) -> None:
-        # "Your opponent randomly reveals `count` in their hand: if it is a stop, draw
-        # `draw`" (Bartholomew Hooke). Reveals stay in hand; the actor draws for each
-        # revealed stop.
+        # "Your opponent randomly reveals `count` in their hand: draw `draw` for each
+        # matched card" — a Stop (Bartholomew Hooke) or one whose move type equals the
+        # actor's just-rolled skill (The Winning Ticket). Reveals stay in hand. The
+        # rolled skill is populated by `_record_roll_ctx` before `OnRoll` fires.
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        ctx = self._roll_ctx.get(key)
+        rolled = ctx.skill if ctx is not None else None
         pool = list(self.state.players[target].hand)
         revealed: list[Card] = []
         for _ in range(min(action.count, len(pool))):
             card = self.state.rng.reveal(pool)
             pool.remove(card)
             revealed.append(card)
-        stops = sum(1 for c in revealed if _is_stop_card(c))
+        hits = sum(1 for c in revealed if _reveal_matches(c, action.match_on, rolled))
         if revealed:
             self._log_effect(
                 key,
                 "RevealForDraw",
                 target,
-                {"revealed": [c.db_uuid for c in revealed], "stops": stops},
+                {"revealed": [c.db_uuid for c in revealed], "hits": hits},
             )
-        if stops > 0:
-            self._draw(key, stops * action.draw, fx.DeckEnd.TOP)
+        if hits > 0:
+            self._draw(key, hits * action.draw, fx.DeckEnd.TOP)
 
     def _act_crowd(self, action: fx.CrowdMeter, key: str) -> None:
         self.state.crowd_meter += action.delta
@@ -1898,6 +1901,22 @@ def _is_stop_card(card: Card) -> bool:
     """Whether ``card`` can act as a Stop — carries at least one ``Stop`` action (its
     online condition is not checked; a revealed Stop is discarded regardless)."""
     return any(isinstance(a, fx.Stop) for eff in card.effects for a in eff.actions)
+
+
+def _reveal_matches(card: Card, match_on: fx.RevealMatch, rolled: Skill | None) -> bool:
+    """Whether a card revealed by :meth:`_act_reveal_for_draw` counts toward the draw:
+    a Stop (``STOP``), or one whose move type equals the actor's rolled skill
+    (``ROLLED_SKILL``; no match when the actor did not roll a move skill)."""
+    if match_on is fx.RevealMatch.STOP:
+        return _is_stop_card(card)
+    return rolled is not None and _atk_type_matches_skill(card.atk_type, rolled)
+
+
+def _atk_type_matches_skill(atk: AtkType, skill: Skill) -> bool:
+    """True iff a card's attack (move) type is the same move as ``skill`` — one of
+    Strike/Grapple/Submission and matching. ``AtkType.NONE`` and the non-move skills
+    (Power/Agility/Technique) never match."""
+    return atk is not AtkType.NONE and atk.value == skill.value
 
 
 def _scry_value(card: Card) -> int:

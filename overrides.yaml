@@ -4797,11 +4797,75 @@ a01036ebb5bf49e382f6c9668fd04cc7:
     who: OPP
     count: 1
     draw: 2
+    match_on: STOP
   duration: INSTANT
   frequency:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
   raw_clause: 'when you hit a card, your opponent randomly reveals a card in their hand: if it is a stop, draw 2 cards'
+  source: gimmick
+  optional: false
+
+# ---------------------------------------------------------------------------
+# The Winning Ticket (World Championship): "When you roll Strike, Submission, or
+# Grapple for your turn roll, your opponent randomly reveals 1 card in their
+# hand; if the move type of the card revealed is the same as the skill you
+# rolled, draw 1." Three OnRoll(SELF) effects (one per move skill) share one
+# RevealForDraw(match_on=ROLLED_SKILL) — the action reads the just-rolled skill
+# from the roll context, so a reveal only draws when its move type matches.
+# ---------------------------------------------------------------------------
+f4a3aea48e544fac9e4edf24b5d07235:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Strike
+    who: SELF
+  condition:
+    '@type': Always
+  actions: &winning_ticket_reveal
+  - '@type': RevealForDraw
+    who: OPP
+    count: 1
+    draw: 1
+    match_on: ROLLED_SKILL
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Strike for your turn roll, your opponent randomly reveals 1 card in their hand; if its move type is Strike, draw 1
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Submission
+    who: SELF
+  condition:
+    '@type': Always
+  actions: *winning_ticket_reveal
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Submission for your turn roll, your opponent randomly reveals 1 card in their hand; if its move type is Submission, draw 1
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Grapple
+    who: SELF
+  condition:
+    '@type': Always
+  actions: *winning_ticket_reveal
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Grapple for your turn roll, your opponent randomly reveals 1 card in their hand; if its move type is Grapple, draw 1
   source: gimmick
   optional: false

@@ -225,6 +225,30 @@ def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
     assert len(eng.state.players["A"].hand) == a2
 
 
+def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
+    # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
+    # the skill you just rolled, draw 1. The rolled skill comes from the roll context.
+    from srg_sim.conditions import RollContext
+
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng._roll_ctx["A"] = RollContext(skill=Skill.STRIKE, gap=0, value=10)
+    strike = Card(db_uuid="s", name="S", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    grapple = Card(db_uuid="g", name="G", number=2, atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD)
+    action = fx.RevealForDraw(who=fx.Who.OPP, count=1, draw=1, match_on=fx.RevealMatch.ROLLED_SKILL)
+    # Rolled Strike, revealed a Strike -> draw 1; the reveal does not remove the card.
+    eng.state.players["B"].hand = [strike]
+    before = len(eng.state.players["A"].hand)
+    eng._act_reveal_for_draw(action, "A")
+    assert len(eng.state.players["A"].hand) == before + 1
+    assert strike in eng.state.players["B"].hand
+    # Rolled Strike, revealed a Grapple -> no draw (move type differs).
+    eng.state.players["B"].hand = [grapple]
+    a2 = len(eng.state.players["A"].hand)
+    eng._act_reveal_for_draw(action, "A")
+    assert len(eng.state.players["A"].hand) == a2
+
+
 def test_return_to_hand_bounces_to_the_owners_hand() -> None:
     # Fox Assassin V2: "add 1 card any player has in play to their hand" — a bounced
     # card returns to its OWNER's hand, from either board when choose=True.

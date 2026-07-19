@@ -235,6 +235,15 @@ class CompareDomain(Enum):
     HAND = "HAND"
 
 
+class RevealMatch(Enum):
+    """Which revealed cards count toward the draw in :class:`RevealForDraw` —
+    ``STOP`` each revealed Stop (Bartholomew Hooke); ``ROLLED_SKILL`` each whose
+    move type equals the actor's just-rolled skill (The Winning Ticket)."""
+
+    STOP = "STOP"
+    ROLLED_SKILL = "ROLLED_SKILL"
+
+
 class CompareOrder(Enum):
     """How :class:`ConsideredCompare` resolves the subject vs the opponent —
     ``GREATER`` = always considered higher/more (RaRa Perre); ``LESS`` = always
@@ -992,13 +1001,15 @@ class RevealAndDiscard(IRNode):
 
 @dataclass(frozen=True)
 class RevealForDraw(IRNode):
-    """"Your opponent randomly reveals ``count`` card(s) in their hand: if it is a
-    stop, draw ``draw`` cards" (Bartholomew Hooke). Reveals stay in hand; the actor
-    draws ``draw`` for each revealed stop."""
+    """"Your opponent randomly reveals ``count`` card(s) in their hand: draw ``draw``
+    for each revealed card matched by ``match_on`` — a Stop (Bartholomew Hooke), or a
+    card whose move type equals the actor's just-rolled skill (The Winning Ticket).
+    Reveals stay in hand."""
 
     who: Who = Who.OPP
     count: int = 1
     draw: int = 2
+    match_on: RevealMatch = RevealMatch.STOP
 
 
 @dataclass(frozen=True)
