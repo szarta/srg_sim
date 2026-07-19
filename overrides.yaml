@@ -4990,3 +4990,40 @@ bb3bee34d3df4e1384ba7c77b2a826f3:
   raw_clause: Your cards with "Death", "Dive", or "Chair" in the name have the added text "Draw 2 cards."
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Spotlight family (main-deck). The DB `spotlight: true` flag is folded into a
+# synthetic "Spotlight" tag at load time (loader card_tags / _card_tags), so
+# these match via the ordinary CardFilter{tag: Spotlight} predicate — no IR change.
+# ---------------------------------------------------------------------------
+
+# I Was Made for the Spotlight (Lead Strike): "Search your deck for a Spotlight
+# card and add it to your hand." OnPlay -> Search(tag=Spotlight) to hand.
+e21a54a0092849c8bc7fc633214b73b8:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+    dest: HAND
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Search your deck for a Spotlight card and add it to your hand.
+  source: card
+  optional: false

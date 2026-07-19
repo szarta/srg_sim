@@ -201,10 +201,24 @@ fn build_card(rec: &Value) -> Result<Card> {
         atk_type: atk_type(str_field(rec, "atk_type")),
         play_order: play_order(str_field(rec, "play_order")),
         finish_bonuses: BTreeMap::new(),
-        tags: string_list(rec, "tags"),
+        tags: card_tags(rec),
         raw_text: rules_text(rec).to_owned(),
         effects: Vec::new(),
     })
+}
+
+/// A card's tags, with the DB `spotlight: true` flag folded in as a synthetic
+/// `"Spotlight"` tag so gimmicks that reference "a Spotlight" match it through the
+/// ordinary `CardFilter { tag }` predicate — no Effect-IR change. Entrances get the
+/// same treatment (a later phase).
+fn card_tags(rec: &Value) -> Vec<String> {
+    let mut tags = string_list(rec, "tags");
+    if rec.get("spotlight").and_then(Value::as_bool) == Some(true)
+        && !tags.iter().any(|t| t == "Spotlight")
+    {
+        tags.push("Spotlight".to_owned());
+    }
+    tags
 }
 
 fn build_competitor(rec: &Value) -> Result<Competitor> {
@@ -356,6 +370,8 @@ mod tests {
    atk_type: Strike, play_order: Lead, tags: [combo], rules_text: "Your opponent cannot Follow Up."}
 - {card_type: MainDeckCard, db_uuid: M-2a, name: Dupe, deck_card_number: 2, atk_type: Grapple, play_order: Followup}
 - {card_type: MainDeckCard, db_uuid: M-2b, name: Dupe, deck_card_number: 2, atk_type: Grapple, play_order: Followup}
+- {card_type: MainDeckCard, db_uuid: M-3, name: Spot Lead, deck_card_number: 3,
+   atk_type: Submission, play_order: Lead, spotlight: true}
 - {card_type: SpectacleCard, db_uuid: S-1, name: Ignore Me}
 "#;
 
@@ -378,6 +394,22 @@ mod tests {
         assert_eq!(card.tags, vec!["combo".to_owned()]);
         assert_eq!(card.raw_text, "Your opponent cannot Follow Up.");
         assert!(card.effects.is_empty(), "loader leaves IR to the parser");
+    }
+
+    #[test]
+    fn spotlight_flag_folds_into_a_synthetic_tag() {
+        let idx = index();
+        let card = idx
+            .main_card(&Value::String("Spot Lead".into()))
+            .expect("resolve by name");
+        assert!(
+            card.tags.contains(&"Spotlight".to_owned()),
+            "got {:?}",
+            card.tags
+        );
+        // A non-spotlight card gets no synthetic tag.
+        let plain = idx.main_card(&Value::String("Lead Strike".into())).unwrap();
+        assert!(!plain.tags.contains(&"Spotlight".to_owned()));
     }
 
     #[test]
