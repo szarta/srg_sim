@@ -27,6 +27,7 @@ from srg_sim.cards import Card, Competitor, EntranceCard, Skill
 from srg_sim.effects import (
     Always,
     BlankGimmick,
+    BlankText,
     BuffSkill,
     CardFilter,
     Condition,
@@ -205,6 +206,26 @@ class GameState:
                             return True
         finally:
             guard.discard(key)
+        return False
+
+    def is_text_blanked(self, card: Card, owner: str) -> bool:
+        """Whether ``card`` (owned by ``owner``) has its printed text blanked — some
+        player has an active Static ``BlankText`` (on an entrance or in-play card)
+        whose ``who`` targets ``owner`` and whose ``selector`` matches the card ("Your
+        opponent's Spotlights are blank"). A blanked card fires none of its own
+        effects and cannot stop."""
+        for decl_owner, player in self.players.items():
+            for effects in (player.entrance.effects, *(c.effects for c in player.in_play)):
+                for eff in effects:
+                    hit = any(
+                        isinstance(a, BlankText)
+                        and (decl_owner if a.who is Who.SELF else self.opponent_of(decl_owner))
+                        == owner
+                        and conditions.card_matches(card, a.selector)
+                        for a in eff.actions
+                    )
+                    if hit and conditions.holds(eff.condition, self, decl_owner):
+                        return True
         return False
 
     def effective_stats(self, key: str, holds: ConditionHolds | None = None) -> dict[str, int]:

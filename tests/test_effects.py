@@ -111,7 +111,6 @@ from srg_sim.effects import (
     StopRequiresTag,
     Unstoppable,
     Unsupported,
-    Until,
     Vs,
     Who,
     WinTie,
@@ -219,7 +218,7 @@ SAMPLES: list[IRNode] = [
     BlankGimmick(Who.OPP),
     FlipGimmick(Who.SELF),
     FlipGimmickSigns(Who.OPP),
-    BlankText(CardFilter(name="Gimmick"), Until.END_OF_TURN),
+    BlankText(CardFilter(tag="Spotlight"), Who.OPP),
     LoseBy(LoseKind.PINFALL, Who.SELF),
     DisqualificationRule(enabled=False, scope=DqScope.MATCH),
     ConsideredCompare(domain=CompareDomain.SKILL, order=CompareOrder.GREATER),  # RaRa Perre

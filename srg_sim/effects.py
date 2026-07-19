@@ -284,10 +284,6 @@ class RevealFrom(Enum):
     CHOOSE = "CHOOSE"
 
 
-class Until(Enum):
-    END_OF_TURN = "END_OF_TURN"
-
-
 class EffectSource(Enum):
     CARD = "card"
     GIMMICK = "gimmick"
@@ -1055,8 +1051,13 @@ class FlipGimmick(IRNode):
 
 @dataclass(frozen=True)
 class BlankText(IRNode):
+    """A Static declaration: ``who``'s cards matching ``selector`` have their printed
+    text blanked while the source stays in play — "Your opponent's Spotlights are
+    blank." Read via ``GameState.is_text_blanked``; a blanked card fires none of its
+    own effects and cannot stop. Never executed as a mutation."""
+
     selector: CardFilter = CardFilter()
-    until: Until = Until.END_OF_TURN
+    who: Who = Who.OPP
 
 
 @dataclass(frozen=True)

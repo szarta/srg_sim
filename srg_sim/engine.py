@@ -738,8 +738,12 @@ class Engine:
             return False
         # The card's own effects plus any "added text" its owner's active gimmick
         # grants to cards of this name (El Super Santa / Sabu). Injected effects carry
-        # their own triggers (OnPlay/OnHit) and dispatch identically.
-        effects = list(card.effects) + self._injected_text(active, card)
+        # their own triggers (OnPlay/OnHit) and dispatch identically. A text-blanked
+        # card (opponent's "your Spotlights are blank") fires nothing.
+        if self.state.is_text_blanked(card, active):
+            effects: list[fx.Effect] = []
+        else:
+            effects = list(card.effects) + self._injected_text(active, card)
         self._run_effects(effects, fx.OnPlay, active)
         if self._ended():
             return False
@@ -832,6 +836,8 @@ class Engine:
         """
         if _is_unstoppable_by(attack, stopper):
             return False
+        if self.state.is_text_blanked(stopper, defender):
+            return False  # a text-blanked stop card cannot stop
         return any(
             conditions.holds(eff.condition, self.state, defender)
             and _attacker_meets_tag_gates(eff, attack)
@@ -2016,6 +2022,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.SwitchRolledSkill: Engine._act_noop,  # Static, read in both roll paths; never executed
     fx.AddText: Engine._act_noop,  # Static, read via _injected_text at play time; never executed
     fx.StopRequiresTag: Engine._act_noop,  # marker, read via _card_can_stop; never executed
+    fx.BlankText: Engine._act_noop,  # Static, read via is_text_blanked; never executed
     fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed

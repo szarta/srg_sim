@@ -225,6 +225,48 @@ def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
     assert len(eng.state.players["A"].hand) == a2
 
 
+def test_blank_text_blanks_opponent_spotlights() -> None:
+    # "Your opponent's Spotlights are blank": while A holds the declaring card in play,
+    # B's Spotlight cards fire no effects and cannot stop.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    blanker = Card(
+        db_uuid="bk", name="Blanker", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD,
+        effects=(
+            fx.Effect(
+                trigger=fx.Static(),
+                actions=(fx.BlankText(selector=fx.CardFilter(tag="Spotlight"), who=fx.Who.OPP),),
+            ),
+        ),
+    )
+    eng.state.players["A"].in_play = [blanker]
+    spot_draw = Card(
+        db_uuid="sd", name="Spot", number=2, atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD,
+        tags=("Spotlight",),
+        effects=(fx.Effect(trigger=fx.OnPlay(), actions=(fx.Draw(n=2),)),),
+    )
+    # B owns the spotlight card -> blanked from A's declaration.
+    assert eng.state.is_text_blanked(spot_draw, "B")
+    plain = Card(db_uuid="pl", name="Plain", number=2, atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD)
+    assert not eng.state.is_text_blanked(plain, "B")
+    # A's OWN spotlight card is not blanked (the declaration targets the opponent).
+    assert not eng.state.is_text_blanked(spot_draw, "A")
+    # Playing the blanked card fires none of its text (no Draw 2).
+    eng.state.players["A"].hand = []  # A won't stop B
+    before = len(eng.state.players["B"].hand)
+    eng._resolve_play("B", "A", spot_draw)
+    assert len(eng.state.players["B"].hand) == before  # OnPlay Draw was blanked
+    # A blanked Spotlight stop card cannot stop.
+    spot_stop = Card(
+        db_uuid="sst", name="SpotStop", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD,
+        tags=("Spotlight",),
+        effects=(fx.Effect(trigger=fx.OnPlay(), actions=(fx.Stop(atk_type=AtkType.GRAPPLE),)),),
+    )
+    attack = Card(db_uuid="at", name="Atk", number=2, atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD)
+    # B owns the stop card; A's declaration blanks it -> cannot stop.
+    assert not eng._card_can_stop("B", spot_stop, attack)
+
+
 def test_stop_requires_tag_gates_on_the_attacker_being_a_spotlight() -> None:
     # "Stop any Grapple with a Spotlight": the stop is legal only vs a Grapple that
     # carries the Spotlight tag (StopRequiresTag marker paired with the Stop).
