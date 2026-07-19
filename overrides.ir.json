@@ -4789,6 +4789,39 @@
       }
     }
   ],
+  "b5a305c0f693405f8cb43b4e5864e559": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 1,
+          "per": null,
+          "per_who": "SELF",
+          "when": "THIS",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 Agility on turn rolls.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "InRoll",
+        "either": false,
+        "skill": "Agility",
+        "who": "SELF"
+      }
+    }
+  ],
   "b69620138a614df0bea6b3bddcc2123d": [
     {
       "@type": "Effect",
