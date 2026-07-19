@@ -851,6 +851,28 @@ class Engine:
             if isinstance(eff.trigger, fx.OnStop) and eff.trigger.dir is direction:
                 self._fire_if_ready(eff, key, None)
 
+    def _run_on_bury(self, buried_by: str, from_hand: bool, is_discard: bool) -> None:
+        """Fire standing ``OnBury`` gimmicks after an EFFECT-caused bury/discard landed
+        on ``buried_by`` (The Cyclone V1, Tommy Stillwell). ``from_hand`` = the cards
+        left the hand (vs the discard pile); ``is_discard`` = the event was a discard
+        (vs a bury). Scans BOTH players so a ``who=OPP`` variant works; fires once per
+        event. The mechanical pass-and-recycle bury and the hand-cap trim bypass
+        ``_act_bury``/``_act_discard``, so they never reach here (DESIGN.md §3)."""
+        for owner in (buried_by, self.state.opponent_of(buried_by)):
+            for eff in self._standing_effects(owner):
+                trig = eff.trigger
+                if not isinstance(trig, fx.OnBury):
+                    continue
+                # SELF fires when the effect's owner is the burier; OPP when the burier
+                # is the owner's opponent.
+                if (trig.who is fx.Who.SELF) != (owner == buried_by):
+                    continue
+                if is_discard and not trig.also_discard:
+                    continue  # a discard only fires the "bury or discard" variant
+                if trig.from_hand_only and not from_hand:
+                    continue  # hand-only variant ignores discard-pile buries
+                self._fire_if_ready(eff, owner, None)
+
     # -- finish sequence + breakout ---------------------------------------
 
     def _finish_sequence(self, finisher: str, defender: str, card: Card) -> None:
@@ -1091,7 +1113,9 @@ class Engine:
     def _act_bury(self, action: fx.Bury, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         if action.source is fx.BuryFrom.HAND:
-            self._bury_from_hand(target, action.count, action.random, action.selector)
+            n = self._bury_from_hand(target, action.count, action.random, action.selector)
+            if n > 0:
+                self._run_on_bury(target, from_hand=True, is_discard=False)  # effect-caused hand bury
             return
         # Discard source: recycle the top `count` of the discard pile (optionally
         # randomized) to the bottom of the deck. Selector is ignored.
@@ -1100,10 +1124,11 @@ class Engine:
             self.state.rng.shuffle(cards)
         if cards:
             self._bury_cards(target, cards)
+            self._run_on_bury(target, from_hand=False, is_discard=False)  # effect-caused discard-pile bury
 
     def _bury_from_hand(
         self, key: str, count: int, random: bool, selector: fx.CardFilter
-    ) -> None:
+    ) -> int:
         """"Bury N cards in [your/their] hand": move ``count`` cards from ``key``'s
         hand to the bottom of their deck. The hand owner chooses which (their hidden
         hand) unless ``random``. Mirrors :meth:`_discard_from_hand` but lands the
@@ -1114,7 +1139,7 @@ class Engine:
             pool = [c for c in player.hand if conditions.card_matches(c, selector)]
             if not pool:
                 break
-            card = self.state.rng.reveal(pool) if random else self._pick_from(key, pool, "bury")
+            card = self.state.rng.reveal(pool) if random else self._pick_from(key, pool, "bury_hand")
             player.hand.remove(card)
             buried.append(card)
         if buried:
@@ -1128,6 +1153,7 @@ class Engine:
                     source="hand",
                 )
             )
+        return len(buried)
 
     def _pick_from(self, key: str, cards: list[Card], point: str) -> Card:
         """Let ``key``'s policy pick one of ``cards`` for a recur/tutor selection —
@@ -1305,7 +1331,9 @@ class Engine:
         if action.per is not None:
             count *= self._per_multiplier(action.per, action.per_who, key)
         if count:
-            self._discard_from_hand(target, count, action.random, action.selector)
+            n = self._discard_from_hand(target, count, action.random, action.selector)
+            if n > 0:
+                self._run_on_bury(target, from_hand=True, is_discard=True)  # effect-caused hand discard (Tommy)
 
     def _act_reveal_and_discard(self, action: fx.RevealAndDiscard, key: str) -> None:
         # Reveal `count` random cards from the target's hand; discard the Stops among
@@ -1617,7 +1645,7 @@ class Engine:
 
     def _discard_from_hand(
         self, key: str, count: int, random: bool, selector: fx.CardFilter | None = None
-    ) -> None:
+    ) -> int:
         """Discard ``count`` cards from ``key``'s hand matching ``selector`` (``None`` =
         any). The hand's owner chooses which (via the ``discard`` decision point) even
         when an opponent forced it; a ``random`` discard draws from the seeded RNG
@@ -1637,6 +1665,7 @@ class Engine:
             self._log(
                 gl.Discard(t=self.state.turn_no, player=key, cards=[c.db_uuid for c in dropped])
             )
+        return len(dropped)
 
     def _choose_discard(self, key: str, pool: list[Card]) -> Card:
         legal = [self._discard_option(c) for c in pool]

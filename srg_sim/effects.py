@@ -412,6 +412,22 @@ class OnBump(IRNode):
 
 
 @dataclass(frozen=True)
+class OnBury(IRNode):
+    """When a card or Gimmick causes the owner to bury cards (The Cyclone V1) / when
+    the owner buries OR discards cards from their hand from an effect (Tommy
+    Stillwell). Fires ONLY after an EFFECT-caused bury (``_act_bury``) / effect-caused
+    hand discard (``_act_discard``) — never the mechanical pass-and-recycle
+    (``_do_pass``) or the hand-cap trim, which bypass those paths. ``who`` = whose
+    bury fires it (SELF = "causes you"). ``from_hand_only`` limits to hand buries
+    (Tommy); ``also_discard`` additionally fires on an effect-caused hand discard
+    (Tommy's "bury or discard"). Fires once per bury/discard event."""
+
+    who: Who
+    from_hand_only: bool = False
+    also_discard: bool = False
+
+
+@dataclass(frozen=True)
 class OnBreakout(IRNode):
     """After a breakout resolves — the shared match event that clears both boards and
     bumps the Crowd Meter (SUPERSHOW_MECHANICS §5). Fires for both players regardless
@@ -1119,6 +1135,7 @@ Trigger = (
     | OnStop
     | OnHit
     | OnBump
+    | OnBury
     | StartOfTurn
     | StartOfMatch
     | OnBreakout

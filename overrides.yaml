@@ -4371,3 +4371,72 @@ fe3b3d76b2334b528c57bd0375ea82cd:
   raw_clause: when you roll Agility for your turn roll or Finish roll, you may switch it to Power
   source: gimmick
   optional: true
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #102): OnBury trigger family. New trigger OnBury{who,
+# from_hand_only, also_discard} (schema v15), fired after an EFFECT-caused
+# bury (act_bury) / effect-caused hand discard (act_discard) — never the
+# mechanical pass-and-recycle (do_pass) or the hand-cap trim, which bypass
+# those paths. `who=SELF` = "a card/Gimmick causes YOU to bury". The card
+# text itself resolves the rules call (both say "from a card effect or
+# Gimmick" / "a card or Gimmick causes you to"): pass-and-recycle does NOT
+# count. Fires once per bury/discard event.
+# ---------------------------------------------------------------------------
+
+# The Cyclone (V1) (World Championship): "When a card or Gimmick causes you to
+# bury any number of cards, shuffle your deck then draw 1 card." Any effect-
+# caused bury (hand OR discard source); NOT discards (also_discard=false).
+014bc171e93a4ed9a4d26d6d7fab3039:
+- '@type': Effect
+  trigger:
+    '@type': OnBury
+    who: SELF
+    from_hand_only: false
+    also_discard: false
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleDeck
+    who: SELF
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when a card or Gimmick causes you to bury any number of cards, shuffle your deck then draw 1 card
+  source: gimmick
+  optional: false
+
+# Tommy Stillwell (World Championship): "When you bury or discard any number of
+# cards from your hand from a card effect or Gimmick, draw 1 card." Hand-only
+# (from_hand_only=true), fires on bury OR discard (also_discard=true).
+2e4a3c658deb43499e6e3e398d0def13:
+- '@type': Effect
+  trigger:
+    '@type': OnBury
+    who: SELF
+    from_hand_only: true
+    also_discard: true
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you bury or discard any number of cards from your hand from a card effect or Gimmick, draw 1 card
+  source: gimmick
+  optional: false

@@ -59,6 +59,7 @@ from srg_sim.effects import (
     Not,
     OnBreakout,
     OnBump,
+    OnBury,
     OnHit,
     OnLoseTurn,
     OnPlay,
@@ -126,6 +127,7 @@ SAMPLES: list[IRNode] = [
     OnHit(name_contains=("Signature",)),  # gimmick "when you hit a card with X in the name"
     OnHit(atk_type=AtkType.SUBMISSION),  # gimmick "when you hit a Submission"
     OnBump(),
+    OnBury(who=Who.SELF, from_hand_only=True, also_discard=True),  # Tommy Stillwell
     OnBreakout(),
     StartOfTurn(),
     StartOfMatch(),
