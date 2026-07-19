@@ -319,6 +319,7 @@
     "@type": "OnHit",
     "atk_type": null,
     "name_contains": [],
+    "on_any": false,
     "text_contains": []
   },
   {
@@ -580,5 +581,11 @@
   },
   {
     "@type": "SuppressOpponentDraw"
+  },
+  {
+    "@type": "RevealForDraw",
+    "count": 1,
+    "draw": 2,
+    "who": "OPP"
   }
 ]

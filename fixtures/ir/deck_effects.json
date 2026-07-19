@@ -170,6 +170,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -466,6 +467,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -645,6 +647,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -683,6 +686,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -777,6 +781,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -843,6 +848,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -910,6 +916,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -1079,6 +1086,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -1294,6 +1302,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -1823,6 +1832,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -1913,6 +1923,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -2029,6 +2040,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -2114,6 +2126,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -2168,6 +2181,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -2293,6 +2307,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -2605,6 +2620,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -2882,6 +2898,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -3221,6 +3238,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -3294,6 +3312,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -3512,6 +3531,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -3693,6 +3713,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -3989,6 +4010,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -4168,6 +4190,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -4206,6 +4229,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -4300,6 +4324,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -4366,6 +4391,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -4433,6 +4459,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -4602,6 +4629,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -4817,6 +4845,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -5292,6 +5321,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -5357,6 +5387,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -5422,6 +5453,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -5487,6 +5519,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -5552,6 +5585,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -5617,6 +5651,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -5743,6 +5778,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -5784,6 +5820,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6005,6 +6042,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6076,6 +6114,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6115,6 +6154,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6279,6 +6319,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6358,6 +6399,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6437,6 +6479,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6516,6 +6559,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6630,6 +6674,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6661,6 +6706,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6698,6 +6744,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6737,6 +6784,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6768,6 +6816,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6833,6 +6882,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6898,6 +6948,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -6963,6 +7014,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -7050,6 +7102,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -7431,6 +7484,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -7496,6 +7550,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -7622,6 +7677,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -7687,6 +7743,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -7811,6 +7868,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -7842,6 +7900,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -7995,6 +8054,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8132,6 +8192,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8203,6 +8264,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8417,6 +8479,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8444,6 +8507,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8637,6 +8701,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8716,6 +8781,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8744,6 +8810,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8881,6 +8948,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -8912,6 +8980,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9038,6 +9107,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9103,6 +9173,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9190,6 +9261,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9510,6 +9582,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9575,6 +9648,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9640,6 +9714,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9705,6 +9780,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9770,6 +9846,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9835,6 +9912,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -9961,6 +10039,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10002,6 +10081,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10223,6 +10303,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10294,6 +10375,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10487,6 +10569,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10566,6 +10649,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10645,6 +10729,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10724,6 +10809,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10838,6 +10924,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10869,6 +10956,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10906,6 +10994,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10945,6 +11034,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -10976,6 +11066,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -11041,6 +11132,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -11106,6 +11198,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -11171,6 +11264,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },
@@ -11258,6 +11352,7 @@
       "@type": "OnHit",
       "atk_type": null,
       "name_contains": [],
+      "on_any": false,
       "text_contains": []
     }
   },

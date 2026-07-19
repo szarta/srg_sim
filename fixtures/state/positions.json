@@ -711,6 +711,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -892,8 +893,8 @@
               "this": 0
             },
             "reroll_grants": {
-              "this": 0,
-              "next": 0
+              "next": 0,
+              "this": 0
             }
           },
           "B": {
@@ -1013,6 +1014,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -1194,8 +1196,8 @@
               "this": 0
             },
             "reroll_grants": {
-              "this": 0,
-              "next": 0
+              "next": 0,
+              "this": 0
             }
           }
         },
@@ -1558,6 +1560,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -1887,6 +1890,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -2477,6 +2481,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -2886,6 +2891,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   },
@@ -3134,6 +3140,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -3215,8 +3222,8 @@
               "this": 0
             },
             "reroll_grants": {
-              "this": 0,
-              "next": 0
+              "next": 0,
+              "this": 0
             }
           },
           "B": {
@@ -3474,6 +3481,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   },
@@ -3718,6 +3726,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -3799,8 +3808,8 @@
               "this": 0
             },
             "reroll_grants": {
-              "this": 0,
-              "next": 0
+              "next": 0,
+              "this": 0
             }
           }
         },
@@ -3983,6 +3992,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   },
@@ -4010,6 +4020,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   },
@@ -4102,6 +4113,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -4348,6 +4360,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   },
@@ -4375,6 +4388,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   },
@@ -4467,6 +4481,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -4764,6 +4779,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -4841,6 +4857,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -5018,6 +5035,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   },
@@ -5045,6 +5063,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   },
@@ -5137,6 +5156,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -5154,8 +5174,8 @@
               "this": 0
             },
             "reroll_grants": {
-              "this": 0,
-              "next": 0
+              "next": 0,
+              "this": 0
             }
           },
           "B": {
@@ -5275,6 +5295,7 @@
                       "@type": "OnHit",
                       "atk_type": null,
                       "name_contains": [],
+                      "on_any": false,
                       "text_contains": []
                     }
                   }
@@ -5456,8 +5477,8 @@
               "this": 0
             },
             "reroll_grants": {
-              "this": 0,
-              "next": 0
+              "next": 0,
+              "this": 0
             }
           }
         },

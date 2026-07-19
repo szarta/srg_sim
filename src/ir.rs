@@ -432,6 +432,11 @@ pub enum Trigger {
         /// Same, against the hit card's rules text — "…with 'X' in the text".
         #[serde(default)]
         text_contains: Vec<String>,
+        /// "When you hit a card" (any card, no gate) as a standing gimmick — fires on
+        /// every hit (Bartholomew Hooke). Override-only; a bare parser OnHit leaves it
+        /// false so misattributed fragments stay inert. See `run_hit_gimmicks`.
+        #[serde(default)]
+        on_any: bool,
     },
     OnBump,
     /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
@@ -635,6 +640,14 @@ pub enum Action {
     RevealAndDiscard {
         count: i64,
         who: Who,
+    },
+    /// "Your opponent randomly reveals `count` card(s) in their hand: if it is a stop,
+    /// draw `draw` cards" (Bartholomew Hooke). Reveals stay in hand; the actor draws
+    /// `draw` for each revealed stop.
+    RevealForDraw {
+        who: Who,
+        count: i64,
+        draw: i64,
     },
     Peek {
         who: Who,
@@ -922,6 +935,11 @@ pub enum IrNode {
         /// Same, against the hit card's rules text — "…with 'X' in the text".
         #[serde(default)]
         text_contains: Vec<String>,
+        /// "When you hit a card" (any card, no gate) as a standing gimmick — fires on
+        /// every hit (Bartholomew Hooke). Override-only; a bare parser OnHit leaves it
+        /// false so misattributed fragments stay inert. See `run_hit_gimmicks`.
+        #[serde(default)]
+        on_any: bool,
     },
     OnBump,
     /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
@@ -1103,6 +1121,14 @@ pub enum IrNode {
     RevealAndDiscard {
         count: i64,
         who: Who,
+    },
+    /// "Your opponent randomly reveals `count` card(s) in their hand: if it is a stop,
+    /// draw `draw` cards" (Bartholomew Hooke). Reveals stay in hand; the actor draws
+    /// `draw` for each revealed stop.
+    RevealForDraw {
+        who: Who,
+        count: i64,
+        draw: i64,
     },
     Peek {
         who: Who,

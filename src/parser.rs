@@ -59,6 +59,7 @@ fn on_hit() -> Trigger {
         atk_type: None,
         name_contains: Vec::new(),
         text_contains: Vec::new(),
+        on_any: false,
     }
 }
 

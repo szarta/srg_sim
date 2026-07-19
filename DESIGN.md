@@ -87,7 +87,9 @@ OnRoll(skill?, who=SELF)     # after `who` makes a turn roll (skill=None => any 
                              #   outcome-agnostic — roll-value gimmicks (Bull) live here
 OnWinTurn / OnLoseTurn(by=?) # after the turn roll resolves (outcome-specific)
 OnStop(dir=YOURS|THEIRS)     # when a stop happens
-OnHit(atk_type?, name_contains?, text_contains?)  # when a matching card RESOLVES into play (schema v6)
+OnHit(atk_type?, name_contains?, text_contains?, on_any=False)  # when a matching card RESOLVES into play (schema v6);
+                             # on_any=True (schema v23) = a standing "when you hit a card" gimmick, fires on EVERY hit
+                             # (Bartholomew Hooke) — override-only, so a bare parser OnHit fragment stays inert
                              #   gimmicks gate on the hit card's attack type and/or its
                              #   title/text ("when you hit a card with 'X' in the name",
                              #   case-insensitive OR-substring); see "hit" below
@@ -159,6 +161,7 @@ SwapHandDiscard               # "switch 1 card in your hand with 1 in your disca
                              # out (-> discard, shed point) + 1 discard card in (-> hand, tutor point); no-op if a zone is empty. schema v17
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
 RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
+RevealForDraw(who=OPP, count=1, draw=2)  # reveal `count` random from hand; actor draws `draw` per revealed stop (Bartholomew). schema v23
 Scry(deck, top=0, bottom=0, reveal=False, to_hand=0, bury=0, rest=RETURN|CHOOSE)  # schema v11: look at/reveal
                               # `top`+`bottom` cards of `deck`'s deck; the effect owner (actor) takes `to_hand`
                               # best -> deck owner's hand, buries `bury` (worst on own deck, best on an opponent's

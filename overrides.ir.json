@@ -50,6 +50,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     },
@@ -77,6 +78,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     },
@@ -302,6 +304,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -348,6 +351,7 @@
           "Power",
           "Choke"
         ],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -909,6 +913,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     },
@@ -1543,6 +1548,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -2012,6 +2018,7 @@
         "@type": "OnHit",
         "atk_type": "Submission",
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -2581,6 +2588,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     },
@@ -2612,6 +2620,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -3108,6 +3117,7 @@
         "name_contains": [
           "Lock"
         ],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -4059,6 +4069,38 @@
       }
     }
   ],
+  "a01036ebb5bf49e382f6c9668fd04cc7": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealForDraw",
+          "count": 1,
+          "draw": 2,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you hit a card, your opponent randomly reveals a card in their hand: if it is a stop, draw 2 cards",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": true,
+        "text_contains": []
+      }
+    }
+  ],
   "a09bc1774f984c6287207df2a01a4eee": [
     {
       "@type": "Effect",
@@ -4137,6 +4179,7 @@
         "name_contains": [
           "Leg"
         ],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -4679,6 +4722,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -4737,6 +4781,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": [
           "Disqualification"
         ]
@@ -5425,6 +5470,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     }
@@ -5906,6 +5952,7 @@
         "name_contains": [
           "Drop"
         ],
+        "on_any": false,
         "text_contains": []
       }
     },
@@ -6068,6 +6115,7 @@
         "@type": "OnHit",
         "atk_type": null,
         "name_contains": [],
+        "on_any": false,
         "text_contains": []
       }
     }

@@ -836,6 +836,9 @@ impl Engine {
             Action::RevealAndDiscard { count, who } => {
                 self.act_reveal_and_discard(*count, *who, key)
             }
+            Action::RevealForDraw { who, count, draw } => {
+                self.act_reveal_for_draw(*who, *count, *draw, key)?
+            }
             Action::Peek { who } => self.act_peek(*who, key),
             Action::Scry {
                 deck,
@@ -1511,6 +1514,38 @@ impl Engine {
             source: None,
             hidden: false,
         }));
+    }
+
+    /// "Your opponent randomly reveals `count` card(s) in their hand: if it is a stop,
+    /// draw `draw`" (Bartholomew Hooke). Reveals stay in hand (public); the actor draws
+    /// `draw` for each revealed stop.
+    fn act_reveal_for_draw(&mut self, who: Who, count: i64, draw: i64, key: &str) -> Eng<()> {
+        let target = self.target(who, key);
+        let mut pool: Vec<Card> = self.state.players[&target].hand.clone();
+        let reveals = (count.max(0) as usize).min(pool.len());
+        let mut stops = 0i64;
+        let mut revealed: Vec<String> = Vec::new();
+        for _ in 0..reveals {
+            let card = self.state.rng.reveal(&pool).cloned().unwrap();
+            let pos = pool.iter().position(|c| c.db_uuid == card.db_uuid).unwrap();
+            pool.remove(pos);
+            if is_stop_card(&card) {
+                stops += 1;
+            }
+            revealed.push(card.db_uuid);
+        }
+        if !revealed.is_empty() {
+            self.log_effect(
+                key,
+                "RevealForDraw",
+                Some(&target),
+                json!({"revealed": revealed, "stops": stops}),
+            );
+        }
+        if stops > 0 {
+            self.draw(key, (stops * draw).max(0) as usize, DeckEnd::Top)?;
+        }
+        Ok(())
     }
 
     fn act_crowd(&mut self, delta: i64, key: &str) {
@@ -2294,16 +2329,17 @@ impl Engine {
                 atk_type,
                 name_contains,
                 text_contains,
-                ..
+                on_any,
             } = &eff.trigger
             else {
                 continue;
             };
-            // A bare OnHit (no gate) is the card's OWN "when this hits", already
-            // fired via `run_effects`; only fire standing gimmicks that gate on
-            // the hit card's type and/or name/text.
+            // A bare OnHit (no gate) is the card's OWN "when this hits", already fired
+            // via `run_effects` — skipped here UNLESS it explicitly sets `on_any` ("when
+            // you hit a card" — Bartholomew Hooke), which fires on every hit. `on_any`
+            // is override-only, so parser fragments that produce a bare OnHit stay inert.
             let has_name_gate = !name_contains.is_empty() || !text_contains.is_empty();
-            if atk_type.is_none() && !has_name_gate {
+            if atk_type.is_none() && !has_name_gate && !on_any {
                 continue;
             }
             let type_ok = atk_type.is_none_or(|want| want == card.atk_type);
@@ -3440,6 +3476,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RemoveFromPlay { .. } => "RemoveFromPlay",
         Action::ReturnToHand { .. } => "ReturnToHand",
         Action::RevealAndDiscard { .. } => "RevealAndDiscard",
+        Action::RevealForDraw { .. } => "RevealForDraw",
         Action::Peek { .. } => "Peek",
         Action::Scry { .. } => "Scry",
         Action::RevealRoute { .. } => "RevealRoute",

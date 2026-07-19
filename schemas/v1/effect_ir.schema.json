@@ -635,6 +635,9 @@
               },
               {
                 "$ref": "#/$defs/SuppressOpponentDraw"
+              },
+              {
+                "$ref": "#/$defs/RevealForDraw"
               }
             ]
           },
@@ -1074,6 +1077,9 @@
               },
               {
                 "$ref": "#/$defs/SuppressOpponentDraw"
+              },
+              {
+                "$ref": "#/$defs/RevealForDraw"
               }
             ]
           },
@@ -1760,6 +1766,9 @@
         },
         {
           "$ref": "#/$defs/SuppressOpponentDraw"
+        },
+        {
+          "$ref": "#/$defs/RevealForDraw"
         }
       ]
     },
@@ -2468,6 +2477,30 @@
       ],
       "type": "string"
     },
+    "RevealForDraw": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RevealForDraw"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "draw": {
+          "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "count",
+        "draw"
+      ],
+      "type": "object"
+    },
     "RevealFrom": {
       "enum": [
         "TOP",
@@ -3098,5 +3131,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 22
+  "version": 23
 }
