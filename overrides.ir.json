@@ -491,6 +491,121 @@
       }
     }
   ],
+  "16281b934ccc470ea09ed7a43c4e7e51": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Strike"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Strike",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          }
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          }
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "If your opponent breaks out, shuffle up to 3 Spotlight cards from your discard pile into your deck.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnBreakout",
+        "who": "OPP"
+      }
+    }
+  ],
   "1886db488a2540c18d7fc450b201f9b0": [
     {
       "@type": "Effect",
@@ -4502,7 +4617,8 @@
       "raw_clause": "FRONT: after a breakout, turn this card over.",
       "source": "gimmick",
       "trigger": {
-        "@type": "OnBreakout"
+        "@type": "OnBreakout",
+        "who": null
       }
     },
     {

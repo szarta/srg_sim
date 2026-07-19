@@ -2050,10 +2050,21 @@
       "properties": {
         "@type": {
           "const": "OnBreakout"
+        },
+        "who": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Who"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
-        "@type"
+        "@type",
+        "who"
       ],
       "type": "object"
     },
@@ -3215,5 +3226,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 28
+  "version": 29
 }

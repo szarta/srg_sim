@@ -462,7 +462,13 @@ pub enum Trigger {
     },
     StartOfTurn,
     StartOfMatch,
-    OnBreakout,
+    OnBreakout {
+        /// Whose breakout fires this: `None` = any breakout ("after a breakout" —
+        /// Copy Kat V2); `Some(SelfSide)` = you broke out; `Some(Opp)` = your
+        /// opponent broke out ("if your opponent breaks out" — the Spotlight recur).
+        #[serde(default)]
+        who: Option<Who>,
+    },
     Static,
 }
 
@@ -982,7 +988,13 @@ pub enum IrNode {
     },
     StartOfTurn,
     StartOfMatch,
-    OnBreakout,
+    OnBreakout {
+        /// Whose breakout fires this: `None` = any breakout ("after a breakout" —
+        /// Copy Kat V2); `Some(SelfSide)` = you broke out; `Some(Opp)` = your
+        /// opponent broke out ("if your opponent breaks out" — the Spotlight recur).
+        #[serde(default)]
+        who: Option<Who>,
+    },
     Static,
 
     // Conditions

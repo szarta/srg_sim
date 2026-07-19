@@ -5460,3 +5460,90 @@ aa049f5ef34e463db3ec2c3a8fb1e343:
     pile.
   source: card
   optional: false
+
+# OnBreakout(who=OPP) Spotlight recur (schema v29): when your opponent breaks out,
+# shuffle up to 3 Spotlight cards from discard into deck (3x ShuffleIntoDeck, tag filter).
+16281b934ccc470ea09ed7a43c4e7e51:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Strike
+    delta: 2
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +2 to Strike
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Grapple
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnBreakout
+    who: OPP
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If your opponent breaks out, shuffle up to 3 Spotlight cards from your
+    discard pile into your deck.
+  source: card
+  optional: false

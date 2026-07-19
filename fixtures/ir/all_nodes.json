@@ -313,7 +313,8 @@
     }
   },
   {
-    "@type": "OnBreakout"
+    "@type": "OnBreakout",
+    "who": null
   },
   {
     "@type": "OnBump"

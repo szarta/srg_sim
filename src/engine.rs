@@ -2709,7 +2709,23 @@ impl Engine {
 
     /// Breakout aftermath: ALL cards in play on BOTH sides clear to discard (§5),
     /// crowd meter +1, then both players' `OnBreakout` gimmicks fire.
-    fn on_broken_out(&mut self, _finisher: &str) -> Eng<()> {
+    fn on_broken_out(&mut self, finisher: &str) -> Eng<()> {
+        // OnBreakout fires FIRST, while sources are still in play — a card-based recur
+        // ("if your opponent breaks out, shuffle Spotlights…") needs its card present
+        // before the boards clear. `who` selects whose breakout fires it (None = any);
+        // the defender is the breaker. A no-op for decks without OnBreakout, so the
+        // frozen corpus (which has none) is byte-identical.
+        let breaker = self.state.opponent_of(finisher);
+        for key in ["A", "B"] {
+            for eff in self.standing_effects(key) {
+                let Trigger::OnBreakout { who } = &eff.trigger else {
+                    continue;
+                };
+                if who.is_none_or(|w| self.target(w, key) == breaker) {
+                    self.fire_if_ready(&eff, key, None)?;
+                }
+            }
+        }
         for key in ["A", "B"] {
             self.discard_in_play(key);
         }
@@ -2717,10 +2733,6 @@ impl Engine {
         let t = self.state.turn_no;
         let value = self.state.crowd_meter;
         self.log(Event::CrowdMeter { t, delta: 1, value });
-        for key in ["A", "B"] {
-            let effects = self.standing_effects(key);
-            self.run_effects(&effects, "OnBreakout", key, None)?;
-        }
         Ok(())
     }
 
@@ -3441,7 +3453,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnBury { .. } => "OnBury",
         Trigger::StartOfTurn => "StartOfTurn",
         Trigger::StartOfMatch => "StartOfMatch",
-        Trigger::OnBreakout => "OnBreakout",
+        Trigger::OnBreakout { .. } => "OnBreakout",
         Trigger::Static => "Static",
     }
 }
