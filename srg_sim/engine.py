@@ -1325,6 +1325,36 @@ class Engine:
                 )
             )
 
+    def _act_return_to_hand(self, action: fx.ReturnToHand, key: str) -> None:
+        # "Add `count` card(s) in play to their hand" (Fox Assassin V2): the ACTOR
+        # (key) bounces matching in-play cards back to their OWNER's hand. `choose`
+        # ranges the pick over BOTH boards ("any player has in play"); else `who`'s.
+        boards = (
+            [key, self.state.opponent_of(key)]
+            if action.choose
+            else [key if action.who is fx.Who.SELF else self.state.opponent_of(key)]
+        )
+        for _ in range(action.count):
+            legal: list[Option] = []
+            for b in boards:
+                for c in self.state.players[b].in_play:
+                    if conditions.card_matches(c, action.selector):
+                        legal.append({**self._card_option(c), "owner": b})
+            if not legal:
+                break
+            chosen = self._decide("return_to_hand", key, legal)
+            owner = chosen["owner"]
+            uuid = chosen["card"]
+            board = self.state.players[owner].in_play
+            card = next((c for c in board if c.db_uuid == uuid), None)
+            if card is None:
+                break
+            board.remove(card)
+            self.state.players[owner].hand.append(card)
+            self._log(  # in_play (public) -> hand: which card left play is visible
+                gl.Search(t=self.state.turn_no, player=owner, cards=[uuid], source="in_play")
+            )
+
     def _act_flip(self, action: fx.Flip, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         player = self.state.players[target]
@@ -1889,6 +1919,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.SwapHandDiscard: Engine._act_swap_hand_discard,
     fx.RecurToDeckTop: Engine._act_recur_to_deck_top,
     fx.RemoveFromPlay: Engine._act_remove_from_play,
+    fx.ReturnToHand: Engine._act_return_to_hand,
     fx.PlayExtraCard: Engine._act_play_extra_card,
     fx.Peek: Engine._act_peek,
     fx.Scry: Engine._act_scry,

@@ -175,6 +175,27 @@ def test_opponent_draw_action_draws_for_the_opponent() -> None:
     assert len(eng.state.players["B"].hand) == before + 2
 
 
+def test_return_to_hand_bounces_to_the_owners_hand() -> None:
+    # Fox Assassin V2: "add 1 card any player has in play to their hand" — a bounced
+    # card returns to its OWNER's hand, from either board when choose=True.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    ca = Card(db_uuid="ca", name="A card", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    cb = Card(db_uuid="cb", name="B card", number=2, atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD)
+    eng.state.players["A"].in_play = [ca]
+    eng.state.players["B"].in_play = [cb]
+    eng.state.players["A"].hand = []
+    eng.state.players["B"].hand = []
+    # choose=True ranges over both boards; the default policy takes legal[0] = A's card.
+    eng._act_return_to_hand(fx.ReturnToHand(who=fx.Who.SELF, count=1, choose=True), "A")
+    assert ca not in eng.state.players["A"].in_play
+    assert ca in eng.state.players["A"].hand
+    # who=OPP bounces the opponent's card back to the OPPONENT's hand (disruption).
+    eng._act_return_to_hand(fx.ReturnToHand(who=fx.Who.OPP, count=1, choose=False), "A")
+    assert cb not in eng.state.players["B"].in_play
+    assert cb in eng.state.players["B"].hand
+
+
 def test_peek_action_reveals_opponent_hand_in_the_actors_observable_view() -> None:
     # Peek ("Look at your opponent's hand") moves no card but grants A a look at B's
     # hand for the rest of the turn — surfaced through observable(), not to_dict.

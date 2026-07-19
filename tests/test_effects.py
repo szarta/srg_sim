@@ -77,6 +77,7 @@ from srg_sim.effects import (
     PlayExtraCard,
     RecurToDeckTop,
     RemoveFromPlay,
+    ReturnToHand,
     Reroll,
     SwitchRolledSkill,
     RevealAndDiscard,
@@ -175,6 +176,7 @@ SAMPLES: list[IRNode] = [
     AddFromDiscard(CardFilter(atk_type=AtkType.SUBMISSION)),
     SwapHandDiscard(),  # Collin the Chrononaut / Mr. Rey
     RemoveFromPlay(CardFilter(play_order=PlayOrder.FOLLOWUP), Who.OPP, 1),
+    ReturnToHand(CardFilter(), Who.OPP, 1, choose=True),  # Fox Assassin V2
     Peek(Who.OPP),
     Scry(deck=Who.SELF, top=2, to_hand=1, bury=1, reveal=True, rest=ScryRest.CHOOSE),
     RevealRoute(

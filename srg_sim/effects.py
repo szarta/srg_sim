@@ -757,6 +757,19 @@ class RemoveFromPlay(IRNode):
 
 
 @dataclass(frozen=True)
+class ReturnToHand(IRNode):
+    """"Add ``count`` card(s) in play to their hand" (Fox Assassin V2): bounce
+    matching in-play cards back to their OWNER's hand. ``who`` picks the board;
+    ``choose`` (like :class:`ShuffleHandDraw`) lets the acting player pick from EITHER
+    board — "any player has in play". A no-match board is a no-op."""
+
+    selector: CardFilter = CardFilter()
+    who: Who = Who.OPP
+    count: int = 1
+    choose: bool = False
+
+
+@dataclass(frozen=True)
 class Peek(IRNode):
     """Look at an otherwise-hidden hand ("Look at your opponent's hand"; §3/§7).
 
@@ -1242,6 +1255,7 @@ Action = (
     | RecurToDeckTop
     | CountsAsInPlay
     | RemoveFromPlay
+    | ReturnToHand
     | RevealAndDiscard
     | Peek
     | ModifyRoll
