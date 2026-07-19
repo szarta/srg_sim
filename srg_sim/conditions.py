@@ -52,6 +52,9 @@ class RollContext:
     skill: Skill | None = None
     gap: int | None = None  # opponent's roll minus owner's; positive => owner rolled lower
     value: int | None = None  # the owner's own rolled value this turn (for RollValue)
+    # The OTHER side's rolled skill — set only in the post-roll / pair contexts, so
+    # SameRolledSkill can compare the two. None in single-sided switch contexts.
+    opp_skill: Skill | None = None
 
 
 def card_matches(card: Card, filt: fx.CardFilter) -> bool:
@@ -256,6 +259,10 @@ def _h_printed_roll_value(
     return s.players[subject].competitor.stats.to_dict()[r.skill.value] == c.value
 
 
+def _h_same_rolled_skill(c: fx.SameRolledSkill, s: GameState, o: str, r: RollContext | None) -> bool:
+    return r is not None and r.skill is not None and r.skill is r.opp_skill
+
+
 def _h_opp_won_last(c: fx.OppWonLastRoll, s: GameState, o: str, r: RollContext | None) -> bool:
     return s.last_roll_winner is not None and s.last_roll_winner == s.opponent_of(o)
 
@@ -281,6 +288,7 @@ _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]]
     fx.RollLeadAtLeast: _h_lead_at_least,
     fx.RollValue: _h_roll_value,
     fx.PrintedRollValue: _h_printed_roll_value,
+    fx.SameRolledSkill: _h_same_rolled_skill,
     fx.OppWonLastRoll: _h_opp_won_last,
     fx.GimmickFlipped: _h_gimmick_flipped,
 }

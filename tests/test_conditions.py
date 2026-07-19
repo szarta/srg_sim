@@ -234,6 +234,18 @@ def test_printed_roll_value_reads_the_printed_stat() -> None:
     assert holds(fx.PrintedRollValue(fx.Who.SELF, 10), s, "A", RollContext(skill=Skill.POWER))
 
 
+def test_same_rolled_skill_compares_both_sides() -> None:
+    # Hex / Nic Nemeth: "you and your target roll the same skill".
+    s = _state()
+    c = fx.SameRolledSkill()
+    assert holds(c, s, "A", RollContext(skill=Skill.POWER, opp_skill=Skill.POWER))
+    assert not holds(c, s, "A", RollContext(skill=Skill.POWER, opp_skill=Skill.STRIKE))
+    # A single-sided context (opp_skill unset — a re-roll/switch ctx) and no context
+    # both read False.
+    assert not holds(c, s, "A", RollContext(skill=Skill.POWER))
+    assert not holds(c, s, "A", None)
+
+
 # --- card filter -----------------------------------------------------------
 
 

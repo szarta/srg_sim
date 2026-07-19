@@ -4527,3 +4527,76 @@ c138c28b4b8b48bbb5272e9ceaede716:
   raw_clause: 'once during any player''s turn: when your opponents roll their printed 8 skill for their turn roll, you may switch 1 card in your hand with 1 card in your discard pile'
   source: gimmick
   optional: true
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #105 sub-family): SameRolledSkill condition (schema v18) = the
+# owner and their target rolled the SAME skill for this turn-roll. Reads the
+# post-roll RollContext's skill vs opp_skill (new opp_skill field carrying the
+# other side's rolled skill). Fires via the OnRoll path (record_roll_ctx).
+# ---------------------------------------------------------------------------
+
+# Hex (World Championship): "When you and your target roll the same skill for
+# your turn roll, your next turn roll is +2." OnRoll + SameRolledSkill -> +2 NEXT.
+e515d26515954e709e0f81a86f5231cb:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': SameRolledSkill
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 2
+    when: NEXT
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you and your target roll the same skill for your turn roll, your next turn roll is +2
+  source: gimmick
+  optional: false
+
+# Nic Nemeth (World Championship): "Once per turn roll: When you and your target
+# roll the same skill, you may discard 1 card from your hand to draw 2 cards."
+192be5ede94a4727b1865fcdd845743f:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': SameRolledSkill
+  actions:
+  - '@type': Discard
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+    count: 1
+    who: SELF
+    random: false
+    per: null
+    per_who: SELF
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once per turn roll: when you and your target roll the same skill, you may discard 1 card from your hand to draw 2 cards'
+  source: gimmick
+  optional: true

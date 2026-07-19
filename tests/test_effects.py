@@ -91,6 +91,7 @@ from srg_sim.effects import (
     RollValue,
     RollWasSkill,
     RollWhen,
+    SameRolledSkill,
     Search,
     SwapHandDiscard,
     SetFinishRoll,
@@ -156,6 +157,7 @@ SAMPLES: list[IRNode] = [
     RollGapAtLeast(3),
     RollLeadAtLeast(3),
     OppWonLastRoll(),
+    SameRolledSkill(),  # Hex / Nic Nemeth
     RollValue(Comparator.LE, 7),
     PrintedRollValue(Who.OPP, 8),  # Collin the Chrononaut
     GimmickFlipped(Who.SELF),

@@ -561,6 +561,13 @@ class RollLeadAtLeast(IRNode):
 
 
 @dataclass(frozen=True)
+class SameRolledSkill(IRNode):
+    """True iff the owner and their target rolled the **same skill** for this
+    turn-roll (Hex, Nic Nemeth). Reads the post-roll context's ``skill`` vs
+    ``opp_skill``; false without a roll context or in single-sided contexts."""
+
+
+@dataclass(frozen=True)
 class OppWonLastRoll(IRNode):
     """True iff the effect owner's opponent won the *previous* turn's roll-off
     (``GameState.last_roll_winner``). False before turn 1 (no previous roll). Gates a
@@ -1207,6 +1214,7 @@ Condition = (
     | RollLeadAtLeast
     | RollValue
     | PrintedRollValue
+    | SameRolledSkill
     | OppWonLastRoll
     | GimmickFlipped
 )

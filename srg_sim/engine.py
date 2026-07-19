@@ -348,8 +348,8 @@ class Engine:
         die (no re-roll competitor also carries those — DESIGN.md §11)."""
         vals = {"A": (sa, va), "B": (sb, vb)}
         ctx = {
-            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va),
-            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb),
+            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va, opp_skill=sb),
+            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb, opp_skill=sa),
         }
         # Each side may spend a re-roll; the target die (own, the opponent's, or a
         # chosen player's) is re-rolled in place.
@@ -526,8 +526,8 @@ class Engine:
         # resolves. Which side's roll the condition reads follows the trigger's `who`,
         # exactly as the OnRoll path does (RollValue docstring).
         ctx = {
-            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va),
-            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb),
+            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va, opp_skill=sb),
+            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb, opp_skill=sa),
         }
         for owner in ("A", "B"):
             opp = self.state.opponent_of(owner)
@@ -580,8 +580,8 @@ class Engine:
         positive gap means that side rolled lower) for roll-scoped conditions fired
         this turn (RollGap*/RollWasSkill; DESIGN.md §3)."""
         self._roll_ctx = {
-            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va),
-            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb),
+            "A": conditions.RollContext(skill=sa, gap=vb - va, value=va, opp_skill=sb),
+            "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb, opp_skill=sa),
         }
 
     # -- derived stats (with live condition evaluation) --------------------
