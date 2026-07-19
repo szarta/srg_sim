@@ -82,6 +82,7 @@ from srg_sim.effects import (
     RevealDest,
     RevealFrom,
     RevealRoute,
+    PrintedRollValue,
     RollGapAtLeast,
     RollGapExactly,
     RollLeadAtLeast,
@@ -91,6 +92,7 @@ from srg_sim.effects import (
     RollWasSkill,
     RollWhen,
     Search,
+    SwapHandDiscard,
     SetFinishRoll,
     ShuffleDeck,
     ShuffleHandDraw,
@@ -155,6 +157,7 @@ SAMPLES: list[IRNode] = [
     RollLeadAtLeast(3),
     OppWonLastRoll(),
     RollValue(Comparator.LE, 7),
+    PrintedRollValue(Who.OPP, 8),  # Collin the Chrononaut
     GimmickFlipped(Who.SELF),
     # actions
     Draw(2, DeckEnd.BOTTOM),
@@ -166,6 +169,7 @@ SAMPLES: list[IRNode] = [
     ShuffleDeck(Who.SELF),
     ShuffleIntoDeck(CardFilter(tag="x")),
     AddFromDiscard(CardFilter(atk_type=AtkType.SUBMISSION)),
+    SwapHandDiscard(),  # Collin the Chrononaut / Mr. Rey
     RemoveFromPlay(CardFilter(play_order=PlayOrder.FOLLOWUP), Who.OPP, 1),
     Peek(Who.OPP),
     Scry(deck=Who.SELF, top=2, to_hand=1, bury=1, reveal=True, rest=ScryRest.CHOOSE),

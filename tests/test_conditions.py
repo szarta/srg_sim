@@ -220,6 +220,20 @@ def test_roll_conditions_need_context() -> None:
     assert holds(fx.RollGapExactly(3), s, "A", RollContext(gap=3))
 
 
+def test_printed_roll_value_reads_the_printed_stat() -> None:
+    # Collin the Chrononaut: "when your opponent rolls their printed 8 skill".
+    # B's printed Power is 10, Strike 5 (A_STATS/B_STATS from the module head).
+    s = _state()
+    printed10 = fx.PrintedRollValue(fx.Who.OPP, 10)  # owner A reads B's printed stat
+    # B rolls Power (printed 10) -> True; the ROLLED VALUE is irrelevant.
+    assert holds(printed10, s, "A", RollContext(skill=Skill.POWER, value=3))
+    # B rolls Strike (printed 5) -> False even though the rolled value is 10.
+    assert not holds(printed10, s, "A", RollContext(skill=Skill.STRIKE, value=10))
+    # No roll context -> False; and who=SELF reads A's own printed stat (Power 10).
+    assert not holds(printed10, s, "A", None)
+    assert holds(fx.PrintedRollValue(fx.Who.SELF, 10), s, "A", RollContext(skill=Skill.POWER))
+
+
 # --- card filter -----------------------------------------------------------
 
 

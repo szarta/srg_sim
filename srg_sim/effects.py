@@ -589,6 +589,17 @@ class RollValue(IRNode):
     value: int
 
 
+@dataclass(frozen=True)
+class PrintedRollValue(IRNode):
+    """The rolled skill's **printed** (base, unbuffed) stat on the ``who``-side's
+    competitor equals ``value`` — "when your opponent rolls their printed 8 skill"
+    (Collin the Chrononaut). ``who`` picks whose printed stat to read (the roller),
+    following the trigger's ``who`` like :class:`RollValue`. False without a roll."""
+
+    who: Who
+    value: int
+
+
 # ---------------------------------------------------------------------------
 # Actions — the mutations
 # ---------------------------------------------------------------------------
@@ -676,6 +687,14 @@ class ShuffleIntoDeck(IRNode):
 @dataclass(frozen=True)
 class AddFromDiscard(IRNode):
     filter: CardFilter = CardFilter()
+
+
+@dataclass(frozen=True)
+class SwapHandDiscard(IRNode):
+    """"Switch 1 card in your hand with 1 card in your discard pile" (Collin, Mr.
+    Rey): the owner picks one hand card out (→ discard, via the ``discard``/shed
+    point) and one discard card in (→ hand, via the ``target``/tutor point). A no-op
+    if either zone is empty. The "you may" lives on ``Effect.optional``."""
 
 
 @dataclass(frozen=True)
@@ -1187,6 +1206,7 @@ Condition = (
     | RollGapAtLeast
     | RollLeadAtLeast
     | RollValue
+    | PrintedRollValue
     | OppWonLastRoll
     | GimmickFlipped
 )
@@ -1200,6 +1220,7 @@ Action = (
     | ShuffleDeck
     | ShuffleIntoDeck
     | AddFromDiscard
+    | SwapHandDiscard
     | RecurToDeckTop
     | CountsAsInPlay
     | RemoveFromPlay

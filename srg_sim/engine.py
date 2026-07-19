@@ -1262,6 +1262,22 @@ class Engine:
         )
         self._hand_cap(key)
 
+    def _act_swap_hand_discard(self, action: fx.SwapHandDiscard, key: str) -> None:
+        # "Switch 1 card in your hand with 1 card in your discard pile" (Collin, Mr.
+        # Rey): pick one hand card out (-> discard, via the `discard`/shed point) and
+        # one discard card in (-> hand, via the `target`/tutor point). No-op if either
+        # zone is empty; a 1-for-1 swap so both sizes are preserved.
+        player = self.state.players[key]
+        if not player.hand or not player.discard:
+            return
+        out = self._pick_from(key, list(player.hand), "discard")  # hand card leaving
+        into = self._pick_from(key, list(player.discard), "target")  # discard card entering
+        player.hand.remove(out)
+        player.discard.remove(into)
+        player.hand.append(into)
+        player.discard.append(out)
+        self._log_effect(key, "SwapHandDiscard", key, {"hand_out": out.db_uuid, "discard_in": into.db_uuid})
+
     def _act_recur_to_deck_top(self, action: fx.RecurToDeckTop, key: str) -> None:
         # Put up to `count` matching cards from discard ON TOP of the deck ("Put up
         # to 3 Finishes from your discard pile on top of your deck"). The owner
@@ -1870,6 +1886,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.Search: Engine._act_search,
     fx.ShuffleIntoDeck: Engine._act_shuffle_into_deck,
     fx.AddFromDiscard: Engine._act_add_from_discard,
+    fx.SwapHandDiscard: Engine._act_swap_hand_discard,
     fx.RecurToDeckTop: Engine._act_recur_to_deck_top,
     fx.RemoveFromPlay: Engine._act_remove_from_play,
     fx.PlayExtraCard: Engine._act_play_extra_card,
