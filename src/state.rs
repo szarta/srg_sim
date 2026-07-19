@@ -177,6 +177,31 @@ impl GameState {
         false
     }
 
+    /// Whether `card` (owned by `owner`) has its printed text blanked — some player
+    /// has an active Static `BlankText` declaration (on an in-play or entrance card)
+    /// whose `who` targets `owner` and whose `selector` matches the card. "Your
+    /// opponent's Spotlights are blank" (the source stays in play). A blanked card
+    /// fires none of its own effects and cannot stop.
+    pub fn is_text_blanked(&self, card: &Card, owner: &str) -> bool {
+        for (decl_owner, player) in &self.players {
+            let sources = std::iter::once(&player.entrance.effects)
+                .chain(player.in_play.iter().map(|c| &c.effects));
+            for effects in sources {
+                for eff in effects {
+                    let hit = eff.actions.iter().any(|a| {
+                        matches!(a, Action::BlankText { selector, who }
+                            if self.who_key(decl_owner, *who) == owner
+                                && conditions::card_matches(card, selector))
+                    });
+                    if hit && conditions::holds(&eff.condition, self, decl_owner, None) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
     fn who_key(&self, owner: &str, who: Who) -> String {
         match who {
             Who::SelfSide => owner.to_owned(),

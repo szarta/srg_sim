@@ -2244,6 +2244,43 @@
       }
     }
   ],
+  "5d916bd2abec4b0fae7b478ac54839a6": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankText",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's Spotlights are blank.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "5f78183903ba49eabae4c4ec9f0ffd11": [
     {
       "@type": "Effect",

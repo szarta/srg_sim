@@ -44,7 +44,7 @@
       "tag": null,
       "text_contains": []
     },
-    "until": "END_OF_TURN"
+    "who": "OPP"
   },
   {
     "@type": "BreakoutModifier",

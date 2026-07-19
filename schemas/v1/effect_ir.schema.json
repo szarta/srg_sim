@@ -249,14 +249,14 @@
         "selector": {
           "$ref": "#/$defs/CardFilter"
         },
-        "until": {
-          "$ref": "#/$defs/Until"
+        "who": {
+          "$ref": "#/$defs/Who"
         }
       },
       "required": [
         "@type",
         "selector",
-        "until"
+        "who"
       ],
       "type": "object"
     },
@@ -3160,12 +3160,6 @@
       ],
       "type": "object"
     },
-    "Until": {
-      "enum": [
-        "END_OF_TURN"
-      ],
-      "type": "string"
-    },
     "Vs": {
       "enum": [
         "OPP",
@@ -3202,5 +3196,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 26
+  "version": 27
 }

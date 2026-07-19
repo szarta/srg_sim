@@ -5290,3 +5290,34 @@ feeaf7eaf73f47618bd94f8549cff5ae:
   raw_clause: Bury 2 cards in your opponent's discard pile.
   source: card
   optional: false
+
+# Your opponent's Spotlights are blank (main-deck, while in play): Static BlankText
+# (who=OPP, selector tag=Spotlight) -> the opponent's Spotlight cards fire no text
+# and cannot stop while this card is in play (is_text_blanked). schema v27.
+5d916bd2abec4b0fae7b478ac54839a6:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankText
+    who: OPP
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your opponent's Spotlights are blank.
+  source: card
+  optional: false

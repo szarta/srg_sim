@@ -904,6 +904,7 @@ impl Engine {
             | Action::SwitchRolledSkill { .. }
             | Action::AddText { .. }
             | Action::StopRequiresTag { .. }
+            | Action::BlankText { .. }
             | Action::MaxHandSize { .. } => {}
             // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
             // `This` re-roll is structural (read in the roll-off), a no-op here.
@@ -2319,9 +2320,15 @@ impl Engine {
         }
         // The card's own effects plus any "added text" its owner's active gimmick
         // grants to cards of this name (El Super Santa / Sabu). Injected effects
-        // carry their own triggers (OnPlay/OnHit) and dispatch identically.
-        let mut effects = card.effects.clone();
-        effects.extend(self.injected_text(active, &card));
+        // carry their own triggers (OnPlay/OnHit) and dispatch identically. A
+        // text-blanked card (opponent's "your Spotlights are blank") fires nothing.
+        let effects = if self.state.is_text_blanked(&card, active) {
+            Vec::new()
+        } else {
+            let mut e = card.effects.clone();
+            e.extend(self.injected_text(active, &card));
+            e
+        };
         self.run_effects(&effects, "OnPlay", active, None)?;
         if self.ended() {
             return Ok(false);
@@ -2444,6 +2451,9 @@ impl Engine {
     fn card_can_stop(&self, defender: &str, stopper: &Card, attack: &Card) -> bool {
         if is_unstoppable_by(attack, stopper) {
             return false;
+        }
+        if self.state.is_text_blanked(stopper, defender) {
+            return false; // a text-blanked stop card cannot stop
         }
         stopper.effects.iter().any(|eff| {
             conditions::holds(&eff.condition, &self.state, defender, None)

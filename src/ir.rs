@@ -344,13 +344,6 @@ pub enum RollWhen {
     Next,
 }
 
-/// Text-blank expiry window.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum Until {
-    EndOfTurn,
-}
-
 /// Comparison operand for skill/hand-size compares.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -806,7 +799,7 @@ pub enum Action {
     },
     BlankText {
         selector: CardFilter,
-        until: Until,
+        who: Who,
     },
     LoseBy {
         kind: LoseKind,
@@ -1295,7 +1288,7 @@ pub enum IrNode {
     },
     BlankText {
         selector: CardFilter,
-        until: Until,
+        who: Who,
     },
     LoseBy {
         kind: LoseKind,

@@ -197,7 +197,8 @@ Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_
 StopRequiresTag(tag)          # marker paired with a sibling Stop in the same effect: the stop is legal only vs an attacker carrying `tag` — "Stop any Grapple with a Spotlight" (read by card_can_stop). schema v26
 Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)
 AlsoLead(condition)           # Static self-decl: also playable as a Lead while `condition` holds
-BlankText(card, until=END_OF_TURN)             LoseBy(kind=DISQUALIFICATION|PINFALL, who)
+BlankText(selector, who)                       LoseBy(kind=DISQUALIFICATION|PINFALL, who)
+  # Static decl: `who`'s cards matching `selector` fire no text & cannot stop while the source is in play ("your opponent's Spotlights are blank" — is_text_blanked). schema v27
 DisqualificationRule(enabled, scope=SELF|MATCH)  # Static match-rule toggle (schema v8): enabled=false =
                                                  # "no disqualifications"; a DQ LoseBy is VOIDED when the loser
                                                  # is immune (self-scope owner, or any match-scope rule). In-play-
