@@ -952,6 +952,31 @@
       }
     }
   ],
+  "20c146c8c0854329807a89143269a8fb": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "SuppressOpponentDraw"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your opponent does not draw for your card effects",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "23399bbbb04044748fda782de8e3169c": [
     {
       "@type": "Effect",

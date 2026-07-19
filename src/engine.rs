@@ -894,6 +894,7 @@ impl Engine {
             | Action::DoubleFinishIfBumped
             | Action::DisqualificationRule { .. }
             | Action::ConsideredCompare { .. }
+            | Action::SuppressOpponentDraw
             | Action::SwitchRolledSkill { .. }
             | Action::MaxHandSize { .. } => {}
             // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
@@ -962,9 +963,43 @@ impl Engine {
             n *= self.per_multiplier(per, per_who, key);
         }
         if n != 0 {
-            self.draw(&target, n as usize, source)?;
+            // "Your opponent does not draw for your card effects" (Sami "The Draw"):
+            // a draw this player's effect grants the opponent is voided.
+            if who == Who::Opp && self.suppresses_opp_draw(key) {
+                self.log_effect(key, "SuppressOpponentDraw", Some(&target), json!({"n": n}));
+            } else {
+                self.draw(&target, n as usize, source)?;
+            }
         }
         Ok(())
+    }
+
+    /// Whether `key` holds an active "your opponent does not draw for your card
+    /// effects" declaration (Sami "The Draw"): a Static `SuppressOpponentDraw` on
+    /// `key`'s own gimmick (unless blanked), entrance, or in-play, whose condition
+    /// holds. Read at `act_draw`.
+    fn suppresses_opp_draw(&self, key: &str) -> bool {
+        let player = &self.state.players[key];
+        let gimmick = (
+            &player.competitor.effects,
+            !self.state.is_gimmick_blanked(key),
+        );
+        std::iter::once(gimmick)
+            .chain(std::iter::once((&player.entrance.effects, true)))
+            .chain(player.in_play.iter().map(|c| (&c.effects, true)))
+            .any(|(effects, active)| active && self.declares_suppress(effects, key))
+    }
+
+    /// Any Static `SuppressOpponentDraw` among `effects` whose condition holds.
+    fn declares_suppress(&self, effects: &[Effect], key: &str) -> bool {
+        effects.iter().any(|eff| {
+            matches!(eff.trigger, Trigger::Static)
+                && eff
+                    .actions
+                    .iter()
+                    .any(|a| matches!(a, Action::SuppressOpponentDraw))
+                && conditions::holds(&eff.condition, &self.state, key, None)
+        })
     }
 
     fn act_shuffle_deck(&mut self, who: Who, key: &str) {
@@ -3409,6 +3444,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
         Action::ConsideredCompare { .. } => "ConsideredCompare",
+        Action::SuppressOpponentDraw => "SuppressOpponentDraw",
         Action::CrowdMeter { .. } => "CrowdMeter",
         Action::PlayExtraCard { .. } => "PlayExtraCard",
         Action::SetFinishRoll { .. } => "SetFinishRoll",

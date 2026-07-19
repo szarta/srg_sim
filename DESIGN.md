@@ -200,6 +200,8 @@ ConsideredCompare(domain=SKILL|HAND, order=GREATER|LESS)  # Static meta-override
                              # declaring player's vs-opponent SkillCompare (domain=SKILL) / HandSizeCompare
                              # (HAND) always resolves as `order` "for card effects", ignoring real values —
                              # strict (equality never holds). RaRa Perre (SKILL/GREATER), Theo V2 (HAND/LESS).
+SuppressOpponentDraw         # Static decl (schema v21): "your opponent does not draw for your card effects"
+                             # (Sami "The Draw") — a Draw(who=OPP) resolved by the declaring player is voided at act_draw.
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
 FinishRollBonus(delta, when_skill?, either=False)  # +delta to a Finish roll; when_skill gates on the rolled skill

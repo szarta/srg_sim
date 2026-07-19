@@ -577,5 +577,8 @@
       "text_contains": []
     },
     "who": "OPP"
+  },
+  {
+    "@type": "SuppressOpponentDraw"
   }
 ]

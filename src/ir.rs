@@ -791,6 +791,10 @@ pub enum Action {
         domain: CompareDomain,
         order: CompareOrder,
     },
+    /// A Static declaration: "your opponent does not draw for your card effects"
+    /// (Sami "The Draw" Callihan). Read at `act_draw` — a `Draw{who=OPP}` resolved by
+    /// the declaring player is voided. Not executed as a mutation.
+    SuppressOpponentDraw,
     CrowdMeter {
         delta: i64,
     },
@@ -1255,6 +1259,10 @@ pub enum IrNode {
         domain: CompareDomain,
         order: CompareOrder,
     },
+    /// A Static declaration: "your opponent does not draw for your card effects"
+    /// (Sami "The Draw" Callihan). Read at `act_draw` — a `Draw{who=OPP}` resolved by
+    /// the declaring player is voided. Not executed as a mutation.
+    SuppressOpponentDraw,
     CrowdMeter {
         delta: i64,
     },

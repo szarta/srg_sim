@@ -632,6 +632,9 @@
               },
               {
                 "$ref": "#/$defs/ReturnToHand"
+              },
+              {
+                "$ref": "#/$defs/SuppressOpponentDraw"
               }
             ]
           },
@@ -1067,6 +1070,9 @@
               },
               {
                 "$ref": "#/$defs/ReturnToHand"
+              },
+              {
+                "$ref": "#/$defs/SuppressOpponentDraw"
               }
             ]
           },
@@ -1750,6 +1756,9 @@
         },
         {
           "$ref": "#/$defs/ReturnToHand"
+        },
+        {
+          "$ref": "#/$defs/SuppressOpponentDraw"
         }
       ]
     },
@@ -2959,6 +2968,18 @@
       ],
       "type": "object"
     },
+    "SuppressOpponentDraw": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SuppressOpponentDraw"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "SwapHandDiscard": {
       "additionalProperties": false,
       "properties": {
@@ -3076,5 +3097,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 20
+  "version": 21
 }
