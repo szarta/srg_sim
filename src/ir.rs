@@ -354,8 +354,9 @@ pub enum Vs {
 }
 
 /// Which player a node targets. `SELF` is the acting player.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum Who {
+    #[default]
     #[serde(rename = "SELF")]
     SelfSide,
     #[serde(rename = "OPP")]
@@ -842,6 +843,15 @@ pub enum Action {
         delta: i64,
         when_skill: Option<Skill>,
         either: bool,
+        /// When set, the bonus is `delta * (count of `per_who`'s cards in `per_zone`
+        /// matching this filter)` — "your Finish roll is +1 for each Spotlight you
+        /// have in play / in your opponent's discard pile". `None` = flat `delta`.
+        #[serde(default)]
+        per: Option<CardFilter>,
+        #[serde(default)]
+        per_who: Who,
+        #[serde(default)]
+        per_zone: CountZone,
     },
     BreakoutModifier {
         delta: i64,
@@ -1331,6 +1341,15 @@ pub enum IrNode {
         delta: i64,
         when_skill: Option<Skill>,
         either: bool,
+        /// When set, the bonus is `delta * (count of `per_who`'s cards in `per_zone`
+        /// matching this filter)` — "your Finish roll is +1 for each Spotlight you
+        /// have in play / in your opponent's discard pile". `None` = flat `delta`.
+        #[serde(default)]
+        per: Option<CardFilter>,
+        #[serde(default)]
+        per_who: Who,
+        #[serde(default)]
+        per_zone: CountZone,
     },
     BreakoutModifier {
         delta: i64,

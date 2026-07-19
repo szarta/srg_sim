@@ -1921,6 +1921,97 @@
       }
     }
   ],
+  "45f1ce3c432b4646a8cf7440483579f0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishRollBonus",
+          "delta": 1,
+          "either": false,
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          },
+          "per_who": "OPP",
+          "per_zone": "DISCARD",
+          "when_skill": null
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your Finish rolls are +1 for each Spotlight in your opponent's discard pile.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "483f70a0f19841288d1d8ea046225744": [
     {
       "@type": "Effect",
@@ -4734,6 +4825,9 @@
           "@type": "FinishRollBonus",
           "delta": 2,
           "either": false,
+          "per": null,
+          "per_who": "SELF",
+          "per_zone": "IN_PLAY",
           "when_skill": "Technique"
         }
       ],

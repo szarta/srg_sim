@@ -254,10 +254,16 @@ fn negate_action(action: &Action) -> Action {
             delta,
             when_skill,
             either,
+            per,
+            per_who,
+            per_zone,
         } => Action::FinishRollBonus {
             delta: -*delta,
             when_skill: *when_skill,
             either: *either,
+            per: per.clone(),
+            per_who: *per_who,
+            per_zone: *per_zone,
         },
         Action::BreakoutModifier { delta, attempts } => Action::BreakoutModifier {
             delta: -*delta,
@@ -2617,11 +2623,25 @@ impl Engine {
             }
             for a in &eff.actions {
                 if let Action::FinishRollBonus {
-                    delta, when_skill, ..
+                    delta,
+                    when_skill,
+                    per,
+                    per_who,
+                    per_zone,
+                    ..
                 } = a
                 {
                     if when_skill.is_none() || *when_skill == Some(skill) {
-                        total += *delta;
+                        // Flat `delta`, or `delta * (count of `per_who`'s cards in
+                        // `per_zone` matching the filter)` — "+1 per Spotlight in play".
+                        let mult = match per {
+                            Some(f) => {
+                                let who = self.target(*per_who, key);
+                                self.state.count_in_zone(f, *per_zone, &who)
+                            }
+                            None => 1,
+                        };
+                        total += *delta * mult;
                     }
                 }
             }

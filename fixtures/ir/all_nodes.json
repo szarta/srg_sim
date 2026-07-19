@@ -196,7 +196,10 @@
     "@type": "FinishRollBonus",
     "delta": 0,
     "either": false,
-    "when_skill": null
+    "when_skill": null,
+    "per": null,
+    "per_who": "SELF",
+    "per_zone": "IN_PLAY"
   },
   {
     "@type": "Flip",

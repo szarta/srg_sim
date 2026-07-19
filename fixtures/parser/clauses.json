@@ -4081,6 +4081,9 @@
               "@type": "FinishRollBonus",
               "delta": 1,
               "either": false,
+              "per": null,
+              "per_who": "SELF",
+              "per_zone": "IN_PLAY",
               "when_skill": null
             }
           ],
@@ -7506,6 +7509,9 @@
               "@type": "FinishRollBonus",
               "delta": 1,
               "either": true,
+              "per": null,
+              "per_who": "SELF",
+              "per_zone": "IN_PLAY",
               "when_skill": "Agility"
             }
           ],

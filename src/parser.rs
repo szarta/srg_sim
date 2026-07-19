@@ -329,6 +329,9 @@ fn finish_roll_bonus(delta: i64) -> Vec<Action> {
         delta,
         when_skill: None,
         either: false,
+        per: None,
+        per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
     }]
 }
 
@@ -860,6 +863,9 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         delta: num(c, 2),
                         when_skill: Some(skill(&c[1])),
                         either: true,
+                        per: None,
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::InPlay,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,

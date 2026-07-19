@@ -339,7 +339,7 @@ impl GameState {
     }
 
     /// Count the target's cards in `zone` matching `filter` (Static per-count buffs).
-    fn count_in_zone(&self, filter: &CardFilter, zone: CountZone, target: &str) -> i64 {
+    pub fn count_in_zone(&self, filter: &CardFilter, zone: CountZone, target: &str) -> i64 {
         let player = &self.players[target];
         match zone {
             CountZone::InPlay => conditions::count_in_play(&player.in_play, filter, None),

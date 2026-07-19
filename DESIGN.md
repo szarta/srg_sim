@@ -211,7 +211,7 @@ SuppressOpponentDraw         # Static decl (schema v21): "your opponent does not
                              # (Sami "The Draw") — a Draw(who=OPP) resolved by the declaring player is voided at act_draw.
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
-FinishRollBonus(delta, when_skill?, either=False)  # +delta to a Finish roll; when_skill gates on the rolled skill
+FinishRollBonus(delta, when_skill?, either=False, per?, per_who=SELF, per_zone=IN_PLAY)  # +delta to a Finish roll; when_skill gates on the rolled skill. `per` set = delta * (count of per_who's cards in per_zone matching the filter) — "+1 per Spotlight in your opponent's discard". schema v28
 DoubleFinishIfBumped          # Static self-decl: double THIS card's Finish bonuses if the finisher bumped
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```

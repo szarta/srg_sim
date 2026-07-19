@@ -5390,3 +5390,73 @@ aa049f5ef34e463db3ec2c3a8fb1e343:
   raw_clause: If you have 3 or more Spotlight cards in play, +2 to Technique.
   source: card
   optional: false
+
+# Per-count Spotlight finish bonus (schema v28): FinishRollBonus.per counts
+# per_who's cards in per_zone matching the filter. Here +1 per Spotlight in the
+# opponent's discard pile. + 2 plain finish bonuses.
+45f1ce3c432b4646a8cf7440483579f0:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Technique
+    delta: 2
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +2 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Grapple
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishRollBonus
+    delta: 1
+    when_skill: null
+    either: false
+    per:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+    per_who: OPP
+    per_zone: DISCARD
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your Finish rolls are +1 for each Spotlight in your opponent's discard
+    pile.
+  source: card
+  optional: false

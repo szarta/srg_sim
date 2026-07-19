@@ -1318,6 +1318,22 @@
         "either": {
           "type": "boolean"
         },
+        "per": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_who": {
+          "$ref": "#/$defs/Who"
+        },
+        "per_zone": {
+          "$ref": "#/$defs/CountZone"
+        },
         "when_skill": {
           "anyOf": [
             {
@@ -1333,7 +1349,10 @@
         "@type",
         "delta",
         "when_skill",
-        "either"
+        "either",
+        "per",
+        "per_who",
+        "per_zone"
       ],
       "type": "object"
     },
@@ -3196,5 +3215,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 27
+  "version": 28
 }
