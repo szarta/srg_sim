@@ -2489,6 +2489,9 @@
         "draw": {
           "type": "integer"
         },
+        "match_on": {
+          "$ref": "#/$defs/RevealMatch"
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
@@ -2497,7 +2500,8 @@
         "@type",
         "who",
         "count",
-        "draw"
+        "draw",
+        "match_on"
       ],
       "type": "object"
     },
@@ -2506,6 +2510,13 @@
         "TOP",
         "BOTTOM",
         "CHOOSE"
+      ],
+      "type": "string"
+    },
+    "RevealMatch": {
+      "enum": [
+        "STOP",
+        "ROLLED_SKILL"
       ],
       "type": "string"
     },
@@ -3131,5 +3142,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 23
+  "version": 24
 }

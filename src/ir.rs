@@ -241,6 +241,18 @@ pub enum CompareOrder {
     Less,
 }
 
+/// Which revealed cards count toward the draw in [`Action::RevealForDraw`].
+/// `Stop` = each revealed Stop card (Bartholomew Hooke: "if it is a stop, draw
+/// 2"); `RolledSkill` = each revealed card whose move type equals the skill the
+/// actor just rolled (The Winning Ticket: "if the move type of the card revealed
+/// is the same as the skill you rolled, draw 1").
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RevealMatch {
+    Stop,
+    RolledSkill,
+}
+
 /// What a [`Action::Scry`] does with revealed cards that are neither taken to
 /// hand nor buried by the fixed `bury` count. `Return` puts them back on top of
 /// the deck (the actor reorders by value); `Choose` lets the actor decide, per
@@ -648,6 +660,7 @@ pub enum Action {
         who: Who,
         count: i64,
         draw: i64,
+        match_on: RevealMatch,
     },
     Peek {
         who: Who,
@@ -1129,6 +1142,7 @@ pub enum IrNode {
         who: Who,
         count: i64,
         draw: i64,
+        match_on: RevealMatch,
     },
     Peek {
         who: Who,

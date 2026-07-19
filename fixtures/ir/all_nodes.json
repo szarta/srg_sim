@@ -586,6 +586,7 @@
     "@type": "RevealForDraw",
     "count": 1,
     "draw": 2,
-    "who": "OPP"
+    "who": "OPP",
+    "match_on": "STOP"
   }
 ]

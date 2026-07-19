@@ -19,8 +19,8 @@ use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction,
-    DqScope, Duration, Effect, LoseKind, PlayOrder, RevealDest, RevealFrom, RollWhen, ScryRest,
-    Skill, Trigger, Who,
+    DqScope, Duration, Effect, LoseKind, PlayOrder, RevealDest, RevealFrom, RevealMatch, RollWhen,
+    ScryRest, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -836,9 +836,12 @@ impl Engine {
             Action::RevealAndDiscard { count, who } => {
                 self.act_reveal_and_discard(*count, *who, key)
             }
-            Action::RevealForDraw { who, count, draw } => {
-                self.act_reveal_for_draw(*who, *count, *draw, key)?
-            }
+            Action::RevealForDraw {
+                who,
+                count,
+                draw,
+                match_on,
+            } => self.act_reveal_for_draw(*who, *count, *draw, *match_on, key)?,
             Action::Peek { who } => self.act_peek(*who, key),
             Action::Scry {
                 deck,
@@ -1519,18 +1522,28 @@ impl Engine {
     /// "Your opponent randomly reveals `count` card(s) in their hand: if it is a stop,
     /// draw `draw`" (Bartholomew Hooke). Reveals stay in hand (public); the actor draws
     /// `draw` for each revealed stop.
-    fn act_reveal_for_draw(&mut self, who: Who, count: i64, draw: i64, key: &str) -> Eng<()> {
+    fn act_reveal_for_draw(
+        &mut self,
+        who: Who,
+        count: i64,
+        draw: i64,
+        match_on: RevealMatch,
+        key: &str,
+    ) -> Eng<()> {
         let target = self.target(who, key);
+        // The actor's own just-rolled skill drives the `RolledSkill` predicate; it
+        // is populated by `record_roll_ctx` before `OnRoll` fires (The Winning Ticket).
+        let rolled = self.roll_ctx.get(key).and_then(|c| c.skill);
         let mut pool: Vec<Card> = self.state.players[&target].hand.clone();
         let reveals = (count.max(0) as usize).min(pool.len());
-        let mut stops = 0i64;
+        let mut hits = 0i64;
         let mut revealed: Vec<String> = Vec::new();
         for _ in 0..reveals {
             let card = self.state.rng.reveal(&pool).cloned().unwrap();
             let pos = pool.iter().position(|c| c.db_uuid == card.db_uuid).unwrap();
             pool.remove(pos);
-            if is_stop_card(&card) {
-                stops += 1;
+            if reveal_matches(&card, match_on, rolled) {
+                hits += 1;
             }
             revealed.push(card.db_uuid);
         }
@@ -1539,11 +1552,11 @@ impl Engine {
                 key,
                 "RevealForDraw",
                 Some(&target),
-                json!({"revealed": revealed, "stops": stops}),
+                json!({"revealed": revealed, "hits": hits}),
             );
         }
-        if stops > 0 {
-            self.draw(key, (stops * draw).max(0) as usize, DeckEnd::Top)?;
+        if hits > 0 {
+            self.draw(key, (hits * draw).max(0) as usize, DeckEnd::Top)?;
         }
         Ok(())
     }
@@ -3443,6 +3456,30 @@ fn is_stop_card(card: &Card) -> bool {
     card.effects
         .iter()
         .any(|eff| eff.actions.iter().any(|a| matches!(a, Action::Stop { .. })))
+}
+
+/// Whether a card revealed by [`Engine::act_reveal_for_draw`] counts toward the
+/// draw: a Stop card (`Stop`), or one whose move type equals the actor's rolled
+/// skill (`RolledSkill`; no match when the actor did not roll a move skill).
+fn reveal_matches(card: &Card, match_on: RevealMatch, rolled: Option<Skill>) -> bool {
+    match match_on {
+        RevealMatch::Stop => is_stop_card(card),
+        RevealMatch::RolledSkill => {
+            rolled.is_some_and(|sk| atk_type_matches_skill(card.atk_type, sk))
+        }
+    }
+}
+
+/// True iff a card's attack (move) type is the same move as `skill` — i.e. one of
+/// the three move skills Strike/Grapple/Submission and matching. `AtkType::None`
+/// and the non-move skills (Power/Agility/Technique) never match.
+fn atk_type_matches_skill(atk: AtkType, skill: Skill) -> bool {
+    matches!(
+        (atk, skill),
+        (AtkType::Strike, Skill::Strike)
+            | (AtkType::Grapple, Skill::Grapple)
+            | (AtkType::Submission, Skill::Submission)
+    )
 }
 
 /// Value a scried card by how much the actor wants it kept/drawn: a Finish (a

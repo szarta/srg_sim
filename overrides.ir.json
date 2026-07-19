@@ -4077,6 +4077,7 @@
           "@type": "RevealForDraw",
           "count": 1,
           "draw": 2,
+          "match_on": "STOP",
           "who": "OPP"
         }
       ],
@@ -6266,6 +6267,95 @@
         "@type": "InRoll",
         "either": false,
         "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
+  "f4a3aea48e544fac9e4edf24b5d07235": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealForDraw",
+          "count": 1,
+          "draw": 1,
+          "match_on": "ROLLED_SKILL",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Strike for your turn roll, your opponent randomly reveals 1 card in their hand; if its move type is Strike, draw 1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Strike",
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealForDraw",
+          "count": 1,
+          "draw": 1,
+          "match_on": "ROLLED_SKILL",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Submission for your turn roll, your opponent randomly reveals 1 card in their hand; if its move type is Submission, draw 1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Submission",
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RevealForDraw",
+          "count": 1,
+          "draw": 1,
+          "match_on": "ROLLED_SKILL",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Grapple for your turn roll, your opponent randomly reveals 1 card in their hand; if its move type is Grapple, draw 1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Grapple",
         "who": "SELF"
       }
     }
