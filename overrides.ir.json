@@ -120,6 +120,46 @@
       }
     }
   ],
+  "05c82b62b0484199bd4ba46b8e32d8e9": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        },
+        {
+          "@type": "ModifyRoll",
+          "delta": 1,
+          "per": null,
+          "per_who": "OPP",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Power for your turn roll, draw 1 card and your next turn roll is +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
   "09edf17fc41849f0b0fec783384e8339": [
     {
       "@type": "Effect",
@@ -648,6 +688,41 @@
       "trigger": {
         "@type": "OnRoll",
         "skill": "Technique",
+        "who": "SELF"
+      }
+    }
+  ],
+  "1cad80cc73cc4b2bbb099e3cc31c97f6": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": -2,
+          "per": null,
+          "per_who": "OPP",
+          "when": "THIS",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "RollValue",
+        "cmp": "=",
+        "value": 5
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll 5 for your turn roll, your opponent's turn roll is -2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "InRoll",
+        "either": false,
+        "skill": null,
         "who": "SELF"
       }
     }
@@ -3655,6 +3730,52 @@
       }
     }
   ],
+  "a371e756c06840968b6a0d030ca4b737": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Draculeena"
+            ],
+            "number": null,
+            "play_order": "Finish",
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_crowd": false,
+          "per_zone": "DISCARD",
+          "skill": "Agility",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Agility for each Draculeena & Calliope Finish card in your discard pile",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "a4b61c579c2d4ca59b5001ea5503fdef": [
     {
       "@type": "Effect",
@@ -5041,6 +5162,52 @@
       }
     }
   ],
+  "df55bc41f35640b28b35de866e6a12da": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        },
+        {
+          "@type": "Draw",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Submission for your turn roll, shuffle 1 card from your discard pile into your deck and draw 1 card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Submission",
+        "who": "SELF"
+      }
+    }
+  ],
   "df576122c28f481f998634973945e334": [
     {
       "@type": "Effect",
@@ -5580,6 +5747,64 @@
       "trigger": {
         "@type": "InRoll",
         "either": false,
+        "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
+  "f908c048e5f84b9caf403a88fd63d15a": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "n": 1,
+                  "per": null,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "draw 1 card"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ModifyRoll",
+                  "delta": -1,
+                  "per": null,
+                  "per_who": "OPP",
+                  "when": "NEXT",
+                  "who": "OPP"
+                }
+              ],
+              "label": "target's next turn roll is -1"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "RollGapAtLeast",
+        "k": 3
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once per turn roll: when your turn roll is at least 3 less than your target's turn roll, draw 1 card or your target's next turn roll is -1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
       }

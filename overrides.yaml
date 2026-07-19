@@ -4144,3 +4144,178 @@ def74dd5530540ce8a9e903bc10fd620:
   raw_clause: when you roll 10 for your turn roll add 1 Loudmouth Leo Larynx Finish from your discard pile to your hand or your next turn roll is +1
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96 one-off gimmicks (M-R3) — pure-override quick wins, batch #2 (existing
+# nodes). Task #79 grind.
+# ---------------------------------------------------------------------------
+
+# Baby Chaos: you roll 5 -> opponent's turn roll -2 (this roll, like Numer01).
+1cad80cc73cc4b2bbb099e3cc31c97f6:
+- '@type': Effect
+  trigger:
+    '@type': InRoll
+    skill: null
+    who: SELF
+    either: false
+  condition:
+    '@type': RollValue
+    cmp: '='
+    value: 5
+  actions:
+  - '@type': ModifyRoll
+    who: OPP
+    delta: -2
+    when: THIS
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll 5 for your turn roll, your opponent's turn roll is -2
+  source: gimmick
+  optional: false
+
+# El Super Hombre (Super Lucha): roll Power -> draw 1 and your next turn roll +1.
+05c82b62b0484199bd4ba46b8e32d8e9:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+    per: null
+    per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Power for your turn roll, draw 1 card and your next turn roll is +1
+  source: gimmick
+  optional: false
+
+# Practisite (V2): roll >=3 less than target -> draw 1 OR target's next turn roll -1.
+f908c048e5f84b9caf403a88fd63d15a:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: null
+    who: SELF
+  condition:
+    '@type': RollGapAtLeast
+    k: 3
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: draw 1 card
+      actions:
+      - '@type': Draw
+        n: 1
+        source: TOP
+        who: SELF
+        per: null
+        per_who: SELF
+    - '@type': ChoiceOption
+      label: target's next turn roll is -1
+      actions:
+      - '@type': ModifyRoll
+        who: OPP
+        delta: -1
+        when: NEXT
+        per: null
+        per_who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: 'once per turn roll: when your turn roll is at least 3 less than your target''s turn roll, draw 1 card or your target''s next turn roll is -1'
+  source: gimmick
+  optional: false
+
+# Draculeena & Calliope: +1 Agility for each Draculeena & Calliope Finish in your discard.
+a371e756c06840968b6a0d030ca4b737:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+    cap: null
+    per_zone: DISCARD
+    per:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Finish
+      tag: null
+      name: null
+      raw: null
+      name_contains:
+      - Draculeena
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Agility for each Draculeena & Calliope Finish card in your discard pile
+  source: gimmick
+  optional: false
+
+# Captain C.J. Sparra: roll Submission -> shuffle 1 card from discard into deck, draw 1.
+df55bc41f35640b28b35de866e6a12da:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Submission
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Submission for your turn roll, shuffle 1 card from your discard pile into your deck and draw 1 card
+  source: gimmick
+  optional: false
