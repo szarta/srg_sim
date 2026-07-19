@@ -62,6 +62,9 @@ class PlayerState:
     discard: list[Card] = field(default_factory=list)
     in_play: list[Card] = field(default_factory=list)
     pending_roll_mods: dict[str, int] = field(default_factory=lambda: {"this": 0, "next": 0})
+    # One-shot "re-roll your NEXT turn roll" grants (King Brian Cage): ``next`` set
+    # when the effect fires, promoted to ``this`` at the owner's next turn start.
+    reroll_grants: dict[str, int] = field(default_factory=lambda: {"this": 0, "next": 0})
     freq_counters: dict[str, int] = field(default_factory=dict)
     gimmick_blanked: bool = False
     gimmick_flipped: bool = False  # competitor card turned to its back side (Copy Kat V2)
@@ -83,6 +86,7 @@ class PlayerState:
             "discard": _cards_to_list(self.discard),
             "in_play": _cards_to_list(self.in_play),
             "pending_roll_mods": dict(self.pending_roll_mods),
+            "reroll_grants": dict(self.reroll_grants),
             "freq_counters": dict(self.freq_counters),
             "gimmick_blanked": self.gimmick_blanked,
             "gimmick_flipped": self.gimmick_flipped,
@@ -99,6 +103,7 @@ class PlayerState:
             discard=_cards_from_list(data["discard"]),
             in_play=_cards_from_list(data["in_play"]),
             pending_roll_mods=dict(data["pending_roll_mods"]),
+            reroll_grants=dict(data.get("reroll_grants", {"this": 0, "next": 0})),
             freq_counters=dict(data["freq_counters"]),
             gimmick_blanked=data["gimmick_blanked"],
             gimmick_flipped=data.get("gimmick_flipped", False),

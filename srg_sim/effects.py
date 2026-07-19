@@ -727,6 +727,9 @@ class Reroll(IRNode):
     # "Choose any player to re-roll" (Grim Librarian): the owner picks which side
     # re-rolls (overrides ``who``).
     choose: bool = False
+    # ``THIS`` re-rolls the current roll (structural, read in the roll-off); ``NEXT``
+    # grants a one-shot re-roll for the owner's next turn roll (King Brian Cage).
+    when: RollWhen = RollWhen.THIS
 
 
 @dataclass(frozen=True)

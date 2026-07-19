@@ -214,6 +214,10 @@ class Engine:
         self._clear_turn_freq()
         for player in self.state.players.values():
             player.flags.pop("extra_plays", 0)  # "additional card this turn" is per-turn
+            # Promote a "re-roll your next turn roll" grant to this turn (SET, not
+            # accumulate); an unused grant expires.
+            player.reroll_grants["this"] = player.reroll_grants["next"]
+            player.reroll_grants["next"] = 0
         winner = self._turn_roll()
         if self._ended() or not self._draw_for_turn(winner):
             return
@@ -362,7 +366,12 @@ class Engine:
         The gate reads the opponent's roll for an ``InRoll(who=OPP)`` trigger (Jay White),
         else the owner's (Reverend "when you roll …")."""
         for eff in self._standing_effects(owner):
-            reroll = next((a for a in eff.actions if isinstance(a, fx.Reroll)), None)
+            # Only a THIS re-roll is offered structurally; a NEXT re-roll is a deferred
+            # grant (handled by _act_reroll + reroll_grants), not fired here.
+            reroll = next(
+                (a for a in eff.actions if isinstance(a, fx.Reroll) and a.when is fx.RollWhen.THIS),
+                None,
+            )
             if reroll is None:
                 continue
             gate_ctx = (
@@ -380,6 +389,11 @@ class Engine:
             if reroll.who is fx.Who.OPP:
                 return self.state.opponent_of(owner)
             return owner
+        # A granted "re-roll your next turn roll" (King Brian Cage): a one-shot
+        # optional self-re-roll, usable at any roll point until spent.
+        if self.state.players[owner].reroll_grants["this"] > 0 and self._offer_yes_no(owner):
+            self.state.players[owner].reroll_grants["this"] -= 1
+            return owner
         return None
 
     def _decide_reroll_target(self, owner: str) -> str:
@@ -387,6 +401,17 @@ class Engine:
         legal = [{"kind": "reroll_target", "target": "OPP"}, {"kind": "reroll_target", "target": "SELF"}]
         chosen = self._decide("reroll_target", owner, legal)
         return owner if chosen["target"] == "SELF" else self.state.opponent_of(owner)
+
+    def _act_reroll(self, action: fx.Reroll, key: str) -> None:
+        """A ``THIS`` re-roll is structural (read in the roll-off) — a no-op here. A
+        ``NEXT`` re-roll grants a one-shot for ``key``'s next turn roll (King Brian Cage)."""
+        if action.when is fx.RollWhen.NEXT:
+            self.state.players[key].reroll_grants["next"] += 1
+
+    def _offer_yes_no(self, key: str) -> bool:
+        """A bare optional yes/no offer to ``key`` (no backing effect)."""
+        chosen = self._decide("optional", key, [{"kind": "yes"}, {"kind": "no"}])
+        return chosen["kind"] == "yes"
 
     def _elective_bump_owner(self) -> str | None:
         """A player who holds an ``ElectBumpOnSameSkill`` grant with a per-match charge
@@ -1560,7 +1585,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
     fx.ElectBumpOnSameSkill: Engine._act_noop,  # Static, read in the roll-off; never executed
-    fx.Reroll: Engine._act_noop,  # read in the roll-off (_offer_reroll); never executed
+    fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed
     fx.DoubleFinishIfBumped: Engine._act_noop,  # Static, read in the finish sequence

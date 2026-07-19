@@ -3423,3 +3423,38 @@ b95f873118b944b0b07a8af9c8731752:
   raw_clause: 'once per turn roll, when you roll Technique: you may choose any player to re-roll their turn roll'
   source: gimmick
   optional: true
+
+# ===========================================================================
+# Top-96: reroll family Phase B — deferred "re-roll your NEXT turn roll"
+# (schema v10). OnRoll(Power) grants a one-shot Reroll(when=NEXT); the grant
+# promotes to the owner's next turn and is offered (optional) at any roll point,
+# once, then expires.
+# ===========================================================================
+
+# King Brian Cage (WC): "When you roll Power for your turn roll: You may re-roll
+# your next turn roll."
+8ddf0b4f072e4799bcb6df6b22e84b18: &nextreroll
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Reroll
+    who: SELF
+    once: true
+    choose: false
+    when: NEXT
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Power for your turn roll: you may re-roll your next turn roll'
+  source: gimmick
+
+# El Gato Shinobi (WC): identical — "When you roll Power for your turn roll: You
+# may re-roll your next turn roll."
+44a083f3214148959e40c125bb5eb7b2: *nextreroll
