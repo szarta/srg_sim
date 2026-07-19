@@ -902,6 +902,20 @@ class MaxHandSize(IRNode):
 
 
 @dataclass(frozen=True)
+class AddText(IRNode):
+    """"Your cards with ``name_contains`` in the name have the added text ``effects``"
+    (El Super Santa / Sabu / El Super Hombre). A ``Static`` gimmick declaration read
+    at play time: when active (its ``Effect.condition`` holds), each of the owner's
+    played cards whose title matches ``name_contains`` (case-insensitive OR) gains
+    ``effects``, run alongside the card's own effects. Never executed as a mutation
+    (a passive marker); the injected effects carry their own triggers (usually
+    ``OnPlay``)."""
+
+    name_contains: tuple[str, ...] = ()
+    effects: tuple[Effect, ...] = ()
+
+
+@dataclass(frozen=True)
 class Reroll(IRNode):
     who: Who
     once: bool = True
@@ -1296,6 +1310,7 @@ Action = (
     | ModifyRoll
     | BuffSkill
     | MaxHandSize
+    | AddText
     | Reroll
     | SwitchRolledSkill
     | WinTie

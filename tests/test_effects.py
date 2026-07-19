@@ -19,6 +19,7 @@ from srg_sim.effects import (
     Bump,
     Bury,
     BuryFrom,
+    AddText,
     CardFilter,
     Choice,
     ChoiceOption,
@@ -206,6 +207,7 @@ SAMPLES: list[IRNode] = [
     BuffSkill(Skill.POWER, 1),
     BuffSkill(Skill.GRAPPLE, 0, Who.SELF, target_highest=True, per_crowd=True, cap=5),
     MaxHandSize(-1, Who.OPP),
+    AddText(("Super",), (Effect(trigger=OnPlay(), actions=(Draw(n=2),)),)),  # El Super Santa
     Reroll(Who.OPP, once=False),
     SwitchRolledSkill(from_skill=Skill.TECHNIQUE, to=Skill.POWER),  # Scott Prime
     WinTie(Who.SELF),

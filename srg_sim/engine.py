@@ -736,11 +736,15 @@ class Engine:
         if stop is not None:
             self._apply_stop(active, defender, card, stop)
             return False
-        self._run_effects(card.effects, fx.OnPlay, active)
+        # The card's own effects plus any "added text" its owner's active gimmick
+        # grants to cards of this name (El Super Santa / Sabu). Injected effects carry
+        # their own triggers (OnPlay/OnHit) and dispatch identically.
+        effects = list(card.effects) + self._injected_text(active, card)
+        self._run_effects(effects, fx.OnPlay, active)
         if self._ended():
             return False
         self.state.players[active].in_play.append(card)
-        self._run_effects(card.effects, fx.OnHit, active)  # the card's own "when this hits"
+        self._run_effects(effects, fx.OnHit, active)  # the card's own "when this hits"
         self._run_hit_gimmicks(card, active)  # owner gimmick "when you hit a <type>" (D1)
         self._enforce_hand_caps()  # a new Static max-handsize mod may force a discard
         return not self._ended()
@@ -766,6 +770,25 @@ class Engine:
             )
             if type_ok and conditions.card_matches(card, gate):
                 self._fire_if_ready(eff, key, None)
+
+    def _injected_text(self, key: str, card: Card) -> list[fx.Effect]:
+        """"Added text" effects ``key``'s active gimmicks grant to ``card`` (El Super
+        Santa: cards with "Super" in the name gain "Draw 2"). Collects ``AddText``
+        actions from ``key``'s standing Static effects whose condition holds and whose
+        ``name_contains`` matches the card's title, returning the effects to run
+        alongside the card's own. Empty when no gimmick text applies."""
+        out: list[fx.Effect] = []
+        for eff in self._standing_effects(key):
+            if not isinstance(eff.trigger, fx.Static) or not conditions.holds(
+                eff.condition, self.state, key
+            ):
+                continue
+            for action in eff.actions:
+                if isinstance(action, fx.AddText):
+                    gate = fx.CardFilter(name_contains=action.name_contains)
+                    if conditions.card_matches(card, gate):
+                        out.extend(action.effects)
+        return out
 
     def _offer_stop(self, defender: str, attacker: str, card: Card) -> Card | None:
         stops = self._legal_stops(defender, attacker, card)
@@ -1978,6 +2001,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
     fx.ElectBumpOnSameSkill: Engine._act_noop,  # Static, read in the roll-off; never executed
     fx.SwitchRolledSkill: Engine._act_noop,  # Static, read in both roll paths; never executed
+    fx.AddText: Engine._act_noop,  # Static, read via _injected_text at play time; never executed
     fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed

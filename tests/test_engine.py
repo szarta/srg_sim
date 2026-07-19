@@ -225,6 +225,35 @@ def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
     assert len(eng.state.players["A"].hand) == a2
 
 
+def test_add_text_injects_effects_into_matching_named_cards() -> None:
+    # El Super Santa: cards with "Super" in the name gain the added text "Draw 2".
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    added = fx.Effect(trigger=fx.OnPlay(), actions=(fx.Draw(n=2),))
+    gimmick = fx.Effect(
+        trigger=fx.Static(),
+        actions=(fx.AddText(name_contains=("Super",), effects=(added,)),),
+        source=fx.EffectSource.GIMMICK,
+    )
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(gimmick,)
+    )
+    supercard = Card(
+        db_uuid="sc", name="Super Kick", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD
+    )
+    plain = Card(
+        db_uuid="pc", name="Kick", number=2, atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD
+    )
+    # The gimmick grants the added effect only to the Super-named card.
+    assert eng._injected_text("A", supercard) == [added]
+    assert eng._injected_text("A", plain) == []
+    # Play resolution runs the injected OnPlay Draw 2 (B holds no stop, so it lands).
+    eng.state.players["B"].hand = []
+    before = len(eng.state.players["A"].hand)
+    eng._resolve_play("A", "B", supercard)
+    assert len(eng.state.players["A"].hand) == before + 2
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.
