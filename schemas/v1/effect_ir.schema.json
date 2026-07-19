@@ -605,6 +605,9 @@
               },
               {
                 "$ref": "#/$defs/SwitchRolledSkill"
+              },
+              {
+                "$ref": "#/$defs/ConsideredCompare"
               }
             ]
           },
@@ -630,6 +633,40 @@
         "<="
       ],
       "type": "string"
+    },
+    "CompareDomain": {
+      "enum": [
+        "SKILL",
+        "HAND"
+      ],
+      "type": "string"
+    },
+    "CompareOrder": {
+      "enum": [
+        "GREATER",
+        "LESS"
+      ],
+      "type": "string"
+    },
+    "ConsideredCompare": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ConsideredCompare"
+        },
+        "domain": {
+          "$ref": "#/$defs/CompareDomain"
+        },
+        "order": {
+          "$ref": "#/$defs/CompareOrder"
+        }
+      },
+      "required": [
+        "@type",
+        "domain",
+        "order"
+      ],
+      "type": "object"
     },
     "CountZone": {
       "enum": [
@@ -981,6 +1018,9 @@
               },
               {
                 "$ref": "#/$defs/SwitchRolledSkill"
+              },
+              {
+                "$ref": "#/$defs/ConsideredCompare"
               }
             ]
           },
@@ -1637,6 +1677,9 @@
         },
         {
           "$ref": "#/$defs/OnBury"
+        },
+        {
+          "$ref": "#/$defs/ConsideredCompare"
         }
       ]
     },
@@ -2864,5 +2907,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 15
+  "version": 16
 }

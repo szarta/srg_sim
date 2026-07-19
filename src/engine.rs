@@ -886,6 +886,7 @@ impl Engine {
             | Action::AlsoLead { .. }
             | Action::DoubleFinishIfBumped
             | Action::DisqualificationRule { .. }
+            | Action::ConsideredCompare { .. }
             | Action::SwitchRolledSkill { .. }
             | Action::MaxHandSize { .. } => {}
             // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
@@ -3302,6 +3303,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BlankText { .. } => "BlankText",
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
+        Action::ConsideredCompare { .. } => "ConsideredCompare",
         Action::CrowdMeter { .. } => "CrowdMeter",
         Action::PlayExtraCard { .. } => "PlayExtraCard",
         Action::SetFinishRoll { .. } => "SetFinishRoll",

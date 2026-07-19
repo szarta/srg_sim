@@ -540,5 +540,10 @@
     "also_discard": false,
     "from_hand_only": false,
     "who": "SELF"
+  },
+  {
+    "@type": "ConsideredCompare",
+    "domain": "SKILL",
+    "order": "GREATER"
   }
 ]

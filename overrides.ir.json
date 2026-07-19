@@ -1044,6 +1044,33 @@
       }
     }
   ],
+  "2751c0c3d26947fdb910924c50726fcd": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ConsideredCompare",
+          "domain": "HAND",
+          "order": "LESS"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "you are considered to have fewer cards in your hand than your opponent",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "276fb52f04234fa9bb6adebf98aa91e6": [
     {
       "@type": "Effect",
@@ -4719,6 +4746,33 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "c138c28b4b8b48bbb5272e9ceaede716": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ConsideredCompare",
+          "domain": "SKILL",
+          "order": "GREATER"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your skills are considered higher than your opponent's skills for card effects",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],

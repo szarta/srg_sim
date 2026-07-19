@@ -217,6 +217,27 @@ pub enum DqScope {
     Match,
 }
 
+/// Which comparison [`Action::ConsideredCompare`] overrides "for card effects":
+/// `Skill` forces every `SkillCompare` of the declaring player vs the opponent,
+/// `Hand` forces every `HandSizeCompare`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CompareDomain {
+    Skill,
+    Hand,
+}
+
+/// How [`Action::ConsideredCompare`] resolves the declaring player vs the opponent:
+/// `Greater` = the subject is always considered higher/more ("your skills are
+/// considered higher" — RaRa Perre); `Less` = always considered lower/fewer ("you
+/// are considered to have fewer cards in hand" — Theo the Greek Neo V2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CompareOrder {
+    Greater,
+    Less,
+}
+
 /// What a [`Action::Scry`] does with revealed cards that are neither taken to
 /// hand nor buried by the fixed `bury` count. `Return` puts them back on top of
 /// the deck (the actor reorders by value); `Choose` lets the actor decide, per
@@ -727,6 +748,14 @@ pub enum Action {
         enabled: bool,
         scope: DqScope,
     },
+    /// A Static meta-comparison override "for card effects": the declaring player's
+    /// `domain` comparison vs the opponent always resolves as `order` regardless of
+    /// the real values (RaRa Perre "skills considered higher"; Theo V2 "considered
+    /// fewer cards in hand"). Read in `conditions::holds`, not executed.
+    ConsideredCompare {
+        domain: CompareDomain,
+        order: CompareOrder,
+    },
     CrowdMeter {
         delta: i64,
     },
@@ -1150,6 +1179,14 @@ pub enum IrNode {
     DisqualificationRule {
         enabled: bool,
         scope: DqScope,
+    },
+    /// A Static meta-comparison override "for card effects": the declaring player's
+    /// `domain` comparison vs the opponent always resolves as `order` regardless of
+    /// the real values (RaRa Perre "skills considered higher"; Theo V2 "considered
+    /// fewer cards in hand"). Read in `conditions::holds`, not executed.
+    ConsideredCompare {
+        domain: CompareDomain,
+        order: CompareOrder,
     },
     CrowdMeter {
         delta: i64,

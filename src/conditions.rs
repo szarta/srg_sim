@@ -11,7 +11,10 @@
 //! one they are false.
 
 use crate::cards::Card;
-use crate::ir::{Action, CardFilter, Comparator, Condition, Skill, Vs, Who};
+use crate::ir::{
+    Action, CardFilter, Comparator, CompareDomain, CompareOrder, Condition, Effect, Skill, Trigger,
+    Vs, Who,
+};
 use crate::state::GameState;
 
 /// The current turn roll, for roll-scoped conditions (from the owner's view).
@@ -34,6 +37,65 @@ fn cmp_apply(cmp: Comparator, a: i64, b: i64) -> bool {
         Comparator::Lt => a < b,
         Comparator::Le => a <= b,
     }
+}
+
+/// Resolve a comparison whose left side is forced by a [`CompareOrder`] override:
+/// `Greater` means the subject is treated as strictly higher/more than the opponent
+/// (`>`/`>=` hold, everything else fails); `Less` as strictly lower/fewer. A strict
+/// override so equality (`=`) is never satisfied — "considered higher" ≠ "equal".
+fn forced_cmp(cmp: Comparator, order: CompareOrder) -> bool {
+    match order {
+        CompareOrder::Greater => matches!(cmp, Comparator::Gt | Comparator::Ge),
+        CompareOrder::Less => matches!(cmp, Comparator::Lt | Comparator::Le),
+    }
+}
+
+/// The active [`Action::ConsideredCompare`] override of `key` for `domain`, if any
+/// (RaRa Perre "skills higher"; Theo V2 "hand fewer"). Scans `key`'s own active
+/// static declarations — competitor gimmick (unless blanked), entrance, in-play —
+/// honoring each declaration's condition. Read by `SkillCompare`/`HandSizeCompare`.
+fn considered_compare(state: &GameState, key: &str, domain: CompareDomain) -> Option<CompareOrder> {
+    let player = &state.players[key];
+    let groups: [(&[Effect], bool); 2] = [
+        (&player.competitor.effects, !state.is_gimmick_blanked(key)),
+        (&player.entrance.effects, true),
+    ];
+    for (effects, active) in groups {
+        if active {
+            if let Some(o) = scan_considered(state, key, effects, domain) {
+                return Some(o);
+            }
+        }
+    }
+    for card in &player.in_play {
+        if let Some(o) = scan_considered(state, key, &card.effects, domain) {
+            return Some(o);
+        }
+    }
+    None
+}
+
+/// The first active `ConsideredCompare` of `domain` among `effects` (Static trigger,
+/// condition holds), or `None`.
+fn scan_considered(
+    state: &GameState,
+    key: &str,
+    effects: &[Effect],
+    domain: CompareDomain,
+) -> Option<CompareOrder> {
+    for eff in effects {
+        if !matches!(eff.trigger, Trigger::Static) {
+            continue;
+        }
+        for a in &eff.actions {
+            if let Action::ConsideredCompare { domain: d, order } = a {
+                if *d == domain && holds(&eff.condition, state, key, None) {
+                    return Some(*order);
+                }
+            }
+        }
+    }
+    None
 }
 
 /// True iff `card` satisfies every set criterion of `filt` (AND; `raw` ignored).
@@ -150,6 +212,13 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             vs_skill,
         } => {
             let subject = who_key(state, owner, *who);
+            // "Your skills are considered higher than your opponent's" (RaRa Perre):
+            // a vs-opponent skill comparison of `subject` resolves a fixed way.
+            if *vs != Vs::Value {
+                if let Some(order) = considered_compare(state, &subject, CompareDomain::Skill) {
+                    return forced_cmp(*cmp, order);
+                }
+            }
             let left = skill_value(state, &subject, *skill);
             let right = if *vs == Vs::Value {
                 value.unwrap_or(0)
@@ -166,6 +235,13 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             who,
         } => {
             let subject = who_key(state, owner, *who);
+            // "You are considered to have fewer cards in hand" (Theo V2): a
+            // vs-opponent hand-size comparison of `subject` resolves a fixed way.
+            if *vs != Vs::Value {
+                if let Some(order) = considered_compare(state, &subject, CompareDomain::Hand) {
+                    return forced_cmp(*cmp, order);
+                }
+            }
             let left = state.players[&subject].hand.len() as i64;
             let right = if *vs == Vs::Value {
                 value.unwrap_or(0)

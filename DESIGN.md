@@ -185,6 +185,10 @@ DisqualificationRule(enabled, scope=SELF|MATCH)  # Static match-rule toggle (sch
                                                  # "no disqualifications"; a DQ LoseBy is VOIDED when the loser
                                                  # is immune (self-scope owner, or any match-scope rule). In-play-
                                                  # scoped + condition-gated; last-played-order tie-break is task #93
+ConsideredCompare(domain=SKILL|HAND, order=GREATER|LESS)  # Static meta-override (schema v16): the
+                             # declaring player's vs-opponent SkillCompare (domain=SKILL) / HandSizeCompare
+                             # (HAND) always resolves as `order` "for card effects", ignoring real values —
+                             # strict (equality never holds). RaRa Perre (SKILL/GREATER), Theo V2 (HAND/LESS).
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
 FinishRollBonus(delta, when_skill?, either=False)  # +delta to a Finish roll; when_skill gates on the rolled skill
