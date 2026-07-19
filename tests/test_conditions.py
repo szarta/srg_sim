@@ -164,6 +164,17 @@ def test_hand_size_vs_opponent() -> None:
     assert not holds(more, s, "B")
 
 
+def test_during_turn_reads_active_player() -> None:
+    # La Fenix: "during your opponent's turn". A's opponent is B.
+    s = _state()
+    s.active = "B"  # opponent's turn
+    assert holds(fx.DuringTurn(fx.Who.OPP), s, "A")
+    assert not holds(fx.DuringTurn(fx.Who.SELF), s, "A")
+    s.active = "A"  # own turn
+    assert not holds(fx.DuringTurn(fx.Who.OPP), s, "A")
+    assert holds(fx.DuringTurn(fx.Who.SELF), s, "A")
+
+
 def test_crowd_meter_compare() -> None:
     s = _state()
     s.crowd_meter = 3

@@ -585,6 +585,15 @@ class GimmickFlipped(IRNode):
 
 
 @dataclass(frozen=True)
+class DuringTurn(IRNode):
+    """True iff it is currently ``who``'s turn — the active player (roll-off winner)
+    is the ``who``-side. Gates a continuous effect to a turn phase ("during your
+    opponent's turn: …" — La Fenix). Reads ``GameState.active``."""
+
+    who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
 class RollValue(IRNode):
     """The rolled value of the current turn roll compared against ``value`` — gates on
     the **actual number rolled** this turn (not a static stat), read from the
@@ -1217,6 +1226,7 @@ Condition = (
     | SameRolledSkill
     | OppWonLastRoll
     | GimmickFlipped
+    | DuringTurn
 )
 
 Action = (

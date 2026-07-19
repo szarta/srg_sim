@@ -35,6 +35,7 @@ from srg_sim.effects import (
     Discard,
     DoubleFinishIfBumped,
     Draw,
+    DuringTurn,
     Effect,
     EffectSource,
     ElectBumpOnSameSkill,
@@ -161,6 +162,7 @@ SAMPLES: list[IRNode] = [
     RollValue(Comparator.LE, 7),
     PrintedRollValue(Who.OPP, 8),  # Collin the Chrononaut
     GimmickFlipped(Who.SELF),
+    DuringTurn(Who.OPP),  # La Fenix
     # actions
     Draw(2, DeckEnd.BOTTOM),
     Bury(CardFilter(number=1), 2),

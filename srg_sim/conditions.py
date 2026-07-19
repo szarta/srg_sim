@@ -271,6 +271,10 @@ def _h_gimmick_flipped(c: fx.GimmickFlipped, s: GameState, o: str, r: RollContex
     return s.players[_who(s, o, c.who)].gimmick_flipped
 
 
+def _h_during_turn(c: fx.DuringTurn, s: GameState, o: str, r: RollContext | None) -> bool:
+    return s.active == _who(s, o, c.who)
+
+
 _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]] = {
     fx.Always: _h_always,
     fx.And: _h_and,
@@ -291,4 +295,5 @@ _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]]
     fx.SameRolledSkill: _h_same_rolled_skill,
     fx.OppWonLastRoll: _h_opp_won_last,
     fx.GimmickFlipped: _h_gimmick_flipped,
+    fx.DuringTurn: _h_during_turn,
 }
