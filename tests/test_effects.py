@@ -81,6 +81,7 @@ from srg_sim.effects import (
     Reroll,
     SwitchRolledSkill,
     RevealAndDiscard,
+    RevealForDraw,
     RevealDest,
     RevealFrom,
     RevealRoute,
@@ -196,6 +197,7 @@ SAMPLES: list[IRNode] = [
         CardFilter(play_order=PlayOrder.LEAD, atk_type=AtkType.STRIKE), 2
     ),
     RevealAndDiscard(3, Who.OPP),  # Spin Wheel Kick reveal-3-discard-Stops
+    RevealForDraw(Who.OPP, 1, 2),  # Bartholomew Hooke
     ModifyRoll(Who.SELF, 1, RollWhen.NEXT),
     Draw(1, per=CardFilter(play_order=PlayOrder.LEAD), per_who=Who.SELF),  # per-count draw
     Discard(  # per-count opponent discard (Field of Fire)

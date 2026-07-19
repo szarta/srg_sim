@@ -749,14 +749,16 @@ class Engine:
         """Fire ``key``'s standing ``OnHit`` gimmicks for a card that just hit — gated
         by attack type (D1: "when you hit a Submission, draw 1") and/or the hit card's
         name/text ("when you hit a card with 'X' in the name"). A bare OnHit (no gate)
-        is the card's own "when this hits", already resolved via :meth:`_run_effects`,
-        so it is not re-fired."""
+        is the card's own "when this hits" (already resolved via :meth:`_run_effects`)
+        — skipped UNLESS it sets ``on_any`` ("when you hit a card" — Bartholomew Hooke),
+        which fires on every hit. ``on_any`` is override-only, so parser fragments that
+        produce a bare OnHit stay inert."""
         for eff in self._standing_effects(key):
             trig = eff.trigger
             if not isinstance(trig, fx.OnHit):
                 continue
             has_name_gate = bool(trig.name_contains or trig.text_contains)
-            if trig.atk_type is None and not has_name_gate:
+            if trig.atk_type is None and not has_name_gate and not trig.on_any:
                 continue
             type_ok = trig.atk_type is None or trig.atk_type is card.atk_type
             gate = fx.CardFilter(
@@ -1429,6 +1431,28 @@ class Engine:
                 gl.Discard(t=self.state.turn_no, player=target, cards=[c.db_uuid for c in dropped])
             )
 
+    def _act_reveal_for_draw(self, action: fx.RevealForDraw, key: str) -> None:
+        # "Your opponent randomly reveals `count` in their hand: if it is a stop, draw
+        # `draw`" (Bartholomew Hooke). Reveals stay in hand; the actor draws for each
+        # revealed stop.
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        pool = list(self.state.players[target].hand)
+        revealed: list[Card] = []
+        for _ in range(min(action.count, len(pool))):
+            card = self.state.rng.reveal(pool)
+            pool.remove(card)
+            revealed.append(card)
+        stops = sum(1 for c in revealed if _is_stop_card(c))
+        if revealed:
+            self._log_effect(
+                key,
+                "RevealForDraw",
+                target,
+                {"revealed": [c.db_uuid for c in revealed], "stops": stops},
+            )
+        if stops > 0:
+            self._draw(key, stops * action.draw, fx.DeckEnd.TOP)
+
     def _act_crowd(self, action: fx.CrowdMeter, key: str) -> None:
         self.state.crowd_meter += action.delta
         self._log(
@@ -1940,6 +1964,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed
     fx.DoubleFinishIfBumped: Engine._act_noop,  # Static, read in the finish sequence
     fx.RevealAndDiscard: Engine._act_reveal_and_discard,
+    fx.RevealForDraw: Engine._act_reveal_for_draw,
     fx.MaxHandSize: Engine._act_noop,  # Static, read via effective_hand_cap; never executed
     fx.ShuffleDeck: Engine._act_shuffle_deck,
     fx.Search: Engine._act_search,

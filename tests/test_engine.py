@@ -203,6 +203,28 @@ def test_suppress_opponent_draw_voids_only_the_opponents_effect_draw() -> None:
     assert len(eng.state.players["A"].hand) == a3 + 1
 
 
+def test_reveal_for_draw_draws_only_when_a_stop_is_revealed() -> None:
+    # Bartholomew Hooke: reveal 1 from the opponent's hand; if it is a stop, draw 2.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    stop_eff = fx.Effect(trigger=fx.OnPlay(), actions=(fx.Stop(),))
+    stop = Card(
+        db_uuid="stop", name="Stopper", number=13, atk_type=AtkType.STRIKE,
+        play_order=PlayOrder.FOLLOWUP, effects=(stop_eff,),
+    )
+    eng.state.players["B"].hand = [stop]
+    before = len(eng.state.players["A"].hand)
+    eng._act_reveal_for_draw(fx.RevealForDraw(who=fx.Who.OPP, count=1, draw=2), "A")
+    assert len(eng.state.players["A"].hand) == before + 2  # revealed a stop -> draw 2
+    assert stop in eng.state.players["B"].hand  # a reveal does not remove the card
+    # A non-stop reveal draws nothing.
+    plain = Card(db_uuid="ns", name="Plain", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    eng.state.players["B"].hand = [plain]
+    a2 = len(eng.state.players["A"].hand)
+    eng._act_reveal_for_draw(fx.RevealForDraw(who=fx.Who.OPP, count=1, draw=2), "A")
+    assert len(eng.state.players["A"].hand) == a2
+
+
 def test_return_to_hand_bounces_to_the_owners_hand() -> None:
     # Fox Assassin V2: "add 1 card any player has in play to their hand" — a bounced
     # card returns to its OWNER's hand, from either board when choose=True.

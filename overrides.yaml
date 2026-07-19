@@ -4771,3 +4771,37 @@ e515d26515954e709e0f81a86f5231cb:
   raw_clause: when you roll Technique for your turn roll, you may search your deck for a Strike and put it on top of your shuffled deck
   source: gimmick
   optional: true
+
+# ---------------------------------------------------------------------------
+# Top-96 (task #105): RevealForDraw action (schema v23) = opponent randomly
+# reveals count cards from hand; actor draws `draw` per revealed stop. Also
+# required a fix so a BARE OnHit on a GIMMICK/ENTRANCE ("when you hit a card")
+# fires on every hit (was silently dropped — also un-drops 4 grammar comps).
+# ---------------------------------------------------------------------------
+
+# Bartholomew Hooke (World Championship): "When you hit a card, your opponent
+# randomly reveals a card in their hand: if it is a stop, draw 2 cards." Bare
+# gimmick OnHit -> RevealForDraw(OPP, 1, 2).
+a01036ebb5bf49e382f6c9668fd04cc7:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    text_contains: []
+    on_any: true
+  condition:
+    '@type': Always
+  actions:
+  - '@type': RevealForDraw
+    who: OPP
+    count: 1
+    draw: 2
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you hit a card, your opponent randomly reveals a card in their hand: if it is a stop, draw 2 cards'
+  source: gimmick
+  optional: false

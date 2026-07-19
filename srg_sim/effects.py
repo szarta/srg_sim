@@ -409,6 +409,9 @@ class OnHit(IRNode):
     atk_type: AtkType | None = None
     name_contains: tuple[str, ...] = ()
     text_contains: tuple[str, ...] = ()
+    # "When you hit a card" (any card) as a standing gimmick — fires on every hit
+    # (Bartholomew Hooke). Override-only; parser fragments leave it False.
+    on_any: bool = False
 
 
 @dataclass(frozen=True)
@@ -988,6 +991,17 @@ class RevealAndDiscard(IRNode):
 
 
 @dataclass(frozen=True)
+class RevealForDraw(IRNode):
+    """"Your opponent randomly reveals ``count`` card(s) in their hand: if it is a
+    stop, draw ``draw`` cards" (Bartholomew Hooke). Reveals stay in hand; the actor
+    draws ``draw`` for each revealed stop."""
+
+    who: Who = Who.OPP
+    count: int = 1
+    draw: int = 2
+
+
+@dataclass(frozen=True)
 class BlankGimmick(IRNode):
     who: Who
     duration: Duration = Duration.WHILE_IN_PLAY
@@ -1266,6 +1280,7 @@ Action = (
     | RemoveFromPlay
     | ReturnToHand
     | RevealAndDiscard
+    | RevealForDraw
     | Peek
     | ModifyRoll
     | BuffSkill
