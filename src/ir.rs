@@ -181,6 +181,9 @@ pub enum DeckEnd {
 pub enum Dest {
     Hand,
     Discard,
+    /// Put the searched card on TOP of the (shuffled) deck — "search your deck for a
+    /// Strike and put it on top of your shuffled deck" (Heartache Kid).
+    DeckTop,
 }
 
 /// Source zone a [`Action::Bury`] draws from. `Discard` (the default) is the

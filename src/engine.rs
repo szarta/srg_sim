@@ -1156,14 +1156,28 @@ impl Engine {
             .filter(|c| conditions::card_matches(c, filter))
             .cloned()
             .collect();
-        if !matches.is_empty() {
-            let card = self.pick_from(key, &matches, "target")?;
-            {
-                let player = self.state.players.get_mut(key).unwrap();
-                if let Some(pos) = player.deck.iter().position(|c| c.db_uuid == card.db_uuid) {
-                    player.deck.remove(pos);
-                }
-                player.hand.push(card.clone());
+        let picked = if matches.is_empty() {
+            None
+        } else {
+            Some(self.pick_from(key, &matches, "target")?)
+        };
+        if let Some(card) = &picked {
+            let player = self.state.players.get_mut(key).unwrap();
+            if let Some(pos) = player.deck.iter().position(|c| c.db_uuid == card.db_uuid) {
+                player.deck.remove(pos);
+            }
+        }
+        // You looked through the deck — shuffle the remainder. The picked card is out
+        // of the deck for the shuffle whether it lands in hand or back on top, so a
+        // `Hand` search shuffles identically to before (byte-for-byte parity).
+        let deck = &mut self.state.players.get_mut(key).unwrap().deck;
+        self.state.rng.shuffle(deck);
+        if let Some(card) = picked {
+            let player = self.state.players.get_mut(key).unwrap();
+            match dest {
+                Dest::Hand => player.hand.push(card.clone()),
+                Dest::DeckTop => player.deck.insert(0, card.clone()), // top of deck
+                Dest::Discard => unreachable!("handled above"),
             }
             let t = self.state.turn_no;
             self.log(Event::Search(CardMovement {
@@ -1171,12 +1185,13 @@ impl Engine {
                 player: key.to_owned(),
                 cards: vec![card.db_uuid],
                 source: Some("deck".to_owned()),
-                hidden: true, // deck -> hand: both private, opponent sees only counts
+                hidden: true, // deck -> hand/deck: both private, opponent sees only counts
             }));
         }
-        let deck = &mut self.state.players.get_mut(key).unwrap().deck;
-        self.state.rng.shuffle(deck);
-        self.hand_cap(key)
+        if dest == Dest::Hand {
+            self.hand_cap(key)?;
+        }
+        Ok(())
     }
 
     /// "Search your deck for up to N cards and put them into your discard pile":

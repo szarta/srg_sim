@@ -768,7 +768,8 @@
     "Dest": {
       "enum": [
         "HAND",
-        "DISCARD"
+        "DISCARD",
+        "DECK_TOP"
       ],
       "type": "string"
     },
@@ -3097,5 +3098,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 21
+  "version": 22
 }

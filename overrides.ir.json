@@ -3478,6 +3478,46 @@
       }
     }
   ],
+  "8d1c80c7bbf34977ae298f810ac15af8": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "DECK_TOP",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": "Strike",
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "when you roll Technique for your turn roll, you may search your deck for a Strike and put it on top of your shuffled deck",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
+        "who": "SELF"
+      }
+    }
+  ],
   "8ddf0b4f072e4799bcb6df6b22e84b18": [
     {
       "@type": "Effect",

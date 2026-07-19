@@ -145,7 +145,8 @@ Always
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
 Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF)  Bury(selector, count)   Discard(selector, count, who, per?, per_who=SELF)
-Flip(n, who=SELF)             Search(filter, dest=HAND|DISCARD, count=1)  ShuffleIntoDeck(selector)
+Flip(n, who=SELF)             Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1)  ShuffleIntoDeck(selector)
+                              # dest=DECK_TOP (schema v22): search, shuffle the deck, put the card on TOP (Heartache Kid)
                               # dest=DISCARD: "search your deck for up to `count` cards, put them in
                               # discard" — owner chooses which/how many (a `search` decision), then shuffles
                               # Draw/Discard `per`: n/count scales by the count of `per` cards in play,
