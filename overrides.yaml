@@ -5060,6 +5060,166 @@ bb3bee34d3df4e1384ba7c77b2a826f3:
   source: gimmick
   optional: false
 
+# General Manager John Calace (V2) (Underworld): 'Your cards with "Bar", "Shot",
+# or "Bender" in the name have the added text: "Your opponent buries 1 random card
+# in their hand." When you have 5 cards with "Bar", "Shot", or "Bender" in the name
+# in play, your opponent's Gimmick is blank.' Clause 1 = AddText([Bar,Shot,Bender])
+# -> OnPlay opp random hand-bury 1. Clause 2 = Static HasInPlay(SELF, name_contains
+# >=5) -> BlankGimmick(OPP) (continuous, evaluated by is_gimmick_blanked).
+c4a11e2c1cc1428c82d6c46a4f1f3646:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddText
+    name_contains: [Bar, Shot, Bender]
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnPlay
+      condition:
+        '@type': Always
+      actions:
+      - '@type': Bury
+        who: OPP
+        count: 1
+        random: true
+        source: HAND
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: 'added text: Your opponent buries 1 random card in their hand'
+      source: gimmick
+      optional: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Your cards with "Bar", "Shot", or "Bender" in the name have the added text: "Your opponent buries 1 random card in their hand."'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: [Bar, Shot, Bender]
+    count: 5
+    cmp: '>='
+  actions:
+  - '@type': BlankGimmick
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you have 5 cards with "Bar", "Shot", or "Bender" in the name in play, your opponent's Gimmick is blank.
+  source: gimmick
+  optional: false
+
+# Mr. Snap (V1) (World Championship): 'Your cards with "Snap" or "Finger Lock" in
+# the name have the added text, "Your opponent buries 1 random card in their hand."
+# When you have 4 of those cards in play; your opponent's Gimmick is blank.' Same
+# shape as GM Calace V2 (AddText + count-gated BlankGimmick); threshold 4.
+f9cb3b3b788346eda95fcb066e9305ad:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddText
+    name_contains: [Snap, Finger Lock]
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnPlay
+      condition:
+        '@type': Always
+      actions:
+      - '@type': Bury
+        who: OPP
+        count: 1
+        random: true
+        source: HAND
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: 'added text: Your opponent buries 1 random card in their hand'
+      source: gimmick
+      optional: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Your cards with "Snap" or "Finger Lock" in the name have the added text, "Your opponent buries 1 random card in their hand."'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: [Snap, Finger Lock]
+    count: 4
+    cmp: '>='
+  actions:
+  - '@type': BlankGimmick
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you have 4 of those cards in play; your opponent's Gimmick is blank.
+  source: gimmick
+  optional: false
+
 # ---------------------------------------------------------------------------
 # Spotlight family (main-deck). The DB `spotlight: true` flag is folded into a
 # synthetic "Spotlight" tag at load time (loader card_tags / _card_tags), so

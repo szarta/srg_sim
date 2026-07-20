@@ -185,9 +185,11 @@ class GameState:
         "if you have Enjoy Everything in play, your opponent's Gimmick is blank";
         DESIGN.md §3/§5). Derived like a Static buff, so a WHILE_IN_PLAY blank clears
         the moment its source leaves play or its condition stops holding. A gimmick
-        never blanks itself, so competitor effects are not scanned. The re-entrancy
-        guard defends the pathological case of a blank gated on a stat comparison
-        (whose evaluation reads effective_stats -> _buff_sources -> here again)."""
+        MAY blank the opponent's gimmick (GM Calace V2, Mr. Snap V1): the owner's own
+        Static competitor effects are scanned too, but only while that owner's gimmick
+        is itself active. The re-entrancy guard defends the resulting blank<->blank
+        loop and the pathological case of a blank gated on a stat comparison (whose
+        evaluation reads effective_stats -> _buff_sources -> here again)."""
         if self.players[key].gimmick_blanked:
             return True
         guard: set[str] = self.__dict__.setdefault("_blank_guard", set())
@@ -196,8 +198,21 @@ class GameState:
         guard.add(key)
         try:
             for owner, player in self.players.items():
-                for effects in (player.entrance.effects, *(c.effects for c in player.in_play)):
+                # A gimmick-sourced continuous blank ("while you have 5 X in play, your
+                # opponent's Gimmick is blank" — GM Calace V2, Mr. Snap V1) fires only
+                # while the owner's OWN gimmick is active; entrance/in-play blanks always
+                # apply. The blank<->blank recursion is bounded by the guard. Only a
+                # Static blank is continuous here — a *triggered* BlankGimmick
+                # (OnRoll/OnHit) latches the flag via the executor instead.
+                gimmick = () if self.is_gimmick_blanked(owner) else player.competitor.effects
+                for effects in (
+                    gimmick,
+                    player.entrance.effects,
+                    *(c.effects for c in player.in_play),
+                ):
                     for eff in effects:
+                        if not isinstance(eff.trigger, Static):
+                            continue
                         targets = any(
                             isinstance(a, BlankGimmick)
                             and (owner if a.who is Who.SELF else self.opponent_of(owner)) == key

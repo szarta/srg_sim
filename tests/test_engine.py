@@ -487,6 +487,55 @@ def test_add_text_injects_effects_into_matching_named_cards() -> None:
     assert len(eng.state.players["A"].hand) == before + 2
 
 
+def _static_blank_opp(source: fx.EffectSource, condition: fx.Condition) -> fx.Effect:
+    return fx.Effect(
+        trigger=fx.Static(),
+        condition=condition,
+        actions=(fx.BlankGimmick(who=fx.Who.OPP, duration=fx.Duration.WHILE_IN_PLAY),),
+        source=source,
+    )
+
+
+def test_gimmick_sourced_conditional_blank() -> None:
+    # A gimmick-sourced Static conditional BlankGimmick blanks the opponent (GM
+    # Calace V2 / Mr. Snap V1 shape) — but only while its count condition holds AND
+    # the owner's own gimmick is still active.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    for k in ("A", "B"):
+        eng.state.players[k].competitor = replace(eng.state.players[k].competitor, effects=())
+        eng.state.players[k].entrance = replace(eng.state.players[k].entrance, effects=())
+        eng.state.players[k].in_play = []
+
+    has_two_bars = fx.HasInPlay(
+        who=fx.Who.SELF,
+        filter=fx.CardFilter(name_contains=("Bar",)),
+        count=2,
+        cmp=fx.Comparator.GE,
+    )
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor,
+        effects=(_static_blank_opp(fx.EffectSource.GIMMICK, has_two_bars),),
+    )
+
+    def card(nm: str, i: int) -> Card:
+        return Card(db_uuid=f"c{i}", name=nm, number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+
+    # 1 matching card -> below threshold -> not blanked.
+    eng.state.players["A"].in_play = [card("Crowbar", 1)]
+    assert not eng.state.is_gimmick_blanked("B")
+    # 2 matching -> the count holds -> B is blanked.
+    eng.state.players["A"].in_play = [card("Crowbar", 1), card("Sidebar", 2)]
+    assert eng.state.is_gimmick_blanked("B")
+    # B's entrance unconditionally blanks A: A's gimmick goes inactive, so it can no
+    # longer blank B (the "only while your own gimmick is active" gate; guard-bounded).
+    eng.state.players["B"].entrance = replace(
+        eng.state.players["B"].entrance,
+        effects=(_static_blank_opp(fx.EffectSource.ENTRANCE, fx.Always()),),
+    )
+    assert eng.state.is_gimmick_blanked("A")
+    assert not eng.state.is_gimmick_blanked("B")
+
+
 def _breakout_mod(delta: int, attempts: int | None, condition: fx.Condition | None = None) -> fx.Effect:
     """A Static gimmick effect wrapping one BreakoutModifier, gated by `condition`."""
     return fx.Effect(
