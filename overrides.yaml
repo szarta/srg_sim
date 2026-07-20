@@ -7237,3 +7237,89 @@ ee000b1dc146472c8ad39a71ad5616ae:
     your hand
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Sami Callihan hand-loss suppression (new SuppressSelfHandLoss; schema v42).
+# ---------------------------------------------------------------------------
+
+# Sami Callihan "Death Machine" (V2): "You do not bury or discard cards from your
+# hand for your own card effects." The whole card is the one Static declaration —
+# read at act_bury(HAND) / act_discard, and only when Sami is BOTH the effect's
+# owner and the one losing cards (an opponent's effect still takes them).
+c38c2c3ef1154d008cb129120a95bdb6:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': SuppressSelfHandLoss
+  duration: WHILE_GIMMICK_ACTIVE
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: you do not bury or discard cards from your hand for your own card effects
+  source: gimmick
+  optional: false
+
+# Sami Callihan (WR): "At the start of the match, choose 1: Your opponent does not
+# draw for your card effects OR you do not bury or discard cards from your hand for
+# your own card effects." The SAME shape as Raven's keyword choice — ChooseName binds
+# one option at StartOfMatch, then one concrete Static per option, each gated on
+# ChosenNameIs, so exactly one flag is live for the match. Both flags already exist:
+# SuppressOpponentDraw (Sami "The Draw") and SuppressSelfHandLoss (Sami V2), so this
+# competitor needs no mechanic of its own.
+6cb70ff083db4b25a3d4f5cafccf3d68:
+- '@type': Effect
+  trigger:
+    '@type': StartOfMatch
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ChooseName
+    options:
+    - No Opponent Draw
+    - No Self Hand Loss
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'At the start of the match, choose 1:'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': ChosenNameIs
+    name: No Opponent Draw
+    who: SELF
+  actions:
+  - '@type': SuppressOpponentDraw
+  duration: WHILE_GIMMICK_ACTIVE
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your opponent does not draw for your card effects
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': ChosenNameIs
+    name: No Self Hand Loss
+    who: SELF
+  actions:
+  - '@type': SuppressSelfHandLoss
+  duration: WHILE_GIMMICK_ACTIVE
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: you do not bury or discard cards from your hand for your own card effects
+  source: gimmick
+  optional: false

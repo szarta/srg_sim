@@ -1221,6 +1221,16 @@ class SuppressOpponentDraw(IRNode):
 
 
 @dataclass(frozen=True)
+class SuppressSelfHandLoss(IRNode):
+    """The mirror declaration: "you do not bury or discard cards from your hand for
+    your OWN card effects" (Sami "Death Machine" V2; one branch of Sami WR's
+    start-of-match choice). Read at the two hand-loss chokepoints — ``_act_bury``'s
+    HAND branch and ``_act_discard`` — and only when the declaring player is BOTH the
+    effect's owner and the one losing cards, so an opponent's effect still takes
+    them. Not executed as a mutation. schema v42"""
+
+
+@dataclass(frozen=True)
 class CrowdMeter(IRNode):
     delta: int
 
@@ -1473,6 +1483,7 @@ Action = (
     | LoseBy
     | ConsideredCompare
     | SuppressOpponentDraw
+    | SuppressSelfHandLoss
     | CrowdMeter
     | PlayExtraCard
     | SetFinishRoll

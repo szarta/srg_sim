@@ -2582,3 +2582,62 @@ def test_also_lead_makes_a_finish_playable_when_hand_holds_only_it() -> None:
     eng.state.players["A"].hand = [also_lead, _bare(2, PlayOrder.LEAD, AtkType.STRIKE, ())]
     playable_finishes = [o for o in eng._playable_options("A") if o["number"] == 28]
     assert playable_finishes == []
+
+
+def _hand_loss_flag() -> fx.Effect:
+    return fx.Effect(
+        trigger=fx.Static(),
+        actions=(fx.SuppressSelfHandLoss(),),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+
+def test_suppress_self_hand_loss_voids_only_your_own_effects() -> None:
+    """Sami "Death Machine" (V2): "you do not bury or discard cards from your hand
+    for your OWN card effects" — an opponent's effect still takes the cards."""
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    discard = fx.Discard(count=1, who=fx.Who.SELF, random=True)
+    # Baseline: no flag -> A's own effect costs A a card.
+    before = len(eng.state.players["A"].hand)
+    eng._act_discard(discard, "A")
+    assert len(eng.state.players["A"].hand) == before - 1
+    # With the flag, A's own effect no longer costs A a card.
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(_hand_loss_flag(),)
+    )
+    held = len(eng.state.players["A"].hand)
+    eng._act_discard(discard, "A")
+    assert len(eng.state.players["A"].hand) == held
+    # But the OPPONENT's effect still takes one ("for your OWN card effects").
+    eng._act_discard(fx.Discard(count=1, who=fx.Who.OPP, random=True), "B")
+    assert len(eng.state.players["A"].hand) == held - 1
+
+
+def test_suppress_self_hand_loss_covers_hand_bury_too() -> None:
+    """The declaration reads "bury OR discard", so both chokepoints are voided."""
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    bury = fx.Bury(count=1, who=fx.Who.SELF, random=True, source=fx.BuryFrom.HAND)
+    before = len(eng.state.players["A"].hand)
+    eng._act_bury(bury, "A")
+    assert len(eng.state.players["A"].hand) == before - 1
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(_hand_loss_flag(),)
+    )
+    held = len(eng.state.players["A"].hand)
+    eng._act_bury(bury, "A")
+    assert len(eng.state.players["A"].hand) == held
+
+
+def test_suppress_self_hand_loss_does_not_protect_the_opponent() -> None:
+    """The flag is owner-scoped: A holding it must not stop A's effect from making
+    B discard (that is the whole point of Sami WR's other branch)."""
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(_hand_loss_flag(),)
+    )
+    before = len(eng.state.players["B"].hand)
+    eng._act_discard(fx.Discard(count=1, who=fx.Who.OPP, random=True), "A")
+    assert len(eng.state.players["B"].hand) == before - 1

@@ -112,6 +112,7 @@ from srg_sim.effects import (
     SkillCompare,
     StartOfMatch,
     SuppressOpponentDraw,
+    SuppressSelfHandLoss,
     StartOfTurn,
     Static,
     Stop,
@@ -243,6 +244,7 @@ SAMPLES: list[IRNode] = [
     DisqualificationRule(enabled=False, scope=DqScope.MATCH),
     ConsideredCompare(domain=CompareDomain.SKILL, order=CompareOrder.GREATER),  # RaRa Perre
     SuppressOpponentDraw(),  # Sami "The Draw" Callihan
+    SuppressSelfHandLoss(),  # Sami "Death Machine" (V2)
     CrowdMeter(1),
     PlayExtraCard(PlayOrder.FINISH),
     SetFinishRoll(11, CrowdMeterCompare(Comparator.GT, 0)),

@@ -1268,15 +1268,27 @@ class Engine:
 
     def _suppresses_opp_draw(self, key: str) -> bool:
         """Whether ``key`` holds an active "your opponent does not draw for your card
-        effects" declaration (Sami "The Draw") — a Static ``SuppressOpponentDraw`` on
-        ``key``'s own gimmick (unless blanked), entrance, or in-play, condition holding."""
+        effects" declaration (Sami "The Draw"). Read at ``_act_draw``."""
+        return self._declares_static(key, fx.SuppressOpponentDraw)
+
+    def _suppresses_self_hand_loss(self, key: str, target: str) -> bool:
+        """Whether ``key``'s OWN effect must not cost ``target`` cards from hand — Sami
+        "Death Machine" V2: "you do not bury or discard cards from your hand for your
+        own card effects". Scoped to self-inflicted loss (``key == target``), so an
+        opponent's effect still takes the cards."""
+        return key == target and self._declares_static(key, fx.SuppressSelfHandLoss)
+
+    def _declares_static(self, key: str, node: type[fx.IRNode]) -> bool:
+        """Whether ``key`` holds an active Static declaration of a ``node`` action — on
+        their own gimmick (unless blanked), entrance, or in-play, with the declaration's
+        own condition holding. The read side of the passive-flag actions, never executed."""
         for effects, active in self.state._buff_sources(key, self.state.players[key]):
             if not active:
                 continue
             for eff in effects:
                 if (
                     isinstance(eff.trigger, fx.Static)
-                    and any(isinstance(a, fx.SuppressOpponentDraw) for a in eff.actions)
+                    and any(isinstance(a, node) for a in eff.actions)
                     and conditions.holds(eff.condition, self.state, key)
                 ):
                     return True
@@ -1398,6 +1410,9 @@ class Engine:
             )
             return
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        if self._suppresses_self_hand_loss(key, target):
+            self._log_effect(key, "SuppressSelfHandLoss", target, {"n": action.count})
+            return
         n = self._bury_from_hand(target, action.count, action.random, action.selector)
         if n > 0:
             self._run_on_bury(target, from_hand=True, is_discard=False)  # effect-caused hand bury
@@ -1671,6 +1686,9 @@ class Engine:
         if action.per is not None:
             count *= self._per_multiplier(action.per, action.per_who, key)
         if count:
+            if self._suppresses_self_hand_loss(key, target):
+                self._log_effect(key, "SuppressSelfHandLoss", target, {"n": count})
+                return
             n = self._discard_from_hand(target, count, action.random, action.selector)
             if n > 0:
                 self._run_on_bury(target, from_hand=True, is_discard=True)  # effect-caused hand discard (Tommy)
@@ -2388,6 +2406,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.DisqualificationRule: Engine._act_noop,  # Static, read via _is_dq_immune; never executed
     fx.ConsideredCompare: Engine._act_noop,  # Static, read in conditions.holds; never executed
     fx.SuppressOpponentDraw: Engine._act_noop,  # Static, read in _act_draw; never executed
+    fx.SuppressSelfHandLoss: Engine._act_noop,  # Static, read at the hand-loss points
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
