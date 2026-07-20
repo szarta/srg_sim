@@ -259,8 +259,12 @@ class Engine:
         self._run_effects(self._standing_effects(loser), fx.OnLoseTurn, loser, ctx[loser])
         # OnRoll is outcome-agnostic (fires on each side's roll), so it fires for
         # both players regardless of who won — the Bull's "N less than target" comeback.
-        self._run_on_roll("A")
-        self._run_on_roll("B")
+        # Same srgpc ordering rule for the post-roll OnRoll gimmicks.
+        for key in self._roll_order(
+            (self._roll_ctx.get("A").value if self._roll_ctx.get("A") else None) or 0,
+            (self._roll_ctx.get("B").value if self._roll_ctx.get("B") else None) or 0,
+        ):
+            self._run_on_roll(key)
         self.state.last_roll_winner = winner  # "last turn roll" for next turn (Dunn)
         return winner
 
@@ -270,6 +274,17 @@ class Engine:
         firing only once even when a roll ties repeatedly in one turn."""
         for key in ("A", "B"):
             self._run_effects(self._standing_effects(key), fx.OnBump, key)
+
+    @staticmethod
+    def _roll_order(va: int, vb: int) -> tuple[str, str]:
+        """Resolution order for gimmicks that trigger DURING a turn roll.
+
+        srgpc.net: "If two gimmicks would both trigger during a turn roll, the player
+        with the higher turn roll must resolve their effect first." Evaluated against
+        the roll values as they stand entering each stage. On an exact tie the order
+        is undefined by the rules, so the stable A-then-B order is kept (a tie bumps,
+        and no gimmick ordering is decided by it)."""
+        return ("B", "A") if vb > va else ("A", "B")
 
     def _run_on_roll(self, key: str) -> None:
         """Fire ``key``'s ``OnRoll`` effects for the deciding turn roll: matched by
@@ -296,8 +311,11 @@ class Engine:
         # In-roll boosts (Soborno): after the skill is known, before the winner is
         # decided, a player may pay a cost for +delta to THIS roll — so it can flip
         # the outcome or break a tie. A no-op for competitors without such a gimmick.
-        va = self._offer_roll_boost("A", sa, va)
-        vb = self._offer_roll_boost("B", sb, vb)
+        for owner in self._roll_order(va, vb):
+            if owner == "A":
+                va = self._offer_roll_boost("A", sa, va)
+            else:
+                vb = self._offer_roll_boost("B", sb, vb)
         va, vb = self._apply_in_roll_mods(sa, va, sb, vb)  # Tomato: roll-skill debuff
         sa, va, sb, vb = self._offer_rerolls(sa, va, sb, vb)  # Dunn/Jay White: optional re-roll
         self._consume_pending()
@@ -323,6 +341,8 @@ class Engine:
             # Would-bump replacement (Rey Zerblade): on a tie, before bumping, a player
             # may pay a cost for +delta to THIS roll *instead* of the bump. If that
             # breaks the tie, the bump is skipped entirely.
+            # Tie-only path (va == vb), so _roll_order's documented tie fallback
+            # (A then B) already applies; kept explicit for clarity.
             va = self._offer_roll_boost("A", sa, va, on_bump=True)
             vb = self._offer_roll_boost("B", sb, vb, on_bump=True)
             if va != vb:
@@ -362,8 +382,8 @@ class Engine:
             "B": conditions.RollContext(skill=sb, gap=va - vb, value=vb, opp_skill=sa),
         }
         # Each side may spend a re-roll; the target die (own, the opponent's, or a
-        # chosen player's) is re-rolled in place.
-        for owner in ("A", "B"):
+        # chosen player's) is re-rolled in place. Higher roll resolves first (srgpc).
+        for owner in self._roll_order(va, vb):
             target = self._offer_reroll(owner, ctx[owner], ctx[self.state.opponent_of(owner)])
             if target is not None:
                 skill, value = self._roll_for(target, use_pending=False)
@@ -377,7 +397,7 @@ class Engine:
         (value recomputed on the new skill's stat). Offered at every turn-roll point
         (initial roll + each bump re-roll), mirroring ``_offer_rerolls``."""
         vals = {"A": (sa, va), "B": (sb, vb)}
-        for owner in ("A", "B"):
+        for owner in self._roll_order(va, vb):
             skill, value = vals[owner]
             switched = self._offer_switch(owner, skill, value)
             if switched is not None:
