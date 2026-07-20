@@ -30,7 +30,12 @@ pub fn is_auto_success(finish_value: i64, crowd_meter: i64) -> bool {
 /// Whether a single defender stat breaks out of a `finish_value` finish.
 ///
 /// At Crowd Meter 0 a raw 10 always breaks out (ignoring penalty); otherwise a
-/// stat breaks out iff `stat - penalty >= finish_value`.
+/// stat breaks out iff `stat - penalty >= finish_value`. The raw-10 case is the
+/// srgpc.net "Crowd Meter 0 Safety" ruling — "roll your highest printed skill and
+/// you break out regardless." The ruling says "highest printed skill" (not "10") to
+/// cover multi-competitor formats (Trios/tornado); we model only singles, where each
+/// competitor's stats are a permutation of {10,9,8,7,6,5}, so the highest printed
+/// skill is always exactly 10 — hence `== 10` is equivalent here.
 pub fn stat_breaks_out(stat_value: i64, finish_value: i64, penalty: i64, crowd_meter: i64) -> bool {
     if crowd_meter == 0 && stat_value == 10 {
         return true;
