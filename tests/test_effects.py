@@ -52,6 +52,7 @@ from srg_sim.effects import (
     HasInDiscard,
     HasInHand,
     HasInPlay,
+    InPlayCompare,
     InRoll,
     IRNode,
     DisqualificationRule,
@@ -159,6 +160,9 @@ SAMPLES: list[IRNode] = [
     HasInPlay(Who.SELF, CardFilter(tag="Championship")),
     HasInHand(Who.SELF, CardFilter(atk_type=AtkType.STRIKE)),
     HasInDiscard(Who.OPP),
+    InPlayCompare(
+        CardFilter(atk_type=AtkType.STRIKE), Comparator.GT, Who.OPP, Who.SELF
+    ),  # Snake Pitt V3
     RollWasSkill(Skill.AGILITY),
     RollGapExactly(2),
     RollGapAtLeast(3),

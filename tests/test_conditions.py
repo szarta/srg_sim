@@ -211,6 +211,25 @@ def test_has_in_play_count_gated() -> None:
     )
 
 
+def test_in_play_compare_target_has_more() -> None:
+    s = _state()
+    strike = fx.CardFilter(atk_type=AtkType.STRIKE)
+    # Snake Pitt V3: "when your target (OPP) has more Strikes in play than you (SELF)".
+    more = fx.InPlayCompare(strike, fx.Comparator.GT, fx.Who.OPP, fx.Who.SELF)
+    s.players["A"].in_play.append(_card(1, atk=AtkType.STRIKE))
+    s.players["B"].in_play.append(_card(2, atk=AtkType.STRIKE))
+    assert not holds(more, s, "A")  # 1 == 1, not "more"
+    s.players["B"].in_play.append(_card(3, atk=AtkType.STRIKE))
+    assert holds(more, s, "A")  # 2 > 1
+    # Direction matters: from A's view "you have more" (SELF > OPP) is false here.
+    assert not holds(
+        fx.InPlayCompare(strike, fx.Comparator.GT, fx.Who.SELF, fx.Who.OPP), s, "A"
+    )
+    # Non-matching cards are not counted: Grapples do not tip the Strike compare.
+    s.players["A"].in_play.append(_card(4, atk=AtkType.GRAPPLE))
+    assert holds(more, s, "A")
+
+
 def test_has_in_discard() -> None:
     s = _state()
     s.players["A"].discard.append(_card(28, order=PlayOrder.FINISH))

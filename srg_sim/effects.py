@@ -562,6 +562,20 @@ class HasInDiscard(IRNode):
 
 
 @dataclass(frozen=True)
+class InPlayCompare(IRNode):
+    """Cross-board in-play count compare: ``who``'s count of cards in play matching
+    ``filter`` compared (``cmp``) against ``vs_who``'s count of the same filter. "When
+    your target has more Strikes in play [than you]" (Snake Pitt V3): ``who=OPP``,
+    ``vs_who=SELF``, ``cmp=">"``, filter ``atk_type=Strike``. Honors ``CountsAsInPlay``
+    on both boards (via :func:`conditions.count_in_play`)."""
+
+    filter: CardFilter = CardFilter()
+    cmp: Comparator = Comparator.GT
+    who: Who = Who.OPP
+    vs_who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
 class RollWasSkill(IRNode):
     skill: Skill
 
@@ -1311,6 +1325,7 @@ Condition = (
     | HasInPlay
     | HasInHand
     | HasInDiscard
+    | InPlayCompare
     | RollWasSkill
     | RollGapExactly
     | RollGapAtLeast

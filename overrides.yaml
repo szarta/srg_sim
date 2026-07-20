@@ -5966,3 +5966,101 @@ bd11579fd13144f1bcf07c38a347edcd:
     have blank text.
   source: card
   optional: false
+
+
+# --- Snake Pitt (V3), World Championship (top-96 grind, task #79) ---
+# "When your target has more X in play, +1 to Y." Three continuous gimmick buffs,
+# each gated by the new InPlayCompare condition: OPP's count of a move type in play
+# strictly greater than SELF's. Reuses the Static BuffSkill continuous path (cf.
+# Snake Pitt V2, a fixed HasInPlay buff). "your target" = your opponent (singles).
+2089cbfc2a414f49843cf15b434ea359:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': InPlayCompare
+    who: OPP
+    vs_who: SELF
+    cmp: '>'
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Strike
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  actions:
+  - '@type': BuffSkill
+    skill: Agility
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When your target has more Strikes in play, +1 to Agility.
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': InPlayCompare
+    who: OPP
+    vs_who: SELF
+    cmp: '>'
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Grapple
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When your target has more Grapples in play, +1 to Power.
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': InPlayCompare
+    who: OPP
+    vs_who: SELF
+    cmp: '>'
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  actions:
+  - '@type': BuffSkill
+    skill: Technique
+    delta: 1
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When your target has more Submissions in play, +1 to Technique.
+  source: gimmick
+  optional: false

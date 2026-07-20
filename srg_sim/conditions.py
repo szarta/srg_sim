@@ -229,6 +229,12 @@ def _h_in_discard(c: fx.HasInDiscard, s: GameState, o: str, r: RollContext | Non
     return any(card_matches(card, c.filter) for card in s.players[_who(s, o, c.who)].discard)
 
 
+def _h_in_play_compare(c: fx.InPlayCompare, s: GameState, o: str, r: RollContext | None) -> bool:
+    n = count_in_play(s.players[_who(s, o, c.who)].in_play, c.filter)
+    m = count_in_play(s.players[_who(s, o, c.vs_who)].in_play, c.filter)
+    return _CMP[c.cmp](n, m)
+
+
 def _h_roll_was(c: fx.RollWasSkill, s: GameState, o: str, r: RollContext | None) -> bool:
     return r is not None and r.skill is c.skill
 
@@ -286,6 +292,7 @@ _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]]
     fx.HasInPlay: _h_in_play,
     fx.HasInHand: _h_in_hand,
     fx.HasInDiscard: _h_in_discard,
+    fx.InPlayCompare: _h_in_play_compare,
     fx.RollWasSkill: _h_roll_was,
     fx.RollGapExactly: _h_gap_exact,
     fx.RollGapAtLeast: _h_gap_at_least,
