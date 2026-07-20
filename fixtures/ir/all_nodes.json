@@ -172,7 +172,9 @@
     "per": null,
     "per_who": "SELF",
     "source": "TOP",
-    "who": "SELF"
+    "who": "SELF",
+    "cap": null,
+    "per_excludes_trigger": false
   },
   {
     "@type": "Effect",
@@ -364,7 +366,8 @@
     "atk_type": null,
     "name_contains": [],
     "on_any": false,
-    "text_contains": []
+    "text_contains": [],
+    "order": null
   },
   {
     "@type": "OnLoseTurn",
@@ -649,7 +652,9 @@
             "per": null,
             "per_who": "SELF",
             "source": "TOP",
-            "who": "SELF"
+            "who": "SELF",
+            "cap": null,
+            "per_excludes_trigger": false
           }
         ],
         "condition": {

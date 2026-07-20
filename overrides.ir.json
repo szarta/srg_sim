@@ -51,6 +51,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     },
@@ -79,6 +80,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     },
@@ -132,8 +134,10 @@
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -224,8 +228,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -264,8 +270,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "BOTTOM",
           "who": "SELF"
@@ -314,8 +322,10 @@
               "actions": [
                 {
                   "@type": "Draw",
+                  "cap": null,
                   "n": 1,
                   "per": null,
+                  "per_excludes_trigger": false,
                   "per_who": "SELF",
                   "source": "TOP",
                   "who": "SELF"
@@ -364,6 +374,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -411,6 +422,7 @@
           "Choke"
         ],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -830,8 +842,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -903,8 +917,10 @@
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -1019,8 +1035,10 @@
               "actions": [
                 {
                   "@type": "Draw",
+                  "cap": null,
                   "n": 1,
                   "per": null,
+                  "per_excludes_trigger": false,
                   "per_who": "SELF",
                   "source": "TOP",
                   "who": "SELF"
@@ -1088,6 +1106,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     },
@@ -1480,8 +1499,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -1819,8 +1840,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -1936,6 +1959,54 @@
       }
     }
   ],
+  "304260416f464f6ca6b6af362f945a21": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": 3,
+          "n": 1,
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": "Lead",
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_excludes_trigger": true,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "DuringTurn",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "During your turn: When you hit a Lead, draw 1 card for each other Lead you have in play (Max 3).",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": "Lead",
+        "text_contains": []
+      }
+    }
+  ],
   "30a1a508143640d0bae1ebaa3e108ad9": [
     {
       "@type": "Effect",
@@ -1989,6 +2060,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -2029,8 +2101,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -2660,8 +2734,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -2684,6 +2760,7 @@
         "atk_type": "Submission",
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -2712,8 +2789,10 @@
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -2788,8 +2867,10 @@
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -3179,8 +3260,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -3450,6 +3533,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     },
@@ -3458,8 +3542,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -3482,6 +3568,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -3664,8 +3751,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -3692,6 +3781,7 @@
           "Kendo Stick"
         ],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     },
@@ -3700,8 +3790,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -3728,6 +3820,7 @@
           "Steel Chair"
         ],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     },
@@ -3736,8 +3829,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -3764,6 +3859,7 @@
           "Trash Can"
         ],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     },
@@ -3952,8 +4048,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 3,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -3988,8 +4086,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -4180,8 +4280,10 @@
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -4415,8 +4517,10 @@
               "actions": [
                 {
                   "@type": "Draw",
+                  "cap": null,
                   "n": 1,
                   "per": null,
+                  "per_excludes_trigger": false,
                   "per_who": "SELF",
                   "source": "TOP",
                   "who": "SELF"
@@ -4456,6 +4560,7 @@
           "Lock"
         ],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -4466,8 +4571,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -5496,8 +5603,10 @@
               "actions": [
                 {
                   "@type": "Draw",
+                  "cap": null,
                   "n": 2,
                   "per": null,
+                  "per_excludes_trigger": false,
                   "per_who": "SELF",
                   "source": "TOP",
                   "who": "SELF"
@@ -5704,6 +5813,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": true,
+        "order": null,
         "text_contains": []
       }
     }
@@ -5743,8 +5853,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -5787,6 +5899,7 @@
           "Leg"
         ],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -5843,8 +5956,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -6467,8 +6582,10 @@
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -6533,6 +6650,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -6568,8 +6686,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -6592,6 +6712,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": [
           "Disqualification"
         ]
@@ -6898,16 +7019,20 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "OPP"
@@ -6942,8 +7067,10 @@
               "actions": [
                 {
                   "@type": "Draw",
+                  "cap": null,
                   "n": 2,
                   "per": null,
+                  "per_excludes_trigger": false,
                   "per_who": "SELF",
                   "source": "TOP",
                   "who": "SELF"
@@ -7083,8 +7210,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -7434,8 +7563,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 2,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -7654,8 +7785,10 @@
               "actions": [
                 {
                   "@type": "Draw",
+                  "cap": null,
                   "n": 1,
                   "per": null,
+                  "per_excludes_trigger": false,
                   "per_who": "SELF",
                   "source": "TOP",
                   "who": "SELF"
@@ -7731,6 +7864,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -7991,8 +8125,10 @@
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -8037,8 +8173,10 @@
         },
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -8381,6 +8519,7 @@
           "Drop"
         ],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     },
@@ -8432,8 +8571,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -8544,6 +8685,7 @@
         "atk_type": null,
         "name_contains": [],
         "on_any": false,
+        "order": null,
         "text_contains": []
       }
     }
@@ -8595,8 +8737,10 @@
       "actions": [
         {
           "@type": "Draw",
+          "cap": null,
           "n": 1,
           "per": null,
+          "per_excludes_trigger": false,
           "per_who": "SELF",
           "source": "TOP",
           "who": "SELF"
@@ -8799,8 +8943,10 @@
               "actions": [
                 {
                   "@type": "Draw",
+                  "cap": null,
                   "n": 1,
                   "per": null,
+                  "per_excludes_trigger": false,
                   "per_who": "SELF",
                   "source": "TOP",
                   "who": "SELF"

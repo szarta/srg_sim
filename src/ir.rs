@@ -466,6 +466,13 @@ pub enum Trigger {
         /// false so misattributed fragments stay inert. See `run_hit_gimmicks`.
         #[serde(default)]
         on_any: bool,
+        /// Play-order gate on the HIT card — "when you hit a **Lead**" (Sticky
+        /// Sailboat, Asia, Chip Day; 22 cards). `None` = any order, the
+        /// backward-compatible default. Combines (AND) with `atk_type` and the
+        /// name/text gates, and counts as a gate for the bare-OnHit skip rule.
+        /// schema v38
+        #[serde(default)]
+        order: Option<PlayOrder>,
     },
     OnBump,
     /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
@@ -647,6 +654,18 @@ pub enum Action {
         who: Who,
         per: Option<CardFilter>,
         per_who: Who,
+        /// Clamps the per-count product — "draw 1 card for each … (Max 3)". Ignored
+        /// without `per`. schema v38
+        #[serde(default)]
+        cap: Option<i64>,
+        /// Drop the card that TRIGGERED this effect from the `per` count — "for each
+        /// **other** Lead you have in play". Needed only when the trigger puts the
+        /// card on the board before firing (an `OnHit` gimmick; `run_hit_gimmicks`
+        /// runs after the hit card is in play). The usual "each other" clause is
+        /// authored `OnPlay`, where the source is not yet on the board and no
+        /// exclusion is needed, so this defaults false. schema v38
+        #[serde(default)]
+        per_excludes_trigger: bool,
     },
     Bury {
         selector: CardFilter,
@@ -1063,6 +1082,13 @@ pub enum IrNode {
         /// false so misattributed fragments stay inert. See `run_hit_gimmicks`.
         #[serde(default)]
         on_any: bool,
+        /// Play-order gate on the HIT card — "when you hit a **Lead**" (Sticky
+        /// Sailboat, Asia, Chip Day; 22 cards). `None` = any order, the
+        /// backward-compatible default. Combines (AND) with `atk_type` and the
+        /// name/text gates, and counts as a gate for the bare-OnHit skip rule.
+        /// schema v38
+        #[serde(default)]
+        order: Option<PlayOrder>,
     },
     OnBump,
     /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
@@ -1222,6 +1248,18 @@ pub enum IrNode {
         who: Who,
         per: Option<CardFilter>,
         per_who: Who,
+        /// Clamps the per-count product — "draw 1 card for each … (Max 3)". Ignored
+        /// without `per`. schema v38
+        #[serde(default)]
+        cap: Option<i64>,
+        /// Drop the card that TRIGGERED this effect from the `per` count — "for each
+        /// **other** Lead you have in play". Needed only when the trigger puts the
+        /// card on the board before firing (an `OnHit` gimmick; `run_hit_gimmicks`
+        /// runs after the hit card is in play). The usual "each other" clause is
+        /// authored `OnPlay`, where the source is not yet on the board and no
+        /// exclusion is needed, so this defaults false. schema v38
+        #[serde(default)]
+        per_excludes_trigger: bool,
     },
     Bury {
         selector: CardFilter,

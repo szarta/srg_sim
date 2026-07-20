@@ -287,6 +287,18 @@ fn flip_signs(effect: &Effect) -> Effect {
 
 /// Plays a single match to completion (DESIGN.md §6 turn loop), driven by a
 /// [`Decider`].
+/// The `Draw` action's payload, grouped so `act_draw` stays under the argument
+/// limit as the per-count options grew (`cap`, `per_excludes_trigger`).
+struct DrawSpec {
+    n: i64,
+    source: DeckEnd,
+    who: Who,
+    per: Option<CardFilter>,
+    per_who: Who,
+    cap: Option<i64>,
+    per_excludes_trigger: bool,
+}
+
 pub struct Engine {
     pub state: GameState,
     pub log: GameLog,
@@ -298,6 +310,10 @@ pub struct Engine {
     /// `apply_stop` so `BlankStoppedText` knows its referent. Transient, never
     /// serialized.
     stopped_card: Option<String>,
+    /// `db_uuid` of the card whose hit is currently being resolved, set for the
+    /// duration of `run_hit_gimmicks` so a `per_excludes_trigger` count can drop it.
+    /// Transient, never serialized.
+    hit_card: Option<String>,
     decider: Box<dyn Decider>,
     /// Monotonic counter of decisions offered, for `request_id`/`seq`.
     decision_index: u64,
@@ -351,6 +367,7 @@ impl Engine {
             roll_ctx: BTreeMap::new(),
             turn_bumped: false,
             stopped_card: None,
+            hit_card: None,
             decider,
             decision_index: 0,
         }
@@ -809,7 +826,20 @@ impl Engine {
                 who,
                 per,
                 per_who,
-            } => self.act_draw(*n, *source, *who, per.as_ref(), *per_who, key)?,
+                cap,
+                per_excludes_trigger,
+            } => self.act_draw(
+                DrawSpec {
+                    n: *n,
+                    source: *source,
+                    who: *who,
+                    per: per.clone(),
+                    per_who: *per_who,
+                    cap: *cap,
+                    per_excludes_trigger: *per_excludes_trigger,
+                },
+                key,
+            )?,
             Action::Bury {
                 selector,
                 count,
@@ -972,9 +1002,19 @@ impl Engine {
 
     /// Count of `per`-matching cards on `per_who`'s board (honoring
     /// `CountsAsInPlay`) — the scale for a per-count Draw/Discard/ModifyRoll.
-    fn per_multiplier(&self, per: &CardFilter, per_who: Who, key: &str) -> i64 {
+    /// Count of `per`-matching cards on `per_who`'s board, optionally dropping the
+    /// card with `exclude`'s uuid ("for each OTHER … in play").
+    fn per_multiplier(
+        &self,
+        per: &CardFilter,
+        per_who: Who,
+        key: &str,
+        exclude: Option<&str>,
+    ) -> i64 {
         let counter = self.target(per_who, key);
-        conditions::count_in_play(&self.state.players[&counter].in_play, per, None)
+        let board = &self.state.players[&counter].in_play;
+        let skip = exclude.and_then(|u| board.iter().find(|c| c.db_uuid == u));
+        conditions::count_in_play(board, per, skip)
     }
 
     /// Let `key`'s policy pick one of `cards` (a recur/tutor selection); the owner
@@ -997,19 +1037,26 @@ impl Engine {
         Ok(Some(find_by_uuid(cards, &chosen)))
     }
 
-    fn act_draw(
-        &mut self,
-        n: i64,
-        source: DeckEnd,
-        who: Who,
-        per: Option<&CardFilter>,
-        per_who: Who,
-        key: &str,
-    ) -> Eng<()> {
+    fn act_draw(&mut self, spec: DrawSpec, key: &str) -> Eng<()> {
+        let DrawSpec {
+            source,
+            who,
+            per_who,
+            cap,
+            per_excludes_trigger,
+            ..
+        } = spec;
         let target = self.target(who, key);
-        let mut n = n;
-        if let Some(per) = per {
-            n *= self.per_multiplier(per, per_who, key);
+        let mut n = spec.n;
+        if let Some(per) = spec.per.as_ref() {
+            let exclude = per_excludes_trigger
+                .then(|| self.hit_card.clone())
+                .flatten();
+            n *= self.per_multiplier(per, per_who, key, exclude.as_deref());
+            // "(Max 3)" clamps the per-count product, not the flat draw.
+            if let Some(c) = cap {
+                n = n.min(c);
+            }
         }
         if n != 0 {
             // "Your opponent does not draw for your card effects" (Sami "The Draw"):
@@ -1236,7 +1283,7 @@ impl Engine {
         let target = self.target(who, key);
         let mut count = count;
         if let Some(per) = per {
-            count *= self.per_multiplier(per, per_who, key);
+            count *= self.per_multiplier(per, per_who, key, None);
         }
         if count != 0 {
             let n =
@@ -1680,7 +1727,7 @@ impl Engine {
         let target = self.target(who, key);
         let mut delta = delta;
         if let Some(per) = per {
-            delta *= self.per_multiplier(per, per_who, key);
+            delta *= self.per_multiplier(per, per_who, key, None);
         }
         {
             let mods = &mut self
@@ -2546,6 +2593,15 @@ impl Engine {
     /// attack type that just hit (D1). A card's own untyped OnHit already resolved
     /// via `run_effects`, so it is not re-fired.
     fn run_hit_gimmicks(&mut self, card: &Card, key: &str) -> Eng<()> {
+        // The hit card is already on the board here, so a "for each OTHER … in play"
+        // count must drop it (`Draw.per_excludes_trigger`).
+        self.hit_card = Some(card.db_uuid.clone());
+        let result = self.run_hit_gimmicks_inner(card, key);
+        self.hit_card = None;
+        result
+    }
+
+    fn run_hit_gimmicks_inner(&mut self, card: &Card, key: &str) -> Eng<()> {
         let effects = self.standing_effects(key);
         for eff in &effects {
             let Trigger::OnHit {
@@ -2553,6 +2609,7 @@ impl Engine {
                 name_contains,
                 text_contains,
                 on_any,
+                order,
             } = &eff.trigger
             else {
                 continue;
@@ -2562,16 +2619,18 @@ impl Engine {
             // you hit a card" — Bartholomew Hooke), which fires on every hit. `on_any`
             // is override-only, so parser fragments that produce a bare OnHit stay inert.
             let has_name_gate = !name_contains.is_empty() || !text_contains.is_empty();
-            if atk_type.is_none() && !has_name_gate && !on_any {
+            if atk_type.is_none() && !has_name_gate && order.is_none() && !on_any {
                 continue;
             }
             let type_ok = atk_type.is_none_or(|want| want == card.atk_type);
+            // "When you hit a Lead" — the play-order gate on the HIT card (ANDed).
+            let order_ok = order.is_none_or(|want| want == card.play_order);
             let name_gate = CardFilter {
                 name_contains: name_contains.clone(),
                 text_contains: text_contains.clone(),
                 ..Default::default()
             };
-            if type_ok && conditions::card_matches(card, &name_gate) {
+            if type_ok && order_ok && conditions::card_matches(card, &name_gate) {
                 self.fire_if_ready(eff, key, None)?;
             }
         }
@@ -4772,5 +4831,96 @@ mod choose_name_tests {
         // ChosenNameIs is false while the binding is None, so no OnHit is live.
         let mut engine = engine("Steel Chair");
         assert_eq!(hit(&mut engine, "Folding Steel Chair"), 0);
+    }
+}
+
+#[cfg(test)]
+mod hit_order_and_per_cap_tests {
+    use super::*;
+
+    fn lead(uuid: &str) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+               "name": uuid, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []})
+    }
+
+    /// Sticky Sailboat: OnHit{order=Lead} -> draw 1 per OTHER Lead in play, max 3.
+    fn gimmick() -> Value {
+        json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnHit", "atk_type": null, "name_contains": [],
+                        "text_contains": [], "on_any": false, "order": "Lead"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF",
+                         "per": {"@type": "CardFilter", "number": null, "atk_type": null,
+                                 "play_order": "Lead", "tag": null, "name": null, "raw": null,
+                                 "name_contains": [], "text_contains": []},
+                         "per_who": "SELF", "cap": 3, "per_excludes_trigger": true}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "test", "source": "gimmick", "optional": false
+        })
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..20).map(|i| lead(&format!("c{i}"))).collect();
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "SS", "name": "Sticky", "division": "World Championship",
+                "stats": stats, "effects": [gimmick()]},
+            "entrance": {"db_uuid": "SS-ent", "name": "ent"}, "cards": cards.clone(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "World Championship",
+                "stats": stats},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": cards,
+        }))
+        .expect("deck B");
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(deck_a, deck_b, decider, 1, String::new(), "sim".into())
+    }
+
+    /// Put `leads` Leads on A's board, then resolve a hit of `hit` (already in play,
+    /// as `run_hit_gimmicks` sees it); return cards drawn.
+    fn hit_with(board_leads: usize, hit: Value) -> usize {
+        let mut engine = engine();
+        {
+            let p = engine.state.players.get_mut("A").unwrap();
+            for i in 0..board_leads {
+                p.in_play
+                    .push(serde_json::from_value(lead(&format!("b{i}"))).unwrap());
+            }
+            p.in_play.push(serde_json::from_value(hit.clone()).unwrap());
+        }
+        let card: Card = serde_json::from_value(hit).unwrap();
+        let before = engine.state.players["A"].hand.len();
+        engine.run_hit_gimmicks(&card, "A").unwrap();
+        engine.state.players["A"].hand.len() - before
+    }
+
+    #[test]
+    fn the_triggering_lead_is_excluded_from_its_own_count() {
+        // Board = 1 other Lead + the hit Lead. "each OTHER Lead" => 1, not 2.
+        assert_eq!(hit_with(1, lead("hit")), 1);
+        // No other Leads: the hit card alone must not draw for itself.
+        assert_eq!(hit_with(0, lead("hit")), 0);
+    }
+
+    #[test]
+    fn the_max_clamps_the_per_count() {
+        // 5 other Leads would be 5; "(Max 3)" clamps it.
+        assert_eq!(hit_with(5, lead("hit")), 3);
+        assert_eq!(hit_with(3, lead("hit")), 3, "exactly at the cap");
+        assert_eq!(hit_with(2, lead("hit")), 2, "under the cap is untouched");
+    }
+
+    #[test]
+    fn the_order_gate_ignores_non_leads() {
+        // Hitting a Follow Up must not fire an order=Lead gimmick, however many
+        // Leads are on the board.
+        let mut followup = lead("hit");
+        followup["play_order"] = json!("Followup");
+        assert_eq!(hit_with(3, followup), 0);
     }
 }

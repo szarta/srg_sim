@@ -690,8 +690,10 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
@@ -714,6 +716,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -995,8 +998,10 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
@@ -1019,6 +1024,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -1542,8 +1548,10 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
@@ -1566,6 +1574,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -1872,8 +1881,10 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
@@ -1896,6 +1907,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -2463,8 +2475,10 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
@@ -2487,6 +2501,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -2899,6 +2914,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   },
@@ -3124,8 +3140,10 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
@@ -3148,6 +3166,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -3491,6 +3510,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   },
@@ -3712,8 +3732,10 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
@@ -3736,6 +3758,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -4003,6 +4026,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   },
@@ -4031,6 +4055,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   },
@@ -4124,6 +4149,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -4371,6 +4397,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   },
@@ -4399,6 +4426,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   },
@@ -4492,6 +4520,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -4760,16 +4789,20 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
                       },
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "OPP"
@@ -4792,6 +4825,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -4838,16 +4872,20 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
                       },
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "OPP"
@@ -4870,6 +4908,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -5048,6 +5087,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   },
@@ -5076,6 +5116,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   },
@@ -5169,6 +5210,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }
@@ -5286,8 +5328,10 @@
                     "actions": [
                       {
                         "@type": "Draw",
+                        "cap": null,
                         "n": 1,
                         "per": null,
+                        "per_excludes_trigger": false,
                         "per_who": "SELF",
                         "source": "TOP",
                         "who": "SELF"
@@ -5310,6 +5354,7 @@
                       "atk_type": null,
                       "name_contains": [],
                       "on_any": false,
+                      "order": null,
                       "text_contains": []
                     }
                   }

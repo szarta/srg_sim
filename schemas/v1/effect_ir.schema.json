@@ -972,6 +972,12 @@
         "@type": {
           "const": "Draw"
         },
+        "cap": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
         "n": {
           "type": "integer"
         },
@@ -985,6 +991,9 @@
             }
           ]
         },
+        "per_excludes_trigger": {
+          "type": "boolean"
+        },
         "per_who": {
           "$ref": "#/$defs/Who"
         },
@@ -997,11 +1006,13 @@
       },
       "required": [
         "@type",
+        "cap",
         "n",
-        "source",
-        "who",
         "per",
-        "per_who"
+        "per_excludes_trigger",
+        "per_who",
+        "source",
+        "who"
       ],
       "type": "object"
     },
@@ -2284,6 +2295,19 @@
           },
           "type": "array"
         },
+        "on_any": {
+          "type": "boolean"
+        },
+        "order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "text_contains": {
           "items": {
             "type": "string"
@@ -2295,6 +2319,8 @@
         "@type",
         "atk_type",
         "name_contains",
+        "on_any",
+        "order",
         "text_contains"
       ],
       "type": "object"
@@ -3423,5 +3449,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 37
+  "version": 38
 }

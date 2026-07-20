@@ -56,6 +56,7 @@ fn eff(trigger: Trigger, actions: Vec<Action>, condition: Condition, duration: D
 
 fn on_hit() -> Trigger {
     Trigger::OnHit {
+        order: None,
         atk_type: None,
         name_contains: Vec::new(),
         text_contains: Vec::new(),
@@ -72,6 +73,8 @@ fn cf_atk(a: AtkType) -> CardFilter {
 
 fn draw(n: i64, who: Who, source: DeckEnd, per: Option<CardFilter>, per_who: Who) -> Action {
     Action::Draw {
+        cap: None,
+        per_excludes_trigger: false,
         n,
         source,
         who,
