@@ -50,6 +50,13 @@
     "@type": "BlankStoppedText"
   },
   {
+    "@type": "ChooseName",
+    "options": [
+      "Kendo Stick",
+      "Steel Chair"
+    ]
+  },
+  {
     "@type": "BreakoutModifier",
     "attempts": null,
     "delta": 0
@@ -297,6 +304,11 @@
     },
     "vs_who": "SELF",
     "who": "OPP"
+  },
+  {
+    "@type": "ChosenNameIs",
+    "name": "Kendo Stick",
+    "who": "SELF"
   },
   {
     "@type": "InRoll",

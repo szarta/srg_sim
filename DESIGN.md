@@ -160,6 +160,8 @@ SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?, vs_skill?
 HandSizeCompare(cmp, vs=OPP|VALUE, value?)
 CrowdMeterCompare(cmp, value)
 HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
+ChosenNameIs(name, who)      # who's ChooseName binding == name; the gate that resolves "that" name into one concrete effect per
+                             # option (Raven). False until a choice is bound. schema v37
 InPlayCompare(filter, cmp, who, vs_who)  # cross-board: who's count of filter in play `cmp` vs_who's count ("target has more
                              # Strikes in play than you" — Snake Pitt V3: who=OPP, vs_who=SELF, cmp=>). Honors CountsAsInPlay. schema v33
 RollWasSkill(skill) / RollGapExactly(k) / RollGapAtLeast(k)   # gap = opp - self, positive = self rolled lower
@@ -231,6 +233,13 @@ Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of 
 AlsoLead(condition)           # Static self-decl: also playable as a Lead while `condition` holds
 BlankText(selector, who)                       LoseBy(kind=DISQUALIFICATION|PINFALL, who)
   # Static decl: `who`'s cards matching `selector` fire no text & cannot stop while the source is in play ("your opponent's Spotlights are blank" — is_text_blanked). schema v27
+BlankStoppedText             # "the stopped card has blank text until the end of the turn" (21 cards). Blanks ONE card by IDENTITY into
+                             # GameState.blanked_text (a selector scan cannot: the blanking stop card stays in play, so it would never end);
+                             # cleared by the end-of-turn sweep. Resolved BEFORE the stopped card's own OnStop, so it suppresses that card's
+                             # "If Stopped" text — the point of the family ("stop any X WITH 'If Stopped' in the text: …"). schema v36
+ChooseName(options)          # "Choose 1: <name>, <name>, or <name>" (Raven): bind one option for the match into PlayerState.chosen_name,
+                             # authored under StartOfMatch. Read by the ChosenNameIs condition (§3), which resolves "that" name by gating one
+                             # concrete effect per option, so exactly one is live. schema v37
 DisqualificationRule(enabled, scope=SELF|MATCH)  # Static match-rule toggle (schema v8): enabled=false =
                                                  # "no disqualifications"; a DQ LoseBy is VOIDED when the loser
                                                  # is immune (self-scope owner, or any match-scope rule). In-play-

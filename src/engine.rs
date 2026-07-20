@@ -332,6 +332,7 @@ impl Engine {
                         pending_roll_mods: Default::default(),
                         reroll_grants: Default::default(),
                         timed_buffs: Vec::new(),
+                        chosen_name: None,
                         freq_counters: BTreeMap::new(),
                         gimmick_blanked: false,
                         gimmick_flipped: false,
@@ -922,6 +923,7 @@ impl Engine {
             | Action::BlankText { .. }
             | Action::MaxHandSize { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
+            Action::ChooseName { options } => self.act_choose_name(options, key)?,
             // A TIMED BuffSkill is granted imperatively here and lives in
             // `timed_buffs` until its sweep; every other duration is continuous
             // (folded from the board by `fold_buffs`) and never fires as an action.
@@ -2055,6 +2057,24 @@ impl Engine {
         ];
         let chosen = self.decide("reshuffle_target", key, legal)?;
         Ok(chosen["seat"].as_str().unwrap().to_owned())
+    }
+
+    /// "Choose 1: <name>, <name>, or <name>" (Raven): bind one option for the rest of
+    /// the match. The owner decides (a `name` decision point); the binding is read by
+    /// `ChosenNameIs`, which gates the sibling effects referencing "that" name.
+    fn act_choose_name(&mut self, options: &[String], key: &str) -> Eng<()> {
+        if options.is_empty() {
+            return Ok(());
+        }
+        let legal: Vec<Value> = options
+            .iter()
+            .map(|n| json!({"kind": "name", "name": n}))
+            .collect();
+        let chosen = self.decide("name", key, legal)?;
+        let name = chosen["name"].as_str().unwrap_or_default().to_owned();
+        self.state.players.get_mut(key).unwrap().chosen_name = Some(name.clone());
+        self.log_effect(key, "ChooseName", Some(key), json!({"name": name}));
+        Ok(())
     }
 
     /// "The stopped card has blank text until the end of the turn": blank the card
@@ -3848,6 +3868,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::FlipGimmick { .. } => "FlipGimmick",
         Action::BlankText { .. } => "BlankText",
         Action::BlankStoppedText => "BlankStoppedText",
+        Action::ChooseName { .. } => "ChooseName",
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
         Action::ConsideredCompare { .. } => "ConsideredCompare",
@@ -4610,5 +4631,146 @@ mod blank_stopped_text_tests {
             !engine.state.is_text_blanked(&attack, "A"),
             "the blank does not outlive the turn"
         );
+    }
+}
+
+#[cfg(test)]
+mod choose_name_tests {
+    use super::*;
+
+    /// Always picks the option named by `pick` at a `name` decision point.
+    struct PickName(&'static str);
+
+    impl Decider for PickName {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal
+                .iter()
+                .find(|o| o["name"].as_str() == Some(self.0))
+                .cloned()
+                .or_else(|| legal.first().cloned())
+        }
+
+        fn policy_name(&self, _viewer: &str) -> String {
+            "pick-name".to_owned()
+        }
+    }
+
+    const NAMES: [&str; 3] = ["Kendo Stick", "Steel Chair", "Trash Can"];
+
+    /// Raven's gimmick: bind one name at match start, then one OnHit per option gated
+    /// on the binding — exactly one should ever be live.
+    fn raven_effects() -> Value {
+        let mut effects = vec![json!({
+            "@type": "Effect",
+            "trigger": {"@type": "StartOfMatch"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "ChooseName", "options": NAMES}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "Choose 1", "source": "gimmick", "optional": false
+        })];
+        for n in NAMES {
+            effects.push(json!({
+                "@type": "Effect",
+                "trigger": {"@type": "OnHit", "atk_type": null, "name_contains": [n],
+                            "text_contains": [], "on_any": false},
+                "condition": {"@type": "ChosenNameIs", "name": n, "who": "SELF"},
+                "actions": [{"@type": "Draw", "n": 2, "source": "TOP", "who": "SELF",
+                             "per": null, "per_who": "SELF"}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "draw 2", "source": "gimmick", "optional": false
+            }));
+        }
+        Value::Array(effects)
+    }
+
+    fn engine(pick: &'static str) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..10)
+            .map(|i| {
+                json!({"atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+                       "finish_bonuses": {}, "name": format!("c{i}"), "number": 1,
+                       "play_order": "Lead", "raw_text": "", "tags": []})
+            })
+            .collect();
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "RV", "name": "Raven", "division": "World Championship",
+                "stats": stats, "effects": raven_effects()},
+            "entrance": {"db_uuid": "RV-ent", "name": "ent"}, "cards": cards.clone(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "World Championship",
+                "stats": stats},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": cards,
+        }))
+        .expect("deck B");
+        Engine::new(
+            deck_a,
+            deck_b,
+            Box::new(PickName(pick)),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// Fire A's hit gimmicks against a card named `card_name`; return cards drawn.
+    fn hit(engine: &mut Engine, card_name: &str) -> usize {
+        let card: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "hit", "effects": [], "finish_bonuses": {},
+            "name": card_name, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []
+        }))
+        .unwrap();
+        let before = engine.state.players["A"].hand.len();
+        engine.run_hit_gimmicks(&card, "A").unwrap();
+        engine.state.players["A"].hand.len() - before
+    }
+
+    #[test]
+    fn the_binding_is_recorded_at_match_start() {
+        let mut engine = engine("Steel Chair");
+        engine.setup().unwrap();
+        assert_eq!(
+            engine.state.players["A"].chosen_name.as_deref(),
+            Some("Steel Chair")
+        );
+    }
+
+    #[test]
+    fn only_the_chosen_name_draws() {
+        let mut engine = engine("Steel Chair");
+        engine.setup().unwrap();
+        assert_eq!(
+            hit(&mut engine, "Folding Steel Chair"),
+            2,
+            "chosen name hits"
+        );
+        assert_eq!(hit(&mut engine, "Kendo Stick Shot"), 0, "unchosen is inert");
+        assert_eq!(hit(&mut engine, "Trash Can Lid"), 0, "unchosen is inert");
+        assert_eq!(hit(&mut engine, "Dropkick"), 0, "unrelated card is inert");
+    }
+
+    #[test]
+    fn a_different_choice_moves_the_live_effect() {
+        let mut engine = engine("Trash Can");
+        engine.setup().unwrap();
+        assert_eq!(hit(&mut engine, "Trash Can Lid"), 2);
+        assert_eq!(hit(&mut engine, "Folding Steel Chair"), 0);
+    }
+
+    #[test]
+    fn nothing_fires_before_a_choice_is_bound() {
+        // ChosenNameIs is false while the binding is None, so no OnHit is live.
+        let mut engine = engine("Steel Chair");
+        assert_eq!(hit(&mut engine, "Folding Steel Chair"), 0);
     }
 }

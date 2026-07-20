@@ -84,6 +84,9 @@
               "$ref": "#/$defs/InPlayCompare"
             },
             {
+              "$ref": "#/$defs/ChosenNameIs"
+            },
+            {
               "$ref": "#/$defs/RollWasSkill"
             },
             {
@@ -175,6 +178,9 @@
               },
               {
                 "$ref": "#/$defs/InPlayCompare"
+              },
+              {
+                "$ref": "#/$defs/ChosenNameIs"
               },
               {
                 "$ref": "#/$defs/RollWasSkill"
@@ -627,6 +633,9 @@
                 "$ref": "#/$defs/BlankStoppedText"
               },
               {
+                "$ref": "#/$defs/ChooseName"
+              },
+              {
                 "$ref": "#/$defs/LoseBy"
               },
               {
@@ -704,6 +713,45 @@
         "@type",
         "label",
         "actions"
+      ],
+      "type": "object"
+    },
+    "ChooseName": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ChooseName"
+        },
+        "options": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "options"
+      ],
+      "type": "object"
+    },
+    "ChosenNameIs": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ChosenNameIs"
+        },
+        "name": {
+          "type": "string"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "name",
+        "who"
       ],
       "type": "object"
     },
@@ -1078,6 +1126,9 @@
                 "$ref": "#/$defs/BlankStoppedText"
               },
               {
+                "$ref": "#/$defs/ChooseName"
+              },
+              {
                 "$ref": "#/$defs/LoseBy"
               },
               {
@@ -1184,6 +1235,9 @@
             },
             {
               "$ref": "#/$defs/InPlayCompare"
+            },
+            {
+              "$ref": "#/$defs/ChosenNameIs"
             },
             {
               "$ref": "#/$defs/RollWasSkill"
@@ -1627,6 +1681,9 @@
           "$ref": "#/$defs/BlankStoppedText"
         },
         {
+          "$ref": "#/$defs/ChooseName"
+        },
+        {
           "$ref": "#/$defs/BreakoutModifier"
         },
         {
@@ -1700,6 +1757,9 @@
         },
         {
           "$ref": "#/$defs/InPlayCompare"
+        },
+        {
+          "$ref": "#/$defs/ChosenNameIs"
         },
         {
           "$ref": "#/$defs/HasInHand"
@@ -2086,6 +2146,9 @@
               "$ref": "#/$defs/InPlayCompare"
             },
             {
+              "$ref": "#/$defs/ChosenNameIs"
+            },
+            {
               "$ref": "#/$defs/RollWasSkill"
             },
             {
@@ -2437,6 +2500,9 @@
               },
               {
                 "$ref": "#/$defs/InPlayCompare"
+              },
+              {
+                "$ref": "#/$defs/ChosenNameIs"
               },
               {
                 "$ref": "#/$defs/RollWasSkill"
@@ -2982,6 +3048,9 @@
               "$ref": "#/$defs/InPlayCompare"
             },
             {
+              "$ref": "#/$defs/ChosenNameIs"
+            },
+            {
               "$ref": "#/$defs/RollWasSkill"
             },
             {
@@ -3354,5 +3423,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 36
+  "version": 37
 }

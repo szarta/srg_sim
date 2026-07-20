@@ -578,6 +578,14 @@ pub enum Condition {
         who: Who,
         vs_who: Who,
     },
+    /// True while `who`'s [`Action::ChooseName`] binding equals `name` — the gate that
+    /// turns "when you hit a card with THAT in the name" into one concrete effect per
+    /// option (Raven). Case-sensitive equality against the stored binding; false when
+    /// nothing has been chosen yet. schema v37
+    ChosenNameIs {
+        name: String,
+        who: Who,
+    },
     RollWasSkill {
         skill: Skill,
     },
@@ -880,6 +888,14 @@ pub enum Action {
     /// (which is the entire point of the family — several members read "stop any card
     /// with 'If Stopped' in the text: that card has blank text …"). schema v36
     BlankStoppedText,
+    /// "Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
+    /// `options` for the rest of the match, stored as `PlayerState.chosen_name`.
+    /// Authored under `StartOfMatch`; the binding is then read by
+    /// [`Condition::ChosenNameIs`] to gate the sibling effects that reference "that"
+    /// name. A no-op if `options` is empty. schema v37
+    ChooseName {
+        options: Vec<String>,
+    },
     LoseBy {
         kind: LoseKind,
         who: Who,
@@ -1150,6 +1166,14 @@ pub enum IrNode {
         cmp: Comparator,
         who: Who,
         vs_who: Who,
+    },
+    /// True while `who`'s [`Action::ChooseName`] binding equals `name` — the gate that
+    /// turns "when you hit a card with THAT in the name" into one concrete effect per
+    /// option (Raven). Case-sensitive equality against the stored binding; false when
+    /// nothing has been chosen yet. schema v37
+    ChosenNameIs {
+        name: String,
+        who: Who,
     },
     RollWasSkill {
         skill: Skill,
@@ -1439,6 +1463,14 @@ pub enum IrNode {
     /// (which is the entire point of the family — several members read "stop any card
     /// with 'If Stopped' in the text: that card has blank text …"). schema v36
     BlankStoppedText,
+    /// "Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
+    /// `options` for the rest of the match, stored as `PlayerState.chosen_name`.
+    /// Authored under `StartOfMatch`; the binding is then read by
+    /// [`Condition::ChosenNameIs`] to gate the sibling effects that reference "that"
+    /// name. A no-op if `options` is empty. schema v37
+    ChooseName {
+        options: Vec<String>,
+    },
     LoseBy {
         kind: LoseKind,
         who: Who,

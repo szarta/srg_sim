@@ -3630,6 +3630,169 @@
       }
     }
   ],
+  "6e915bbeb0b148a4a578992b50c63bbe": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ChooseName",
+          "options": [
+            "Kendo Stick",
+            "Steel Chair",
+            "Trash Can"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Choose 1: \"Kendo Stick\", \"Steel Chair\", or \"Trash Can\".",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfMatch"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "ChosenNameIs",
+        "name": "Kendo Stick",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When you hit a card with that in the name, draw 2 cards.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [
+          "Kendo Stick"
+        ],
+        "on_any": false,
+        "text_contains": []
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "ChosenNameIs",
+        "name": "Steel Chair",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When you hit a card with that in the name, draw 2 cards.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [
+          "Steel Chair"
+        ],
+        "on_any": false,
+        "text_contains": []
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "ChosenNameIs",
+        "name": "Trash Can",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When you hit a card with that in the name, draw 2 cards.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [
+          "Trash Can"
+        ],
+        "on_any": false,
+        "text_contains": []
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "DisqualificationRule",
+          "enabled": false,
+          "scope": "MATCH"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_GIMMICK_ACTIVE",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "This match has No Disqualifications.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "6ecc1c7f012c48cc9403fffcedb33a1b": [
     {
       "@type": "Effect",

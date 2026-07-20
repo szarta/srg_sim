@@ -87,6 +87,11 @@ pub struct PlayerState {
     /// at the matching turn boundary. See [`TimedBuff`].
     #[serde(default)]
     pub timed_buffs: Vec<TimedBuff>,
+    /// The option bound by [`Action::ChooseName`] ("Choose 1: 'Kendo Stick', 'Steel
+    /// Chair', or 'Trash Can'" — Raven), fixed for the rest of the match and read by
+    /// [`Condition::ChosenNameIs`]. `None` until the choice is made.
+    #[serde(default)]
+    pub chosen_name: Option<String>,
     #[serde(default)]
     pub freq_counters: BTreeMap<String, i64>,
     #[serde(default)]

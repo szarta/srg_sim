@@ -6726,3 +6726,116 @@ d06fa40b158946f4b74de295052654b9:
   raw_clause: When you stop a card, the stopped card has blank text until the end of the turn.
   source: card
   optional: false
+
+# Raven -- "Choose 1: 'Kendo Stick', 'Steel Chair', or 'Trash Can'. When you hit
+# a card with that in the name, draw 2 cards. / This match has No Disqualifications."
+# ChooseName binds one option at StartOfMatch; "that" name is then resolved by
+# authoring one concrete OnHit per option, each gated on ChosenNameIs, so exactly
+# one is live for the match. The No-DQ clause is the existing match-scoped rule.
+
+6e915bbeb0b148a4a578992b50c63bbe:
+- '@type': Effect
+  trigger:
+    '@type': StartOfMatch
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ChooseName
+    options:
+    - Kendo Stick
+    - Steel Chair
+    - Trash Can
+  duration: INSTANT
+  frequency: &id001
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can".'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains:
+    - Kendo Stick
+    text_contains: []
+    on_any: false
+  condition:
+    '@type': ChosenNameIs
+    name: Kendo Stick
+    who: SELF
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency: *id001
+  raw_clause: When you hit a card with that in the name, draw 2 cards.
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains:
+    - Steel Chair
+    text_contains: []
+    on_any: false
+  condition:
+    '@type': ChosenNameIs
+    name: Steel Chair
+    who: SELF
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency: *id001
+  raw_clause: When you hit a card with that in the name, draw 2 cards.
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains:
+    - Trash Can
+    text_contains: []
+    on_any: false
+  condition:
+    '@type': ChosenNameIs
+    name: Trash Can
+    who: SELF
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency: *id001
+  raw_clause: When you hit a card with that in the name, draw 2 cards.
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': DisqualificationRule
+    enabled: false
+    scope: MATCH
+  duration: WHILE_GIMMICK_ACTIVE
+  frequency: *id001
+  raw_clause: This match has No Disqualifications.
+  source: gimmick
+  optional: false

@@ -283,6 +283,10 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .iter()
                 .any(|c| card_matches(c, filter))
         }
+        Condition::ChosenNameIs { name, who } => {
+            let k = who_key(state, owner, *who);
+            state.players[&k].chosen_name.as_deref() == Some(name.as_str())
+        }
         Condition::InPlayCompare {
             filter,
             cmp,
