@@ -1224,12 +1224,13 @@
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
-                  "name_contains": [],
-                  "text_contains": [],
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "OPP"
               },
@@ -1276,12 +1277,13 @@
                   "@type": "CardFilter",
                   "atk_type": "Submission",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
-                  "name_contains": [],
-                  "text_contains": [],
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "OPP"
               },
@@ -1328,12 +1330,13 @@
                   "@type": "CardFilter",
                   "atk_type": "Strike",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
-                  "name_contains": [],
-                  "text_contains": [],
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "OPP"
               },
@@ -2145,12 +2148,13 @@
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
-                  "name_contains": [],
-                  "text_contains": [],
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "OPP"
               },
@@ -2197,12 +2201,13 @@
                   "@type": "CardFilter",
                   "atk_type": "Submission",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
-                  "name_contains": [],
-                  "text_contains": [],
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "OPP"
               },
@@ -2249,12 +2254,13 @@
                   "@type": "CardFilter",
                   "atk_type": "Strike",
                   "name": null,
+                  "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
-                  "name_contains": [],
-                  "text_contains": [],
-                  "tag": null
+                  "tag": null,
+                  "text_contains": []
                 },
                 "who": "OPP"
               },

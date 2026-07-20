@@ -12,8 +12,8 @@
 
 use crate::cards::Card;
 use crate::ir::{
-    Action, CardFilter, Comparator, CompareDomain, CompareOrder, Condition, Effect, Skill, Trigger,
-    Vs, Who,
+    Action, CardFilter, Comparator, CompareDomain, CompareOrder, Condition, Effect, PlayOrder,
+    Skill, Trigger, Vs, Who,
 };
 use crate::state::GameState;
 
@@ -114,6 +114,9 @@ pub fn card_matches(card: &Card, filt: &CardFilter) -> bool {
     if filt.play_order.is_some() && Some(card.play_order) != filt.play_order {
         return false;
     }
+    if !filt.play_orders.is_empty() && !filt.play_orders.contains(&card.play_order) {
+        return false;
+    }
     if let Some(tag) = &filt.tag {
         if !card.tags.contains(tag) {
             return false;
@@ -135,6 +138,15 @@ fn any_substr_ci(needles: &[String], haystack: &str) -> bool {
     needles.iter().any(|n| hay.contains(&n.to_lowercase()))
 }
 
+/// True iff `sel`'s declared play-order set is non-empty and contained in `want`
+/// (so every card `sel` admits is one `want` allows).
+fn implies_orders(sel: &CardFilter, want: &[PlayOrder]) -> bool {
+    if let Some(one) = sel.play_order {
+        return want.contains(&one);
+    }
+    !sel.play_orders.is_empty() && sel.play_orders.iter().all(|o| want.contains(o))
+}
+
 /// True iff every card matching `sel` necessarily matches `query` — i.e. `query`
 /// is no more restrictive than `sel`. So a Lead-Strike declaration implies the
 /// looser "Lead" and "Strike" queries, but not "Follow up" (`raw` ignored).
@@ -146,6 +158,11 @@ fn filter_implies(sel: &CardFilter, query: &CardFilter) -> bool {
         return false;
     }
     if query.play_order.is_some() && sel.play_order != query.play_order {
+        return false;
+    }
+    // A disjunctive query is satisfied by any declaration whose own order set is a
+    // subset of it: a bare Lead declaration implies "Lead or Follow Up".
+    if !query.play_orders.is_empty() && !implies_orders(sel, &query.play_orders) {
         return false;
     }
     if query.tag.is_some() && sel.tag != query.tag {

@@ -41,6 +41,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -55,6 +56,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -131,6 +133,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -317,6 +320,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -373,6 +377,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -422,6 +427,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -510,6 +516,7 @@
           ],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -560,6 +567,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": "Finish",
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -653,6 +661,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
@@ -667,6 +676,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
@@ -681,6 +691,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
@@ -725,6 +736,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -808,6 +820,7 @@
               "name_contains": [],
               "number": null,
               "play_order": null,
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -825,6 +838,7 @@
               "name_contains": [],
               "number": null,
               "play_order": null,
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -842,6 +856,7 @@
               "name_contains": [],
               "number": null,
               "play_order": null,
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -890,6 +905,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -938,6 +954,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -1112,6 +1129,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -1159,6 +1177,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -1206,6 +1225,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -1252,6 +1272,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -1298,6 +1319,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -1366,6 +1388,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -1466,6 +1489,7 @@
               "name_contains": [],
               "number": null,
               "play_order": null,
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -1483,6 +1507,7 @@
               "name_contains": [],
               "number": null,
               "play_order": null,
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -1500,6 +1525,7 @@
               "name_contains": [],
               "number": null,
               "play_order": null,
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -1637,6 +1663,7 @@
           ],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -1777,6 +1804,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -1938,6 +1966,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2004,6 +2033,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Lead",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2167,6 +2197,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2217,6 +2248,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2257,6 +2289,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Finish",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2295,6 +2328,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Lead",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2313,6 +2347,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -2392,6 +2427,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -2530,6 +2566,7 @@
               "name_contains": [],
               "number": null,
               "play_order": "Followup",
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -2547,6 +2584,7 @@
               "name_contains": [],
               "number": null,
               "play_order": "Finish",
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -2665,6 +2703,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
@@ -2706,6 +2745,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2754,6 +2794,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -2880,6 +2921,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2930,6 +2972,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2945,6 +2988,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2959,6 +3003,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -3034,6 +3079,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -3114,6 +3160,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -3328,6 +3375,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
@@ -3371,6 +3419,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Lead",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -3446,6 +3495,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -3496,6 +3546,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -3545,6 +3596,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Lead",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -3676,6 +3728,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -3785,6 +3838,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -3858,6 +3912,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -4088,6 +4143,7 @@
               "name_contains": [],
               "number": null,
               "play_order": "Followup",
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -4105,6 +4161,7 @@
               "name_contains": [],
               "number": null,
               "play_order": "Finish",
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -4175,6 +4232,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -4189,6 +4247,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -4359,6 +4418,7 @@
               "name_contains": [],
               "number": null,
               "play_order": "Followup",
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -4376,6 +4436,7 @@
               "name_contains": [],
               "number": null,
               "play_order": "Finish",
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -4413,6 +4474,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -4428,6 +4490,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -4442,6 +4505,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -4584,6 +4648,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Finish",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -4814,6 +4879,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -4858,6 +4924,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5001,6 +5068,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5042,6 +5110,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5190,6 +5259,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5292,6 +5362,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5339,6 +5410,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5365,6 +5437,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5391,6 +5464,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5434,6 +5508,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Finish",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5505,6 +5580,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -5555,6 +5631,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -5626,6 +5703,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -5643,6 +5721,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6044,6 +6123,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6094,6 +6174,7 @@
             ],
             "number": null,
             "play_order": "Finish",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6164,6 +6245,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6439,6 +6521,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": "Spotlight",
           "text_contains": []
@@ -6472,6 +6555,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6617,6 +6701,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6634,6 +6719,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6672,6 +6758,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6689,6 +6776,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6727,6 +6815,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6744,6 +6833,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6813,6 +6903,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6862,6 +6953,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Lead",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -7039,6 +7131,7 @@
                     ],
                     "number": null,
                     "play_order": "Finish",
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -7162,6 +7255,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -7419,6 +7513,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
@@ -7541,6 +7636,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
@@ -7639,6 +7735,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -7711,6 +7808,7 @@
           ],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -7958,6 +8056,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -7982,6 +8081,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -8033,6 +8133,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -8057,6 +8158,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -8108,6 +8210,7 @@
             ],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -8200,6 +8303,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -8214,6 +8318,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -8228,6 +8333,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -8292,6 +8398,7 @@
               "name_contains": [],
               "number": null,
               "play_order": "Followup",
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -8309,6 +8416,7 @@
               "name_contains": [],
               "number": null,
               "play_order": "Finish",
+              "play_orders": [],
               "raw": null,
               "tag": null,
               "text_contains": []
@@ -8451,6 +8559,7 @@
                     ],
                     "number": null,
                     "play_order": "Finish",
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -8510,6 +8619,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -8558,6 +8668,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -8585,6 +8696,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8846,6 +8958,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
@@ -8885,6 +8998,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -8938,6 +9052,7 @@
           ],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -9036,6 +9151,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -9058,6 +9174,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -9098,6 +9215,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -9199,6 +9317,54 @@
       "trigger": {
         "@type": "OnRoll",
         "skill": null,
+        "who": "OPP"
+      }
+    }
+  ],
+  "ee000b1dc146472c8ad39a71ad5616ae": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Roll",
+              "Chop",
+              "Cut"
+            ],
+            "number": null,
+            "play_order": null,
+            "play_orders": [
+              "Lead",
+              "Followup"
+            ],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent rolls Technique for their turn roll, search your deck for 1 Lead or Follow Up with \"Roll\", \"Chop\", or \"Cut\" in the name, and add it to your hand",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
         "who": "OPP"
       }
     }
@@ -9407,6 +9573,7 @@
                     "name_contains": [],
                     "number": null,
                     "play_order": null,
+                    "play_orders": [],
                     "raw": null,
                     "tag": null,
                     "text_contains": []
@@ -9477,6 +9644,7 @@
           ],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -9570,6 +9738,7 @@
             "name_contains": [],
             "number": null,
             "play_order": null,
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -9619,6 +9788,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []

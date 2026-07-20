@@ -7188,3 +7188,52 @@ a401fc3b6fb6462ab85aff0b21de370d:
   raw_clause: Your opponent's gimmick is blank until their next turn.
   source: card
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96: OR-play-order tutor (new CardFilter.play_orders; schema v41).
+# ---------------------------------------------------------------------------
+
+# Cherie Von Danish: "When your opponent rolls Technique for their turn roll:
+# Search your deck for 1 Lead or Follow Up with 'Roll', 'Chop', or 'Cut' in the
+# name, and add it to your hand. Shuffle your deck." OnRoll(who=OPP) reads the
+# OPPONENT's roll context for the skill gate; the tutor's filter is the first use
+# of `play_orders` (Lead OR Followup) ANDed with the three name substrings. The
+# trailing shuffle is the Search's own incidental shuffle, so it needs no action.
+ee000b1dc146472c8ad39a71ad5616ae:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: OPP
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      play_orders:
+      - Lead
+      - Followup
+      tag: null
+      name: null
+      raw: null
+      name_contains:
+      - Roll
+      - Chop
+      - Cut
+      text_contains: []
+    dest: HAND
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your opponent rolls Technique for their turn roll, search your deck
+    for 1 Lead or Follow Up with "Roll", "Chop", or "Cut" in the name, and add it to
+    your hand
+  source: gimmick
+  optional: false

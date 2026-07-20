@@ -8,6 +8,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -40,6 +41,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -79,6 +81,7 @@
   },
   {
     "@type": "Bury",
+    "choose": false,
     "count": 0,
     "random": false,
     "selector": {
@@ -88,13 +91,13 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
     },
     "source": "DISCARD",
-    "who": "SELF",
-    "choose": false
+    "who": "SELF"
   },
   {
     "@type": "CardFilter",
@@ -103,6 +106,7 @@
     "name_contains": [],
     "number": null,
     "play_order": null,
+    "play_orders": [],
     "raw": null,
     "tag": null,
     "text_contains": []
@@ -126,6 +130,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -153,6 +158,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -169,13 +175,13 @@
   },
   {
     "@type": "Draw",
+    "cap": null,
     "n": 0,
     "per": null,
+    "per_excludes_trigger": false,
     "per_who": "SELF",
     "source": "TOP",
-    "who": "SELF",
-    "cap": null,
-    "per_excludes_trigger": false
+    "who": "SELF"
   },
   {
     "@type": "Effect",
@@ -209,10 +215,10 @@
     "@type": "FinishRollBonus",
     "delta": 0,
     "either": false,
-    "when_skill": null,
     "per": null,
     "per_who": "SELF",
-    "per_zone": "IN_PLAY"
+    "per_zone": "IN_PLAY",
+    "when_skill": null
   },
   {
     "@type": "Flip",
@@ -252,6 +258,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -268,6 +275,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -285,6 +293,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -301,6 +310,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -367,8 +377,8 @@
     "atk_type": null,
     "name_contains": [],
     "on_any": false,
-    "text_contains": [],
-    "order": null
+    "order": null,
+    "text_contains": []
   },
   {
     "@type": "OnLoseTurn",
@@ -448,6 +458,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -455,6 +466,7 @@
   },
   {
     "@type": "RemoveFromPlay",
+    "choose": false,
     "count": 0,
     "selector": {
       "@type": "CardFilter",
@@ -463,12 +475,12 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
     },
-    "who": "SELF",
-    "choose": false
+    "who": "SELF"
   },
   {
     "@type": "Reroll",
@@ -514,6 +526,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -539,6 +552,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -623,6 +637,7 @@
       "name_contains": [],
       "number": null,
       "play_order": null,
+      "play_orders": [],
       "raw": null,
       "tag": null,
       "text_contains": []
@@ -636,27 +651,24 @@
     "@type": "RevealForDraw",
     "count": 1,
     "draw": 2,
-    "who": "OPP",
-    "match_on": "STOP"
+    "match_on": "STOP",
+    "who": "OPP"
   },
   {
     "@type": "AddText",
-    "name_contains": [
-      "Super"
-    ],
     "effects": [
       {
         "@type": "Effect",
         "actions": [
           {
             "@type": "Draw",
+            "cap": null,
             "n": 0,
             "per": null,
+            "per_excludes_trigger": false,
             "per_who": "SELF",
             "source": "TOP",
-            "who": "SELF",
-            "cap": null,
-            "per_excludes_trigger": false
+            "who": "SELF"
           }
         ],
         "condition": {
@@ -675,35 +687,26 @@
           "@type": "OnPlay"
         }
       }
+    ],
+    "name_contains": [
+      "Super"
     ]
   },
   {
     "@type": "AddTextToNext",
-    "who": "OPP",
-    "selector": {
-      "@type": "CardFilter",
-      "number": null,
-      "atk_type": "Grapple",
-      "play_order": null,
-      "tag": null,
-      "name": null,
-      "raw": null,
-      "name_contains": [],
-      "text_contains": []
-    },
     "effects": [
       {
         "@type": "Effect",
         "actions": [
           {
             "@type": "Draw",
+            "cap": null,
             "n": 0,
             "per": null,
+            "per_excludes_trigger": false,
             "per_who": "SELF",
             "source": "TOP",
-            "who": "SELF",
-            "cap": null,
-            "per_excludes_trigger": false
+            "who": "SELF"
           }
         ],
         "condition": {
@@ -722,7 +725,20 @@
           "@type": "OnPlay"
         }
       }
-    ]
+    ],
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": "Grapple",
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "play_orders": [],
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    },
+    "who": "OPP"
   },
   {
     "@type": "StopRequiresTag",

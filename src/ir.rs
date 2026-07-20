@@ -392,6 +392,13 @@ pub struct CardFilter {
     pub number: Option<i64>,
     pub atk_type: Option<AtkType>,
     pub play_order: Option<PlayOrder>,
+    /// OR-list form of [`Self::play_order`] — "1 **Lead or Follow Up** with 'Roll'
+    /// in the name" (Cherie Von Danish; 53 cards phrase a play-order this way).
+    /// Empty = no constraint. ANDs with `play_order` when both are set, though in
+    /// practice authors set exactly one: `play_order` for the single-order case,
+    /// `play_orders` for the disjunction. schema v41
+    #[serde(default)]
+    pub play_orders: Vec<PlayOrder>,
     pub tag: Option<String>,
     pub name: Option<String>,
     pub raw: Option<String>,

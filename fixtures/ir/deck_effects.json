@@ -147,13 +147,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -173,8 +173,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -447,6 +447,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -471,8 +472,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -652,8 +653,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -669,6 +670,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -692,8 +694,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -765,6 +767,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -788,8 +791,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -830,6 +833,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -856,8 +860,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -901,6 +905,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -925,8 +930,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -1000,6 +1005,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -1096,8 +1102,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -1281,23 +1287,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -1317,8 +1323,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -1734,13 +1740,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -1818,23 +1824,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -1854,8 +1860,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -1914,23 +1920,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -1950,8 +1956,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -2036,23 +2042,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -2072,8 +2078,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -2107,6 +2113,7 @@
     "actions": [
       {
         "@type": "Bury",
+        "choose": false,
         "count": 1,
         "random": false,
         "selector": {
@@ -2116,16 +2123,17 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP",
-        "choose": false
+        "who": "OPP"
       },
       {
         "@type": "Bury",
+        "choose": false,
         "count": 1,
         "random": false,
         "selector": {
@@ -2135,13 +2143,13 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF",
-        "choose": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -2161,8 +2169,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -2217,8 +2225,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -2226,13 +2234,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -2263,6 +2271,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -2296,13 +2305,13 @@
             "actions": [
               {
                 "@type": "Draw",
+                "cap": null,
                 "n": 1,
                 "per": null,
+                "per_excludes_trigger": false,
                 "per_who": "SELF",
                 "source": "TOP",
-                "who": "SELF",
-                "cap": null,
-                "per_excludes_trigger": false
+                "who": "SELF"
               }
             ],
             "label": "draw 1"
@@ -2320,6 +2329,7 @@
                   "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
                   "tag": null,
                   "text_contains": []
@@ -2348,8 +2358,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -2357,13 +2367,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "BOTTOM",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -2377,6 +2387,7 @@
         "name_contains": [],
         "number": null,
         "play_order": "Lead",
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -2410,6 +2421,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -2427,6 +2439,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -2458,6 +2471,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -2612,6 +2626,7 @@
     "actions": [
       {
         "@type": "Bury",
+        "choose": false,
         "count": 1,
         "random": false,
         "selector": {
@@ -2621,16 +2636,17 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP",
-        "choose": false
+        "who": "OPP"
       },
       {
         "@type": "Bury",
+        "choose": false,
         "count": 1,
         "random": false,
         "selector": {
@@ -2640,13 +2656,13 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF",
-        "choose": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -2666,8 +2682,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -2700,6 +2716,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Followup",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2717,6 +2734,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Finish",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -2751,6 +2769,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -2768,6 +2787,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -2824,6 +2844,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -2831,13 +2852,13 @@
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -2851,6 +2872,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -2891,6 +2913,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -2915,23 +2938,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -2951,8 +2974,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -2976,6 +2999,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -3016,6 +3040,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -3047,6 +3072,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -3061,6 +3087,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -3088,13 +3115,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 3,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -3124,6 +3151,7 @@
     "actions": [
       {
         "@type": "RemoveFromPlay",
+        "choose": false,
         "count": 1,
         "selector": {
           "@type": "CardFilter",
@@ -3132,12 +3160,12 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
-        "who": "OPP",
-        "choose": false
+        "who": "OPP"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -3148,6 +3176,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -3162,6 +3191,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -3169,13 +3199,13 @@
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -3263,6 +3293,7 @@
     "actions": [
       {
         "@type": "Bury",
+        "choose": false,
         "count": 3,
         "random": false,
         "selector": {
@@ -3272,13 +3303,13 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP",
-        "choose": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -3298,8 +3329,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -3339,6 +3370,7 @@
     "actions": [
       {
         "@type": "Bury",
+        "choose": false,
         "count": 1,
         "random": false,
         "selector": {
@@ -3348,13 +3380,13 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF",
-        "choose": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -3374,8 +3406,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -3563,6 +3595,7 @@
     "actions": [
       {
         "@type": "Bury",
+        "choose": false,
         "count": 4,
         "random": false,
         "selector": {
@@ -3572,13 +3605,13 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP",
-        "choose": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -3598,8 +3631,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -3757,13 +3790,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -3783,8 +3816,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -4057,6 +4090,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -4081,8 +4115,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -4262,8 +4296,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -4279,6 +4313,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -4302,8 +4337,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -4375,6 +4410,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -4398,8 +4434,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -4440,6 +4476,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -4466,8 +4503,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -4511,6 +4548,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -4535,8 +4573,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -4610,6 +4648,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -4706,8 +4745,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -4891,23 +4930,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -4927,8 +4966,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5372,23 +5411,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -5408,8 +5447,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5443,23 +5482,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -5479,8 +5518,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5514,23 +5553,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -5550,8 +5589,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5585,23 +5624,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -5621,8 +5660,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5656,23 +5695,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -5692,8 +5731,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5727,23 +5766,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -5763,8 +5802,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5779,6 +5818,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Finish",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -5814,6 +5854,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Finish",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -5867,13 +5908,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -5893,8 +5934,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5910,6 +5951,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -5936,8 +5978,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -5969,13 +6011,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "ModifyRoll",
@@ -5997,6 +6039,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -6021,13 +6064,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -6041,6 +6084,7 @@
         "name_contains": [],
         "number": null,
         "play_order": "Lead",
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -6097,23 +6141,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -6144,6 +6188,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6167,8 +6212,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6208,23 +6253,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -6244,8 +6289,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6262,6 +6307,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6285,8 +6331,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6309,6 +6355,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -6358,6 +6405,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Followup",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6375,6 +6423,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Finish",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -6409,6 +6458,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6431,6 +6481,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -6451,8 +6502,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6476,6 +6527,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -6500,23 +6552,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -6536,8 +6588,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6561,6 +6613,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -6585,23 +6638,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -6621,8 +6674,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6646,6 +6699,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -6670,23 +6724,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -6706,8 +6760,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6715,6 +6769,7 @@
     "actions": [
       {
         "@type": "RemoveFromPlay",
+        "choose": false,
         "count": 1,
         "selector": {
           "@type": "CardFilter",
@@ -6723,12 +6778,12 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
-        "who": "OPP",
-        "choose": false
+        "who": "OPP"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -6739,6 +6794,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6753,6 +6809,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6760,13 +6817,13 @@
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -6801,6 +6858,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6825,8 +6883,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6834,13 +6892,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -6860,8 +6918,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6876,6 +6934,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6899,8 +6958,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6917,6 +6976,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -6940,8 +7000,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -6949,13 +7009,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -6975,8 +7035,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7010,23 +7070,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -7046,8 +7106,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7081,23 +7141,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -7117,8 +7177,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7152,23 +7212,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -7188,8 +7248,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7254,6 +7314,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -7277,8 +7338,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7575,6 +7636,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -7628,23 +7690,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -7664,8 +7726,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7699,23 +7761,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -7735,8 +7797,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7778,6 +7840,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -7831,23 +7894,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -7867,8 +7930,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7902,23 +7965,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -7938,8 +8001,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -7954,6 +8017,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Finish",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -7987,13 +8051,13 @@
             "actions": [
               {
                 "@type": "Draw",
+                "cap": null,
                 "n": 1,
                 "per": null,
+                "per_excludes_trigger": false,
                 "per_who": "SELF",
                 "source": "TOP",
-                "who": "SELF",
-                "cap": null,
-                "per_excludes_trigger": false
+                "who": "SELF"
               }
             ],
             "label": "draw 1"
@@ -8010,6 +8074,7 @@
                   "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
                   "tag": null,
                   "text_contains": []
@@ -8024,6 +8089,7 @@
                   "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
                   "tag": null,
                   "text_contains": []
@@ -8038,6 +8104,7 @@
                   "name_contains": [],
                   "number": null,
                   "play_order": null,
+                  "play_orders": [],
                   "raw": null,
                   "tag": null,
                   "text_contains": []
@@ -8066,8 +8133,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -8075,13 +8142,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -8101,8 +8168,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -8110,6 +8177,7 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": {
           "@type": "CardFilter",
@@ -8118,15 +8186,15 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -8174,13 +8242,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "ModifyRoll",
@@ -8202,6 +8270,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -8234,6 +8303,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8260,8 +8330,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -8309,6 +8379,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Followup",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8376,6 +8447,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8399,8 +8471,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -8440,23 +8512,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -8476,8 +8548,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -8493,6 +8565,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8506,6 +8579,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8542,6 +8616,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8580,6 +8655,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8597,6 +8673,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -8655,6 +8732,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8669,6 +8747,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8692,8 +8771,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -8721,8 +8800,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -8745,6 +8824,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -8785,6 +8865,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -8817,6 +8898,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Followup",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -8860,6 +8942,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -8884,23 +8967,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -8920,8 +9003,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -8945,6 +9028,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -8969,23 +9053,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -9005,8 +9089,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9035,8 +9119,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9073,6 +9157,7 @@
     "actions": [
       {
         "@type": "RemoveFromPlay",
+        "choose": false,
         "count": 1,
         "selector": {
           "@type": "CardFilter",
@@ -9081,12 +9166,12 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
-        "who": "OPP",
-        "choose": false
+        "who": "OPP"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -9097,6 +9182,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -9111,6 +9197,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -9118,13 +9205,13 @@
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -9157,6 +9244,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -9180,8 +9268,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9189,13 +9277,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -9215,8 +9303,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9258,6 +9346,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -9311,23 +9400,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -9347,8 +9436,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9382,23 +9471,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -9418,8 +9507,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9484,6 +9573,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -9507,8 +9597,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9797,23 +9887,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -9833,8 +9923,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9868,23 +9958,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -9904,8 +9994,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -9939,23 +10029,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -9975,8 +10065,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10010,23 +10100,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -10046,8 +10136,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10081,23 +10171,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -10117,8 +10207,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10152,23 +10242,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -10188,8 +10278,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10204,6 +10294,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Finish",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -10239,6 +10330,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Finish",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -10292,13 +10384,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -10318,8 +10410,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10335,6 +10427,7 @@
           "name_contains": [],
           "number": null,
           "play_order": "Lead",
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -10361,8 +10454,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10394,13 +10487,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "ModifyRoll",
@@ -10422,6 +10515,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -10446,13 +10540,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -10466,6 +10560,7 @@
         "name_contains": [],
         "number": null,
         "play_order": "Lead",
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -10522,23 +10617,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -10569,6 +10664,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -10592,8 +10688,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10633,23 +10729,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -10669,8 +10765,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10703,6 +10799,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Followup",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -10720,6 +10817,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Finish",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -10771,6 +10869,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Followup",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -10788,6 +10887,7 @@
             "name_contains": [],
             "number": null,
             "play_order": "Finish",
+            "play_orders": [],
             "raw": null,
             "tag": null,
             "text_contains": []
@@ -10822,6 +10922,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -10844,6 +10945,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -10864,8 +10966,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10889,6 +10991,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -10913,23 +11016,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -10949,8 +11052,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -10974,6 +11077,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -10998,23 +11102,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -11034,8 +11138,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11059,6 +11163,7 @@
         "name_contains": [],
         "number": null,
         "play_order": null,
+        "play_orders": [],
         "raw": null,
         "tag": null,
         "text_contains": []
@@ -11083,23 +11188,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -11119,8 +11224,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11128,6 +11233,7 @@
     "actions": [
       {
         "@type": "RemoveFromPlay",
+        "choose": false,
         "count": 1,
         "selector": {
           "@type": "CardFilter",
@@ -11136,12 +11242,12 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
         },
-        "who": "OPP",
-        "choose": false
+        "who": "OPP"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -11152,6 +11258,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -11166,6 +11273,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -11173,13 +11281,13 @@
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -11214,6 +11322,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -11238,8 +11347,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11247,13 +11356,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -11273,8 +11382,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11289,6 +11398,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -11312,8 +11422,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11330,6 +11440,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -11353,8 +11464,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11362,13 +11473,13 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 2,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       }
     ],
     "condition": {
@@ -11388,8 +11499,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11423,23 +11534,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -11459,8 +11570,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11494,23 +11605,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -11530,8 +11641,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11565,23 +11676,23 @@
     "actions": [
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "SELF",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "SELF"
       },
       {
         "@type": "Draw",
+        "cap": null,
         "n": 1,
         "per": null,
+        "per_excludes_trigger": false,
         "per_who": "SELF",
         "source": "TOP",
-        "who": "OPP",
-        "cap": null,
-        "per_excludes_trigger": false
+        "who": "OPP"
       }
     ],
     "condition": {
@@ -11601,8 +11712,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {
@@ -11667,6 +11778,7 @@
           "name_contains": [],
           "number": null,
           "play_order": null,
+          "play_orders": [],
           "raw": null,
           "tag": null,
           "text_contains": []
@@ -11690,8 +11802,8 @@
       "atk_type": null,
       "name_contains": [],
       "on_any": false,
-      "text_contains": [],
-      "order": null
+      "order": null,
+      "text_contains": []
     }
   },
   {

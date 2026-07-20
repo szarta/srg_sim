@@ -511,6 +511,12 @@
             }
           ]
         },
+        "play_orders": {
+          "items": {
+            "$ref": "#/$defs/PlayOrder"
+          },
+          "type": "array"
+        },
         "raw": {
           "anyOf": [
             {
@@ -543,6 +549,7 @@
         "number",
         "atk_type",
         "play_order",
+        "play_orders",
         "tag",
         "name",
         "raw",
@@ -3493,5 +3500,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 40
+  "version": 41
 }
