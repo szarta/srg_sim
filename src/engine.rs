@@ -360,6 +360,7 @@ impl Engine {
                         timed_buffs: Vec::new(),
                         chosen_name: None,
                         pending_text: Vec::new(),
+                        blank_until_next_turn: None,
                         freq_counters: BTreeMap::new(),
                         gimmick_blanked: false,
                         gimmick_flipped: false,
@@ -1890,7 +1891,15 @@ impl Engine {
     /// `OnHit` "blank the gimmick" that fires once.
     fn act_blank_gimmick(&mut self, who: Who, duration: Duration, key: &str) {
         let target = self.target(who, key);
-        self.state.players.get_mut(&target).unwrap().gimmick_blanked = true;
+        let turn = self.state.turn_no;
+        let player = self.state.players.get_mut(&target).unwrap();
+        player.gimmick_blanked = true;
+        // "…until their next turn" (Stiff Right Hand): mark it for the turn-boundary
+        // sweep. Every other duration leaves the stored flag alone — a WHILE_IN_PLAY
+        // blank is re-derived by `blank_scan`, not stored here.
+        if duration == Duration::UntilStartOfYourNextTurn {
+            player.blank_until_next_turn = Some(turn);
+        }
         let detail = json!({"duration": serde_json::to_value(duration).unwrap()});
         self.log_effect(key, "BlankGimmick", Some(&target), detail);
     }
@@ -2343,6 +2352,11 @@ impl Engine {
         player
             .timed_buffs
             .retain(|b| b.until != Duration::UntilStartOfYourNextTurn || b.granted_turn >= turn);
+        // Same boundary for a "blank until their next turn" poison (Stiff Right Hand).
+        if player.blank_until_next_turn.is_some_and(|t| t < turn) {
+            player.blank_until_next_turn = None;
+            player.gimmick_blanked = false;
+        }
     }
 
     /// Grant (or accumulate into) a TIMED skill buff on `who`'s side.
@@ -5494,6 +5508,95 @@ mod pending_text_tests {
             result.reason.to_lowercase().contains("disqualification"),
             "by disqualification, got {:?}",
             result.reason
+        );
+    }
+}
+
+#[cfg(test)]
+mod timed_blank_tests {
+    use super::*;
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..4)
+            .map(|i| {
+                json!({"atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+                       "finish_bonuses": {}, "name": format!("c{i}"), "number": 1,
+                       "play_order": "Lead", "raw_text": "", "tags": []})
+            })
+            .collect();
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Underworld", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-ent"), "name": "ent"}, "cards": cards.clone(),
+            }))
+            .expect("deck")
+        };
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            decider,
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// A plays Stiff Right Hand on turn 3: B's gimmick is blanked until B's next turn.
+    fn blanked_on_turn_3() -> Engine {
+        let mut engine = engine();
+        engine.state.turn_no = 3;
+        engine.act_blank_gimmick(Who::Opp, Duration::UntilStartOfYourNextTurn, "A");
+        engine
+    }
+
+    #[test]
+    fn the_blank_lands_on_the_opponent() {
+        let engine = blanked_on_turn_3();
+        assert!(engine.state.is_gimmick_blanked("B"), "B is blanked");
+        assert!(!engine.state.is_gimmick_blanked("A"), "the caster is not");
+    }
+
+    #[test]
+    fn it_survives_the_casters_turns_in_between() {
+        // "Player A could have won 5 turns in between" — the blank waits for B's turn.
+        let mut engine = blanked_on_turn_3();
+        for turn in 4..=8 {
+            engine.state.turn_no = turn;
+            engine.sweep_next_turn_buffs("A"); // A keeps winning
+            assert!(
+                engine.state.is_gimmick_blanked("B"),
+                "still blanked on turn {turn}"
+            );
+        }
+        // B finally wins a turn roll: the blank ends at the start of THEIR turn.
+        engine.state.turn_no = 9;
+        engine.sweep_next_turn_buffs("B");
+        assert!(!engine.state.is_gimmick_blanked("B"), "cleared on B's turn");
+    }
+
+    #[test]
+    fn the_granting_turns_own_roll_does_not_clear_it() {
+        // Granted on turn 3; if B also won turn 3's roll the blank must still apply.
+        let mut engine = blanked_on_turn_3();
+        engine.sweep_next_turn_buffs("B");
+        assert!(engine.state.is_gimmick_blanked("B"));
+    }
+
+    #[test]
+    fn an_untimed_blank_is_left_alone_by_the_sweep() {
+        // Regression guard: a one-shot / StartOfMatch blank has no expiry marker and
+        // must not be cleared by the turn boundary.
+        let mut engine = engine();
+        engine.act_blank_gimmick(Who::Opp, Duration::Instant, "A");
+        assert!(engine.state.players["B"].blank_until_next_turn.is_none());
+        engine.state.turn_no = 7;
+        engine.sweep_next_turn_buffs("B");
+        assert!(
+            engine.state.is_gimmick_blanked("B"),
+            "permanent blank persists"
         );
     }
 }

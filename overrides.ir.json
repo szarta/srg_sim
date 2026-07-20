@@ -1,4 +1,31 @@
 {
+  "00e5871d67104a1cb08ea7c1ab3bf1a0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankGimmick",
+          "duration": "UNTIL_START_OF_YOUR_NEXT_TURN",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's gimmick is blank until their next turn.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
   "0100a2f0cb604367864f8e3a40bef90f": [
     {
       "@type": "Effect",

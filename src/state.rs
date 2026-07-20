@@ -111,6 +111,13 @@ pub struct PlayerState {
     /// [`PendingText`]; survives the source card leaving play.
     #[serde(default)]
     pub pending_text: Vec<PendingText>,
+    /// Set when THIS player's gimmick was blanked "until their next turn" (Stiff Right
+    /// Hand) — the turn the blank was granted on. Swept, with `gimmick_blanked`, at the
+    /// start of this player's next ACTIVE turn (`sweep_next_turn_buffs`). Stored state,
+    /// so like every poison it outlives the source card leaving the board. A timed
+    /// blank and a stored permanent blank do not compose: last writer wins.
+    #[serde(default)]
+    pub blank_until_next_turn: Option<i64>,
     #[serde(default)]
     pub freq_counters: BTreeMap<String, i64>,
     #[serde(default)]

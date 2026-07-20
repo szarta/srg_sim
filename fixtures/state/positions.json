@@ -528,6 +528,7 @@
         "last_roll_winner": null,
         "players": {
           "A": {
+            "blank_until_next_turn": null,
             "chosen_name": null,
             "competitor": {
               "db_uuid": "894c9965da684adb8ab5f532bafbff59",
@@ -905,6 +906,7 @@
             "timed_buffs": []
           },
           "B": {
+            "blank_until_next_turn": null,
             "chosen_name": null,
             "competitor": {
               "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
@@ -2592,6 +2594,7 @@
         "last_roll_winner": null,
         "players": {
           "A": {
+            "blank_until_next_turn": null,
             "chosen_name": null,
             "competitor": {
               "db_uuid": "894c9965da684adb8ab5f532bafbff59",
@@ -3257,6 +3260,7 @@
             "timed_buffs": []
           },
           "B": {
+            "blank_until_next_turn": null,
             "chosen_name": null,
             "competitor": {
               "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
@@ -4634,6 +4638,7 @@
         "last_roll_winner": null,
         "players": {
           "A": {
+            "blank_until_next_turn": null,
             "chosen_name": null,
             "competitor": {
               "db_uuid": "31b5d4f1aa0743b4bc3d0622d81b0d92",
@@ -5239,6 +5244,7 @@
             "timed_buffs": []
           },
           "B": {
+            "blank_until_next_turn": null,
             "chosen_name": null,
             "competitor": {
               "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
