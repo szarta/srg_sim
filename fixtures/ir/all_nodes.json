@@ -93,7 +93,8 @@
       "text_contains": []
     },
     "source": "DISCARD",
-    "who": "SELF"
+    "who": "SELF",
+    "choose": false
   },
   {
     "@type": "CardFilter",
@@ -466,7 +467,8 @@
       "tag": null,
       "text_contains": []
     },
-    "who": "SELF"
+    "who": "SELF",
+    "choose": false
   },
   {
     "@type": "Reroll",

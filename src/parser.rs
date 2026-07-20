@@ -112,6 +112,7 @@ fn discard(count: i64, who: Who, random: bool, per: Option<CardFilter>, per_who:
 
 fn bury(count: i64, who: Who) -> Action {
     Action::Bury {
+        choose: false,
         selector: CardFilter::default(),
         count,
         who,

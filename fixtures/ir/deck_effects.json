@@ -2121,7 +2121,8 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP"
+        "who": "OPP",
+        "choose": false
       },
       {
         "@type": "Bury",
@@ -2139,7 +2140,8 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF"
+        "who": "SELF",
+        "choose": false
       }
     ],
     "condition": {
@@ -2624,7 +2626,8 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP"
+        "who": "OPP",
+        "choose": false
       },
       {
         "@type": "Bury",
@@ -2642,7 +2645,8 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF"
+        "who": "SELF",
+        "choose": false
       }
     ],
     "condition": {
@@ -3132,7 +3136,8 @@
           "tag": null,
           "text_contains": []
         },
-        "who": "OPP"
+        "who": "OPP",
+        "choose": false
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -3272,7 +3277,8 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP"
+        "who": "OPP",
+        "choose": false
       }
     ],
     "condition": {
@@ -3347,7 +3353,8 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF"
+        "who": "SELF",
+        "choose": false
       }
     ],
     "condition": {
@@ -3570,7 +3577,8 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP"
+        "who": "OPP",
+        "choose": false
       }
     ],
     "condition": {
@@ -6719,7 +6727,8 @@
           "tag": null,
           "text_contains": []
         },
-        "who": "OPP"
+        "who": "OPP",
+        "choose": false
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -9076,7 +9085,8 @@
           "tag": null,
           "text_contains": []
         },
-        "who": "OPP"
+        "who": "OPP",
+        "choose": false
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -11130,7 +11140,8 @@
           "tag": null,
           "text_contains": []
         },
-        "who": "OPP"
+        "who": "OPP",
+        "choose": false
       },
       {
         "@type": "ShuffleIntoDeck",

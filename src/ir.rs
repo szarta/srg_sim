@@ -674,6 +674,14 @@ pub enum Action {
         random: bool,
         #[serde(default)]
         source: BuryFrom,
+        /// `BuryFrom::Discard` only: the actor picks WHICH card, from EITHER player's
+        /// discard pile — "bury 1 card in any player's discard pile" (Cherry
+        /// Glamazon). The default discard bury is the mechanical pass-and-recycle,
+        /// which takes the top `count` and ignores `selector`; this one is a targeted
+        /// choice (it can deny a specific recursion target). `who` is ignored when
+        /// set, and the card returns to ITS OWNER's deck bottom. schema v39
+        #[serde(default)]
+        choose: bool,
     },
     /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
     /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
@@ -719,6 +727,11 @@ pub enum Action {
         selector: CardFilter,
         who: Who,
         count: i64,
+        /// Like [`Action::ReturnToHand`]'s: the actor picks from EITHER board —
+        /// "choose 1 card in play and discard it" (Cherry Glamazon), where the card
+        /// does not restrict whose board. `who` is ignored when set. schema v39
+        #[serde(default)]
+        choose: bool,
     },
     /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): return matching
     /// in-play cards to their OWNER's hand (bounce). `who` picks the board; `choose`
@@ -1268,6 +1281,14 @@ pub enum IrNode {
         random: bool,
         #[serde(default)]
         source: BuryFrom,
+        /// `BuryFrom::Discard` only: the actor picks WHICH card, from EITHER player's
+        /// discard pile — "bury 1 card in any player's discard pile" (Cherry
+        /// Glamazon). The default discard bury is the mechanical pass-and-recycle,
+        /// which takes the top `count` and ignores `selector`; this one is a targeted
+        /// choice (it can deny a specific recursion target). `who` is ignored when
+        /// set, and the card returns to ITS OWNER's deck bottom. schema v39
+        #[serde(default)]
+        choose: bool,
     },
     /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
     /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
@@ -1313,6 +1334,11 @@ pub enum IrNode {
         selector: CardFilter,
         who: Who,
         count: i64,
+        /// Like [`Action::ReturnToHand`]'s: the actor picks from EITHER board —
+        /// "choose 1 card in play and discard it" (Cherry Glamazon), where the card
+        /// does not restrict whose board. `who` is ignored when set. schema v39
+        #[serde(default)]
+        choose: bool,
     },
     /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): return matching
     /// in-play cards to their OWNER's hand (bounce). `who` picks the board; `choose`

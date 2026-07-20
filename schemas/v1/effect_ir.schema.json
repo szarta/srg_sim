@@ -395,6 +395,9 @@
         "@type": {
           "const": "Bury"
         },
+        "choose": {
+          "type": "boolean"
+        },
         "count": {
           "type": "integer"
         },
@@ -413,11 +416,12 @@
       },
       "required": [
         "@type",
-        "selector",
+        "choose",
         "count",
-        "who",
         "random",
-        "source"
+        "selector",
+        "source",
+        "who"
       ],
       "type": "object"
     },
@@ -2665,6 +2669,9 @@
         "@type": {
           "const": "RemoveFromPlay"
         },
+        "choose": {
+          "type": "boolean"
+        },
         "count": {
           "type": "integer"
         },
@@ -2677,9 +2684,10 @@
       },
       "required": [
         "@type",
+        "choose",
+        "count",
         "selector",
-        "who",
-        "count"
+        "who"
       ],
       "type": "object"
     },
@@ -3449,5 +3457,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 38
+  "version": 39
 }

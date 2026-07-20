@@ -289,6 +289,16 @@ fn flip_signs(effect: &Effect) -> Effect {
 /// [`Decider`].
 /// The `Draw` action's payload, grouped so `act_draw` stays under the argument
 /// limit as the per-count options grew (`cap`, `per_excludes_trigger`).
+/// The `Bury` action's payload, grouped to stay under the clippy argument limit.
+struct BurySpec {
+    selector: CardFilter,
+    count: i64,
+    who: Who,
+    random: bool,
+    source: BuryFrom,
+    choose: bool,
+}
+
 struct DrawSpec {
     n: i64,
     source: DeckEnd,
@@ -846,7 +856,18 @@ impl Engine {
                 who,
                 random,
                 source,
-            } => self.act_bury(selector, *count, *who, *random, *source, key)?,
+                choose,
+            } => self.act_bury(
+                BurySpec {
+                    selector: selector.clone(),
+                    count: *count,
+                    who: *who,
+                    random: *random,
+                    source: *source,
+                    choose: *choose,
+                },
+                key,
+            )?,
             Action::Flip { n, who } => self.act_flip(*n, *who, key),
             Action::Discard {
                 selector,
@@ -872,7 +893,8 @@ impl Engine {
                 selector,
                 who,
                 count,
-            } => self.act_remove_from_play(selector, *who, *count, key)?,
+                choose,
+            } => self.act_remove_from_play(selector, *who, *count, *choose, key)?,
             Action::ReturnToHand {
                 selector,
                 who,
@@ -1157,15 +1179,19 @@ impl Engine {
         Ok(())
     }
 
-    fn act_bury(
-        &mut self,
-        selector: &CardFilter,
-        count: i64,
-        who: Who,
-        random: bool,
-        source: BuryFrom,
-        key: &str,
-    ) -> Eng<()> {
+    fn act_bury(&mut self, spec: BurySpec, key: &str) -> Eng<()> {
+        let BurySpec {
+            count,
+            who,
+            random,
+            source,
+            choose,
+            ..
+        } = spec;
+        let selector = &spec.selector;
+        if source == BuryFrom::Discard {
+            return self.bury_from_discard(selector, count, who, random, choose, key);
+        }
         let target = self.target(who, key);
         if source == BuryFrom::Hand {
             let n = self.bury_from_hand(&target, count.max(0) as usize, random, selector)?;
@@ -1174,22 +1200,117 @@ impl Engine {
             }
             return Ok(());
         }
-        // Discard source: recycle the top `count` of the discard pile (optionally
-        // randomized) to the bottom of the deck. Selector is ignored (the pass-and-
-        // recycle bury never filters).
-        let mut cards: Vec<Card> = self.state.players[&target]
-            .discard
-            .iter()
-            .take(count.max(0) as usize)
-            .cloned()
-            .collect();
-        if random {
-            self.state.rng.shuffle(&mut cards);
+        Ok(())
+    }
+
+    /// "Choose 1 card in play and discard it" with no side restriction (Cherry
+    /// Glamazon): the actor picks from EITHER board and the card goes to its OWNER's
+    /// discard. Mirrors `act_return_to_hand`'s `choose` branch.
+    fn remove_from_either_board(
+        &mut self,
+        selector: &CardFilter,
+        count: i64,
+        key: &str,
+    ) -> Eng<()> {
+        let boards: Vec<String> = vec![key.to_owned(), self.state.opponent_of(key)];
+        for _ in 0..count.max(0) {
+            let legal: Vec<Value> = boards
+                .iter()
+                .flat_map(|b| {
+                    self.state.players[b]
+                        .in_play
+                        .iter()
+                        .filter(|c| conditions::card_matches(c, selector))
+                        .map(move |c| {
+                            let mut opt = card_option(c);
+                            opt["owner"] = json!(b);
+                            opt
+                        })
+                })
+                .collect();
+            if legal.is_empty() {
+                break;
+            }
+            let chosen = self.decide("target", key, legal)?;
+            let owner = chosen["owner"].as_str().unwrap().to_owned();
+            let uuid = chosen["card"].as_str().unwrap().to_owned();
+            let player = self.state.players.get_mut(&owner).unwrap();
+            let Some(pos) = player.in_play.iter().position(|c| c.db_uuid == uuid) else {
+                break;
+            };
+            let card = player.in_play.remove(pos);
+            player.discard.push(card);
+            let t = self.state.turn_no;
+            self.log(Event::Discard(CardMovement {
+                t,
+                player: owner,
+                cards: vec![uuid],
+                source: Some("in_play".to_owned()),
+                hidden: false,
+            }));
         }
-        if !cards.is_empty() {
-            self.bury_cards(&target, &cards);
-            self.run_on_bury(&target, false, false)?; // effect-caused discard-pile bury
-            self.run_on_discard_move(&target)?;
+        Ok(())
+    }
+
+    /// Bury `count` card(s) from a discard pile to their owner's deck bottom.
+    ///
+    /// A discard pile has **no meaningful order**, so the bury is a CHOICE: the actor
+    /// picks any card in the pile (`random` picks at random instead). `choose` widens
+    /// the pool to BOTH piles — "bury 1 card in any player's discard pile" (Cherry
+    /// Glamazon); otherwise it is `who`'s pile. `selector` filters the candidates.
+    /// Fires `OnDiscardMove` for the pile that lost a card, like every other
+    /// effect-driven exit.
+    fn bury_from_discard(
+        &mut self,
+        selector: &CardFilter,
+        count: i64,
+        who: Who,
+        random: bool,
+        choose: bool,
+        key: &str,
+    ) -> Eng<()> {
+        let piles: Vec<String> = if choose {
+            vec![key.to_owned(), self.state.opponent_of(key)]
+        } else {
+            vec![self.target(who, key)]
+        };
+        for _ in 0..count.max(0) {
+            let legal: Vec<Value> = piles
+                .iter()
+                .flat_map(|p| {
+                    self.state.players[p]
+                        .discard
+                        .iter()
+                        .filter(|c| conditions::card_matches(c, selector))
+                        .map(move |c| {
+                            let mut opt = discard_option(c);
+                            opt["owner"] = json!(p);
+                            opt
+                        })
+                })
+                .collect();
+            if legal.is_empty() {
+                break;
+            }
+            let chosen = if random {
+                self.state.rng.reveal(&legal).cloned().unwrap()
+            } else {
+                self.decide("bury", key, legal)?
+            };
+            let owner = chosen["owner"].as_str().unwrap().to_owned();
+            let uuid = chosen["card"].as_str().unwrap().to_owned();
+            // `bury_cards` performs the discard -> deck-bottom move itself.
+            let Some(card) = self.state.players[&owner]
+                .discard
+                .iter()
+                .find(|c| c.db_uuid == uuid)
+                .cloned()
+            else {
+                break;
+            };
+            self.bury_cards(&owner, &[card]);
+            self.run_on_bury(&owner, false, false)?;
+            self.run_on_discard_move(&owner)?;
         }
         Ok(())
     }
@@ -1536,8 +1657,12 @@ impl Engine {
         selector: &CardFilter,
         who: Who,
         count: i64,
+        choose: bool,
         key: &str,
     ) -> Eng<()> {
+        if choose {
+            return self.remove_from_either_board(selector, count, key);
+        }
         let target = self.target(who, key);
         for _ in 0..count.max(0) {
             let matches: Vec<Card> = self.state.players[&target]
@@ -4922,5 +5047,194 @@ mod hit_order_and_per_cap_tests {
         let mut followup = lead("hit");
         followup["play_order"] = json!("Followup");
         assert_eq!(hit_with(3, followup), 0);
+    }
+}
+
+#[cfg(test)]
+mod choose_target_tests {
+    use super::*;
+
+    /// Always takes the legal option whose card uuid starts with `pref`.
+    struct PickPrefix(&'static str);
+
+    impl Decider for PickPrefix {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal
+                .iter()
+                .find(|o| o["card"].as_str().is_some_and(|c| c.starts_with(self.0)))
+                .cloned()
+                .or_else(|| legal.first().cloned())
+        }
+
+        fn policy_name(&self, _viewer: &str) -> String {
+            "pick-prefix".to_owned()
+        }
+    }
+
+    fn card(uuid: &str) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+               "name": uuid, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []})
+    }
+
+    /// Both sides get 2 cards in play and 2 in discard, uuid-prefixed by side.
+    fn engine(pref: &'static str) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..6).map(|i| card(&format!("d{i}"))).collect();
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Underworld", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-ent"), "name": "ent"}, "cards": cards.clone(),
+            }))
+            .expect("deck")
+        };
+        let mut engine = Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(PickPrefix(pref)),
+            1,
+            String::new(),
+            "sim".into(),
+        );
+        for side in ["A", "B"] {
+            let p = engine.state.players.get_mut(side).unwrap();
+            for i in 0..2 {
+                p.in_play
+                    .push(serde_json::from_value(card(&format!("{side}play{i}"))).unwrap());
+                p.discard
+                    .push(serde_json::from_value(card(&format!("{side}disc{i}"))).unwrap());
+            }
+        }
+        engine
+    }
+
+    fn any() -> CardFilter {
+        CardFilter::default()
+    }
+
+    fn boards(e: &Engine) -> (usize, usize) {
+        (
+            e.state.players["A"].in_play.len(),
+            e.state.players["B"].in_play.len(),
+        )
+    }
+
+    #[test]
+    fn choose_reaches_the_opponents_board() {
+        let mut engine = engine("Bplay");
+        engine
+            .act_remove_from_play(&any(), Who::SelfSide, 1, true, "A")
+            .unwrap();
+        assert_eq!(boards(&engine), (2, 1), "B lost a card despite who=SELF");
+    }
+
+    #[test]
+    fn choose_also_reaches_your_own_board() {
+        // The hand-adjudicated part: "1 card in play" is not restricted to the
+        // opponent, so A may discard its own.
+        let mut engine = engine("Aplay");
+        engine
+            .act_remove_from_play(&any(), Who::Opp, 1, true, "A")
+            .unwrap();
+        assert_eq!(boards(&engine), (1, 2), "A lost a card despite who=OPP");
+    }
+
+    #[test]
+    fn without_choose_the_who_side_still_decides() {
+        // Regression guard: choose=false keeps the original who-directed behaviour.
+        let mut engine = engine("Aplay");
+        engine
+            .act_remove_from_play(&any(), Who::Opp, 1, false, "A")
+            .unwrap();
+        assert_eq!(boards(&engine), (2, 1), "who=OPP still hits B");
+    }
+
+    #[test]
+    fn a_chosen_bury_takes_the_named_card_from_either_pile() {
+        // "bury 1 card in any player's discard pile" picks a SPECIFIC card (not the
+        // top) and returns it to that card's OWNER's deck bottom.
+        let mut engine = engine("Bdisc1");
+        let spec = BurySpec {
+            selector: any(),
+            count: 1,
+            who: Who::SelfSide,
+            random: false,
+            source: BuryFrom::Discard,
+            choose: true,
+        };
+        engine.act_bury(spec, "A").unwrap();
+        let b = &engine.state.players["B"];
+        assert!(
+            !b.discard.iter().any(|c| c.db_uuid == "Bdisc1"),
+            "the chosen card left B's pile"
+        );
+        assert_eq!(
+            b.deck.last().map(|c| c.db_uuid.as_str()),
+            Some("Bdisc1"),
+            "and landed on ITS OWNER's deck bottom"
+        );
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            2,
+            "A's pile intact"
+        );
+    }
+
+    #[test]
+    fn without_choose_the_pool_is_only_the_who_sides_pile() {
+        // A discard pile has no meaningful order, so the bury is always a CHOICE;
+        // `choose` only widens the pool ACROSS piles. Here the decider asks for
+        // "Bdisc1", which is not offered, so it falls back within A's own pile.
+        let mut engine = engine("Bdisc1");
+        let spec = BurySpec {
+            selector: any(),
+            count: 1,
+            who: Who::SelfSide,
+            random: false,
+            source: BuryFrom::Discard,
+            choose: false,
+        };
+        engine.act_bury(spec, "A").unwrap();
+        assert_eq!(
+            engine.state.players["B"].discard.len(),
+            2,
+            "B's pile untouched"
+        );
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            1,
+            "A buried its own"
+        );
+    }
+
+    #[test]
+    fn the_actor_picks_any_card_in_the_pile_not_the_top() {
+        // "Bury" selects ANY card in the pile — pile order is not meaningful.
+        let mut engine = engine("Adisc1"); // ask for the SECOND card
+        let spec = BurySpec {
+            selector: any(),
+            count: 1,
+            who: Who::SelfSide,
+            random: false,
+            source: BuryFrom::Discard,
+            choose: false,
+        };
+        engine.act_bury(spec, "A").unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(
+            a.deck.last().map(|c| c.db_uuid.as_str()),
+            Some("Adisc1"),
+            "the CHOSEN card was buried, not the top one"
+        );
+        assert!(
+            a.discard.iter().any(|c| c.db_uuid == "Adisc0"),
+            "the top card stays"
+        );
     }
 }
