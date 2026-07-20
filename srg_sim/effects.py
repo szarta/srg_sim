@@ -430,6 +430,9 @@ class OnHit(IRNode):
     # "When you hit a card" (any card) as a standing gimmick — fires on every hit
     # (Bartholomew Hooke). Override-only; parser fragments leave it False.
     on_any: bool = False
+    # Play-order gate on the HIT card — "when you hit a Lead" (Sticky Sailboat, Asia,
+    # Chip Day; 22 cards). None = any order. ANDed with atk_type / name / text gates.
+    order: PlayOrder | None = None
 
 
 @dataclass(frozen=True)
@@ -702,6 +705,12 @@ class Draw(IRNode):
     who: Who = Who.SELF  # SELF, or OPP for "your opponent draws N" / "each player draws N"
     per: CardFilter | None = None  # if set, `n` scales by the count of matching cards...
     per_who: Who = Who.SELF  # ...in `per_who`'s in-play board ("draw 1 for each Lead you have")
+    cap: int | None = None  # clamps the per-count product — "(Max 3)"; ignored without `per`
+    # Drop the card that TRIGGERED this effect from the `per` count — "for each OTHER
+    # Lead you have in play". Needed only when the trigger puts the card on the board
+    # before firing (an OnHit gimmick); the usual "each other" clause is authored
+    # OnPlay, where the source is not yet on the board.
+    per_excludes_trigger: bool = False
 
 
 @dataclass(frozen=True)

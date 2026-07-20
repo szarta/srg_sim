@@ -102,6 +102,8 @@ class Engine:
         # db_uuid of the card currently being stopped, set for the duration of
         # _apply_stop so BlankStoppedText knows its referent. Never serialized.
         self._stopped_card: str | None = None
+        # The card whose hit is currently resolving, for a per_excludes_trigger count.
+        self._hit_card: Card | None = None
 
     # -- setup -------------------------------------------------------------
 
@@ -769,19 +771,32 @@ class Engine:
         — skipped UNLESS it sets ``on_any`` ("when you hit a card" — Bartholomew Hooke),
         which fires on every hit. ``on_any`` is override-only, so parser fragments that
         produce a bare OnHit stay inert."""
-        for eff in self._standing_effects(key):
-            trig = eff.trigger
-            if not isinstance(trig, fx.OnHit):
-                continue
-            has_name_gate = bool(trig.name_contains or trig.text_contains)
-            if trig.atk_type is None and not has_name_gate and not trig.on_any:
-                continue
-            type_ok = trig.atk_type is None or trig.atk_type is card.atk_type
-            gate = fx.CardFilter(
-                name_contains=trig.name_contains, text_contains=trig.text_contains
-            )
-            if type_ok and conditions.card_matches(card, gate):
-                self._fire_if_ready(eff, key, None)
+        # The hit card is already on the board here, so a "for each OTHER … in play"
+        # count must drop it (Draw.per_excludes_trigger).
+        self._hit_card = card
+        try:
+            for eff in self._standing_effects(key):
+                trig = eff.trigger
+                if not isinstance(trig, fx.OnHit):
+                    continue
+                has_name_gate = bool(trig.name_contains or trig.text_contains)
+                if (
+                    trig.atk_type is None
+                    and not has_name_gate
+                    and trig.order is None
+                    and not trig.on_any
+                ):
+                    continue
+                type_ok = trig.atk_type is None or trig.atk_type is card.atk_type
+                # "When you hit a Lead" — the play-order gate on the HIT card (ANDed).
+                order_ok = trig.order is None or trig.order is card.play_order
+                gate = fx.CardFilter(
+                    name_contains=trig.name_contains, text_contains=trig.text_contains
+                )
+                if type_ok and order_ok and conditions.card_matches(card, gate):
+                    self._fire_if_ready(eff, key, None)
+        finally:
+            self._hit_card = None
 
     def _injected_text(self, key: str, card: Card) -> list[fx.Effect]:
         """"Added text" effects ``key``'s active gimmicks grant to ``card`` (El Super
@@ -1201,19 +1216,25 @@ class Engine:
 
     # individual action handlers (kept tiny for the complexity gate) --------
 
-    def _per_multiplier(self, per: fx.CardFilter, per_who: fx.Who, key: str) -> int:
+    def _per_multiplier(
+        self, per: fx.CardFilter, per_who: fx.Who, key: str, exclude: Card | None = None
+    ) -> int:
         """Count of ``per``-matching cards on ``per_who``'s board (honoring
         ``CountsAsInPlay``), the scale for a per-count Draw/Discard/ModifyRoll. A
-        "for each other … in play" clause is authored ``OnPlay`` so the source card is
-        not yet on the board — no explicit self-exclusion is needed."""
+        "for each other … in play" clause is normally authored ``OnPlay`` so the source
+        card is not yet on the board and needs no self-exclusion; ``exclude`` covers
+        the ``OnHit`` case, where the hit card IS already in play."""
         counter = key if per_who is fx.Who.SELF else self.state.opponent_of(key)
-        return conditions.count_in_play(self.state.players[counter].in_play, per)
+        return conditions.count_in_play(self.state.players[counter].in_play, per, exclude)
 
     def _act_draw(self, action: fx.Draw, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         n = action.n
         if action.per is not None:
-            n *= self._per_multiplier(action.per, action.per_who, key)
+            exclude = self._hit_card if action.per_excludes_trigger else None
+            n *= self._per_multiplier(action.per, action.per_who, key, exclude)
+            if action.cap is not None:  # "(Max 3)" clamps the per-count product
+                n = min(n, action.cap)
         if n:
             # "Your opponent does not draw for your card effects" (Sami "The Draw"):
             # a draw this player's effect grants the opponent is voided.

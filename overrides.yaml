@@ -6839,3 +6839,46 @@ d06fa40b158946f4b74de295052654b9:
   raw_clause: This match has No Disqualifications.
   source: gimmick
   optional: false
+
+# Sticky "the Salamander" Sailboat -- "During your turn: When you hit a Lead, draw 1
+# card for each other Lead you have in play (Max 3)."
+# The hit card is already on the board when run_hit_gimmicks fires, so "each OTHER
+# Lead" needs per_excludes_trigger; cap 3 is the printed "(Max 3)". The "During your
+# turn:" header becomes a DuringTurn{SELF} condition on the same effect.
+304260416f464f6ca6b6af362f945a21:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    text_contains: []
+    on_any: false
+    order: Lead
+  condition:
+    '@type': DuringTurn
+    who: SELF
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+    per:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: Lead
+      tag: null
+      name: null
+      raw: null
+    per_who: SELF
+    cap: 3
+    per_excludes_trigger: true
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'During your turn: When you hit a Lead, draw 1 card for each other Lead
+    you have in play (Max 3).'
+  source: gimmick
+  optional: false

@@ -921,6 +921,49 @@ def test_choose_name_binds_one_option_and_gates_the_hit_effects() -> None:
     assert hit(eng, "Folding Steel Chair") == 0
 
 
+def test_on_hit_order_gate_with_capped_self_excluding_per_count() -> None:
+    # Sticky "the Salamander" Sailboat: "When you hit a Lead, draw 1 card for each
+    # other Lead you have in play (Max 3)." The hit card is already on the board when
+    # _run_hit_gimmicks fires, so it must be excluded from its own count.
+    gimmick = fx.Effect(
+        trigger=fx.OnHit(order=PlayOrder.LEAD),
+        actions=(
+            fx.Draw(
+                n=1,
+                per=fx.CardFilter(play_order=PlayOrder.LEAD),
+                per_who=fx.Who.SELF,
+                cap=3,
+                per_excludes_trigger=True,
+            ),
+        ),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+    def lead(u: str, order: PlayOrder = PlayOrder.LEAD) -> Card:
+        return Card(db_uuid=u, name=u, number=1, atk_type=AtkType.STRIKE, play_order=order)
+
+    def hit_with(board_leads: int, hit: Card) -> int:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng.state.players["A"].competitor = replace(
+            eng.state.players["A"].competitor, effects=(gimmick,)
+        )
+        eng.state.players["A"].deck = [lead(f"n{i}") for i in range(20)]
+        eng.state.players["A"].hand = []
+        eng.state.players["A"].in_play = [lead(f"b{i}") for i in range(board_leads)] + [hit]
+        eng._run_hit_gimmicks(hit, "A")
+        return len(eng.state.players["A"].hand)
+
+    # "each OTHER Lead": the triggering card never counts for itself.
+    assert hit_with(1, lead("hit")) == 1
+    assert hit_with(0, lead("hit")) == 0
+    # "(Max 3)" clamps the per-count product.
+    assert hit_with(5, lead("hit")) == 3
+    assert hit_with(3, lead("hit")) == 3
+    assert hit_with(2, lead("hit")) == 2
+    # The order gate ignores non-Leads however many Leads are on the board.
+    assert hit_with(3, lead("hit", PlayOrder.FOLLOWUP)) == 0
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.
