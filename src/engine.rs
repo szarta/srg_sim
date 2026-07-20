@@ -24,7 +24,7 @@ use crate::ir::{
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
-use crate::state::{GameState, PlayerState, TimedBuff};
+use crate::state::{GameState, PendingText, PlayerState, TimedBuff};
 use serde_json::{json, Value};
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
@@ -359,6 +359,7 @@ impl Engine {
                         reroll_grants: Default::default(),
                         timed_buffs: Vec::new(),
                         chosen_name: None,
+                        pending_text: Vec::new(),
                         freq_counters: BTreeMap::new(),
                         gimmick_blanked: false,
                         gimmick_flipped: false,
@@ -976,6 +977,11 @@ impl Engine {
             | Action::MaxHandSize { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
+            Action::AddTextToNext {
+                who,
+                selector,
+                effects,
+            } => self.act_add_text_to_next(*who, selector, effects, key),
             // A TIMED BuffSkill is granted imperatively here and lives in
             // `timed_buffs` until its sweep; every other duration is continuous
             // (folded from the board by `fold_buffs`) and never fires as an action.
@@ -2231,6 +2237,55 @@ impl Engine {
         Ok(chosen["seat"].as_str().unwrap().to_owned())
     }
 
+    /// Queue a one-shot "added text" on `who`'s next card matching `selector` (the
+    /// Madness trio). Held on the TARGET, so it outlives the source card leaving play.
+    fn act_add_text_to_next(
+        &mut self,
+        who: Who,
+        selector: &CardFilter,
+        effects: &[Effect],
+        key: &str,
+    ) {
+        let target = self.target(who, key);
+        let source = effects
+            .first()
+            .map(|e| e.raw_clause.clone())
+            .unwrap_or_default();
+        self.state
+            .players
+            .get_mut(&target)
+            .unwrap()
+            .pending_text
+            .push(PendingText {
+                selector: selector.clone(),
+                effects: effects.to_vec(),
+                source: source.clone(),
+            });
+        self.log_effect(key, "AddTextToNext", Some(&target), json!({"text": source}));
+    }
+
+    /// Consume any queued `PendingText` matching `card` and fold its effects onto the
+    /// card instance, so the added text travels with it through the stop exchange and
+    /// into play. Consumed on PLAY, whether or not the card is subsequently stopped.
+    fn apply_pending_text(&mut self, key: &str, card: &mut Card) {
+        let player = self.state.players.get_mut(key).unwrap();
+        let Some(idx) = player
+            .pending_text
+            .iter()
+            .position(|p| conditions::card_matches(card, &p.selector))
+        else {
+            return;
+        };
+        let pending = player.pending_text.remove(idx);
+        card.effects.extend(pending.effects.iter().cloned());
+        self.log_effect(
+            key,
+            "AddTextToNext",
+            Some(key),
+            json!({"card": card.db_uuid, "text": pending.source, "consumed": true}),
+        );
+    }
+
     /// "Choose 1: <name>, <name>, or <name>" (Raven): bind one option for the rest of
     /// the match. The owner decides (a `name` decision point); the binding is read by
     /// `ChosenNameIs`, which gates the sibling effects referencing "that" name.
@@ -2675,6 +2730,10 @@ impl Engine {
     /// gimmicks, and re-check hand caps. `Ok(true)` iff the card landed and the
     /// match is still live.
     fn resolve_play(&mut self, active: &str, defender: &str, card: Card) -> Eng<bool> {
+        // Poison: fold any queued "added text" onto the card BEFORE the stop window,
+        // so an "If stopped, …" injection reaches `apply_stop`.
+        let mut card = card;
+        self.apply_pending_text(active, &mut card);
         let t = self.state.turn_no;
         self.log(Event::Play {
             t,
@@ -4068,6 +4127,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",
         Action::AddText { .. } => "AddText",
+        Action::AddTextToNext { .. } => "AddTextToNext",
         Action::StopRequiresTag { .. } => "StopRequiresTag",
         Action::Reroll { .. } => "Reroll",
         Action::SwitchRolledSkill { .. } => "SwitchRolledSkill",
@@ -5297,5 +5357,143 @@ mod roll_order_tests {
                 "B rolled higher ({vb} > {va}) so B resolves first"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod pending_text_tests {
+    use super::*;
+
+    /// The Madness injection: "If stopped, you lose the match via disqualification."
+    fn dq_if_stopped() -> Value {
+        json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnStop", "dir": "YOURS", "order": null},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "LoseBy", "kind": "DISQUALIFICATION", "who": "SELF"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "If stopped, you lose via DQ.", "source": "card", "optional": false
+        })
+    }
+
+    fn card(uuid: &str, atk: &str) -> Value {
+        json!({"atk_type": atk, "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+               "name": uuid, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []})
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..6).map(|i| card(&format!("c{i}"), "Strike")).collect();
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Underworld", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-ent"), "name": "ent"}, "cards": cards.clone(),
+            }))
+            .expect("deck")
+        };
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            decider,
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// Queue "next Grapple gains DQ-if-stopped" on B.
+    fn poison(engine: &mut Engine) {
+        let selector: CardFilter = serde_json::from_value(json!({
+            "@type": "CardFilter", "number": null, "atk_type": "Grapple", "play_order": null,
+            "tag": null, "name": null, "raw": null, "name_contains": [], "text_contains": []
+        }))
+        .unwrap();
+        let effects: Vec<Effect> = vec![serde_json::from_value(dq_if_stopped()).unwrap()];
+        engine.act_add_text_to_next(Who::Opp, &selector, &effects, "A");
+    }
+
+    fn pending(engine: &Engine, key: &str) -> usize {
+        engine.state.players[key].pending_text.len()
+    }
+
+    #[test]
+    fn the_poison_lands_on_the_target_not_the_source() {
+        let mut engine = engine();
+        poison(&mut engine);
+        assert_eq!(pending(&engine, "B"), 1, "queued on the OPPONENT");
+        assert_eq!(pending(&engine, "A"), 0, "not on the caster");
+    }
+
+    #[test]
+    fn only_a_matching_card_consumes_it() {
+        let mut engine = engine();
+        poison(&mut engine);
+        // A Strike does not match the Grapple selector: untouched.
+        let mut strike: Card = serde_json::from_value(card("s", "Strike")).unwrap();
+        engine.apply_pending_text("B", &mut strike);
+        assert!(strike.effects.is_empty(), "non-matching card gains nothing");
+        assert_eq!(pending(&engine, "B"), 1, "and the poison is still queued");
+        // The next Grapple takes it.
+        let mut grapple: Card = serde_json::from_value(card("g", "Grapple")).unwrap();
+        engine.apply_pending_text("B", &mut grapple);
+        assert_eq!(
+            grapple.effects.len(),
+            1,
+            "the Grapple gained the added text"
+        );
+        assert_eq!(pending(&engine, "B"), 0, "and it is consumed");
+    }
+
+    #[test]
+    fn it_is_one_shot() {
+        let mut engine = engine();
+        poison(&mut engine);
+        for uuid in ["g1", "g2"] {
+            let mut g: Card = serde_json::from_value(card(uuid, "Grapple")).unwrap();
+            engine.apply_pending_text("B", &mut g);
+            let expected = usize::from(uuid == "g1");
+            assert_eq!(
+                g.effects.len(),
+                expected,
+                "{uuid} only the FIRST Grapple is hit"
+            );
+        }
+    }
+
+    #[test]
+    fn the_added_text_survives_its_source_leaving_the_board() {
+        // srgpc: poison "stays active until fulfilled even if removed from the board".
+        // The queue lives on the target, so clearing BOTH boards changes nothing.
+        let mut engine = engine();
+        poison(&mut engine);
+        for side in ["A", "B"] {
+            engine.state.players.get_mut(side).unwrap().in_play.clear();
+            engine.state.players.get_mut(side).unwrap().discard.clear();
+        }
+        let mut g: Card = serde_json::from_value(card("g", "Grapple")).unwrap();
+        engine.apply_pending_text("B", &mut g);
+        assert_eq!(g.effects.len(), 1, "the poison still resolves");
+    }
+
+    #[test]
+    fn a_stopped_poisoned_card_disqualifies_its_controller() {
+        // End to end: B plays the poisoned Grapple, A stops it, B loses via DQ.
+        let mut engine = engine();
+        poison(&mut engine);
+        let mut g: Card = serde_json::from_value(card("g", "Grapple")).unwrap();
+        engine.apply_pending_text("B", &mut g);
+        let stop: Card = serde_json::from_value(card("st", "Grapple")).unwrap();
+        engine.apply_stop("B", "A", g, stop).unwrap();
+        engine.resolve_pending();
+        let result = engine.result.as_ref().expect("the match ended");
+        assert_eq!(result.winner, "A", "the poisoned player's opponent wins");
+        assert!(
+            result.reason.to_lowercase().contains("disqualification"),
+            "by disqualification, got {:?}",
+            result.reason
+        );
     }
 }

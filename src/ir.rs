@@ -855,6 +855,20 @@ pub enum Action {
         name_contains: Vec<String>,
         effects: Vec<Effect>,
     },
+    /// POISON/DOPING (srgpc): "Your opponent's **next** Grapple has the added text:
+    /// 'If stopped, you lose the match via disqualification'" (the Madness trio).
+    /// Attaches `effects` to the NEXT card `who` plays matching `selector`, then is
+    /// consumed. Unlike [`Action::AddText`] — a continuous, gimmick-sourced,
+    /// name-matched injection re-derived on every play — this is a ONE-SHOT queued on
+    /// the target player (`PlayerState.pending_text`), so per the ruling it "stays
+    /// active until fulfilled even if [the source is] removed from the board".
+    /// Materialized onto the played card itself, so the added text also reaches the
+    /// stop exchange (where `injected_text` never did). schema v40
+    AddTextToNext {
+        who: Who,
+        selector: CardFilter,
+        effects: Vec<Effect>,
+    },
     Reroll {
         /// Whose die is re-rolled: `SelfSide` (your own — Dunn/Jay White) or `Opp`
         /// ("force your opponent to re-roll" — Reverend/Macho Manny). Overridden by
@@ -1460,6 +1474,20 @@ pub enum IrNode {
     },
     AddText {
         name_contains: Vec<String>,
+        effects: Vec<Effect>,
+    },
+    /// POISON/DOPING (srgpc): "Your opponent's **next** Grapple has the added text:
+    /// 'If stopped, you lose the match via disqualification'" (the Madness trio).
+    /// Attaches `effects` to the NEXT card `who` plays matching `selector`, then is
+    /// consumed. Unlike [`Action::AddText`] — a continuous, gimmick-sourced,
+    /// name-matched injection re-derived on every play — this is a ONE-SHOT queued on
+    /// the target player (`PlayerState.pending_text`), so per the ruling it "stays
+    /// active until fulfilled even if [the source is] removed from the board".
+    /// Materialized onto the played card itself, so the added text also reaches the
+    /// stop exchange (where `injected_text` never did). schema v40
+    AddTextToNext {
+        who: Who,
+        selector: CardFilter,
         effects: Vec<Effect>,
     },
     Reroll {

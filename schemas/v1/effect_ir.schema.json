@@ -42,6 +42,33 @@
       ],
       "type": "object"
     },
+    "AddTextToNext": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "AddTextToNext"
+        },
+        "effects": {
+          "items": {
+            "$ref": "#/$defs/Effect"
+          },
+          "type": "array"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "selector",
+        "effects"
+      ],
+      "type": "object"
+    },
     "AlsoLead": {
       "additionalProperties": false,
       "properties": {
@@ -703,6 +730,9 @@
                 "$ref": "#/$defs/AddText"
               },
               {
+                "$ref": "#/$defs/AddTextToNext"
+              },
+              {
                 "$ref": "#/$defs/StopRequiresTag"
               }
             ]
@@ -1208,6 +1238,9 @@
               },
               {
                 "$ref": "#/$defs/AddText"
+              },
+              {
+                "$ref": "#/$defs/AddTextToNext"
               },
               {
                 "$ref": "#/$defs/StopRequiresTag"
@@ -1952,6 +1985,9 @@
         },
         {
           "$ref": "#/$defs/AddText"
+        },
+        {
+          "$ref": "#/$defs/AddTextToNext"
         },
         {
           "$ref": "#/$defs/StopRequiresTag"
@@ -3457,5 +3493,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 39
+  "version": 40
 }

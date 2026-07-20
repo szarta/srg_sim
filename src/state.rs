@@ -61,6 +61,21 @@ pub struct TimedBuff {
     pub granted_turn: i64,
 }
 
+/// A queued one-shot "added text" waiting for its target's next matching card
+/// (DESIGN.md §3, [`Action::AddTextToNext`] — the Madness trio).
+///
+/// Held on the TARGET player, not the source card, which is what makes it survive the
+/// source leaving the board (srgpc: poison "stays active until fulfilled even if
+/// removed from the board"). Consumed by `resolve_play` when a matching card is
+/// played, whether or not that card is then stopped.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PendingText {
+    pub selector: CardFilter,
+    pub effects: Vec<Effect>,
+    /// The granting clause, for the log.
+    pub source: String,
+}
+
 /// One side's competitor, entrance, and card zones (DESIGN.md §5).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PlayerState {
@@ -92,6 +107,10 @@ pub struct PlayerState {
     /// [`Condition::ChosenNameIs`]. `None` until the choice is made.
     #[serde(default)]
     pub chosen_name: Option<String>,
+    /// Queued one-shot "added text" for this player's next matching card. See
+    /// [`PendingText`]; survives the source card leaving play.
+    #[serde(default)]
+    pub pending_text: Vec<PendingText>,
     #[serde(default)]
     pub freq_counters: BTreeMap<String, i64>,
     #[serde(default)]

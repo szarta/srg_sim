@@ -2098,6 +2098,72 @@
       }
     }
   ],
+  "37bd5a41ed97461cb33e713e9a13571d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddTextToNext",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "LoseBy",
+                  "kind": "DISQUALIFICATION",
+                  "who": "SELF"
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "If stopped, you lose the match via disqualification.",
+              "source": "card",
+              "trigger": {
+                "@type": "OnStop",
+                "dir": "YOURS",
+                "order": null
+              }
+            }
+          ],
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": "Strike",
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's next Strike has the added text:\"If stopped, you lose the match via Disqualification.\"Skill Requirement: Grapple 8+",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
   "37f9036514b94c4b82fefbb482b5a1a9": [
     {
       "@type": "Effect",
@@ -2893,6 +2959,72 @@
       },
       "optional": false,
       "raw_clause": "discard 1 card your opponent has in play, shuffle 2 from discard into deck, draw 1",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "56d648736c9348e4b8bd31f22867c8fa": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddTextToNext",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "LoseBy",
+                  "kind": "DISQUALIFICATION",
+                  "who": "SELF"
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "If stopped, you lose the match via disqualification.",
+              "source": "card",
+              "trigger": {
+                "@type": "OnStop",
+                "dir": "YOURS",
+                "order": null
+              }
+            }
+          ],
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": "Submission",
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's next Submission has the added text: \"If stopped, you lose the match via disqualification.",
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
@@ -5960,6 +6092,72 @@
       "source": "gimmick",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "a401fc3b6fb6462ab85aff0b21de370d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddTextToNext",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "LoseBy",
+                  "kind": "DISQUALIFICATION",
+                  "who": "SELF"
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "If stopped, you lose the match via disqualification.",
+              "source": "card",
+              "trigger": {
+                "@type": "OnStop",
+                "dir": "YOURS",
+                "order": null
+              }
+            }
+          ],
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": "Grapple",
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's next Grapple has the added text: \"If stopped, you lose the match via disqualification.\"",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
       }
     }
   ],

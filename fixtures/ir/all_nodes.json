@@ -678,6 +678,53 @@
     ]
   },
   {
+    "@type": "AddTextToNext",
+    "who": "OPP",
+    "selector": {
+      "@type": "CardFilter",
+      "number": null,
+      "atk_type": "Grapple",
+      "play_order": null,
+      "tag": null,
+      "name": null,
+      "raw": null,
+      "name_contains": [],
+      "text_contains": []
+    },
+    "effects": [
+      {
+        "@type": "Effect",
+        "actions": [
+          {
+            "@type": "Draw",
+            "n": 0,
+            "per": null,
+            "per_who": "SELF",
+            "source": "TOP",
+            "who": "SELF",
+            "cap": null,
+            "per_excludes_trigger": false
+          }
+        ],
+        "condition": {
+          "@type": "Always"
+        },
+        "duration": "WHILE_IN_PLAY",
+        "frequency": {
+          "@type": "FrequencyGuard",
+          "kind": "UNLIMITED",
+          "n": null
+        },
+        "optional": false,
+        "raw_clause": "",
+        "source": "card",
+        "trigger": {
+          "@type": "OnPlay"
+        }
+      }
+    ]
+  },
+  {
     "@type": "StopRequiresTag",
     "tag": "Spotlight"
   }
