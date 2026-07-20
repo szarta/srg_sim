@@ -971,6 +971,7 @@ impl Engine {
             | Action::DisqualificationRule { .. }
             | Action::ConsideredCompare { .. }
             | Action::SuppressOpponentDraw
+            | Action::SuppressSelfHandLoss
             | Action::SwitchRolledSkill { .. }
             | Action::AddText { .. }
             | Action::StopRequiresTag { .. }
@@ -1104,6 +1105,22 @@ impl Engine {
     /// `key`'s own gimmick (unless blanked), entrance, or in-play, whose condition
     /// holds. Read at `act_draw`.
     fn suppresses_opp_draw(&self, key: &str) -> bool {
+        self.declares_static(key, |a| matches!(a, Action::SuppressOpponentDraw))
+    }
+
+    /// Whether `key`'s OWN effect must not cost `target` cards from hand — Sami
+    /// "Death Machine" V2: "you do not bury or discard cards from your hand for your
+    /// own card effects". Scoped to self-inflicted loss (`key == target`), so an
+    /// opponent's effect still takes the cards. Read at the two hand-loss points.
+    fn suppresses_self_hand_loss(&self, key: &str, target: &str) -> bool {
+        key == target && self.declares_static(key, |a| matches!(a, Action::SuppressSelfHandLoss))
+    }
+
+    /// Whether `key` holds an active Static declaration of an action matching `pred`
+    /// — on their own gimmick (unless blanked), entrance, or in-play, with the
+    /// declaration's own condition holding. The read side of the passive-flag actions
+    /// (`SuppressOpponentDraw`, `SuppressSelfHandLoss`), which are never executed.
+    fn declares_static(&self, key: &str, pred: impl Fn(&Action) -> bool) -> bool {
         let player = &self.state.players[key];
         let gimmick = (
             &player.competitor.effects,
@@ -1112,17 +1129,15 @@ impl Engine {
         std::iter::once(gimmick)
             .chain(std::iter::once((&player.entrance.effects, true)))
             .chain(player.in_play.iter().map(|c| (&c.effects, true)))
-            .any(|(effects, active)| active && self.declares_suppress(effects, key))
+            .any(|(effects, active)| active && self.declares(effects, key, &pred))
     }
 
-    /// Any Static `SuppressOpponentDraw` among `effects` whose condition holds.
-    fn declares_suppress(&self, effects: &[Effect], key: &str) -> bool {
+    /// Any Static effect among `effects` declaring a `pred`-matching action whose
+    /// own condition holds.
+    fn declares(&self, effects: &[Effect], key: &str, pred: &impl Fn(&Action) -> bool) -> bool {
         effects.iter().any(|eff| {
             matches!(eff.trigger, Trigger::Static)
-                && eff
-                    .actions
-                    .iter()
-                    .any(|a| matches!(a, Action::SuppressOpponentDraw))
+                && eff.actions.iter().any(pred)
                 && conditions::holds(&eff.condition, &self.state, key, None)
         })
     }
@@ -1201,6 +1216,15 @@ impl Engine {
         }
         let target = self.target(who, key);
         if source == BuryFrom::Hand {
+            if self.suppresses_self_hand_loss(key, &target) {
+                self.log_effect(
+                    key,
+                    "SuppressSelfHandLoss",
+                    Some(&target),
+                    json!({"n": count}),
+                );
+                return Ok(());
+            }
             let n = self.bury_from_hand(&target, count.max(0) as usize, random, selector)?;
             if n > 0 {
                 self.run_on_bury(&target, true, false)?; // effect-caused hand bury
@@ -1414,6 +1438,15 @@ impl Engine {
             count *= self.per_multiplier(per, per_who, key, None);
         }
         if count != 0 {
+            if self.suppresses_self_hand_loss(key, &target) {
+                self.log_effect(
+                    key,
+                    "SuppressSelfHandLoss",
+                    Some(&target),
+                    json!({"n": count}),
+                );
+                return Ok(());
+            }
             let n =
                 self.discard_from_hand(&target, count.max(0) as usize, random, Some(selector))?;
             if n > 0 {
@@ -4158,6 +4191,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::DisqualificationRule { .. } => "DisqualificationRule",
         Action::ConsideredCompare { .. } => "ConsideredCompare",
         Action::SuppressOpponentDraw => "SuppressOpponentDraw",
+        Action::SuppressSelfHandLoss => "SuppressSelfHandLoss",
         Action::CrowdMeter { .. } => "CrowdMeter",
         Action::PlayExtraCard { .. } => "PlayExtraCard",
         Action::SetFinishRoll { .. } => "SetFinishRoll",
@@ -5598,5 +5632,218 @@ mod timed_blank_tests {
             engine.state.is_gimmick_blanked("B"),
             "permanent blank persists"
         );
+    }
+}
+
+/// `SuppressSelfHandLoss` (task #79 / Sami Callihan): "you do not bury or discard
+/// cards from your hand for your OWN card effects" — the two hand-loss chokepoints,
+/// and the start-of-match choice (Sami WR) that selects between this flag and
+/// `SuppressOpponentDraw`.
+#[cfg(test)]
+mod suppress_hand_loss_tests {
+    use super::*;
+
+    /// Picks the option named `pick` at a `name` decision point; first legal elsewhere.
+    struct PickName(&'static str);
+
+    impl Decider for PickName {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal
+                .iter()
+                .find(|o| o["name"].as_str() == Some(self.0))
+                .cloned()
+                .or_else(|| legal.first().cloned())
+        }
+
+        fn policy_name(&self, _viewer: &str) -> String {
+            "pick-name".to_owned()
+        }
+    }
+
+    const DRAW_OPT: &str = "No Opponent Draw";
+    const HAND_OPT: &str = "No Self Hand Loss";
+
+    /// The bare Sami V2 declaration: one unconditional Static flag.
+    fn v2_effects() -> Value {
+        json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "SuppressSelfHandLoss"}],
+            "duration": "WHILE_GIMMICK_ACTIVE",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "no self hand loss", "source": "gimmick", "optional": false
+        }])
+    }
+
+    /// Sami WR: bind one option at match start, then one Static per option gated on
+    /// the binding — exactly one flag is ever live.
+    fn wr_effects() -> Value {
+        json!([
+            {
+                "@type": "Effect",
+                "trigger": {"@type": "StartOfMatch"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "ChooseName", "options": [DRAW_OPT, HAND_OPT]}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "choose 1", "source": "gimmick", "optional": false
+            },
+            {
+                "@type": "Effect",
+                "trigger": {"@type": "Static"},
+                "condition": {"@type": "ChosenNameIs", "name": DRAW_OPT, "who": "SELF"},
+                "actions": [{"@type": "SuppressOpponentDraw"}],
+                "duration": "WHILE_GIMMICK_ACTIVE",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "no opp draw", "source": "gimmick", "optional": false
+            },
+            {
+                "@type": "Effect",
+                "trigger": {"@type": "Static"},
+                "condition": {"@type": "ChosenNameIs", "name": HAND_OPT, "who": "SELF"},
+                "actions": [{"@type": "SuppressSelfHandLoss"}],
+                "duration": "WHILE_GIMMICK_ACTIVE",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "no self hand loss", "source": "gimmick", "optional": false
+            }
+        ])
+    }
+
+    fn engine_with(effects: Value, pick: &'static str) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..10)
+            .map(|i| {
+                json!({"atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+                       "finish_bonuses": {}, "name": format!("c{i}"), "number": 1,
+                       "play_order": "Lead", "raw_text": "", "tags": []})
+            })
+            .collect();
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "SC", "name": "Sami", "division": "World Championship",
+                "stats": stats, "effects": effects},
+            "entrance": {"db_uuid": "SC-ent", "name": "ent"}, "cards": cards.clone(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "World Championship",
+                "stats": stats},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": cards,
+        }))
+        .expect("deck B");
+        Engine::new(
+            deck_a,
+            deck_b,
+            Box::new(PickName(pick)),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// A discard-1-from-your-own-hand action, as a card effect owned by `key`.
+    fn discard_self() -> Action {
+        Action::Discard {
+            selector: CardFilter::default(),
+            count: 1,
+            who: Who::SelfSide,
+            random: true,
+            per: None,
+            per_who: Who::SelfSide,
+        }
+    }
+
+    fn hand_len(engine: &Engine, key: &str) -> usize {
+        engine.state.players[key].hand.len()
+    }
+
+    #[test]
+    fn your_own_effect_no_longer_costs_you_a_card() {
+        let mut engine = engine_with(v2_effects(), DRAW_OPT);
+        engine.setup().unwrap();
+        let before = hand_len(&engine, "A");
+        engine.apply_action(&discard_self(), "A", "").unwrap();
+        assert_eq!(hand_len(&engine, "A"), before, "self-discard suppressed");
+    }
+
+    #[test]
+    fn the_opponents_effect_still_takes_the_card() {
+        // "for your OWN card effects" — B's effect making A discard is untouched.
+        let mut engine = engine_with(v2_effects(), DRAW_OPT);
+        engine.setup().unwrap();
+        let before = hand_len(&engine, "A");
+        let opp_discard = Action::Discard {
+            selector: CardFilter::default(),
+            count: 1,
+            who: Who::Opp,
+            random: true,
+            per: None,
+            per_who: Who::SelfSide,
+        };
+        engine.apply_action(&opp_discard, "B", "").unwrap();
+        assert_eq!(
+            hand_len(&engine, "A"),
+            before - 1,
+            "opponent's effect lands"
+        );
+    }
+
+    #[test]
+    fn it_covers_hand_bury_as_well_as_discard() {
+        // The declaration reads "bury OR discard", so both chokepoints are voided.
+        let mut engine = engine_with(v2_effects(), DRAW_OPT);
+        engine.setup().unwrap();
+        let bury = Action::Bury {
+            selector: CardFilter::default(),
+            count: 1,
+            who: Who::SelfSide,
+            random: true,
+            source: BuryFrom::Hand,
+            choose: false,
+        };
+        let before = hand_len(&engine, "A");
+        engine.apply_action(&bury, "A", "").unwrap();
+        assert_eq!(hand_len(&engine, "A"), before, "self hand-bury suppressed");
+    }
+
+    #[test]
+    fn without_the_flag_the_discard_lands() {
+        // Baseline: the same action against a competitor with no declaration.
+        let mut engine = engine_with(json!([]), DRAW_OPT);
+        engine.setup().unwrap();
+        let before = hand_len(&engine, "A");
+        engine.apply_action(&discard_self(), "A", "").unwrap();
+        assert_eq!(hand_len(&engine, "A"), before - 1);
+    }
+
+    #[test]
+    fn the_wr_choice_binds_exactly_one_flag() {
+        // Picking the hand branch suppresses A's self-discard but leaves A's
+        // Draw(who=OPP) working; picking the draw branch does the reverse.
+        let mut hand_pick = engine_with(wr_effects(), HAND_OPT);
+        hand_pick.setup().unwrap();
+        assert!(hand_pick.suppresses_self_hand_loss("A", "A"));
+        assert!(!hand_pick.suppresses_opp_draw("A"));
+
+        let mut draw_pick = engine_with(wr_effects(), DRAW_OPT);
+        draw_pick.setup().unwrap();
+        assert!(!draw_pick.suppresses_self_hand_loss("A", "A"));
+        assert!(draw_pick.suppresses_opp_draw("A"));
+    }
+
+    #[test]
+    fn the_flag_never_protects_the_opponent() {
+        // Owner-scoped: A holding it must not stop A's effect from making B discard —
+        // that is the whole point of the OTHER branch existing.
+        let mut engine = engine_with(v2_effects(), DRAW_OPT);
+        engine.setup().unwrap();
+        assert!(!engine.suppresses_self_hand_loss("A", "B"));
     }
 }

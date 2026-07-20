@@ -3866,6 +3866,85 @@
       }
     }
   ],
+  "6cb70ff083db4b25a3d4f5cafccf3d68": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ChooseName",
+          "options": [
+            "No Opponent Draw",
+            "No Self Hand Loss"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "At the start of the match, choose 1:",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfMatch"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "SuppressOpponentDraw"
+        }
+      ],
+      "condition": {
+        "@type": "ChosenNameIs",
+        "name": "No Opponent Draw",
+        "who": "SELF"
+      },
+      "duration": "WHILE_GIMMICK_ACTIVE",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your opponent does not draw for your card effects",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "SuppressSelfHandLoss"
+        }
+      ],
+      "condition": {
+        "@type": "ChosenNameIs",
+        "name": "No Self Hand Loss",
+        "who": "SELF"
+      },
+      "duration": "WHILE_GIMMICK_ACTIVE",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "you do not bury or discard cards from your hand for your own card effects",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "6d75ae044d4a47b29dc492c1916249e5": [
     {
       "@type": "Effect",
@@ -7707,6 +7786,31 @@
       },
       "optional": false,
       "raw_clause": "the player with the lowest turn roll wins the turn roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "c38c2c3ef1154d008cb129120a95bdb6": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "SuppressSelfHandLoss"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_GIMMICK_ACTIVE",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "you do not bury or discard cards from your hand for your own card effects",
       "source": "gimmick",
       "trigger": {
         "@type": "Static"

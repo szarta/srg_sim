@@ -731,6 +731,9 @@
                 "$ref": "#/$defs/SuppressOpponentDraw"
               },
               {
+                "$ref": "#/$defs/SuppressSelfHandLoss"
+              },
+              {
                 "$ref": "#/$defs/RevealForDraw"
               },
               {
@@ -1239,6 +1242,9 @@
               },
               {
                 "$ref": "#/$defs/SuppressOpponentDraw"
+              },
+              {
+                "$ref": "#/$defs/SuppressSelfHandLoss"
               },
               {
                 "$ref": "#/$defs/RevealForDraw"
@@ -1986,6 +1992,9 @@
         },
         {
           "$ref": "#/$defs/SuppressOpponentDraw"
+        },
+        {
+          "$ref": "#/$defs/SuppressSelfHandLoss"
         },
         {
           "$ref": "#/$defs/RevealForDraw"
@@ -3389,6 +3398,18 @@
       ],
       "type": "object"
     },
+    "SuppressSelfHandLoss": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SuppressSelfHandLoss"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "SwapHandDiscard": {
       "additionalProperties": false,
       "properties": {
@@ -3500,5 +3521,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 41
+  "version": 42
 }

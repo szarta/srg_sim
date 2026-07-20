@@ -648,6 +648,9 @@
     "@type": "SuppressOpponentDraw"
   },
   {
+    "@type": "SuppressSelfHandLoss"
+  },
+  {
     "@type": "RevealForDraw",
     "count": 1,
     "draw": 2,

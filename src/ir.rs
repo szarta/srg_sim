@@ -972,6 +972,13 @@ pub enum Action {
     /// (Sami "The Draw" Callihan). Read at `act_draw` — a `Draw{who=OPP}` resolved by
     /// the declaring player is voided. Not executed as a mutation.
     SuppressOpponentDraw,
+    /// The mirror declaration: "you do not bury or discard cards from your hand for
+    /// your OWN card effects" (Sami "Death Machine" V2; one branch of Sami WR's
+    /// start-of-match choice). Read at the two hand-loss chokepoints — `act_bury`'s
+    /// `BuryFrom::Hand` branch and `act_discard` — and only when the declaring player
+    /// is BOTH the effect's owner and the one losing cards, so an opponent's effect
+    /// still takes them. Not executed as a mutation. schema v42
+    SuppressSelfHandLoss,
     CrowdMeter {
         delta: i64,
     },
@@ -1593,6 +1600,13 @@ pub enum IrNode {
     /// (Sami "The Draw" Callihan). Read at `act_draw` — a `Draw{who=OPP}` resolved by
     /// the declaring player is voided. Not executed as a mutation.
     SuppressOpponentDraw,
+    /// The mirror declaration: "you do not bury or discard cards from your hand for
+    /// your OWN card effects" (Sami "Death Machine" V2; one branch of Sami WR's
+    /// start-of-match choice). Read at the two hand-loss chokepoints — `act_bury`'s
+    /// `BuryFrom::Hand` branch and `act_discard` — and only when the declaring player
+    /// is BOTH the effect's owner and the one losing cards, so an opponent's effect
+    /// still takes them. Not executed as a mutation. schema v42
+    SuppressSelfHandLoss,
     CrowdMeter {
         delta: i64,
     },
