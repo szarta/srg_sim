@@ -7011,3 +7011,156 @@ c94f753c62f5406cae60f664dfc182e6:
     choose 1 card in play and discard it, or bury 1 card in any player''s discard pile.'
   source: gimmick
   optional: false
+
+# --- POISON (srgpc): "These card effects stay active until fulfilled even if
+# removed from the board." The Madness trio queues a ONE-SHOT added text on the
+# OPPONENT (AddTextToNext), consumed by their next card of the named move type --
+# whether or not that card is then stopped. The injected text is the existing
+# OnStop -> LoseBy{DISQUALIFICATION, SELF}: "you" is the poisoned card's controller.
+# Skill Requirements are parser metadata (they produce no IR effect), so replacing
+# these cards' effects loses nothing -- note The Madness Spreads has its SkillReq
+# glued into the clause because the printed text lacks a line break.
+
+# Madness Unsealed (Agility)
+a401fc3b6fb6462ab85aff0b21de370d:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddTextToNext
+    who: OPP
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: Grapple
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnStop
+        dir: YOURS
+        order: null
+      condition:
+        '@type': Always
+      actions:
+      - '@type': LoseBy
+        kind: DISQUALIFICATION
+        who: SELF
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: If stopped, you lose the match via disqualification.
+      source: card
+      optional: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Your opponent''s next Grapple has the added text: "If stopped, you lose the match via disqualification."'
+  source: card
+  optional: false
+
+# Embrace the Madness (Strike)
+56d648736c9348e4b8bd31f22867c8fa:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddTextToNext
+    who: OPP
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: Submission
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnStop
+        dir: YOURS
+        order: null
+      condition:
+        '@type': Always
+      actions:
+      - '@type': LoseBy
+        kind: DISQUALIFICATION
+        who: SELF
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: If stopped, you lose the match via disqualification.
+      source: card
+      optional: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Your opponent''s next Submission has the added text: "If stopped, you lose the match via
+    disqualification.'
+  source: card
+  optional: false
+
+# The Madness Spreads (Grapple)
+37bd5a41ed97461cb33e713e9a13571d:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddTextToNext
+    who: OPP
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: Strike
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnStop
+        dir: YOURS
+        order: null
+      condition:
+        '@type': Always
+      actions:
+      - '@type': LoseBy
+        kind: DISQUALIFICATION
+        who: SELF
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: If stopped, you lose the match via disqualification.
+      source: card
+      optional: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Your opponent''s next Strike has the added text:"If stopped, you lose the match via Disqualification."Skill
+    Requirement: Grapple 8+'
+  source: card
+  optional: false
+

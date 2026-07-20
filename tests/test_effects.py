@@ -23,6 +23,7 @@ from srg_sim.effects import (
     Bury,
     BuryFrom,
     AddText,
+    AddTextToNext,
     CardFilter,
     Choice,
     ChoiceOption,
@@ -219,6 +220,11 @@ SAMPLES: list[IRNode] = [
     BuffSkill(Skill.GRAPPLE, 0, Who.SELF, target_highest=True, per_crowd=True, cap=5),
     MaxHandSize(-1, Who.OPP),
     AddText(("Super",), (Effect(trigger=OnPlay(), actions=(Draw(n=2),)),)),  # El Super Santa
+    AddTextToNext(  # the Madness trio: poison the opponent's next Grapple
+        who=Who.OPP,
+        selector=CardFilter(atk_type=AtkType.GRAPPLE),
+        effects=(Effect(trigger=OnPlay(), actions=(Draw(n=2),)),),
+    ),
     Reroll(Who.OPP, once=False),
     SwitchRolledSkill(from_skill=Skill.TECHNIQUE, to=Skill.POWER),  # Scott Prime
     WinTie(Who.SELF),

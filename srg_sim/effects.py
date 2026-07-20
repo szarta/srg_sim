@@ -995,6 +995,23 @@ class AddText(IRNode):
 
 
 @dataclass(frozen=True)
+class AddTextToNext(IRNode):
+    """POISON/DOPING (srgpc): "Your opponent's **next** Grapple has the added text: 'If
+    stopped, you lose the match via disqualification'" (the Madness trio).
+
+    Attaches ``effects`` to the NEXT card ``who`` plays matching ``selector``, then is
+    consumed. Unlike :class:`AddText` — a continuous, gimmick-sourced, name-matched
+    injection re-derived on every play — this is a ONE-SHOT queued on the TARGET player
+    (``PlayerState.pending_text``), so per the ruling it "stays active until fulfilled
+    even if [the source is] removed from the board". Materialized onto the played card
+    itself, so the added text also reaches the stop exchange."""
+
+    who: Who = Who.OPP
+    selector: CardFilter = CardFilter()
+    effects: tuple[Effect, ...] = ()
+
+
+@dataclass(frozen=True)
 class Reroll(IRNode):
     who: Who
     once: bool = True
@@ -1436,6 +1453,7 @@ Action = (
     | BuffSkill
     | MaxHandSize
     | AddText
+    | AddTextToNext
     | Reroll
     | SwitchRolledSkill
     | WinTie

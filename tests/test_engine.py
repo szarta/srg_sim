@@ -1023,6 +1023,64 @@ def test_choose_reaches_either_board_and_either_discard_pile() -> None:
     assert any(c.db_uuid == "Adisc0" for c in eng.state.players["A"].discard)
 
 
+def test_poison_added_text_is_one_shot_and_outlives_its_source() -> None:
+    # The Madness trio (srgpc "poison"): "Your opponent's next Grapple has the added
+    # text: 'If stopped, you lose the match via disqualification.'" Queued on the
+    # TARGET, so it "stays active until fulfilled even if removed from the board".
+    injected = fx.Effect(
+        trigger=fx.OnStop(dir=fx.Direction.YOURS),
+        actions=(fx.LoseBy(kind=fx.LoseKind.DISQUALIFICATION, who=fx.Who.SELF),),
+        raw_clause="If stopped, you lose via DQ.",
+    )
+    action = fx.AddTextToNext(
+        who=fx.Who.OPP, selector=fx.CardFilter(atk_type=AtkType.GRAPPLE), effects=(injected,)
+    )
+
+    def card(u: str, atk: AtkType) -> Card:
+        return Card(db_uuid=u, name=u, number=1, atk_type=atk, play_order=PlayOrder.LEAD)
+
+    def fresh() -> Engine:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng._act_add_text_to_next(action, "A")
+        return eng
+
+    # Queued on the OPPONENT, not the caster.
+    eng = fresh()
+    assert len(eng.state.players["B"].pending_text) == 1
+    assert len(eng.state.players["A"].pending_text) == 0
+
+    # Only a matching card consumes it.
+    eng = fresh()
+    strike = eng._apply_pending_text("B", card("s", AtkType.STRIKE))
+    assert strike.effects == ()
+    assert len(eng.state.players["B"].pending_text) == 1
+    grapple = eng._apply_pending_text("B", card("g", AtkType.GRAPPLE))
+    assert len(grapple.effects) == 1
+    assert len(eng.state.players["B"].pending_text) == 0
+
+    # One-shot: the SECOND Grapple gets nothing.
+    eng = fresh()
+    first = eng._apply_pending_text("B", card("g1", AtkType.GRAPPLE))
+    second = eng._apply_pending_text("B", card("g2", AtkType.GRAPPLE))
+    assert len(first.effects) == 1 and second.effects == ()
+
+    # It outlives its source leaving the board (both boards cleared).
+    eng = fresh()
+    for side in ("A", "B"):
+        eng.state.players[side].in_play = []
+        eng.state.players[side].discard = []
+    assert len(eng._apply_pending_text("B", card("g", AtkType.GRAPPLE)).effects) == 1
+
+    # End to end: B plays the poisoned Grapple, A stops it, B loses via DQ.
+    eng = fresh()
+    poisoned = eng._apply_pending_text("B", card("g", AtkType.GRAPPLE))
+    eng._apply_stop("B", "A", poisoned, card("st", AtkType.GRAPPLE))
+    eng._resolve_pending()
+    assert eng.result is not None
+    assert eng.result.winner == "A"
+    assert "disqualification" in eng.result.reason.lower()
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.

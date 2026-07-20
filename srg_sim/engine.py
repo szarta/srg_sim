@@ -25,7 +25,7 @@ unhandled action — is emitted as an ``unsupported`` log event, never dropped.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any
 
 from srg_sim import conditions
@@ -34,7 +34,7 @@ from srg_sim import gamelog as gl
 from srg_sim.cards import AtkType, Card, Deck, PlayOrder, Skill
 from srg_sim.finish import is_auto_success, stat_breaks_out
 from srg_sim.rng import SeededRNG
-from srg_sim.state import GameState, PlayerState, TimedBuff
+from srg_sim.state import GameState, PendingText, PlayerState, TimedBuff
 
 if TYPE_CHECKING:
     from srg_sim.policy import Option, Policy
@@ -749,6 +749,9 @@ class Engine:
     # -- play resolution + stops ------------------------------------------
 
     def _resolve_play(self, active: str, defender: str, card: Card) -> bool:
+        # Poison: fold any queued "added text" onto the card BEFORE the stop window,
+        # so an "If stopped, ..." injection reaches _apply_stop.
+        card = self._apply_pending_text(active, card)
         self._log(
             gl.Play(
                 t=self.state.turn_no,
@@ -1945,6 +1948,32 @@ class Engine:
         legal = [{"kind": "seat", "seat": key}, {"kind": "seat", "seat": opp}]
         return self._decide("reshuffle_target", key, legal)["seat"]
 
+    def _act_add_text_to_next(self, action: fx.AddTextToNext, key: str) -> None:
+        """Queue a one-shot "added text" on ``who``'s next card matching ``selector``
+        (the Madness trio). Held on the TARGET, so it outlives the source leaving play."""
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        source = action.effects[0].raw_clause if action.effects else ""
+        self.state.players[target].pending_text.append(
+            PendingText(selector=action.selector, effects=action.effects, source=source)
+        )
+        self._log_effect(key, "AddTextToNext", target, {"text": source})
+
+    def _apply_pending_text(self, key: str, card: Card) -> Card:
+        """Consume any queued PendingText matching ``card`` and fold its effects onto
+        the card instance, so the added text travels with it through the stop exchange
+        and into play. Consumed on PLAY, whether or not the card is then stopped."""
+        pend = self.state.players[key].pending_text
+        hit = next((p for p in pend if conditions.card_matches(card, p.selector)), None)
+        if hit is None:
+            return card
+        pend.remove(hit)
+        card = replace(card, effects=tuple(card.effects) + tuple(hit.effects))
+        self._log_effect(
+            key, "AddTextToNext", key,
+            {"card": card.db_uuid, "text": hit.source, "consumed": True},
+        )
+        return card
+
     def _act_choose_name(self, action: fx.ChooseName, key: str) -> None:
         """"Choose 1: <name>, <name>, or <name>" (Raven): bind one option for the rest
         of the match. The owner decides (a `name` decision point); the binding is read
@@ -2357,6 +2386,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.BlankText: Engine._act_noop,  # Static, read via is_text_blanked; never executed
     fx.BlankStoppedText: Engine._act_blank_stopped_text,
     fx.ChooseName: Engine._act_choose_name,
+    fx.AddTextToNext: Engine._act_add_text_to_next,
     fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed

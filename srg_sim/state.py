@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from srg_sim import conditions
 from srg_sim.cards import Card, Competitor, EntranceCard, Skill
@@ -92,6 +92,38 @@ class TimedBuff:
 
 
 @dataclass
+class PendingText:
+    """A queued one-shot "added text" waiting for its target's next matching card
+    (:class:`AddTextToNext` — the Madness trio).
+
+    Held on the TARGET player, not the source card, which is what makes it survive the
+    source leaving the board (srgpc: poison "stays active until fulfilled even if
+    removed from the board"). Consumed when a matching card is played, whether or not
+    that card is then stopped."""
+
+    selector: CardFilter
+    effects: tuple[Effect, ...] = ()
+    source: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "selector": self.selector.to_dict(),
+            "effects": [e.to_dict() for e in self.effects],
+            "source": self.source,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PendingText:
+        from srg_sim.effects import from_dict as node_from_dict
+
+        return cls(
+            selector=cast(CardFilter, node_from_dict(data["selector"])),
+            effects=tuple(cast(Effect, node_from_dict(e)) for e in data["effects"]),
+            source=data.get("source", ""),
+        )
+
+
+@dataclass
 class PlayerState:
     """One side's competitor, entrance, and card zones (DESIGN.md §5).
 
@@ -116,6 +148,9 @@ class PlayerState:
     # The option bound by ChooseName ("Choose 1: 'Kendo Stick', ..." — Raven), fixed
     # for the rest of the match and read by the ChosenNameIs condition.
     chosen_name: str | None = None
+    # Queued one-shot "added text" for this player's next matching card; survives the
+    # source card leaving play.
+    pending_text: list[PendingText] = field(default_factory=list)
     freq_counters: dict[str, int] = field(default_factory=dict)
     gimmick_blanked: bool = False
     gimmick_flipped: bool = False  # competitor card turned to its back side (Copy Kat V2)
@@ -140,6 +175,7 @@ class PlayerState:
             "reroll_grants": dict(self.reroll_grants),
             "timed_buffs": [b.to_dict() for b in self.timed_buffs],
             "chosen_name": self.chosen_name,
+            "pending_text": [p.to_dict() for p in self.pending_text],
             "freq_counters": dict(self.freq_counters),
             "gimmick_blanked": self.gimmick_blanked,
             "gimmick_flipped": self.gimmick_flipped,
@@ -159,6 +195,7 @@ class PlayerState:
             reroll_grants=dict(data.get("reroll_grants", {"this": 0, "next": 0})),
             timed_buffs=[TimedBuff.from_dict(b) for b in data.get("timed_buffs", [])],
             chosen_name=data.get("chosen_name"),
+            pending_text=[PendingText.from_dict(p) for p in data.get("pending_text", [])],
             freq_counters=dict(data["freq_counters"]),
             gimmick_blanked=data["gimmick_blanked"],
             gimmick_flipped=data.get("gimmick_flipped", False),
