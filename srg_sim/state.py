@@ -32,6 +32,7 @@ from srg_sim.effects import (
     CardFilter,
     Condition,
     CountZone,
+    Duration,
     Effect,
     MaxHandSize,
     Static,
@@ -215,8 +216,17 @@ class GameState:
         opponent's Spotlights are blank"). A blanked card fires none of its own
         effects and cannot stop."""
         for decl_owner, player in self.players.items():
-            for effects in (player.entrance.effects, *(c.effects for c in player.in_play)):
+            # (effects, is_discard) per source zone. A WHILE_IN_DISCARD effect is active
+            # only from the discard pile ("when this card is in your discard pile, …");
+            # every other duration is active only while the source is in play/entrance.
+            live = [(player.entrance.effects, False)] + [
+                (c.effects, False) for c in player.in_play
+            ]
+            dead = [(c.effects, True) for c in player.discard]
+            for effects, is_discard in live + dead:
                 for eff in effects:
+                    if (eff.duration is Duration.WHILE_IN_DISCARD) != is_discard:
+                        continue  # effect not active from this zone
                     hit = any(
                         isinstance(a, BlankText)
                         and (decl_owner if a.who is Who.SELF else self.opponent_of(decl_owner))

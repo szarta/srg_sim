@@ -162,6 +162,7 @@ class Duration(Enum):
     WHILE_IN_PLAY = "WHILE_IN_PLAY"  # active while the source card is in play
     WHILE_GIMMICK_ACTIVE = "WHILE_GIMMICK_ACTIVE"  # active while gimmick not blanked
     INSTANT = "INSTANT"  # one-shot mutation, no lasting state
+    WHILE_IN_DISCARD = "WHILE_IN_DISCARD"  # active while the source sits in its owner's discard
 
 
 class Frequency(Enum):

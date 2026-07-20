@@ -325,6 +325,33 @@ def test_spotlight_count_gates_a_conditional_finish_bonus() -> None:
     assert eng._finish_roll_bonus("A", Skill.TECHNIQUE) == 0  # only 1 spotlight -> no bonus
 
 
+def test_while_in_discard_blank_only_active_from_the_discard_pile() -> None:
+    # "When this card is in your discard pile, your opponent's Spotlights are blank":
+    # a WHILE_IN_DISCARD BlankText is active only while its card sits in the discard.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    blanker = Card(
+        db_uuid="bk", name="Blanker", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD,
+        effects=(
+            fx.Effect(
+                trigger=fx.Static(),
+                actions=(fx.BlankText(selector=fx.CardFilter(tag="Spotlight"), who=fx.Who.OPP),),
+                duration=fx.Duration.WHILE_IN_DISCARD,
+            ),
+        ),
+    )
+    spot = Card(db_uuid="sp", name="Spot", number=2, atk_type=AtkType.GRAPPLE,
+                play_order=PlayOrder.LEAD, tags=("Spotlight",))
+    # In A's discard -> B's Spotlight is blanked.
+    eng.state.players["A"].discard = [blanker]
+    eng.state.players["A"].in_play = []
+    assert eng.state.is_text_blanked(spot, "B")
+    # Same card in A's play (WHILE_IN_DISCARD) -> inert, no blank.
+    eng.state.players["A"].discard = []
+    eng.state.players["A"].in_play = [blanker]
+    assert not eng.state.is_text_blanked(spot, "B")
+
+
 def test_blank_text_blanks_opponent_spotlights() -> None:
     # "Your opponent's Spotlights are blank": while A holds the declaring card in play,
     # B's Spotlight cards fire no effects and cannot stop.
