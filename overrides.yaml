@@ -7164,3 +7164,27 @@ a401fc3b6fb6462ab85aff0b21de370d:
   source: card
   optional: false
 
+# Stiff Right Hand -- "Your opponent's gimmick is blank until their next turn."
+# POISON (srgpc): stored on the TARGET, so it outlives this card going to the discard.
+# The existing BlankGimmick action carries the timed duration; "their next turn" is
+# the next turn the TARGET is the active player, swept right after that turn roll
+# (same boundary as Snake Pitt Super Lucha's buff). The blank therefore persists
+# across however many turns the caster wins in between.
+00e5871d67104a1cb08ea7c1ab3bf1a0:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankGimmick
+    who: OPP
+    duration: UNTIL_START_OF_YOUR_NEXT_TURN
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your opponent's gimmick is blank until their next turn.
+  source: card
+  optional: false

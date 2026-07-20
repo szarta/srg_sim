@@ -1742,7 +1742,12 @@ class Engine:
         # read derived via GameState.is_gimmick_blanked (clears on breakout); this
         # path covers an OnHit "blank the gimmick" that fires once.
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
-        self.state.players[target].gimmick_blanked = True
+        player = self.state.players[target]
+        player.gimmick_blanked = True
+        # "...until their next turn" (Stiff Right Hand): mark it for the turn-boundary
+        # sweep. Every other duration leaves the stored flag alone.
+        if action.duration is fx.Duration.UNTIL_START_OF_YOUR_NEXT_TURN:
+            player.blank_until_next_turn = self.state.turn_no
         self._log_effect(key, "BlankGimmick", target, {"duration": action.duration.value})
 
     def _act_flip_gimmick(self, action: fx.FlipGimmick, key: str) -> None:
@@ -2023,6 +2028,13 @@ class Engine:
             if b.until is not fx.Duration.UNTIL_START_OF_YOUR_NEXT_TURN
             or b.granted_turn >= self.state.turn_no
         ]
+        # Same boundary for a "blank until their next turn" poison (Stiff Right Hand).
+        if (
+            player.blank_until_next_turn is not None
+            and player.blank_until_next_turn < self.state.turn_no
+        ):
+            player.blank_until_next_turn = None
+            player.gimmick_blanked = False
 
     def _act_buff_skill(self, action: fx.BuffSkill, key: str) -> None:
         """Grant (or accumulate into) a TIMED skill buff; other durations are

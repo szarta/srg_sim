@@ -151,6 +151,11 @@ class PlayerState:
     # Queued one-shot "added text" for this player's next matching card; survives the
     # source card leaving play.
     pending_text: list[PendingText] = field(default_factory=list)
+    # Set when THIS player's gimmick was blanked "until their next turn" (Stiff Right
+    # Hand) — the turn it was granted on. Swept, with gimmick_blanked, at the start of
+    # this player's next ACTIVE turn. Stored state, so like every poison it outlives
+    # the source card leaving the board.
+    blank_until_next_turn: int | None = None
     freq_counters: dict[str, int] = field(default_factory=dict)
     gimmick_blanked: bool = False
     gimmick_flipped: bool = False  # competitor card turned to its back side (Copy Kat V2)
@@ -176,6 +181,7 @@ class PlayerState:
             "timed_buffs": [b.to_dict() for b in self.timed_buffs],
             "chosen_name": self.chosen_name,
             "pending_text": [p.to_dict() for p in self.pending_text],
+            "blank_until_next_turn": self.blank_until_next_turn,
             "freq_counters": dict(self.freq_counters),
             "gimmick_blanked": self.gimmick_blanked,
             "gimmick_flipped": self.gimmick_flipped,
@@ -196,6 +202,7 @@ class PlayerState:
             timed_buffs=[TimedBuff.from_dict(b) for b in data.get("timed_buffs", [])],
             chosen_name=data.get("chosen_name"),
             pending_text=[PendingText.from_dict(p) for p in data.get("pending_text", [])],
+            blank_until_next_turn=data.get("blank_until_next_turn"),
             freq_counters=dict(data["freq_counters"]),
             gimmick_blanked=data["gimmick_blanked"],
             gimmick_flipped=data.get("gimmick_flipped", False),

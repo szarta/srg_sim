@@ -1081,6 +1081,48 @@ def test_poison_added_text_is_one_shot_and_outlives_its_source() -> None:
     assert "disqualification" in eng.result.reason.lower()
 
 
+def test_blank_until_their_next_turn_waits_for_the_targets_turn() -> None:
+    # Stiff Right Hand (poison): "Your opponent's gimmick is blank until their next
+    # turn." Stored on the TARGET, so it outlives the card going to the discard, and
+    # "their next turn" is the next turn the TARGET is active — the caster may win
+    # any number of turns in between.
+    def blanked_on_turn_3() -> Engine:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng.state.turn_no = 3
+        eng._act_blank_gimmick(
+            fx.BlankGimmick(who=fx.Who.OPP, duration=fx.Duration.UNTIL_START_OF_YOUR_NEXT_TURN),
+            "A",
+        )
+        return eng
+
+    eng = blanked_on_turn_3()
+    assert eng.state.is_gimmick_blanked("B")
+    assert not eng.state.is_gimmick_blanked("A")
+
+    # The caster winning turns in between does not clear it.
+    for turn in range(4, 9):
+        eng.state.turn_no = turn
+        eng._sweep_next_turn_buffs("A")
+        assert eng.state.is_gimmick_blanked("B"), f"still blanked on turn {turn}"
+    # B finally wins a turn roll: the blank ends at the start of THEIR turn.
+    eng.state.turn_no = 9
+    eng._sweep_next_turn_buffs("B")
+    assert not eng.state.is_gimmick_blanked("B")
+
+    # The granting turn's own roll must not clear it.
+    eng = blanked_on_turn_3()
+    eng._sweep_next_turn_buffs("B")
+    assert eng.state.is_gimmick_blanked("B")
+
+    # An untimed (one-shot) blank has no marker and survives the sweep.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng._act_blank_gimmick(fx.BlankGimmick(who=fx.Who.OPP, duration=fx.Duration.INSTANT), "A")
+    assert eng.state.players["B"].blank_until_next_turn is None
+    eng.state.turn_no = 7
+    eng._sweep_next_turn_buffs("B")
+    assert eng.state.is_gimmick_blanked("B")
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.
