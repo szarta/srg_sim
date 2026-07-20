@@ -978,15 +978,40 @@ class Engine:
             )
         )
 
+    def _breakout_bonus(self, defender: str, attempt_no: int) -> int:
+        """Total breakout-roll modifier for ``defender``'s attempt number
+        ``attempt_no`` (1-indexed): the sum of active ``BreakoutModifier`` deltas
+        from the defender's own standing effects (gimmick/entrance/in-play combo),
+        each gated by its condition. An ``attempts`` gate restricts a modifier to a
+        single attempt ("your 3rd breakout roll each turn is +2"); ``None`` applies
+        to every attempt. Scans the same standing set as ``_finish_roll_bonus``."""
+        total = 0
+        for eff in self._standing_effects(defender):
+            if not conditions.holds(eff.condition, self.state, defender):
+                continue
+            for a in eff.actions:
+                if isinstance(a, fx.BreakoutModifier) and (
+                    a.attempts is None or a.attempts == attempt_no
+                ):
+                    total += a.delta
+        return total
+
     def _breakout(self, defender: str, finish_value: int) -> bool:
         cm = self.state.crowd_meter
         rolls: list[gl.BreakoutRoll] = []
         broke = False
-        for _ in range(BREAKOUT_ATTEMPTS):
+        for i in range(BREAKOUT_ATTEMPTS):
             skill = self.state.rng.roll()
             val = self._stat(defender, skill)
-            success = stat_breaks_out(val, finish_value, 0, cm)
-            rolls.append(gl.BreakoutRoll(skill=skill.value, value=val, penalty=0, success=success))
+            # A BreakoutModifier{delta} raises the roll by delta; passing it as a
+            # NEGATIVE penalty keeps the raw-10-always-breaks rule on the unboosted
+            # value (a boosted 8->10 is not a "raw 10"). No modifier -> penalty 0 ->
+            # byte-identical to before (the frozen corpus has none).
+            penalty = -self._breakout_bonus(defender, i + 1)
+            success = stat_breaks_out(val, finish_value, penalty, cm)
+            rolls.append(
+                gl.BreakoutRoll(skill=skill.value, value=val, penalty=penalty, success=success)
+            )
             if success:
                 broke = True
                 break

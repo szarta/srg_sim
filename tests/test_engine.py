@@ -487,6 +487,63 @@ def test_add_text_injects_effects_into_matching_named_cards() -> None:
     assert len(eng.state.players["A"].hand) == before + 2
 
 
+def _breakout_mod(delta: int, attempts: int | None, condition: fx.Condition | None = None) -> fx.Effect:
+    """A Static gimmick effect wrapping one BreakoutModifier, gated by `condition`."""
+    return fx.Effect(
+        trigger=fx.Static(),
+        condition=condition or fx.Always(),
+        actions=(fx.BreakoutModifier(delta=delta, attempts=attempts),),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+
+def _with_gimmicks(eng: Engine, key: str, *effs: fx.Effect) -> None:
+    eng.state.players[key].competitor = replace(
+        eng.state.players[key].competitor, effects=tuple(effs)
+    )
+
+
+def test_breakout_modifier_attempts_gate_selects_the_nth_roll() -> None:
+    # El Super Hombre V1: "Your 3rd breakout roll each turn is +2." Only the 3rd
+    # attempt sees it; a flat modifier (attempts None) applies to every attempt and
+    # stacks. A false condition / a modifier on the other side never leaks in.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    _with_gimmicks(eng, "A", _breakout_mod(2, 3))
+    assert eng._breakout_bonus("A", 1) == 0
+    assert eng._breakout_bonus("A", 2) == 0
+    assert eng._breakout_bonus("A", 3) == 2
+
+    _with_gimmicks(eng, "A", _breakout_mod(1, None), _breakout_mod(2, 3))
+    assert eng._breakout_bonus("A", 1) == 1
+    assert eng._breakout_bonus("A", 3) == 3
+
+    gated = _breakout_mod(2, None, fx.CrowdMeterCompare(cmp=fx.Comparator.GE, value=5))
+    _with_gimmicks(eng, "A", gated)
+    _with_gimmicks(eng, "B", _breakout_mod(4, None))
+    assert eng._breakout_bonus("A", 1) == 0  # crowd meter is 0, condition false
+    assert eng._breakout_bonus("B", 1) == 4  # B's own modifier, not A's
+
+    _with_gimmicks(eng, "A", _breakout_mod(2, 3))
+    eng.state.players["A"].gimmick_blanked = True
+    assert eng._breakout_bonus("A", 3) == 0  # blanked gimmick contributes nothing
+
+
+def test_breakout_roll_honors_the_modifier() -> None:
+    # Defender stats are all 5, so a finish of 8 is unbreakable (5 < 8) unaided; a flat
+    # +5 breakout modifier lifts every roll to 10 and breaks out at once. Drives the
+    # real _breakout() roll, proving the bonus reaches stat_breaks_out as a -penalty.
+    from srg_sim.cards import Stats
+
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    flat = Stats(power=5, agility=5, technique=5, submission=5, grapple=5, strike=5)
+    eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, stats=flat)
+    assert not eng._breakout("A", 8)
+    _with_gimmicks(eng, "A", _breakout_mod(5, None))
+    assert eng._breakout("A", 8)
+    last = eng.state.log.events[-1]
+    assert last.rolls[0].penalty == -5
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.

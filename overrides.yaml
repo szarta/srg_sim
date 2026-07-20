@@ -4991,6 +4991,75 @@ bb3bee34d3df4e1384ba7c77b2a826f3:
   source: gimmick
   optional: false
 
+# El Super Hombre (V1) (World Championship): 'Your cards with "Super" in the name
+# have the added text "Your opponent buries 2 cards in their hand." Your 3rd
+# breakout roll each turn is +2.' Clause 1 = AddText([Super]) -> OnPlay opp hand-
+# bury 2 (opp chooses; source HAND). Clause 2 = BreakoutModifier(delta=2,
+# attempts=3) — now wired into the breakout roll (defender's own standing
+# BreakoutModifier deltas raise the roll; `attempts` gates to the Nth attempt).
+59a06bccbea64d1bb1d6301449190e81:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddText
+    name_contains: [Super]
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnPlay
+      condition:
+        '@type': Always
+      actions:
+      - '@type': Bury
+        who: OPP
+        count: 2
+        random: false
+        source: HAND
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: 'added text: Your opponent buries 2 cards in their hand'
+      source: gimmick
+      optional: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your cards with "Super" in the name have the added text "Your opponent buries 2 cards in their hand."
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BreakoutModifier
+    delta: 2
+    attempts: 3
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your 3rd breakout roll each turn is +2.
+  source: gimmick
+  optional: false
+
 # ---------------------------------------------------------------------------
 # Spotlight family (main-deck). The DB `spotlight: true` flag is folded into a
 # synthetic "Spotlight" tag at load time (loader card_tags / _card_tags), so
