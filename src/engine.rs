@@ -3178,8 +3178,13 @@ impl Engine {
         self.run_effects(&eff_w, "OnWinTurn", &winner, Some(&ctx_w))?;
         let eff_l = self.standing_effects(&loser);
         self.run_effects(&eff_l, "OnLoseTurn", &loser, Some(&ctx_l))?;
-        self.run_on_roll("A")?;
-        self.run_on_roll("B")?;
+        // Same srgpc ordering rule for the post-roll OnRoll gimmicks.
+        for key in Self::roll_order(
+            self.roll_ctx.get("A").and_then(|c| c.value).unwrap_or(0),
+            self.roll_ctx.get("B").and_then(|c| c.value).unwrap_or(0),
+        ) {
+            self.run_on_roll(key)?;
+        }
         self.state.last_roll_winner = Some(winner.clone()); // "last turn roll" next turn (Dunn)
         Ok(winner)
     }
@@ -3216,6 +3221,21 @@ impl Engine {
         Ok(())
     }
 
+    /// Resolution order for gimmicks that trigger DURING a turn roll.
+    ///
+    /// srgpc.net: "If two gimmicks would both trigger during a turn roll, the player
+    /// with the higher turn roll must resolve their effect first." Evaluated against
+    /// the roll values as they stand entering each stage. On an exact tie the order is
+    /// undefined by the rules, so the stable A-then-B order is kept (a tie bumps, and
+    /// no gimmick ordering is decided by it).
+    fn roll_order(va: i64, vb: i64) -> [&'static str; 2] {
+        if vb > va {
+            ["B", "A"]
+        } else {
+            ["A", "B"]
+        }
+    }
+
     fn roll_off(&mut self) -> Eng<String> {
         let lowest = self.lowest_wins();
         self.promote_pending(); // last turn's `when=NEXT` mods become THIS roll's (#50)
@@ -3230,8 +3250,13 @@ impl Engine {
         vb = nvb;
         // In-roll boosts (Soborno): after the skill is known, before the winner is
         // decided, a player may pay a cost for +delta to THIS roll.
-        va = self.offer_roll_boost("A", sa, va, false)?;
-        vb = self.offer_roll_boost("B", sb, vb, false)?;
+        for owner in Self::roll_order(va, vb) {
+            if owner == "A" {
+                va = self.offer_roll_boost("A", sa, va, false)?;
+            } else {
+                vb = self.offer_roll_boost("B", sb, vb, false)?;
+            }
+        }
         let (a, b) = self.apply_in_roll_mods(sa, va, sb, vb); // Tomato: roll-skill debuff
         va = a;
         vb = b;
@@ -3259,6 +3284,8 @@ impl Engine {
             }
             // Would-bump replacement (Rey Zerblade): pay a cost for +delta *instead*
             // of the bump; if that breaks the tie, the bump is skipped.
+            // Tie-only path (va == vb), so `roll_order`'s documented tie fallback
+            // (A then B) already applies; kept explicit for clarity.
             va = self.offer_roll_boost("A", sa, va, true)?;
             vb = self.offer_roll_boost("B", sb, vb, true)?;
             if va != vb {
@@ -3362,8 +3389,8 @@ impl Engine {
             opp_skill: Some(sa),
         };
         // Each side may spend a re-roll; the target die (own, the opponent's, or a
-        // chosen player's) is re-rolled in place.
-        for owner in ["A", "B"] {
+        // chosen player's) is re-rolled in place. Higher roll resolves first (srgpc).
+        for owner in Self::roll_order(va, vb) {
             let (own_ctx, opp_ctx) = if owner == "A" {
                 (&ctx_a, &ctx_b)
             } else {
@@ -3400,7 +3427,7 @@ impl Engine {
         mut sb: Skill,
         mut vb: i64,
     ) -> Eng<(Skill, i64, Skill, i64)> {
-        for owner in ["A", "B"] {
+        for owner in Self::roll_order(va, vb) {
             let (skill, value) = if owner == "A" { (sa, va) } else { (sb, vb) };
             if let Some((ns, nv)) = self.offer_switch(owner, skill, value)? {
                 if owner == "A" {
@@ -5236,5 +5263,39 @@ mod choose_target_tests {
             a.discard.iter().any(|c| c.db_uuid == "Adisc0"),
             "the top card stays"
         );
+    }
+}
+
+#[cfg(test)]
+mod roll_order_tests {
+    use super::*;
+
+    // srgpc.net: "If two gimmicks would both trigger during a turn roll, the player
+    // with the higher turn roll must resolve their effect first."
+
+    #[test]
+    fn the_higher_roll_resolves_first() {
+        assert_eq!(Engine::roll_order(3, 9), ["B", "A"]);
+        assert_eq!(Engine::roll_order(9, 3), ["A", "B"]);
+    }
+
+    #[test]
+    fn a_tie_keeps_a_stable_order() {
+        // The rules leave an exact tie undefined (and a tie bumps), so the order must
+        // at least stay deterministic for replay.
+        assert_eq!(Engine::roll_order(7, 7), ["A", "B"]);
+        assert_eq!(Engine::roll_order(0, 0), ["A", "B"]);
+    }
+
+    #[test]
+    fn ordering_is_by_value_not_player_identity() {
+        // Guards the actual bug: the roll-off used to be hardcoded A-then-B.
+        for (va, vb) in [(1, 2), (5, 6), (0, 10)] {
+            assert_eq!(
+                Engine::roll_order(va, vb),
+                ["B", "A"],
+                "B rolled higher ({vb} > {va}) so B resolves first"
+            );
+        }
     }
 }

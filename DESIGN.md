@@ -369,6 +369,11 @@ loop until a player loses or a turn cap:
   #   UP TO that many. Marked spent whether taken or not — a player who bumps/loses
   #   the early rolls still gets it exactly once (NOT a setup step).
   # --- turn roll ---
+  # ORDERING (srgpc.net): gimmicks that trigger DURING a turn roll resolve BEFORE the
+  # winner is decided, and when both players have one, the player with the HIGHER TURN
+  # ROLL resolves first (`Engine::roll_order`). Applies to the skill switch, the in-roll
+  # boost, the re-roll offer and the post-roll OnRoll pass. An exact tie is undefined by
+  # the rules, so the stable A-then-B order is kept (a tie bumps anyway).
   rollA = roll(playerA); rollB = roll(playerB)      # roll = uniform skill face -> derived stat
   apply pending_roll_mods, static buffs, OnRoll effects
   if tie: BOTH players bump (each draws 1), then re-roll — until it breaks
