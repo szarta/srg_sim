@@ -729,6 +729,12 @@ class Bury(IRNode):
     who: Who = Who.SELF
     random: bool = False
     source: BuryFrom = BuryFrom.DISCARD
+    # DISCARD source only: the actor picks WHICH card, from EITHER player's discard
+    # pile — "bury 1 card in any player's discard pile" (Cherry Glamazon). The default
+    # discard bury is the mechanical pass-and-recycle (top `count`, selector ignored);
+    # this one is a targeted choice. `who` is ignored; the card returns to ITS OWNER's
+    # deck bottom.
+    choose: bool = False
 
 
 @dataclass(frozen=True)
@@ -837,6 +843,10 @@ class RemoveFromPlay(IRNode):
     selector: CardFilter = CardFilter()
     who: Who = Who.OPP
     count: int = 1
+    # Like ReturnToHand's: the actor picks from EITHER board — "choose 1 card in play
+    # and discard it" (Cherry Glamazon), which does not restrict whose board. `who`
+    # is ignored when set.
+    choose: bool = False
 
 
 @dataclass(frozen=True)

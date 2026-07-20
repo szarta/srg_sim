@@ -1300,22 +1300,84 @@ class Engine:
                 if (trig.who is fx.Who.SELF) == (owner == pile):
                     self._fire_if_ready(eff, owner, None)
 
+    def _bury_from_discard(
+        self, selector: fx.CardFilter, count: int, who: fx.Who, random: bool, choose: bool, key: str
+    ) -> None:
+        """Bury ``count`` card(s) from a discard pile to their owner's deck bottom.
+
+        A discard pile has **no meaningful order**, so the bury is a CHOICE: the actor
+        picks any card in the pile (``random`` picks at random instead). ``choose``
+        widens the pool to BOTH piles — "bury 1 card in any player's discard pile"
+        (Cherry Glamazon); otherwise it is ``who``'s pile. ``selector`` filters the
+        candidates. Fires OnDiscardMove for the pile that lost a card."""
+        piles = (
+            [key, self.state.opponent_of(key)]
+            if choose
+            else [key if who is fx.Who.SELF else self.state.opponent_of(key)]
+        )
+        for _ in range(count):
+            legal: list[Option] = []
+            for pile in piles:
+                for c in self.state.players[pile].discard:
+                    if conditions.card_matches(c, selector):
+                        opt = dict(self._discard_option(c))
+                        opt["owner"] = pile
+                        legal.append(opt)
+            if not legal:
+                return
+            chosen = self.state.rng.reveal(legal) if random else self._decide("bury", key, legal)
+            owner = str(chosen["owner"])
+            uuid = str(chosen["card"])
+            pile_cards = self.state.players[owner].discard
+            card = next((c for c in pile_cards if c.db_uuid == uuid), None)
+            if card is None:
+                return
+            self._bury_cards(owner, [card])  # performs the discard -> deck-bottom move
+            self._run_on_bury(owner, from_hand=False, is_discard=False)
+            self._run_on_discard_move(owner)
+
+    def _remove_from_either_board(
+        self, selector: fx.CardFilter, count: int, key: str
+    ) -> None:
+        """"Choose 1 card in play and discard it" with no side restriction (Cherry
+        Glamazon): the actor picks from EITHER board and the card goes to its OWNER's
+        discard. Mirrors _act_return_to_hand's `choose` branch."""
+        boards = [key, self.state.opponent_of(key)]
+        for _ in range(count):
+            legal: list[Option] = []
+            for b in boards:
+                for c in self.state.players[b].in_play:
+                    if conditions.card_matches(c, selector):
+                        opt = dict(self._card_option(c))
+                        opt["owner"] = b
+                        legal.append(opt)
+            if not legal:
+                return
+            chosen = self._decide("target", key, legal)
+            owner = str(chosen["owner"])
+            uuid = str(chosen["card"])
+            board = self.state.players[owner].in_play
+            card = next((c for c in board if c.db_uuid == uuid), None)
+            if card is None:
+                return
+            board.remove(card)
+            self.state.players[owner].discard.append(card)
+            self._log(
+                gl.Discard(
+                    t=self.state.turn_no, player=owner, cards=[card.db_uuid], source="in_play"
+                )
+            )
+
     def _act_bury(self, action: fx.Bury, key: str) -> None:
-        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
-        if action.source is fx.BuryFrom.HAND:
-            n = self._bury_from_hand(target, action.count, action.random, action.selector)
-            if n > 0:
-                self._run_on_bury(target, from_hand=True, is_discard=False)  # effect-caused hand bury
+        if action.source is fx.BuryFrom.DISCARD:
+            self._bury_from_discard(
+                action.selector, action.count, action.who, action.random, action.choose, key
+            )
             return
-        # Discard source: recycle the top `count` of the discard pile (optionally
-        # randomized) to the bottom of the deck. Selector is ignored.
-        cards = list(self.state.players[target].discard[: action.count])
-        if action.random:
-            self.state.rng.shuffle(cards)
-        if cards:
-            self._bury_cards(target, cards)
-            self._run_on_bury(target, from_hand=False, is_discard=False)  # effect-caused discard-pile bury
-            self._run_on_discard_move(target)
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        n = self._bury_from_hand(target, action.count, action.random, action.selector)
+        if n > 0:
+            self._run_on_bury(target, from_hand=True, is_discard=False)  # effect-caused hand bury
 
     def _bury_from_hand(
         self, key: str, count: int, random: bool, selector: fx.CardFilter
@@ -1516,6 +1578,9 @@ class Engine:
         # in play to the target's discard ("Discard 1 card your opponent has in
         # play" — Muay Thai Strikes / Jackhammer). The actor aims it via the
         # "target" decision point; both endpoints are public so the move is visible.
+        if action.choose:
+            self._remove_from_either_board(action.selector, action.count, key)
+            return
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         board = self.state.players[target].in_play
         for _ in range(action.count):

@@ -6746,7 +6746,7 @@ d06fa40b158946f4b74de295052654b9:
     - Steel Chair
     - Trash Can
   duration: INSTANT
-  frequency: &id001
+  frequency:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
@@ -6773,7 +6773,10 @@ d06fa40b158946f4b74de295052654b9:
     per: null
     per_who: SELF
   duration: INSTANT
-  frequency: *id001
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
   raw_clause: When you hit a card with that in the name, draw 2 cards.
   source: gimmick
   optional: false
@@ -6797,7 +6800,10 @@ d06fa40b158946f4b74de295052654b9:
     per: null
     per_who: SELF
   duration: INSTANT
-  frequency: *id001
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
   raw_clause: When you hit a card with that in the name, draw 2 cards.
   source: gimmick
   optional: false
@@ -6821,7 +6827,10 @@ d06fa40b158946f4b74de295052654b9:
     per: null
     per_who: SELF
   duration: INSTANT
-  frequency: *id001
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
   raw_clause: When you hit a card with that in the name, draw 2 cards.
   source: gimmick
   optional: false
@@ -6835,7 +6844,10 @@ d06fa40b158946f4b74de295052654b9:
     enabled: false
     scope: MATCH
   duration: WHILE_GIMMICK_ACTIVE
-  frequency: *id001
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
   raw_clause: This match has No Disqualifications.
   source: gimmick
   optional: false
@@ -6880,5 +6892,122 @@ d06fa40b158946f4b74de295052654b9:
     n: null
   raw_clause: 'During your turn: When you hit a Lead, draw 1 card for each other Lead
     you have in play (Max 3).'
+  source: gimmick
+  optional: false
+
+
+# Cherry Glamazon -- "If you lost the previous turn roll: When you roll Power or
+# Agility for your turn roll, choose 1 card in play and discard it, or bury 1 card
+# in any player's discard pile."
+# Hand-adjudicated 2026-07-20: BOTH halves reach either side -- the in-play discard
+# may target your own board as well as your opponent's (choose=true), and the bury
+# picks a SPECIFIC card from either pile (choose=true), not the top card.
+# "Lost the previous turn roll" == OppWonLastRoll. One effect per rolled skill.
+
+c94f753c62f5406cae60f664dfc182e6:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': OppWonLastRoll
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: discard 1 card in play
+      node_type: null
+      actions:
+      - '@type': RemoveFromPlay
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+        who: OPP
+        count: 1
+        choose: true
+    - '@type': ChoiceOption
+      label: bury 1 card in any player's discard pile
+      node_type: null
+      actions:
+      - '@type': Bury
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+        count: 1
+        who: SELF
+        random: false
+        source: DISCARD
+        choose: true
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'If you lost the previous turn roll: When you roll Power or Agility for your turn roll,
+    choose 1 card in play and discard it, or bury 1 card in any player''s discard pile.'
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Agility
+    who: SELF
+  condition:
+    '@type': OppWonLastRoll
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: discard 1 card in play
+      node_type: null
+      actions:
+      - '@type': RemoveFromPlay
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+        who: OPP
+        count: 1
+        choose: true
+    - '@type': ChoiceOption
+      label: bury 1 card in any player's discard pile
+      node_type: null
+      actions:
+      - '@type': Bury
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+        count: 1
+        who: SELF
+        random: false
+        source: DISCARD
+        choose: true
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'If you lost the previous turn roll: When you roll Power or Agility for your turn roll,
+    choose 1 card in play and discard it, or bury 1 card in any player''s discard pile.'
   source: gimmick
   optional: false

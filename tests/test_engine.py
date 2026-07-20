@@ -964,6 +964,65 @@ def test_on_hit_order_gate_with_capped_self_excluding_per_count() -> None:
     assert hit_with(3, lead("hit", PlayOrder.FOLLOWUP)) == 0
 
 
+def test_choose_reaches_either_board_and_either_discard_pile() -> None:
+    # Cherry Glamazon, hand-adjudicated 2026-07-20: "choose 1 card in play and discard
+    # it" reaches EITHER board (not just the opponent's), and "bury 1 card in any
+    # player's discard pile" picks a SPECIFIC card from either pile (not the top).
+    class PickPrefix(HeuristicPolicy):
+        def __init__(self, pref: str) -> None:
+            super().__init__()
+            self.pref = pref
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            hit = [o for o in legal if str(o.get("card", "")).startswith(self.pref)]
+            return hit[0] if hit else super().choose(point, legal, state, key)
+
+    def card(u: str) -> Card:
+        return Card(db_uuid=u, name=u, number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+
+    def fresh(pref: str) -> Engine:
+        eng = Engine(*bull_vs_fae(), PickPrefix(pref), PickPrefix(pref), seed=1, created="x")
+        for side in ("A", "B"):
+            eng.state.players[side].in_play = [card(f"{side}play{i}") for i in range(2)]
+            eng.state.players[side].discard = [card(f"{side}disc{i}") for i in range(2)]
+            eng.state.players[side].deck = [card(f"{side}n{i}") for i in range(4)]
+        return eng
+
+    def boards(eng: Engine) -> tuple[int, int]:
+        return len(eng.state.players["A"].in_play), len(eng.state.players["B"].in_play)
+
+    # choose=True reaches the opponent's board even with who=SELF...
+    eng = fresh("Bplay")
+    eng._act_remove_from_play(fx.RemoveFromPlay(who=fx.Who.SELF, count=1, choose=True), "A")
+    assert boards(eng) == (2, 1)
+    # ...and your OWN board even with who=OPP (the adjudicated part).
+    eng = fresh("Aplay")
+    eng._act_remove_from_play(fx.RemoveFromPlay(who=fx.Who.OPP, count=1, choose=True), "A")
+    assert boards(eng) == (1, 2)
+    # choose=False keeps the original who-directed behaviour.
+    eng = fresh("Aplay")
+    eng._act_remove_from_play(fx.RemoveFromPlay(who=fx.Who.OPP, count=1, choose=False), "A")
+    assert boards(eng) == (2, 1)
+
+    # A chosen bury takes the NAMED card from either pile, to its owner's deck bottom.
+    eng = fresh("Bdisc1")
+    eng._act_bury(fx.Bury(count=1, who=fx.Who.SELF, source=fx.BuryFrom.DISCARD, choose=True), "A")
+    assert all(c.db_uuid != "Bdisc1" for c in eng.state.players["B"].discard)
+    assert eng.state.players["B"].deck[-1].db_uuid == "Bdisc1"
+    assert len(eng.state.players["A"].discard) == 2
+    # A discard pile has no meaningful order, so the bury is ALWAYS a choice;
+    # choose=False only narrows the pool to the who-side's own pile.
+    eng = fresh("Bdisc1")
+    eng._act_bury(fx.Bury(count=1, who=fx.Who.SELF, source=fx.BuryFrom.DISCARD), "A")
+    assert len(eng.state.players["B"].discard) == 2  # B untouched
+    assert len(eng.state.players["A"].discard) == 1
+    # ...and the ACTOR picks any card in it, not the top one.
+    eng = fresh("Adisc1")
+    eng._act_bury(fx.Bury(count=1, who=fx.Who.SELF, source=fx.BuryFrom.DISCARD), "A")
+    assert eng.state.players["A"].deck[-1].db_uuid == "Adisc1"
+    assert any(c.db_uuid == "Adisc0" for c in eng.state.players["A"].discard)
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.
