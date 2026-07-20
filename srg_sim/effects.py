@@ -316,6 +316,10 @@ class CardFilter(IRNode):
     number: int | None = None
     atk_type: AtkType | None = None
     play_order: PlayOrder | None = None
+    # OR-list form of ``play_order`` — "1 Lead or Follow Up with 'Roll' in the
+    # name" (Cherie Von Danish; 53 cards phrase a play-order this way). Empty =
+    # no constraint; ANDs with ``play_order`` when both are set. schema v41
+    play_orders: tuple[PlayOrder, ...] = ()
     tag: str | None = None
     name: str | None = None
     raw: str | None = None

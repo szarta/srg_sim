@@ -13,9 +13,18 @@ A_STATS = Stats(power=10, technique=6, agility=5, submission=8, grapple=9, strik
 B_STATS = Stats(power=10, technique=7, agility=6, submission=9, grapple=5, strike=5)
 
 
-def _card(number: int, atk: AtkType = AtkType.STRIKE, order: PlayOrder = PlayOrder.LEAD) -> Card:
+def _card(
+    number: int,
+    atk: AtkType = AtkType.STRIKE,
+    order: PlayOrder = PlayOrder.LEAD,
+    name: str | None = None,
+) -> Card:
     return Card(
-        db_uuid=f"u{number}", name=f"C{number}", number=number, atk_type=atk, play_order=order
+        db_uuid=f"u{number}",
+        name=name or f"C{number}",
+        number=number,
+        atk_type=atk,
+        play_order=order,
     )
 
 
@@ -284,3 +293,29 @@ def test_card_matches_all_criteria_and() -> None:
     assert card_matches(card, fx.CardFilter(atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD))
     assert not card_matches(card, fx.CardFilter(atk_type=AtkType.STRIKE))
     assert card_matches(card, fx.CardFilter())  # empty filter matches anything
+
+
+def test_play_orders_is_a_disjunction() -> None:
+    """OR-play-order filtering (schema v41): "1 Lead or Follow Up …" (Cherie Von
+    Danish) — a disjunction the single-valued ``play_order`` cannot state."""
+    both = fx.CardFilter(play_orders=(PlayOrder.LEAD, PlayOrder.FOLLOWUP))
+    assert card_matches(_card(1, order=PlayOrder.LEAD), both)
+    assert card_matches(_card(1, order=PlayOrder.FOLLOWUP), both)
+    assert not card_matches(_card(1, order=PlayOrder.FINISH), both)
+
+
+def test_empty_play_orders_constrains_nothing() -> None:
+    """The pre-v41 default: every filter already in the corpus carries ``()``."""
+    empty = fx.CardFilter()
+    for order in (PlayOrder.LEAD, PlayOrder.FOLLOWUP, PlayOrder.FINISH):
+        assert card_matches(_card(1, order=order), empty)
+
+
+def test_play_orders_ands_with_other_criteria() -> None:
+    """Cherie's real filter: (Lead OR Follow Up) AND a name substring."""
+    filt = fx.CardFilter(
+        play_orders=(PlayOrder.LEAD, PlayOrder.FOLLOWUP), name_contains=("Roll", "Chop")
+    )
+    assert card_matches(_card(1, order=PlayOrder.LEAD, name="Barrel Roll"), filt)
+    assert not card_matches(_card(1, order=PlayOrder.LEAD, name="Dropkick"), filt)
+    assert not card_matches(_card(1, order=PlayOrder.FINISH, name="Barrel Roll"), filt)

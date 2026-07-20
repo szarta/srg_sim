@@ -65,6 +65,8 @@ def card_matches(card: Card, filt: fx.CardFilter) -> bool:
         return False
     if filt.play_order is not None and card.play_order is not filt.play_order:
         return False
+    if filt.play_orders and card.play_order not in filt.play_orders:
+        return False
     if filt.tag is not None and filt.tag not in card.tags:
         return False
     if filt.name is not None and card.name != filt.name:
@@ -90,7 +92,17 @@ def _filter_implies(sel: fx.CardFilter, query: fx.CardFilter) -> bool:
         q = getattr(query, field)
         if q is not None and getattr(sel, field) != q:
             return False
-    return True
+    # A disjunctive query is satisfied by any declaration whose own order set is a
+    # subset of it: a bare Lead declaration implies "Lead or Follow Up".
+    return not (query.play_orders and not _implies_orders(sel, query.play_orders))
+
+
+def _implies_orders(sel: fx.CardFilter, want: tuple[fx.PlayOrder, ...]) -> bool:
+    """True iff ``sel``'s declared play-order set is non-empty and contained in
+    ``want`` (so every card ``sel`` admits is one ``want`` allows)."""
+    if sel.play_order is not None:
+        return sel.play_order in want
+    return bool(sel.play_orders) and all(o in want for o in sel.play_orders)
 
 
 def _counts_as(card: Card, query: fx.CardFilter) -> int:
