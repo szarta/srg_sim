@@ -107,6 +107,9 @@ OnBury(who, from_hand_only?, also_discard?)  # when an EFFECT/Gimmick causes the
 StartOfTurn / StartOfMatch
 OnBreakout(who?)             # after a breakout: who=None any ("after a breakout" — Copy Kat); SELF you broke out; OPP your opponent broke out. Fires BEFORE the boards clear so a card-based recur still sees its card. schema v29
 OnShuffle(who)               # when who's deck is shuffled by a card/gimmick EFFECT (search/tutor/shuffle-into-deck/hand-into-deck or explicit "shuffle your deck") — NOT the setup shuffle. who=OPP "when your opponent shuffles their deck" (Memes Dealer V2). schema v32
+OnDiscardMove(who)           # when one or more cards LEAVE who's discard pile via a card/gimmick EFFECT (recur-to-hand / shuffle-into-deck / recur-to-deck-top /
+                             # hand-discard swap / effect-caused pile bury) — NOT the mechanical pass-and-recycle. Fires ONCE per action, not per card.
+                             # who = owner of the PILE (OPP = "when your opponent moves any number of cards from their discard pile" — Brumeister V2). schema v34
 Static                       # always-on passive (e.g. "+1 to Power"); duration-scoped, see below
 ```
 **"Hit" = a card resolving into play.** A card is hit either (a) when you play it and it is

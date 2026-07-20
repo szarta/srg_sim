@@ -1054,6 +1054,28 @@ impl Engine {
         Ok(())
     }
 
+    /// Fire standing `OnDiscardMove` gimmicks after an effect moved one or more cards
+    /// OUT of `pile`'s discard pile. Scans BOTH players so a `who=OPP` variant ("when
+    /// your opponent moves any number of cards from their discard pile" — Brumeister
+    /// V2) works; fires once per action, however many cards moved.
+    fn run_on_discard_move(&mut self, pile: &str) -> Eng<()> {
+        let opp = self.state.opponent_of(pile);
+        for owner in [pile.to_owned(), opp] {
+            let effects = self.standing_effects(&owner);
+            for eff in &effects {
+                let Trigger::OnDiscardMove { who } = &eff.trigger else {
+                    continue;
+                };
+                // SELF fires when the owner's own pile was drawn from; OPP when the
+                // pile belongs to the owner's opponent.
+                if (*who == Who::SelfSide) == (owner.as_str() == pile) {
+                    self.fire_if_ready(eff, &owner, None)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn act_bury(
         &mut self,
         selector: &CardFilter,
@@ -1086,6 +1108,7 @@ impl Engine {
         if !cards.is_empty() {
             self.bury_cards(&target, &cards);
             self.run_on_bury(&target, false, false)?; // effect-caused discard-pile bury
+            self.run_on_discard_move(&target)?;
         }
         Ok(())
     }
@@ -1304,6 +1327,8 @@ impl Engine {
                 source: Some("discard".to_owned()),
                 hidden: false,
             }));
+            // The card has left the pile; fires ahead of the shuffle's own OnShuffle.
+            self.run_on_discard_move(key)?;
         }
         self.shuffle_deck(key)
     }
@@ -1340,6 +1365,7 @@ impl Engine {
             source: Some("discard".to_owned()),
             hidden: false, // discard (public) -> hand: which card left discard is visible
         }));
+        self.run_on_discard_move(key)?;
         self.hand_cap(key)
     }
 
@@ -1374,12 +1400,13 @@ impl Engine {
             Some(key),
             json!({"hand_out": out.db_uuid, "discard_in": into.db_uuid}),
         );
-        Ok(())
+        self.run_on_discard_move(key)
     }
 
     /// Put up to `count` matching cards from discard on top of the deck; the owner
     /// picks how many and which (DESIGN.md §7).
     fn act_recur_to_deck_top(&mut self, selector: &CardFilter, count: i64, key: &str) -> Eng<()> {
+        let mut moved = 0;
         for _ in 0..count.max(0) {
             let matches: Vec<Card> = self.state.players[key]
                 .discard
@@ -1388,11 +1415,12 @@ impl Engine {
                 .cloned()
                 .collect();
             if matches.is_empty() {
-                return Ok(());
+                break;
             }
             let Some(card) = self.pick_optional_from(key, &matches, "target")? else {
-                return Ok(()); // owner declined to recur more ("up to")
+                break; // owner declined to recur more ("up to")
             };
+            moved += 1;
             {
                 let player = self.state.players.get_mut(key).unwrap();
                 if let Some(pos) = player
@@ -1412,6 +1440,9 @@ impl Engine {
                 source: Some("discard".to_owned()),
                 hidden: false,
             }));
+        }
+        if moved > 0 {
+            self.run_on_discard_move(key)?; // once per action, not per card
         }
         Ok(())
     }
@@ -3513,6 +3544,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::StartOfMatch => "StartOfMatch",
         Trigger::OnBreakout { .. } => "OnBreakout",
         Trigger::OnShuffle { .. } => "OnShuffle",
+        Trigger::OnDiscardMove { .. } => "OnDiscardMove",
         Trigger::Static => "Static",
     }
 }
@@ -4012,5 +4044,154 @@ mod on_shuffle_tests {
             OPENING_HAND,
             "setup shuffle draws no OnShuffle bonus"
         );
+    }
+}
+
+#[cfg(test)]
+mod on_discard_move_tests {
+    use super::*;
+
+    /// Always takes the first legal option — these tests exercise the trigger's
+    /// firing, not the choice, and every decision point here is a card pick.
+    struct FirstLegal;
+
+    impl Decider for FirstLegal {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+
+        fn policy_name(&self, _viewer: &str) -> String {
+            "first-legal".to_owned()
+        }
+    }
+
+    fn card(uuid: &str) -> Value {
+        json!({
+            "atk_type": "Strike", "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+            "name": uuid, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []
+        })
+    }
+
+    /// Brumeister V2 on A: `OnDiscardMove{who=OPP}` → `RemoveFromPlay{OPP, 1}`, so A
+    /// discards one of B's in-play cards whenever an effect pulls cards out of B's
+    /// discard pile. B starts with a stocked discard pile and two cards in play.
+    fn brumeister_engine() -> Engine {
+        let gimmick = json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnDiscardMove", "who": "OPP"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "RemoveFromPlay", "who": "OPP", "count": 1,
+                         "selector": {"@type": "CardFilter", "number": null, "atk_type": null,
+                                      "play_order": null, "tag": null, "name": null, "raw": null,
+                                      "name_contains": [], "text_contains": []}}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "test", "source": "gimmick", "optional": false
+        });
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..10).map(|i| card(&format!("c{i}"))).collect();
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "BR", "name": "Brumeister", "division": "Underworld",
+                "stats": stats, "effects": [gimmick]},
+            "entrance": {"db_uuid": "BR-ent", "name": "ent"}, "cards": cards.clone(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "Underworld", "stats": stats},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": cards,
+        }))
+        .expect("deck B");
+        let mut engine = Engine::new(
+            deck_a,
+            deck_b,
+            Box::new(FirstLegal),
+            1,
+            String::new(),
+            "sim".into(),
+        );
+        // Stock every zone the discard-exit paths read: a pile to pull from, a board
+        // to be punished, and a hand so the hand/discard swap is not a no-op.
+        for side in ["A", "B"] {
+            let p = engine.state.players.get_mut(side).unwrap();
+            for i in 0..3 {
+                p.discard
+                    .push(serde_json::from_value(card(&format!("{side}d{i}"))).unwrap());
+                p.in_play
+                    .push(serde_json::from_value(card(&format!("{side}p{i}"))).unwrap());
+                p.hand
+                    .push(serde_json::from_value(card(&format!("{side}h{i}"))).unwrap());
+            }
+        }
+        engine
+    }
+
+    fn board(engine: &Engine, key: &str) -> usize {
+        engine.state.players[key].in_play.len()
+    }
+
+    fn any_card() -> CardFilter {
+        CardFilter::default()
+    }
+
+    #[test]
+    fn opponents_recur_to_hand_fires_the_board_wipe() {
+        // B pulls a card out of their own discard -> A discards one of B's in-play.
+        let mut engine = brumeister_engine();
+        engine.act_add_from_discard(&any_card(), "B").unwrap();
+        assert_eq!(board(&engine, "B"), 2, "B loses one in-play card");
+        assert_eq!(board(&engine, "A"), 3, "A's own board is untouched");
+    }
+
+    #[test]
+    fn own_discard_move_does_not_fire_the_opp_gated_effect() {
+        // A pulling from their OWN pile must not fire A's who=OPP OnDiscardMove.
+        let mut engine = brumeister_engine();
+        engine.act_add_from_discard(&any_card(), "A").unwrap();
+        assert_eq!(board(&engine, "B"), 3, "who=OPP ignores your own pile");
+    }
+
+    #[test]
+    fn every_effect_driven_exit_fires_it() {
+        // Each of the other discard-exit paths on B's pile also counts as a "move".
+        for exit in [
+            "shuffle_into_deck",
+            "recur_to_deck_top",
+            "swap_hand_discard",
+        ] {
+            let mut engine = brumeister_engine();
+            match exit {
+                "shuffle_into_deck" => engine.act_shuffle_into_deck(&any_card(), "B").unwrap(),
+                "recur_to_deck_top" => engine.act_recur_to_deck_top(&any_card(), 2, "B").unwrap(),
+                _ => engine.act_swap_hand_discard("B").unwrap(),
+            }
+            assert_eq!(board(&engine, "B"), 2, "{exit} fires OnDiscardMove");
+        }
+    }
+
+    #[test]
+    fn fires_once_per_action_not_per_card() {
+        // "moves ANY NUMBER of cards": a 2-card recur is still a single trigger.
+        let mut engine = brumeister_engine();
+        engine.act_recur_to_deck_top(&any_card(), 2, "B").unwrap();
+        assert_eq!(
+            board(&engine, "B"),
+            2,
+            "two cards recurred still discards only one"
+        );
+    }
+
+    #[test]
+    fn passing_does_not_fire_it() {
+        // The mechanical pass-and-recycle is not a card effect.
+        let mut engine = brumeister_engine();
+        engine.do_pass("B").unwrap();
+        assert_eq!(board(&engine, "B"), 3, "pass-and-recycle is not an effect");
     }
 }

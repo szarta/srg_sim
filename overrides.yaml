@@ -6064,3 +6064,38 @@ bd11579fd13144f1bcf07c38a347edcd:
   raw_clause: When your target has more Submissions in play, +1 to Technique.
   source: gimmick
   optional: false
+
+# Brumeister (V2) — "When your opponent moves any number of cards from their
+# discard pile with their card effect or Gimmick, discard 1 card they have in
+# play." OnDiscardMove{OPP} fires once per effect-driven exit from the opponent's
+# pile (recur-to-hand / shuffle-into-deck / recur-to-deck-top / hand-discard swap /
+# effect-caused pile bury), never the mechanical pass-and-recycle. "Discard 1 card
+# they have in play" is RemoveFromPlay{OPP, 1} (in play -> their discard).
+b83fd4886d314b15b249a4fc97512e25:
+- '@type': Effect
+  trigger:
+    '@type': OnDiscardMove
+    who: OPP
+  condition:
+    '@type': Always
+  actions:
+  - '@type': RemoveFromPlay
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    who: OPP
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When your opponent moves any number of cards from their discard pile
+    with their card effect or Gimmick, discard 1 card they have in play.
+  source: gimmick
+  optional: false

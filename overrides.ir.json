@@ -5939,6 +5939,45 @@
       }
     }
   ],
+  "b83fd4886d314b15b249a4fc97512e25": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RemoveFromPlay",
+          "count": 1,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When your opponent moves any number of cards from their discard pile with their card effect or Gimmick, discard 1 card they have in play.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnDiscardMove",
+        "who": "OPP"
+      }
+    }
+  ],
   "b95f873118b944b0b07a8af9c8731752": [
     {
       "@type": "Effect",

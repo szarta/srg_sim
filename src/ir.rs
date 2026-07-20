@@ -488,6 +488,18 @@ pub enum Trigger {
     OnShuffle {
         who: Who,
     },
+    /// Fires when one or more cards LEAVE the `who`-side's discard pile because of a
+    /// card/gimmick EFFECT — "when your opponent moves any number of cards from their
+    /// discard pile with their card effect or Gimmick" (Brumeister V2). Covers every
+    /// effect-driven exit: recur-to-hand, shuffle-into-deck, recur-to-deck-top, the
+    /// hand/discard swap, and an effect-caused discard-pile bury. Fires ONCE per
+    /// action, not per card ("any number of cards"). Deliberately NOT fired by the
+    /// mechanical pass-and-recycle (`do_pass`), which is not a card effect. `who` is
+    /// read as the owner of the PILE, from the effect owner's POV (OPP = "your
+    /// opponent['s] discard pile"). Override-only.
+    OnDiscardMove {
+        who: Who,
+    },
     Static,
 }
 
@@ -1038,6 +1050,18 @@ pub enum IrNode {
     /// fires it from the owner's POV (OPP = "when your opponent shuffles their deck" —
     /// Memes Dealer V2). Override-only.
     OnShuffle {
+        who: Who,
+    },
+    /// Fires when one or more cards LEAVE the `who`-side's discard pile because of a
+    /// card/gimmick EFFECT — "when your opponent moves any number of cards from their
+    /// discard pile with their card effect or Gimmick" (Brumeister V2). Covers every
+    /// effect-driven exit: recur-to-hand, shuffle-into-deck, recur-to-deck-top, the
+    /// hand/discard swap, and an effect-caused discard-pile bury. Fires ONCE per
+    /// action, not per card ("any number of cards"). Deliberately NOT fired by the
+    /// mechanical pass-and-recycle (`do_pass`), which is not a card effect. `who` is
+    /// read as the owner of the PILE, from the effect owner's POV (OPP = "your
+    /// opponent['s] discard pile"). Override-only.
+    OnDiscardMove {
         who: Who,
     },
     Static,

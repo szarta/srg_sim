@@ -1254,6 +1254,9 @@
               "$ref": "#/$defs/OnShuffle"
             },
             {
+              "$ref": "#/$defs/OnDiscardMove"
+            },
+            {
               "$ref": "#/$defs/Static"
             },
             {
@@ -1706,6 +1709,9 @@
           "$ref": "#/$defs/OnShuffle"
         },
         {
+          "$ref": "#/$defs/OnDiscardMove"
+        },
+        {
           "$ref": "#/$defs/OnBump"
         },
         {
@@ -2151,6 +2157,22 @@
         "who",
         "from_hand_only",
         "also_discard"
+      ],
+      "type": "object"
+    },
+    "OnDiscardMove": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnDiscardMove"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
       ],
       "type": "object"
     },
@@ -3309,5 +3331,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 33
+  "version": 34
 }
