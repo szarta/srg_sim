@@ -593,6 +593,43 @@ def test_breakout_roll_honors_the_modifier() -> None:
     assert last.rolls[0].penalty == -5
 
 
+def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
+    # La Fenix (Super Lucha): OnStop{dir=YOURS, order=Finish} fires only when the
+    # STOPPED card is a Finish — tutoring a Finish from the deck to hand.
+    tutor = fx.Search(
+        filter=fx.CardFilter(play_order=PlayOrder.FINISH), dest=fx.Dest.HAND, count=1
+    )
+    gimmick = fx.Effect(
+        trigger=fx.OnStop(dir=fx.Direction.YOURS, order=PlayOrder.FINISH),
+        actions=(tutor,),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+    def card(u: str, order: PlayOrder) -> Card:
+        return Card(db_uuid=u, name=u, number=1, atk_type=AtkType.STRIKE, play_order=order)
+
+    def fresh() -> Engine:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng.state.players["A"].competitor = replace(
+            eng.state.players["A"].competitor, effects=(gimmick,)
+        )
+        eng.state.players["A"].deck = [card("tutor-finish", PlayOrder.FINISH), card("l", PlayOrder.LEAD)]
+        eng.state.players["A"].hand = []
+        return eng
+
+    def tutored(eng: Engine) -> bool:
+        return any(c.db_uuid == "tutor-finish" for c in eng.state.players["A"].hand)
+
+    # A's Finish is stopped -> the gate matches -> tutor fires.
+    eng = fresh()
+    eng._apply_stop("A", "B", card("my-finish", PlayOrder.FINISH), card("stop", PlayOrder.LEAD))
+    assert tutored(eng)
+    # A's Lead is stopped -> order=Finish gate stays inert.
+    eng = fresh()
+    eng._apply_stop("A", "B", card("my-lead", PlayOrder.LEAD), card("stop", PlayOrder.LEAD))
+    assert not tutored(eng)
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.

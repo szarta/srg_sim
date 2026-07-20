@@ -872,16 +872,24 @@ class Engine:
         # Standing competitor/entrance OnStop, dir-aware from each owner's POV: the
         # attacker's card was stopped (YOURS), the defender stopped a card (THEIRS =
         # "when you Stop a card", e.g. Gia).
-        self._run_on_stop_gimmicks(active, fx.Direction.YOURS)
-        self._run_on_stop_gimmicks(defender, fx.Direction.THEIRS)
+        self._run_on_stop_gimmicks(active, fx.Direction.YOURS, attack.play_order)
+        self._run_on_stop_gimmicks(defender, fx.Direction.THEIRS, attack.play_order)
 
-    def _run_on_stop_gimmicks(self, key: str, direction: fx.Direction) -> None:
+    def _run_on_stop_gimmicks(
+        self, key: str, direction: fx.Direction, stopped: PlayOrder
+    ) -> None:
         """Fire ``key``'s standing (gimmick/entrance) ``OnStop`` effects whose ``dir``
         matches — THEIRS for the stopper ("when you Stop a card"), YOURS for the
-        stopped attacker. Unlike :meth:`_run_effects` (trigger-type match only), this
-        consults ``OnStop.dir``."""
+        stopped attacker — and whose optional ``order`` gate matches the STOPPED
+        card's play order (``None`` = any). Unlike :meth:`_run_effects` (trigger-type
+        match only), this consults both ``OnStop.dir`` and ``OnStop.order``."""
         for eff in self._gimmick_standing_effects(key):
-            if isinstance(eff.trigger, fx.OnStop) and eff.trigger.dir is direction:
+            trig = eff.trigger
+            if (
+                isinstance(trig, fx.OnStop)
+                and trig.dir is direction
+                and (trig.order is None or trig.order is stopped)
+            ):
                 self._fire_if_ready(eff, key, None)
 
     def _run_on_bury(self, buried_by: str, from_hand: bool, is_discard: bool) -> None:

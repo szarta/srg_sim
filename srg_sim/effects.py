@@ -395,9 +395,12 @@ class OnLoseTurn(IRNode):
 
 @dataclass(frozen=True)
 class OnStop(IRNode):
-    """When a stop happens in the given direction."""
+    """When a stop happens in the given direction. ``order``, when set, gates on the
+    STOPPED card's play order — "when your opponent stops your Finish" (La Fenix
+    Super Lucha); ``None`` = any stopped card (the default)."""
 
     dir: Direction
+    order: PlayOrder | None = None
 
 
 @dataclass(frozen=True)
