@@ -431,6 +431,12 @@ pub enum Trigger {
     },
     OnStop {
         dir: Direction,
+        /// When set, fires only if the **stopped** card's play order matches — "when
+        /// your opponent stops your *Finish*" (La Fenix Super Lucha). `None` = any
+        /// stopped card, the backward-compatible default (the parser's DQ/pinfall
+        /// "if this is stopped" clauses and Gia's "when you Stop a card").
+        #[serde(default)]
+        order: Option<PlayOrder>,
     },
     OnHit {
         atk_type: Option<AtkType>,
@@ -957,6 +963,12 @@ pub enum IrNode {
     },
     OnStop {
         dir: Direction,
+        /// When set, fires only if the **stopped** card's play order matches — "when
+        /// your opponent stops your *Finish*" (La Fenix Super Lucha). `None` = any
+        /// stopped card, the backward-compatible default (the parser's DQ/pinfall
+        /// "if this is stopped" clauses and Gia's "when you Stop a card").
+        #[serde(default)]
+        order: Option<PlayOrder>,
     },
     OnHit {
         atk_type: Option<AtkType>,

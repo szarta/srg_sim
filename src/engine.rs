@@ -2503,18 +2503,23 @@ impl Engine {
                                                                     // Standing competitor/entrance OnStop, dir-aware from each owner's POV: the
                                                                     // attacker's card was stopped (YOURS), the defender stopped a card (THEIRS =
                                                                     // "when you Stop a card", e.g. Gia).
-        self.run_on_stop_gimmicks(active, Direction::Yours)?;
-        self.run_on_stop_gimmicks(defender, Direction::Theirs)?;
+        let stopped = attack.play_order;
+        self.run_on_stop_gimmicks(active, Direction::Yours, stopped)?;
+        self.run_on_stop_gimmicks(defender, Direction::Theirs, stopped)?;
         Ok(())
     }
 
     /// Fire `key`'s standing (gimmick/entrance) `OnStop` effects whose direction
-    /// matches `dir` — THEIRS for the stopper, YOURS for the stopped attacker.
-    /// Unlike `run_effects` (trigger-name match only), this consults `OnStop.dir`.
-    fn run_on_stop_gimmicks(&mut self, key: &str, dir: Direction) -> Eng<()> {
+    /// matches `dir` — THEIRS for the stopper, YOURS for the stopped attacker — and
+    /// whose optional `order` gate matches the **stopped** card's play order (`None`
+    /// = any). Unlike `run_effects` (trigger-name match only), this consults both
+    /// `OnStop.dir` and `OnStop.order`.
+    fn run_on_stop_gimmicks(&mut self, key: &str, dir: Direction, stopped: PlayOrder) -> Eng<()> {
         let effects = self.gimmick_standing_effects(key);
         for eff in &effects {
-            if matches!(eff.trigger, Trigger::OnStop { dir: d } if d == dir) {
+            if matches!(eff.trigger, Trigger::OnStop { dir: d, order }
+                if d == dir && order.is_none_or(|o| o == stopped))
+            {
                 self.fire_if_ready(eff, key, None)?;
             }
         }
@@ -3826,5 +3831,82 @@ mod breakout_modifier_tests {
             panic!("last event is a Breakout");
         };
         assert_eq!(rolls[0].penalty, -5);
+    }
+}
+
+#[cfg(test)]
+mod on_stop_order_tests {
+    use super::*;
+
+    fn card(uuid: &str, order: &str) -> Value {
+        json!({
+            "atk_type": "Strike", "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+            "name": uuid, "number": 1, "play_order": order, "raw_text": "", "tags": []
+        })
+    }
+
+    /// La Fenix (Super Lucha): A's gimmick tutors a Finish to hand when A's *Finish*
+    /// is stopped (`OnStop{dir: YOURS, order: Finish}`). A's deck holds one Finish
+    /// (the tutor target) and one Lead.
+    fn la_fenix_engine() -> Engine {
+        let gimmick = json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnStop", "dir": "YOURS", "order": "Finish"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Search",
+                "filter": {"@type": "CardFilter", "number": null, "atk_type": null,
+                           "play_order": "Finish", "tag": null, "name": null, "raw": null},
+                "dest": "HAND", "count": 1}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "test", "source": "gimmick", "optional": false
+        });
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "LF", "name": "La Fenix", "division": "World Championship",
+                "stats": {"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5},
+                "effects": [gimmick]},
+            "entrance": {"db_uuid": "LF-ent", "name": "ent"},
+            "cards": [card("tutor-finish", "Finish"), card("some-lead", "Lead")],
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "World Championship",
+                "stats": {"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5}},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": [],
+        }))
+        .expect("deck B");
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(deck_a, deck_b, decider, 1, String::new(), "sim".into())
+    }
+
+    fn tutored(engine: &Engine) -> bool {
+        engine.state.players["A"]
+            .hand
+            .iter()
+            .any(|c| c.db_uuid == "tutor-finish")
+    }
+
+    #[test]
+    fn stopping_a_finish_fires_the_order_gated_tutor() {
+        let mut engine = la_fenix_engine();
+        let attack: Card = serde_json::from_value(card("my-finish", "Finish")).unwrap();
+        let stop: Card = serde_json::from_value(card("their-stop", "Lead")).unwrap();
+        engine.apply_stop("A", "B", attack, stop).unwrap();
+        assert!(
+            tutored(&engine),
+            "a stopped Finish tutors the deck Finish to hand"
+        );
+    }
+
+    #[test]
+    fn stopping_a_lead_does_not_fire_the_finish_gated_tutor() {
+        let mut engine = la_fenix_engine();
+        let attack: Card = serde_json::from_value(card("my-lead", "Lead")).unwrap();
+        let stop: Card = serde_json::from_value(card("their-stop", "Lead")).unwrap();
+        engine.apply_stop("A", "B", attack, stop).unwrap();
+        assert!(
+            !tutored(&engine),
+            "the order=Finish gate stays inert when a Lead is stopped"
+        );
     }
 }

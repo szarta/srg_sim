@@ -346,7 +346,8 @@
   },
   {
     "@type": "OnStop",
-    "dir": "YOURS"
+    "dir": "YOURS",
+    "order": null
   },
   {
     "@type": "OnWinTurn"

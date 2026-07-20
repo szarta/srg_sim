@@ -2382,7 +2382,8 @@
       "source": "gimmick",
       "trigger": {
         "@type": "OnStop",
-        "dir": "YOURS"
+        "dir": "YOURS",
+        "order": null
       }
     }
   ],
@@ -3028,7 +3029,8 @@
       "source": "card",
       "trigger": {
         "@type": "OnStop",
-        "dir": "THEIRS"
+        "dir": "THEIRS",
+        "order": null
       }
     }
   ],
@@ -3099,7 +3101,8 @@
       "source": "card",
       "trigger": {
         "@type": "OnStop",
-        "dir": "THEIRS"
+        "dir": "THEIRS",
+        "order": null
       }
     }
   ],
@@ -3543,6 +3546,83 @@
       }
     }
   ],
+  "80ae186a6d6a43ee8402b85c112964c1": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": "Finish",
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent stops your Finish (stop-card path), search your deck for 1 La Fenix Finish and add it to your hand, shuffle your deck",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "YOURS",
+        "order": "Finish"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": "Finish",
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent stops your Finish (breakout path), search your deck for 1 La Fenix Finish and add it to your hand, shuffle your deck",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnBreakout",
+        "who": "OPP"
+      }
+    }
+  ],
   "831eb73c2ab9435794db4413c7e2521b": [
     {
       "@type": "Effect",
@@ -3699,7 +3779,8 @@
       "source": "card",
       "trigger": {
         "@type": "OnStop",
-        "dir": "THEIRS"
+        "dir": "THEIRS",
+        "order": null
       }
     }
   ],
@@ -4175,7 +4256,8 @@
       "source": "card",
       "trigger": {
         "@type": "OnStop",
-        "dir": "THEIRS"
+        "dir": "THEIRS",
+        "order": null
       }
     }
   ],
@@ -4937,7 +5019,8 @@
       "source": "gimmick",
       "trigger": {
         "@type": "OnStop",
-        "dir": "THEIRS"
+        "dir": "THEIRS",
+        "order": null
       }
     }
   ],
@@ -7815,7 +7898,8 @@
       "source": "card",
       "trigger": {
         "@type": "OnStop",
-        "dir": "THEIRS"
+        "dir": "THEIRS",
+        "order": null
       }
     }
   ],

@@ -86,7 +86,9 @@ OnPlay                       # when this card is played
 OnRoll(skill?, who=SELF)     # after `who` makes a turn roll (skill=None => any skill);
                              #   outcome-agnostic — roll-value gimmicks (Bull) live here
 OnWinTurn / OnLoseTurn(by=?) # after the turn roll resolves (outcome-specific)
-OnStop(dir=YOURS|THEIRS)     # when a stop happens
+OnStop(dir=YOURS|THEIRS, order?)  # when a stop happens; order (schema v31) gates on the
+                             #   STOPPED card's play order — "when your opponent stops your
+                             #   Finish" (La Fenix Super Lucha); None = any stopped card
 OnHit(atk_type?, name_contains?, text_contains?, on_any=False)  # when a matching card RESOLVES into play (schema v6);
                              # on_any=True (schema v23) = a standing "when you hit a card" gimmick, fires on EVERY hit
                              # (Bartholomew Hooke) — override-only, so a bare parser OnHit fragment stays inert

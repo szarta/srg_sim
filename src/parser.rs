@@ -561,6 +561,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     Trigger::OnStop {
                         dir: Direction::Yours,
+                        order: None,
                     },
                     vec![Action::LoseBy {
                         kind: LoseKind::Disqualification,
@@ -575,6 +576,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             Some(eff(
                 Trigger::OnStop {
                     dir: Direction::Yours,
+                    order: None,
                 },
                 vec![Action::LoseBy {
                     kind: LoseKind::Pinfall,

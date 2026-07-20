@@ -2243,11 +2243,22 @@
         },
         "dir": {
           "$ref": "#/$defs/Direction"
+        },
+        "order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "@type",
-        "dir"
+        "dir",
+        "order"
       ],
       "type": "object"
     },
@@ -3227,5 +3238,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 30
+  "version": 31
 }
