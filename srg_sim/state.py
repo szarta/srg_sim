@@ -208,6 +208,9 @@ class GameState:
     # The previous turn's roll-off winner (None before turn 1), for a re-roll gimmick
     # gated on "your opponent won the last turn roll" (Robert 'The Brain' Dunn).
     last_roll_winner: str | None = None
+    # db_uuids whose text is blanked for the REST OF THIS TURN by BlankStoppedText;
+    # card-identity scoped (not selector scoped) and cleared by the turn-boundary sweep.
+    blanked_text: set[str] = field(default_factory=set)
     log: GameLog | None = None
 
     def opponent_of(self, key: str) -> str:
@@ -277,7 +280,12 @@ class GameState:
         player has an active Static ``BlankText`` (on an entrance or in-play card)
         whose ``who`` targets ``owner`` and whose ``selector`` matches the card ("Your
         opponent's Spotlights are blank"). A blanked card fires none of its own
-        effects and cannot stop."""
+        effects and cannot stop.
+
+        A card blanked by a stop this turn (``blanked_text``, from ``BlankStoppedText``)
+        stays blanked regardless of zone until the turn ends."""
+        if card.db_uuid in self.blanked_text:
+            return True
         for decl_owner, player in self.players.items():
             # (effects, is_discard) per source zone. A WHILE_IN_DISCARD effect is active
             # only from the discard pile ("when this card is in your discard pile, …");
@@ -452,6 +460,7 @@ class GameState:
             "active": self.active,
             "turn_no": self.turn_no,
             "last_roll_winner": self.last_roll_winner,
+            "blanked_text": sorted(self.blanked_text),
         }
 
     @classmethod
@@ -463,6 +472,7 @@ class GameState:
             active=data["active"],
             turn_no=data["turn_no"],
             last_roll_winner=data.get("last_roll_winner"),
+            blanked_text=set(data.get("blanked_text", [])),
         )
 
 

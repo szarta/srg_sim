@@ -13,6 +13,7 @@ from srg_sim.effects import (
     Always,
     And,
     BlankGimmick,
+    BlankStoppedText,
     BlankText,
     BreakoutModifier,
     BuffSkill,
@@ -227,6 +228,7 @@ SAMPLES: list[IRNode] = [
     FlipGimmick(Who.SELF),
     FlipGimmickSigns(Who.OPP),
     BlankText(CardFilter(tag="Spotlight"), Who.OPP),
+    BlankStoppedText(),
     LoseBy(LoseKind.PINFALL, Who.SELF),
     DisqualificationRule(enabled=False, scope=DqScope.MATCH),
     ConsideredCompare(domain=CompareDomain.SKILL, order=CompareOrder.GREATER),  # RaRa Perre

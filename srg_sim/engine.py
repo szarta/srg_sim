@@ -99,6 +99,9 @@ class Engine:
         # The clause currently resolving, read only by a TIMED BuffSkill for its
         # stacking identity (set by `_apply_actions`).
         self._clause = ""
+        # db_uuid of the card currently being stopped, set for the duration of
+        # _apply_stop so BlankStoppedText knows its referent. Never serialized.
+        self._stopped_card: str | None = None
 
     # -- setup -------------------------------------------------------------
 
@@ -221,10 +224,7 @@ class Engine:
             # accumulate); an unused grant expires.
             player.reroll_grants["this"] = player.reroll_grants["next"]
             player.reroll_grants["next"] = 0
-            # "Until the end of the turn" buffs granted on the turn just finished.
-            player.timed_buffs = [
-                b for b in player.timed_buffs if b.until is not fx.Duration.UNTIL_END_OF_TURN
-            ]
+        self._sweep_end_of_turn()
         winner = self._turn_roll()
         self._sweep_next_turn_buffs(winner)
         if self._ended() or not self._draw_for_turn(winner):
@@ -875,8 +875,27 @@ class Engine:
         )
         self._run_effects(stop.effects, fx.OnHit, defender)
         self._run_hit_gimmicks(stop, defender)  # a stop entering play is itself a hit
-        self._run_effects(attack.effects, fx.OnStop, active)  # attack card: "if this is stopped"
-        self._run_effects(stop.effects, fx.OnStop, defender)  # stop card: "when this stops"
+        # "The stopped card has blank text until the end of the turn" must resolve
+        # BEFORE the stopped card's own OnStop: the whole point of that family is to
+        # suppress the stopped card's "If Stopped" text, several members reading "stop
+        # any card WITH 'If Stopped' in the text: that card has blank text ...". Split
+        # so those effects land first and the rest keep their original order.
+        self._stopped_card = attack.db_uuid
+        blanking = [
+            e for e in stop.effects if any(isinstance(a, fx.BlankStoppedText) for a in e.actions)
+        ]
+        rest = [
+            e
+            for e in stop.effects
+            if not any(isinstance(a, fx.BlankStoppedText) for a in e.actions)
+        ]
+        self._run_effects(blanking, fx.OnStop, defender)
+        # A blanked card fires nothing — the same rule _play_card / _card_can_stop
+        # already apply to a text-blanked card.
+        if not self.state.is_text_blanked(attack, active):
+            self._run_effects(attack.effects, fx.OnStop, active)  # "if this is stopped"
+        self._run_effects(rest, fx.OnStop, defender)  # stop card: "when this stops"
+        self._stopped_card = None
         # Standing competitor/entrance OnStop, dir-aware from each owner's POV: the
         # attacker's card was stopped (YOURS), the defender stopped a card (THEIRS =
         # "when you Stop a card", e.g. Gia).
@@ -1820,6 +1839,26 @@ class Engine:
         legal = [{"kind": "seat", "seat": key}, {"kind": "seat", "seat": opp}]
         return self._decide("reshuffle_target", key, legal)["seat"]
 
+    def _act_blank_stopped_text(self, action: fx.BlankStoppedText, key: str) -> None:
+        """"The stopped card has blank text until the end of the turn": blank the card
+        currently being stopped, by identity, for the rest of the turn. A no-op outside
+        a stop exchange (no referent)."""
+        if self._stopped_card is None:
+            return
+        self.state.blanked_text.add(self._stopped_card)
+        self._log_effect(key, "BlankStoppedText", None, {"card": self._stopped_card})
+
+    def _sweep_end_of_turn(self) -> None:
+        """Drop everything scoped "until the end of the turn" by the turn just
+        finished: timed buffs under UNTIL_END_OF_TURN and the per-card text blanks
+        from BlankStoppedText. Runs with the other per-turn resets at the top of the
+        following turn."""
+        for player in self.state.players.values():
+            player.timed_buffs = [
+                b for b in player.timed_buffs if b.until is not fx.Duration.UNTIL_END_OF_TURN
+            ]
+        self.state.blanked_text.clear()
+
     def _sweep_next_turn_buffs(self, winner: str) -> None:
         """Sweep "until the start of your next turn" buffs now that the turn roll has
         named ``winner`` the active player.
@@ -2199,6 +2238,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.AddText: Engine._act_noop,  # Static, read via _injected_text at play time; never executed
     fx.StopRequiresTag: Engine._act_noop,  # marker, read via _card_can_stop; never executed
     fx.BlankText: Engine._act_noop,  # Static, read via is_text_blanked; never executed
+    fx.BlankStoppedText: Engine._act_blank_stopped_text,
     fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed

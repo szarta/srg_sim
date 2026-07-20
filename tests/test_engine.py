@@ -806,6 +806,57 @@ def test_timed_buffs_accumulate_cap_and_sweep() -> None:
     assert restored.players["A"].timed_buffs == eng.state.players["A"].timed_buffs
 
 
+def test_blank_stopped_text_suppresses_if_stopped_and_expires() -> None:
+    # The Jurassic / "If Stopped" stop-card family: "when you stop a card, the stopped
+    # card has blank text until the end of the turn". The blank must land BEFORE the
+    # stopped card's own OnStop, so its "If Stopped" text never triggers.
+    if_stopped = fx.Effect(
+        trigger=fx.OnStop(dir=fx.Direction.YOURS),
+        actions=(fx.Draw(n=2),),
+        raw_clause="If Stopped, draw 2 cards.",
+    )
+    blanker = fx.Effect(
+        trigger=fx.OnStop(dir=fx.Direction.THEIRS),
+        actions=(fx.BlankStoppedText(),),
+        raw_clause="the stopped card has blank text until the end of the turn",
+    )
+
+    def attack() -> Card:
+        return Card(
+            db_uuid="attack", name="If Stopped Grapple", number=5,
+            atk_type=AtkType.GRAPPLE, play_order=PlayOrder.LEAD, effects=(if_stopped,),
+        )
+
+    def stopper(blanks: bool) -> Card:
+        return Card(
+            db_uuid="stopper", name="Blocker", number=6, atk_type=AtkType.GRAPPLE,
+            play_order=PlayOrder.LEAD, effects=((blanker,) if blanks else ()),
+        )
+
+    def run(blanks: bool) -> tuple[Engine, int]:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng.state.players["A"].deck = [
+            Card(db_uuid=f"n{i}", name=f"n{i}", number=1, atk_type=AtkType.STRIKE,
+                 play_order=PlayOrder.LEAD)
+            for i in range(6)
+        ]
+        eng.state.players["A"].hand = []
+        eng._apply_stop("A", "B", attack(), stopper(blanks))
+        return eng, len(eng.state.players["A"].hand)
+
+    # Baseline: without the blank, "If Stopped, draw 2" resolves normally.
+    _, drew = run(False)
+    assert drew == 2
+    # With the blank, the stopped card fires nothing.
+    eng, drew = run(True)
+    assert drew == 0
+    assert "attack" in eng.state.blanked_text
+    # It lasts the rest of the turn, then the turn-boundary sweep clears it.
+    assert eng.state.is_text_blanked(attack(), "A")
+    eng._sweep_end_of_turn()
+    assert not eng.state.is_text_blanked(attack(), "A")
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.

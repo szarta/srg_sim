@@ -1115,6 +1115,18 @@ class BlankText(IRNode):
 
 
 @dataclass(frozen=True)
+class BlankStoppedText(IRNode):
+    """"The stopped card has blank text until the end of the turn" — blank the text of
+    the specific card instance JUST stopped, for the rest of the turn (21 cards; the
+    Jurassic / "If Stopped" stop-card family). Unlike :class:`BlankText`, a continuous
+    selector-driven scan, this blanks ONE card by identity and is held in
+    ``GameState.blanked_text`` until the turn-boundary sweep — the stop card stays in
+    play afterwards, so a continuous blank would never end. Fired from the stop card's
+    ``OnStop`` and resolved BEFORE the stopped card's own ``OnStop``, so it suppresses
+    that card's "If Stopped" text (the entire point of the family)."""
+
+
+@dataclass(frozen=True)
 class LoseBy(IRNode):
     kind: LoseKind
     who: Who = Who.SELF
