@@ -869,6 +869,17 @@ pub enum Action {
         selector: CardFilter,
         who: Who,
     },
+    /// "The stopped card has blank text until the end of the turn" — blank the text of
+    /// the specific card instance that was JUST stopped, for the rest of the turn (21
+    /// cards; the Jurassic / "If Stopped" stop-card family). Unlike [`Action::BlankText`],
+    /// which is a continuous selector-driven scan re-derived from the board, this
+    /// blanks ONE card by identity and is held in `GameState.blanked_text` until the
+    /// turn-boundary sweep — the stop card stays in play afterwards, so a continuous
+    /// blank would never end. Fired from the stop card's `OnStop`; resolved BEFORE the
+    /// stopped card's own `OnStop`, so it suppresses that card's "If Stopped" text
+    /// (which is the entire point of the family — several members read "stop any card
+    /// with 'If Stopped' in the text: that card has blank text …"). schema v36
+    BlankStoppedText,
     LoseBy {
         kind: LoseKind,
         who: Who,
@@ -1417,6 +1428,17 @@ pub enum IrNode {
         selector: CardFilter,
         who: Who,
     },
+    /// "The stopped card has blank text until the end of the turn" — blank the text of
+    /// the specific card instance that was JUST stopped, for the rest of the turn (21
+    /// cards; the Jurassic / "If Stopped" stop-card family). Unlike [`Action::BlankText`],
+    /// which is a continuous selector-driven scan re-derived from the board, this
+    /// blanks ONE card by identity and is held in `GameState.blanked_text` until the
+    /// turn-boundary sweep — the stop card stays in play afterwards, so a continuous
+    /// blank would never end. Fired from the stop card's `OnStop`; resolved BEFORE the
+    /// stopped card's own `OnStop`, so it suppresses that card's "If Stopped" text
+    /// (which is the entire point of the family — several members read "stop any card
+    /// with 'If Stopped' in the text: that card has blank text …"). schema v36
+    BlankStoppedText,
     LoseBy {
         kind: LoseKind,
         who: Who,

@@ -294,6 +294,10 @@ pub struct Engine {
     pending_loss: Option<(String, String)>,
     roll_ctx: BTreeMap<String, RollContext>,
     turn_bumped: bool,
+    /// `db_uuid` of the card currently being stopped, set for the duration of
+    /// `apply_stop` so `BlankStoppedText` knows its referent. Transient, never
+    /// serialized.
+    stopped_card: Option<String>,
     decider: Box<dyn Decider>,
     /// Monotonic counter of decisions offered, for `request_id`/`seq`.
     decision_index: u64,
@@ -345,6 +349,7 @@ impl Engine {
             pending_loss: None,
             roll_ctx: BTreeMap::new(),
             turn_bumped: false,
+            stopped_card: None,
             decider,
             decision_index: 0,
         }
@@ -916,6 +921,7 @@ impl Engine {
             | Action::StopRequiresTag { .. }
             | Action::BlankText { .. }
             | Action::MaxHandSize { .. } => {}
+            Action::BlankStoppedText => self.act_blank_stopped_text(key),
             // A TIMED BuffSkill is granted imperatively here and lives in
             // `timed_buffs` until its sweep; every other duration is continuous
             // (folded from the board by `fold_buffs`) and never fires as an action.
@@ -2051,6 +2057,30 @@ impl Engine {
         Ok(chosen["seat"].as_str().unwrap().to_owned())
     }
 
+    /// "The stopped card has blank text until the end of the turn": blank the card
+    /// currently being stopped, by identity, for the rest of the turn. A no-op outside
+    /// a stop exchange (no referent).
+    fn act_blank_stopped_text(&mut self, key: &str) {
+        let Some(uuid) = self.stopped_card.clone() else {
+            return;
+        };
+        self.state.blanked_text.insert(uuid.clone());
+        self.log_effect(key, "BlankStoppedText", None, json!({"card": uuid}));
+    }
+
+    /// Drop everything scoped "until the end of the turn" by the turn just finished:
+    /// timed buffs under `UntilEndOfTurn` and the per-card text blanks from
+    /// `BlankStoppedText`. Runs with the other per-turn resets at the top of the
+    /// following turn.
+    fn sweep_end_of_turn(&mut self) {
+        for player in self.state.players.values_mut() {
+            player
+                .timed_buffs
+                .retain(|b| b.until != Duration::UntilEndOfTurn);
+        }
+        self.state.blanked_text.clear();
+    }
+
     /// Sweep "until the start of your next turn" buffs now that the turn roll has
     /// named `winner` the active player.
     ///
@@ -2222,11 +2252,8 @@ impl Engine {
                                                 // accumulate); an unused grant expires.
             player.reroll_grants.this_turn = player.reroll_grants.next_turn;
             player.reroll_grants.next_turn = 0;
-            // "Until the end of the turn" buffs granted on the turn just finished.
-            player
-                .timed_buffs
-                .retain(|b| b.until != Duration::UntilEndOfTurn);
         }
+        self.sweep_end_of_turn();
         let winner = self.turn_roll()?;
         self.sweep_next_turn_buffs(&winner);
         if self.ended() || !self.draw_for_turn(&winner)? {
@@ -2642,11 +2669,29 @@ impl Engine {
         let attack_effects = attack.effects.clone();
         self.run_effects(&stop_effects, "OnHit", defender, None)?;
         self.run_hit_gimmicks(&stop, defender)?; // a stop entering play is itself a hit
-        self.run_effects(&attack_effects, "OnStop", active, None)?; // attack card: "if this is stopped"
-        self.run_effects(&stop_effects, "OnStop", defender, None)?; // stop card: "when this stops"
-                                                                    // Standing competitor/entrance OnStop, dir-aware from each owner's POV: the
-                                                                    // attacker's card was stopped (YOURS), the defender stopped a card (THEIRS =
-                                                                    // "when you Stop a card", e.g. Gia).
+                                                 // "The stopped card has blank text until the end of the turn" must resolve
+                                                 // BEFORE the stopped card's own OnStop: the whole point of that family is to
+                                                 // suppress the stopped card's "If Stopped" text, several members reading
+                                                 // "stop any card WITH 'If Stopped' in the text: that card has blank text …".
+                                                 // Split so those effects land first and the rest keep their original order.
+        self.stopped_card = Some(attack.db_uuid.clone());
+        let (blanking, rest): (Vec<Effect>, Vec<Effect>) =
+            stop_effects.into_iter().partition(|e| {
+                e.actions
+                    .iter()
+                    .any(|a| matches!(a, Action::BlankStoppedText))
+            });
+        self.run_effects(&blanking, "OnStop", defender, None)?;
+        // A blanked card fires nothing — the same rule `play_card` and `card_can_stop`
+        // already apply to a text-blanked card.
+        if !self.state.is_text_blanked(&attack, active) {
+            self.run_effects(&attack_effects, "OnStop", active, None)?; // "if this is stopped"
+        }
+        self.run_effects(&rest, "OnStop", defender, None)?; // stop card: "when this stops"
+        self.stopped_card = None;
+        // Standing competitor/entrance OnStop, dir-aware from each owner's POV: the
+        // attacker's card was stopped (YOURS), the defender stopped a card (THEIRS =
+        // "when you Stop a card", e.g. Gia).
         let stopped = attack.play_order;
         self.run_on_stop_gimmicks(active, Direction::Yours, stopped)?;
         self.run_on_stop_gimmicks(defender, Direction::Theirs, stopped)?;
@@ -3802,6 +3847,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BlankGimmick { .. } => "BlankGimmick",
         Action::FlipGimmick { .. } => "FlipGimmick",
         Action::BlankText { .. } => "BlankText",
+        Action::BlankStoppedText => "BlankStoppedText",
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
         Action::ConsideredCompare { .. } => "ConsideredCompare",
@@ -4439,6 +4485,130 @@ mod timed_buff_tests {
             buff_total(&engine, Skill::Strike),
             2,
             "wrong sweep must not fire"
+        );
+    }
+}
+
+#[cfg(test)]
+mod blank_stopped_text_tests {
+    use super::*;
+
+    /// A card whose "If Stopped" text draws 2 — the thing the blank must suppress.
+    fn attack_with_if_stopped() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "attack", "name": "If Stopped Grapple",
+            "number": 5, "play_order": "Lead", "raw_text": "If Stopped, draw 2 cards.",
+            "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect",
+                "trigger": {"@type": "OnStop", "dir": "YOURS", "order": null},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "Draw", "n": 2, "source": "TOP", "who": "SELF",
+                             "per": null, "per_who": "SELF"}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "If Stopped, draw 2 cards.", "source": "card", "optional": false
+            }]
+        }))
+        .unwrap()
+    }
+
+    /// The stop card: "when you stop a card, the stopped card has blank text until the
+    /// end of the turn" (`blanks = true`), or an inert stop card (`blanks = false`).
+    fn stop_card(blanks: bool) -> Card {
+        let effects = if blanks {
+            json!([{
+                "@type": "Effect",
+                "trigger": {"@type": "OnStop", "dir": "THEIRS", "order": null},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "BlankStoppedText"}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "the stopped card has blank text until the end of the turn",
+                "source": "card", "optional": false
+            }])
+        } else {
+            json!([])
+        };
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "stopper", "name": "Blocker", "number": 6,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": effects
+        }))
+        .unwrap()
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..8)
+            .map(|i| {
+                json!({"atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+                       "finish_bonuses": {}, "name": format!("c{i}"), "number": 1,
+                       "play_order": "Lead", "raw_text": "", "tags": []})
+            })
+            .collect();
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "World Championship",
+                    "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-ent"), "name": "ent"}, "cards": cards.clone(),
+            }))
+            .expect("deck")
+        };
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            decider,
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// A's card is stopped by B; returns how many cards A drew from "If Stopped".
+    fn run_stop(blanks: bool) -> (Engine, usize) {
+        let mut engine = engine();
+        let before = engine.state.players["A"].hand.len();
+        engine
+            .apply_stop("A", "B", attack_with_if_stopped(), stop_card(blanks))
+            .unwrap();
+        let drew = engine.state.players["A"].hand.len() - before;
+        (engine, drew)
+    }
+
+    #[test]
+    fn an_unblanked_stop_lets_if_stopped_fire() {
+        // Baseline: without the blank, "If Stopped, draw 2" resolves normally.
+        let (_, drew) = run_stop(false);
+        assert_eq!(drew, 2, "If Stopped fires when nothing blanks it");
+    }
+
+    #[test]
+    fn blanking_the_stopped_card_suppresses_if_stopped() {
+        // The point of the family: the blank lands before the stopped card's own
+        // OnStop, so its "If Stopped" text never triggers.
+        let (engine, drew) = run_stop(true);
+        assert_eq!(drew, 0, "a blanked card's If Stopped must not fire");
+        assert!(
+            engine.state.blanked_text.contains("attack"),
+            "the stopped card is recorded as blanked"
+        );
+    }
+
+    #[test]
+    fn the_blank_lasts_the_rest_of_the_turn_and_is_swept() {
+        let (mut engine, _) = run_stop(true);
+        let attack = attack_with_if_stopped();
+        assert!(
+            engine.state.is_text_blanked(&attack, "A"),
+            "still blanked later in the same turn"
+        );
+        engine.sweep_end_of_turn(); // the next turn's per-turn resets sweep it
+        assert!(
+            !engine.state.is_text_blanked(&attack, "A"),
+            "the blank does not outlive the turn"
         );
     }
 }

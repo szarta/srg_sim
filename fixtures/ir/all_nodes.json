@@ -47,6 +47,9 @@
     "who": "OPP"
   },
   {
+    "@type": "BlankStoppedText"
+  },
+  {
     "@type": "BreakoutModifier",
     "attempts": null,
     "delta": 0

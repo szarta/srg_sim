@@ -126,6 +126,13 @@ pub struct GameState {
     /// gimmick gated on "your opponent won the last turn roll" (Dunn).
     #[serde(default)]
     pub last_roll_winner: Option<String>,
+    /// `db_uuid`s whose text is blanked for the REST OF THIS TURN by a
+    /// [`Action::BlankStoppedText`] ("the stopped card has blank text until the end of
+    /// the turn"). Card-identity scoped, not selector scoped, and cleared by the
+    /// turn-boundary sweep — the blanking stop card stays in play, so a continuous
+    /// blank would never end. Consulted by [`GameState::is_text_blanked`].
+    #[serde(default)]
+    pub blanked_text: std::collections::BTreeSet<String>,
     /// Re-entrancy guard for stat-gated gimmick blanks (DESIGN.md §5). Transient
     /// engine bookkeeping — never serialized.
     #[serde(skip)]
@@ -147,6 +154,7 @@ impl GameState {
             active: default_active(),
             turn_no: 0,
             last_roll_winner: None,
+            blanked_text: Default::default(),
             blank_guard: RefCell::new(HashSet::new()),
         }
     }
@@ -229,6 +237,10 @@ impl GameState {
     /// opponent's Spotlights are blank" (the source stays in play). A blanked card
     /// fires none of its own effects and cannot stop.
     pub fn is_text_blanked(&self, card: &Card, owner: &str) -> bool {
+        // A card blanked by a stop this turn stays blanked regardless of zone.
+        if self.blanked_text.contains(&card.db_uuid) {
+            return true;
+        }
         for (decl_owner, player) in &self.players {
             // (effects, is_discard) per source zone. A `WhileInDiscard` effect is active
             // only from the discard pile ("when this card is in your discard pile, …");

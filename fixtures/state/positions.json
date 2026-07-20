@@ -523,6 +523,7 @@
       },
       "state": {
         "active": "A",
+        "blanked_text": [],
         "crowd_meter": 0,
         "last_roll_winner": null,
         "players": {
@@ -895,7 +896,8 @@
             "reroll_grants": {
               "next": 0,
               "this": 0
-            }
+            },
+            "timed_buffs": []
           },
           "B": {
             "competitor": {
@@ -1198,7 +1200,8 @@
             "reroll_grants": {
               "next": 0,
               "this": 0
-            }
+            },
+            "timed_buffs": []
           }
         },
         "rng": {
@@ -2565,6 +2568,7 @@
       },
       "state": {
         "active": "B",
+        "blanked_text": [],
         "crowd_meter": 3,
         "last_roll_winner": null,
         "players": {
@@ -3224,7 +3228,8 @@
             "reroll_grants": {
               "next": 0,
               "this": 0
-            }
+            },
+            "timed_buffs": []
           },
           "B": {
             "competitor": {
@@ -3810,7 +3815,8 @@
             "reroll_grants": {
               "next": 0,
               "this": 0
-            }
+            },
+            "timed_buffs": []
           }
         },
         "rng": {
@@ -4586,6 +4592,7 @@
       },
       "state": {
         "active": "A",
+        "blanked_text": [],
         "crowd_meter": 0,
         "last_roll_winner": null,
         "players": {
@@ -5176,7 +5183,8 @@
             "reroll_grants": {
               "next": 0,
               "this": 0
-            }
+            },
+            "timed_buffs": []
           },
           "B": {
             "competitor": {
@@ -5479,7 +5487,8 @@
             "reroll_grants": {
               "next": 0,
               "this": 0
-            }
+            },
+            "timed_buffs": []
           }
         },
         "rng": {

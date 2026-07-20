@@ -6145,3 +6145,584 @@ a9e25560225244d3accd57034587220b:
     until the start of your next turn (Max +5 to each).'
   source: gimmick
   optional: false
+
+# --- "the stopped card has blank text until the end of the turn" (BlankStoppedText).
+# 12 stop cards whose stop half already parses; only the blank clause was unsupported.
+# The blank resolves BEFORE the stopped card's own OnStop, so it suppresses that
+# card's "If Stopped" text -- the point of the family. Each card's already-parsed
+# stop/buff effects are carried forward verbatim (overrides REPLACE all effects).
+
+# The End is Near
+9c522e6e0b2a4254b7b72aa3da805c72:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Strike
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Strike
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': SkillCompare
+    cmp: '>'
+    skill: Submission
+    value: null
+    vs: OPP_SAME
+    vs_skill: null
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your Submission skill is greater than your opponent's Submission skill, stop any Follow
+    Up Strike or Finish Strike.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop a card, the stopped card has blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Jurassic Chokeslam
+21125f12c22b4086919eb14911780474:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Submission
+    order: null
+    source_is_skillreq: false
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: Submission
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      raw: null
+      tag: null
+      text_contains: []
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your opponent has another Submission in play, stop any Submission.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When Submissions are stopped, they have blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Jurassic Clothesline
+3fda3cd6417b429d834ef95572c9d9f3:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Grapple
+    order: null
+    source_is_skillreq: false
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: Grapple
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      raw: null
+      tag: null
+      text_contains: []
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your opponent has another Grapple in play, stop any Grapple.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When Grapples are stopped, they have blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Jurassic Crush
+4c2e124efe254e4597eb5696e7d34ff6:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Strike
+    order: null
+    source_is_skillreq: false
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: Strike
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      raw: null
+      tag: null
+      text_contains: []
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your opponent has another Strike in play, stop any Strike.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When Strikes are stopped, they have blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Sheep, Kneel Before My Big American Sledgehammer
+dfc0ec76bf344acf9cde547f1c36c04b:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Submission
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Submission
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': SkillCompare
+    cmp: '>'
+    skill: Grapple
+    value: null
+    vs: OPP_SAME
+    vs_skill: null
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your Grapple skill is greater than your opponent's Grapple skill, stop any Follow Up
+    Submission or Finish Submission.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop a card, the stopped card has blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Boss Beats
+a584ef6f4006424f896fd794e9041625:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Grapple
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Grapple
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Stop any Follow Up Grapple or Finish Grapple.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop your opponent's card, the stopped card has blank text until the end of the
+    turn.
+  source: card
+  optional: false
+
+# Taunting Impact Suplex
+049d8d86b4ea476da0f5e7409d23005b:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Submission
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Submission
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Stop any Follow Up Submission or Finish Submission.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop your opponent's card, the stopped card has blank text until the end of the
+    turn.
+  source: card
+  optional: false
+
+# Freeze! Don't Move
+2ca6da31309b42a8a1e578e4970f5626:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Strike
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Strike
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Stop any Follow Up Strike or Finish Strike.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop a card, the stopped card has blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Banhammer Block
+80036b2ff1e94500bbf84fd45101cde4:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Grapple
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Grapple
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': SkillCompare
+    cmp: '>'
+    skill: Strike
+    value: null
+    vs: OPP_SAME
+    vs_skill: null
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your Strike skill is greater than your opponent's Strike skill, stop any Follow Up Grapple
+    or Finish Grapple.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop a card, the stopped card has blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Learning The House Rules
+59e634f8a2ae4b8dab81176bfac5a327:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Grapple
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Grapple
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': SkillCompare
+    cmp: '>'
+    skill: Agility
+    value: null
+    vs: OPP_SAME
+    vs_skill: null
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your Agility skill is greater than your opponent's Agility skill, stop any Follow Up
+    Grapple or Finish Grapple.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop a card, the stopped card has blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Rip N Ship Suplex
+82b215f6751c4cb198ec736d5e3999e6:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Submission
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Submission
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': SkillCompare
+    cmp: '>'
+    skill: Power
+    value: null
+    vs: OPP_SAME
+    vs_skill: null
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your Power skill is greater than your opponent's Power skill, stop any Follow Up Submission
+    or Finish Submission.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop a card, the stopped card has blank text until the end of the turn.
+  source: card
+  optional: false
+
+# Stunting Potion #51
+d06fa40b158946f4b74de295052654b9:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Strike
+    order: Followup
+    source_is_skillreq: false
+  - '@type': Stop
+    atk_type: Strike
+    order: Finish
+    source_is_skillreq: false
+  condition:
+    '@type': SkillCompare
+    cmp: '>'
+    skill: Technique
+    value: null
+    vs: OPP_SAME
+    vs_skill: null
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your Technique skill is greater than your opponent's Technique skill, stop any Follow
+    Up Strike or Finish Strike.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: THEIRS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankStoppedText
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When you stop a card, the stopped card has blank text until the end of the turn.
+  source: card
+  optional: false

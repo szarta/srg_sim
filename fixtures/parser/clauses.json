@@ -3113,9 +3113,7 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "When you stop a card, the stopped card has blank text until the end of the turn.",
-              "reason": "no grammar match"
+              "@type": "BlankStoppedText"
             }
           ],
           "condition": {
@@ -3131,7 +3129,9 @@
           "raw_clause": "When you stop a card, the stopped card has blank text until the end of the turn.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnStop",
+            "dir": "THEIRS",
+            "order": null
           }
         }
       ],
@@ -7605,8 +7605,8 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 116,
-    "override": 56,
+    "grammar": 115,
+    "override": 58,
     "top_unparsed": [
       [
         "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
@@ -7690,7 +7690,7 @@
       ]
     ],
     "total": 217,
-    "unsupported": 45
+    "unsupported": 44
   },
   "coverage_records": [
     {
