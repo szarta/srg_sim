@@ -2149,9 +2149,9 @@ class Engine:
         #93; with no re-enable card modeled yet this is exact."""
         disabled = False
         for owner, player in self.state.players.items():
-            sources = [player.competitor.effects, player.entrance.effects]
-            sources += [c.effects for c in player.in_play]
-            for effects in sources:
+            for effects, active in self.state._buff_sources(owner, player):
+                if not active:
+                    continue  # a blanked gimmick declares nothing
                 for eff in effects:
                     if not isinstance(eff.trigger, fx.Static):
                         continue

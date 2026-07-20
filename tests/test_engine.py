@@ -2641,3 +2641,45 @@ def test_suppress_self_hand_loss_does_not_protect_the_opponent() -> None:
     before = len(eng.state.players["B"].hand)
     eng._act_discard(fx.Discard(count=1, who=fx.Who.OPP, random=True), "A")
     assert len(eng.state.players["B"].hand) == before - 1
+
+
+def _no_dq(scope: fx.DqScope) -> fx.Effect:
+    return fx.Effect(
+        trigger=fx.Static(),
+        actions=(fx.DisqualificationRule(enabled=False, scope=scope),),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+
+def test_dq_rule_scope_self_protects_only_its_owner() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(_no_dq(fx.DqScope.SELF),)
+    )
+    assert eng._is_dq_immune("A")
+    assert not eng._is_dq_immune("B")
+
+
+def test_dq_rule_scope_match_protects_both_players() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["B"].competitor = replace(
+        eng.state.players["B"].competitor, effects=(_no_dq(fx.DqScope.MATCH),)
+    )
+    assert eng._is_dq_immune("A")
+    assert eng._is_dq_immune("B")
+
+
+def test_blanked_gimmick_declares_no_dq_immunity() -> None:
+    """Hand-adjudicated 2026-07-20: blanking a gimmick makes its text inert, so
+    Cardona's "you cannot be disqualified" dies with it — the same rule the
+    suppression flags and ConsideredCompare already followed."""
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(_no_dq(fx.DqScope.SELF),)
+    )
+    assert eng._is_dq_immune("A")
+    eng.state.players["A"].gimmick_blanked = True
+    assert not eng._is_dq_immune("A")
