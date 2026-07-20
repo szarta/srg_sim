@@ -5162,6 +5162,54 @@
       }
     }
   ],
+  "a9e25560225244d3accd57034587220b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": 5,
+          "delta": 1,
+          "duration": "UNTIL_START_OF_YOUR_NEXT_TURN",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Strike",
+          "target_highest": false,
+          "who": "SELF"
+        },
+        {
+          "@type": "BuffSkill",
+          "cap": 5,
+          "delta": 5,
+          "duration": "UNTIL_START_OF_YOUR_NEXT_TURN",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Submission",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When you roll Power for your turn roll: +1 to Strike and +5 to Submission until the start of your next turn (Max +5 to each).",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
   "aa049f5ef34e463db3ec2c3a8fb1e343": [
     {
       "@type": "Effect",

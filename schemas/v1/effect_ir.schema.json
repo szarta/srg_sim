@@ -947,7 +947,9 @@
         "WHILE_IN_PLAY",
         "WHILE_GIMMICK_ACTIVE",
         "INSTANT",
-        "WHILE_IN_DISCARD"
+        "WHILE_IN_DISCARD",
+        "UNTIL_END_OF_TURN",
+        "UNTIL_START_OF_YOUR_NEXT_TURN"
       ],
       "type": "string"
     },
@@ -3331,5 +3333,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 34
+  "version": 35
 }

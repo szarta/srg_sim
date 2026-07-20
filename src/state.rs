@@ -38,6 +38,29 @@ pub struct RollMods {
     pub next_turn: i64,
 }
 
+/// One live timed skill buff on a player (DESIGN.md §3, `Duration::UntilEndOfTurn` /
+/// `UntilStartOfYourNextTurn`).
+///
+/// Unlike the continuous `Static` buffs — re-derived from the board on every stats
+/// read — a timed buff is granted imperatively at the moment its effect fires and
+/// persists as state until its sweep. `source` is the granting clause's identity:
+/// re-firing the SAME clause accumulates into the existing entry (clamped to `cap`)
+/// rather than appending a second one, which is what makes "(Max +5 to each)" a real
+/// ceiling across repeat triggers. `granted_turn` lets the
+/// `UntilStartOfYourNextTurn` sweep tell "the turn I was granted on" from "the
+/// owner's next active turn".
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TimedBuff {
+    pub skill: Skill,
+    pub delta: i64,
+    pub until: Duration,
+    /// Stacking identity — the granting effect's `raw_clause`. Same source + same
+    /// skill + same expiry = one accumulating entry.
+    pub source: String,
+    pub cap: Option<i64>,
+    pub granted_turn: i64,
+}
+
 /// One side's competitor, entrance, and card zones (DESIGN.md §5).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PlayerState {
@@ -58,6 +81,12 @@ pub struct PlayerState {
     /// turn start; an unused grant expires (never accumulates).
     #[serde(default)]
     pub reroll_grants: RollMods,
+    /// Live TIMED skill buffs granted to THIS player (stored on the target, not the
+    /// granter) by a `BuffSkill` under `UntilEndOfTurn` / `UntilStartOfYourNextTurn`.
+    /// Folded into the derived stats alongside the continuous `Static` buffs and swept
+    /// at the matching turn boundary. See [`TimedBuff`].
+    #[serde(default)]
+    pub timed_buffs: Vec<TimedBuff>,
     #[serde(default)]
     pub freq_counters: BTreeMap<String, i64>,
     #[serde(default)]
@@ -244,6 +273,14 @@ impl GameState {
         let mut stats = self.players[key].competitor.stats;
         for (owner, player) in &self.players {
             self.apply_owner_buffs(&mut stats, key, owner, player, holds);
+        }
+        // TIMED buffs are already resolved (condition checked, delta accumulated and
+        // capped at grant time), so they fold in unconditionally. Folding here — the
+        // one derived-stats chokepoint — is what makes them apply to turn rolls,
+        // Finish rolls and breakout rolls alike (DESIGN.md §3/§5); a stop that becomes
+        // a Finish can roll on the opponent's turn, while the buff is still live.
+        for buff in &self.players[key].timed_buffs {
+            stats = stats.with(buff.skill, stats.get(buff.skill) + buff.delta);
         }
         stats
     }

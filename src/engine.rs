@@ -24,7 +24,7 @@ use crate::ir::{
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
-use crate::state::{GameState, PlayerState};
+use crate::state::{GameState, PlayerState, TimedBuff};
 use serde_json::{json, Value};
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
@@ -327,6 +327,7 @@ impl Engine {
                         in_play: Vec::new(),
                         pending_roll_mods: Default::default(),
                         reroll_grants: Default::default(),
+                        timed_buffs: Vec::new(),
                         freq_counters: BTreeMap::new(),
                         gimmick_blanked: false,
                         gimmick_flipped: false,
@@ -780,7 +781,7 @@ impl Engine {
 
     fn apply_actions(&mut self, eff: &Effect, key: &str) -> Eng<()> {
         for action in &eff.actions {
-            self.apply_action(action, key)?;
+            self.apply_action(action, key, &eff.raw_clause)?;
             if self.resolve_pending() {
                 return Ok(());
             }
@@ -791,7 +792,10 @@ impl Engine {
     /// The action dispatch (Python `_ACTIONS`). Passive markers read elsewhere are
     /// no-ops; anything not modeled as an executed mutation surfaces as an
     /// `unsupported` log event (never silently dropped, DESIGN.md ground rules).
-    fn apply_action(&mut self, action: &Action, key: &str) -> Eng<()> {
+    ///
+    /// `source` is the granting effect's `raw_clause`, carried only so a TIMED
+    /// `BuffSkill` can accumulate under a stable stacking identity (see [`TimedBuff`]).
+    fn apply_action(&mut self, action: &Action, key: &str, source: &str) -> Eng<()> {
         match action {
             Action::Draw {
                 n,
@@ -894,7 +898,7 @@ impl Engine {
             Action::FlipGimmick { who } => self.act_flip_gimmick(*who, key),
             Action::LoseBy { kind, who } => self.act_lose_by(*kind, *who, key),
             Action::PlayExtraCard { .. } => self.act_play_extra_card(key),
-            Action::Choice { options } => self.act_choice(options, key)?,
+            Action::Choice { options } => self.act_choice(options, key, source)?,
             // Passive markers, read where they matter (roll-off, finish, hand-cap,
             // count_in_play), never executed as a mutation — a no-op, not Unsupported.
             Action::LowestRollWins
@@ -912,6 +916,28 @@ impl Engine {
             | Action::StopRequiresTag { .. }
             | Action::BlankText { .. }
             | Action::MaxHandSize { .. } => {}
+            // A TIMED BuffSkill is granted imperatively here and lives in
+            // `timed_buffs` until its sweep; every other duration is continuous
+            // (folded from the board by `fold_buffs`) and never fires as an action.
+            Action::BuffSkill {
+                skill,
+                delta,
+                who,
+                duration: duration @ (Duration::UntilEndOfTurn | Duration::UntilStartOfYourNextTurn),
+                cap,
+                ..
+            } => self.grant_timed_buff(
+                TimedBuff {
+                    skill: *skill,
+                    delta: *delta,
+                    until: *duration,
+                    source: source.to_owned(),
+                    cap: *cap,
+                    granted_turn: 0, // filled in from the live turn counter
+                },
+                *who,
+                key,
+            ),
             // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
             // `This` re-roll is structural (read in the roll-off), a no-op here.
             Action::Reroll { when, .. } => {
@@ -2025,7 +2051,65 @@ impl Engine {
         Ok(chosen["seat"].as_str().unwrap().to_owned())
     }
 
-    fn act_choice(&mut self, options: &[ChoiceOption], key: &str) -> Eng<()> {
+    /// Sweep "until the start of your next turn" buffs now that the turn roll has
+    /// named `winner` the active player.
+    ///
+    /// A turn is shared and its active player is only known once the roll resolves, so
+    /// this cannot run before the roll — the buff therefore still feeds the roll that
+    /// makes the turn yours, and dies immediately after (hand-adjudicated 2026-07-20).
+    /// `granted_turn < turn_no` keeps a buff granted on THIS turn's roll alive; buffs
+    /// on the non-active player are untouched, which is what lets one survive across
+    /// every turn its owner does not win.
+    fn sweep_next_turn_buffs(&mut self, winner: &str) {
+        let turn = self.state.turn_no;
+        let player = self.state.players.get_mut(winner).unwrap();
+        player
+            .timed_buffs
+            .retain(|b| b.until != Duration::UntilStartOfYourNextTurn || b.granted_turn >= turn);
+    }
+
+    /// Grant (or accumulate into) a TIMED skill buff on `who`'s side.
+    ///
+    /// The buff is stored on the TARGET, so the derived-stats fold needs no owner
+    /// bookkeeping. Re-firing the same clause for the same skill and expiry
+    /// accumulates into the existing entry and clamps to `cap` — "(Max +5 to each)"
+    /// is a ceiling across repeat triggers, not per firing (hand-adjudicated).
+    /// `grant` carries the per-firing increment in `delta`; `granted_turn` is filled
+    /// in here from the live turn counter.
+    fn grant_timed_buff(&mut self, grant: TimedBuff, who: Who, key: &str) {
+        let target = self.target(who, key);
+        let turn = self.state.turn_no;
+        let (skill, until, cap, step) = (grant.skill, grant.until, grant.cap, grant.delta);
+        let clamp = |v: i64| cap.map_or(v, |c| v.min(c));
+        let player = self.state.players.get_mut(&target).unwrap();
+        let total = match player
+            .timed_buffs
+            .iter_mut()
+            .find(|b| b.source == grant.source && b.skill == skill && b.until == until)
+        {
+            Some(existing) => {
+                existing.delta = clamp(existing.delta + step);
+                existing.delta
+            }
+            None => {
+                let d = clamp(step);
+                player.timed_buffs.push(TimedBuff {
+                    delta: d,
+                    granted_turn: turn,
+                    ..grant
+                });
+                d
+            }
+        };
+        self.log_effect(
+            key,
+            "BuffSkill",
+            Some(&target),
+            json!({"skill": skill, "delta": step, "total": total, "until": until}),
+        );
+    }
+
+    fn act_choice(&mut self, options: &[ChoiceOption], key: &str, source: &str) -> Eng<()> {
         if options.is_empty() {
             return Ok(());
         }
@@ -2038,7 +2122,7 @@ impl Engine {
         let idx = chosen["index"].as_u64().unwrap() as usize;
         let actions = options[idx].actions.clone();
         for action in &actions {
-            self.apply_action(action, key)?;
+            self.apply_action(action, key, source)?;
             if self.resolve_pending() {
                 return Ok(());
             }
@@ -2138,8 +2222,13 @@ impl Engine {
                                                 // accumulate); an unused grant expires.
             player.reroll_grants.this_turn = player.reroll_grants.next_turn;
             player.reroll_grants.next_turn = 0;
+            // "Until the end of the turn" buffs granted on the turn just finished.
+            player
+                .timed_buffs
+                .retain(|b| b.until != Duration::UntilEndOfTurn);
         }
         let winner = self.turn_roll()?;
+        self.sweep_next_turn_buffs(&winner);
         if self.ended() || !self.draw_for_turn(&winner)? {
             return Ok(());
         }
@@ -4193,5 +4282,163 @@ mod on_discard_move_tests {
         let mut engine = brumeister_engine();
         engine.do_pass("B").unwrap();
         assert_eq!(board(&engine, "B"), 3, "pass-and-recycle is not an effect");
+    }
+}
+
+#[cfg(test)]
+mod timed_buff_tests {
+    use super::*;
+
+    fn card(uuid: &str) -> Value {
+        json!({
+            "atk_type": "Strike", "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+            "name": uuid, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []
+        })
+    }
+
+    /// A bare two-sided engine; the timed-buff paths are driven directly.
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..6).map(|i| card(&format!("c{i}"))).collect();
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "World Championship",
+                    "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-ent"), "name": "ent"}, "cards": cards.clone(),
+            }))
+            .expect("deck")
+        };
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            decider,
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    const CLAUSE: &str = "+1 to Strike and +5 to Submission (Max +5 to each)";
+
+    fn grant(engine: &mut Engine, skill: Skill, delta: i64) {
+        engine.grant_timed_buff(
+            TimedBuff {
+                skill,
+                delta,
+                until: Duration::UntilStartOfYourNextTurn,
+                source: CLAUSE.to_owned(),
+                cap: Some(5),
+                granted_turn: 0,
+            },
+            Who::SelfSide,
+            "A",
+        );
+    }
+
+    fn buff_total(engine: &Engine, skill: Skill) -> i64 {
+        engine.state.players["A"]
+            .timed_buffs
+            .iter()
+            .filter(|b| b.skill == skill)
+            .map(|b| b.delta)
+            .sum()
+    }
+
+    #[test]
+    fn repeat_firings_of_one_clause_accumulate_and_cap() {
+        // Snake Pitt Super Lucha, hand-adjudicated: each qualifying Power roll adds
+        // another +1 Strike / +5 Submission, and "(Max +5 to each)" is the ceiling on
+        // the ACCUMULATED total — so Strike climbs 1..5 and stops, Submission caps at
+        // once. One entry per (clause, skill), never a growing list.
+        let mut engine = engine();
+        for expected in 1..=5 {
+            grant(&mut engine, Skill::Strike, 1);
+            grant(&mut engine, Skill::Submission, 5);
+            assert_eq!(buff_total(&engine, Skill::Strike), expected);
+            assert_eq!(buff_total(&engine, Skill::Submission), 5, "capped at once");
+        }
+        grant(&mut engine, Skill::Strike, 1);
+        assert_eq!(
+            buff_total(&engine, Skill::Strike),
+            5,
+            "Strike stops at the cap"
+        );
+        assert_eq!(
+            engine.state.players["A"].timed_buffs.len(),
+            2,
+            "one entry per (clause, skill) — repeats accumulate, never append"
+        );
+    }
+
+    #[test]
+    fn the_buff_feeds_the_derived_stats() {
+        let mut engine = engine();
+        grant(&mut engine, Skill::Submission, 5);
+        assert_eq!(
+            engine.stat("A", Skill::Submission),
+            10,
+            "base 5 + a capped +5 reaches the derived stat"
+        );
+        assert_eq!(engine.stat("B", Skill::Submission), 5, "B is untouched");
+    }
+
+    #[test]
+    fn until_start_of_your_next_turn_survives_the_granting_turns_roll() {
+        // Granted on turn 3's roll: the sweep for turn 3 must NOT take it, or the buff
+        // would never survive the turn that created it.
+        let mut engine = engine();
+        engine.state.turn_no = 3;
+        grant(&mut engine, Skill::Submission, 5);
+        engine.sweep_next_turn_buffs("A");
+        assert_eq!(buff_total(&engine, Skill::Submission), 5);
+    }
+
+    #[test]
+    fn it_survives_every_turn_its_owner_is_not_active() {
+        // Granted turn 3; B wins turns 4 and 5 -> A's buff is untouched throughout.
+        let mut engine = engine();
+        engine.state.turn_no = 3;
+        grant(&mut engine, Skill::Submission, 5);
+        for turn in 4..=5 {
+            engine.state.turn_no = turn;
+            engine.sweep_next_turn_buffs("B");
+            assert_eq!(buff_total(&engine, Skill::Submission), 5, "turn {turn}");
+        }
+        // Turn 6: A wins the roll. The buff fed that roll and is swept right after.
+        engine.state.turn_no = 6;
+        engine.sweep_next_turn_buffs("A");
+        assert_eq!(
+            buff_total(&engine, Skill::Submission),
+            0,
+            "swept after the roll"
+        );
+    }
+
+    #[test]
+    fn until_end_of_turn_is_not_touched_by_the_next_turn_sweep() {
+        // The two durations have separate sweeps; the roll-time sweep must ignore
+        // UntilEndOfTurn (which is cleared at the top of the following turn instead).
+        let mut engine = engine();
+        engine.grant_timed_buff(
+            TimedBuff {
+                skill: Skill::Strike,
+                delta: 2,
+                until: Duration::UntilEndOfTurn,
+                source: "until the end of the turn".to_owned(),
+                cap: None,
+                granted_turn: 0,
+            },
+            Who::SelfSide,
+            "A",
+        );
+        engine.state.turn_no = 9;
+        engine.sweep_next_turn_buffs("A");
+        assert_eq!(
+            buff_total(&engine, Skill::Strike),
+            2,
+            "wrong sweep must not fire"
+        );
     }
 }

@@ -310,6 +310,19 @@ pub enum Duration {
     /// "when this card is in your discard pile, …" (the in-discard Spotlight blanks).
     /// Scanned from the discard zone; inert while the card is in play.
     WhileInDiscard,
+    /// TIMED: granted imperatively when the effect fires and swept at the END of the
+    /// turn it was granted in — "until the end of the turn" (~81 cards). Unlike the
+    /// `While*` durations this is NOT re-derived from a zone each read; it lives in
+    /// [`PlayerState::timed_buffs`](crate::state::PlayerState) until its sweep.
+    UntilEndOfTurn,
+    /// TIMED: granted imperatively and swept at the start of the owner's next ACTIVE
+    /// turn — "until the start of your next turn" (Snake Pitt Super Lucha, Arcade
+    /// Addict Aaron, Caveman V1). A turn is shared and its active player is only known
+    /// once the turn roll resolves, so the sweep runs immediately AFTER that roll: the
+    /// buff still feeds the roll that makes the turn yours, then dies. It therefore
+    /// survives every turn on which the owner is not the active player. Hand-
+    /// adjudicated 2026-07-20; see DESIGN.md §3.
+    UntilStartOfYourNextTurn,
 }
 
 /// Where an effect originates.
@@ -778,6 +791,12 @@ pub enum Action {
         duration: Duration,
         target_highest: bool,
         per_crowd: bool,
+        /// Clamps the bonus. Under a `While*` duration this bounds the per-read
+        /// `per`/`per_crowd` product (see `per`). Under a TIMED duration
+        /// (`UntilEndOfTurn` / `UntilStartOfYourNextTurn`) it instead bounds the
+        /// ACCUMULATED total this buff has granted while live: repeat firings stack
+        /// `delta` and clamp to `cap` — "+1 to Strike and +5 to Submission … (Max +5
+        /// to each)" (Snake Pitt Super Lucha). Hand-adjudicated 2026-07-20.
         cap: Option<i64>,
         /// When set, the bonus is `delta * (count of the target's cards in
         /// `per_zone` matching this filter)`, clamped to `cap` — "your Technique is
@@ -1320,6 +1339,12 @@ pub enum IrNode {
         duration: Duration,
         target_highest: bool,
         per_crowd: bool,
+        /// Clamps the bonus. Under a `While*` duration this bounds the per-read
+        /// `per`/`per_crowd` product (see `per`). Under a TIMED duration
+        /// (`UntilEndOfTurn` / `UntilStartOfYourNextTurn`) it instead bounds the
+        /// ACCUMULATED total this buff has granted while live: repeat firings stack
+        /// `delta` and clamp to `cap` — "+1 to Strike and +5 to Submission … (Max +5
+        /// to each)" (Snake Pitt Super Lucha). Hand-adjudicated 2026-07-20.
         cap: Option<i64>,
         /// When set, the bonus is `delta * (count of the target's cards in
         /// `per_zone` matching this filter)`, clamped to `cap` — "your Technique is

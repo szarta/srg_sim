@@ -130,6 +130,25 @@ WHILE_IN_DISCARD     # active ONLY while the source card sits in its owner's dis
                      #   ("when this card is in your discard pile, …"). Scanned from the
                      #   discard zone; inert while the card is in play. Honored by
                      #   is_text_blanked (the in-discard Spotlight blanks). schema v30
+
+# --- TIMED durations (schema v35). Unlike every While* duration above, these are NOT
+# re-derived from a zone on each stats read: the buff is granted IMPERATIVELY when its
+# effect fires and lives in PlayerState.timed_buffs until its sweep. Folded into the
+# derived stats at the one chokepoint, so a timed buff feeds turn rolls, Finish rolls
+# and breakout rolls alike (a stop that becomes a Finish can roll on the opponent's
+# turn, while the buff is still live). BuffSkill.cap changes meaning under these: it
+# bounds the ACCUMULATED total, so repeat firings of the same clause stack and clamp
+# ("(Max +5 to each)"), one entry per (clause, skill, expiry).
+UNTIL_END_OF_TURN    # "until the end of the turn" (~81 cards). Swept with the other
+                     #   per-turn resets at the top of the following turn.
+UNTIL_START_OF_YOUR_NEXT_TURN
+                     # "until the start of your next turn" (Snake Pitt Super Lucha,
+                     #   Arcade Addict Aaron, Caveman V1). A turn is SHARED and its
+                     #   active player is only known once the turn roll resolves, so the
+                     #   sweep runs immediately AFTER that roll: the buff still feeds the
+                     #   roll that makes the turn yours, then dies. It therefore survives
+                     #   every turn on which its owner is not the active player.
+                     #   Hand-adjudicated 2026-07-20 (stacking + expiry + roll timing).
 ```
 **Gimmick blanking** is itself `WHILE_IN_PLAY`: a blanker card sets `gimmick_blanked` on the
 target while the blanker is in play; when the blanker leaves play the Gimmick un-blanks and
