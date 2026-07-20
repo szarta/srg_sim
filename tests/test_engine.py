@@ -857,6 +857,70 @@ def test_blank_stopped_text_suppresses_if_stopped_and_expires() -> None:
     assert not eng.state.is_text_blanked(attack(), "A")
 
 
+def test_choose_name_binds_one_option_and_gates_the_hit_effects() -> None:
+    # Raven: "Choose 1: 'Kendo Stick', 'Steel Chair', or 'Trash Can'. When you hit a
+    # card with THAT in the name, draw 2." The binding is made at match start and one
+    # concrete OnHit per option is gated on it, so exactly one is ever live.
+    NAMES = ("Kendo Stick", "Steel Chair", "Trash Can")
+    effects = [
+        fx.Effect(
+            trigger=fx.StartOfMatch(),
+            actions=(fx.ChooseName(options=NAMES),),
+            source=fx.EffectSource.GIMMICK,
+        )
+    ]
+    effects += [
+        fx.Effect(
+            trigger=fx.OnHit(name_contains=(n,)),
+            condition=fx.ChosenNameIs(name=n, who=fx.Who.SELF),
+            actions=(fx.Draw(n=2),),
+            source=fx.EffectSource.GIMMICK,
+        )
+        for n in NAMES
+    ]
+
+    class PickName(HeuristicPolicy):
+        def __init__(self, pick: str) -> None:
+            super().__init__()
+            self.pick = pick
+
+        def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+            if point == "name":
+                return next((o for o in legal if o["name"] == self.pick), legal[0])
+            return super().choose(point, legal, state, key)
+
+    def fresh(pick: str) -> Engine:
+        eng = Engine(*bull_vs_fae(), PickName(pick), HeuristicPolicy(), seed=1, created="x")
+        eng.state.players["A"].competitor = replace(
+            eng.state.players["A"].competitor, effects=tuple(effects)
+        )
+        return eng
+
+    def hit(eng: Engine, card_name: str) -> int:
+        card = Card(db_uuid="hit", name=card_name, number=1, atk_type=AtkType.STRIKE,
+                    play_order=PlayOrder.LEAD)
+        before = len(eng.state.players["A"].hand)
+        eng._run_hit_gimmicks(card, "A")
+        return len(eng.state.players["A"].hand) - before
+
+    # Nothing is live before a binding exists.
+    eng = fresh("Steel Chair")
+    assert hit(eng, "Folding Steel Chair") == 0
+    # After setup the binding is recorded and exactly one OnHit is live.
+    eng = fresh("Steel Chair")
+    eng.setup()
+    assert eng.state.players["A"].chosen_name == "Steel Chair"
+    assert hit(eng, "Folding Steel Chair") == 2
+    assert hit(eng, "Kendo Stick Shot") == 0
+    assert hit(eng, "Trash Can Lid") == 0
+    assert hit(eng, "Dropkick") == 0
+    # A different choice moves which effect is live.
+    eng = fresh("Trash Can")
+    eng.setup()
+    assert hit(eng, "Trash Can Lid") == 2
+    assert hit(eng, "Folding Steel Chair") == 0
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.

@@ -585,6 +585,16 @@ class HasInDiscard(IRNode):
 
 
 @dataclass(frozen=True)
+class ChosenNameIs(IRNode):
+    """True while ``who``'s :class:`ChooseName` binding equals ``name`` — the gate that
+    turns "when you hit a card with THAT in the name" into one concrete effect per
+    option (Raven). False when nothing has been chosen yet."""
+
+    name: str = ""
+    who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
 class InPlayCompare(IRNode):
     """Cross-board in-play count compare: ``who``'s count of cards in play matching
     ``filter`` compared (``cmp``) against ``vs_who``'s count of the same filter. "When
@@ -1127,6 +1137,16 @@ class BlankStoppedText(IRNode):
 
 
 @dataclass(frozen=True)
+class ChooseName(IRNode):
+    """"Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
+    ``options`` for the rest of the match, stored as ``PlayerState.chosen_name``.
+    Authored under ``StartOfMatch``; the binding is then read by :class:`ChosenNameIs`
+    to gate the sibling effects that reference "that" name. No-op if empty."""
+
+    options: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class LoseBy(IRNode):
     kind: LoseKind
     who: Who = Who.SELF
@@ -1363,6 +1383,7 @@ Condition = (
     | HasInHand
     | HasInDiscard
     | InPlayCompare
+    | ChosenNameIs
     | RollWasSkill
     | RollGapExactly
     | RollGapAtLeast
@@ -1406,6 +1427,8 @@ Action = (
     | BlankGimmick
     | FlipGimmick
     | BlankText
+    | BlankStoppedText
+    | ChooseName
     | LoseBy
     | ConsideredCompare
     | SuppressOpponentDraw

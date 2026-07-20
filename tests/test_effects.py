@@ -14,6 +14,8 @@ from srg_sim.effects import (
     And,
     BlankGimmick,
     BlankStoppedText,
+    ChooseName,
+    ChosenNameIs,
     BlankText,
     BreakoutModifier,
     BuffSkill,
@@ -229,6 +231,8 @@ SAMPLES: list[IRNode] = [
     FlipGimmickSigns(Who.OPP),
     BlankText(CardFilter(tag="Spotlight"), Who.OPP),
     BlankStoppedText(),
+    ChooseName(options=("Kendo Stick", "Steel Chair")),
+    ChosenNameIs(name="Kendo Stick", who=Who.SELF),
     LoseBy(LoseKind.PINFALL, Who.SELF),
     DisqualificationRule(enabled=False, scope=DqScope.MATCH),
     ConsideredCompare(domain=CompareDomain.SKILL, order=CompareOrder.GREATER),  # RaRa Perre

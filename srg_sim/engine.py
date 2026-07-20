@@ -1839,6 +1839,17 @@ class Engine:
         legal = [{"kind": "seat", "seat": key}, {"kind": "seat", "seat": opp}]
         return self._decide("reshuffle_target", key, legal)["seat"]
 
+    def _act_choose_name(self, action: fx.ChooseName, key: str) -> None:
+        """"Choose 1: <name>, <name>, or <name>" (Raven): bind one option for the rest
+        of the match. The owner decides (a `name` decision point); the binding is read
+        by ChosenNameIs, which gates the sibling effects referencing "that" name."""
+        if not action.options:
+            return
+        legal = [{"kind": "name", "name": n} for n in action.options]
+        chosen = self._decide("name", key, legal)
+        self.state.players[key].chosen_name = chosen["name"]
+        self._log_effect(key, "ChooseName", key, {"name": chosen["name"]})
+
     def _act_blank_stopped_text(self, action: fx.BlankStoppedText, key: str) -> None:
         """"The stopped card has blank text until the end of the turn": blank the card
         currently being stopped, by identity, for the rest of the turn. A no-op outside
@@ -2239,6 +2250,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.StopRequiresTag: Engine._act_noop,  # marker, read via _card_can_stop; never executed
     fx.BlankText: Engine._act_noop,  # Static, read via is_text_blanked; never executed
     fx.BlankStoppedText: Engine._act_blank_stopped_text,
+    fx.ChooseName: Engine._act_choose_name,
     fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed

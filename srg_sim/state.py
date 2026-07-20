@@ -113,6 +113,9 @@ class PlayerState:
     # Live TIMED skill buffs granted to THIS player (stored on the target, not the
     # granter); folded into derived stats and swept at the matching turn boundary.
     timed_buffs: list[TimedBuff] = field(default_factory=list)
+    # The option bound by ChooseName ("Choose 1: 'Kendo Stick', ..." — Raven), fixed
+    # for the rest of the match and read by the ChosenNameIs condition.
+    chosen_name: str | None = None
     freq_counters: dict[str, int] = field(default_factory=dict)
     gimmick_blanked: bool = False
     gimmick_flipped: bool = False  # competitor card turned to its back side (Copy Kat V2)
@@ -136,6 +139,7 @@ class PlayerState:
             "pending_roll_mods": dict(self.pending_roll_mods),
             "reroll_grants": dict(self.reroll_grants),
             "timed_buffs": [b.to_dict() for b in self.timed_buffs],
+            "chosen_name": self.chosen_name,
             "freq_counters": dict(self.freq_counters),
             "gimmick_blanked": self.gimmick_blanked,
             "gimmick_flipped": self.gimmick_flipped,
@@ -154,6 +158,7 @@ class PlayerState:
             pending_roll_mods=dict(data["pending_roll_mods"]),
             reroll_grants=dict(data.get("reroll_grants", {"this": 0, "next": 0})),
             timed_buffs=[TimedBuff.from_dict(b) for b in data.get("timed_buffs", [])],
+            chosen_name=data.get("chosen_name"),
             freq_counters=dict(data["freq_counters"]),
             gimmick_blanked=data["gimmick_blanked"],
             gimmick_flipped=data.get("gimmick_flipped", False),
