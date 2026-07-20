@@ -16,7 +16,7 @@
 
 use crate::cards::{Card, Competitor, EntranceCard};
 use crate::conditions;
-use crate::ir::{Action, CardFilter, Condition, CountZone, Skill, Trigger, Who};
+use crate::ir::{Action, CardFilter, Condition, CountZone, Duration, Skill, Trigger, Who};
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
 use serde::{Deserialize, Serialize};
@@ -184,10 +184,19 @@ impl GameState {
     /// fires none of its own effects and cannot stop.
     pub fn is_text_blanked(&self, card: &Card, owner: &str) -> bool {
         for (decl_owner, player) in &self.players {
-            let sources = std::iter::once(&player.entrance.effects)
-                .chain(player.in_play.iter().map(|c| &c.effects));
-            for effects in sources {
+            // (effects, is_discard) per source zone. A `WhileInDiscard` effect is active
+            // only from the discard pile ("when this card is in your discard pile, …");
+            // every other duration is active only while the source is in play/entrance.
+            let live = std::iter::once(&player.entrance.effects)
+                .chain(player.in_play.iter().map(|c| &c.effects))
+                .map(|e| (e, false));
+            let dead = player.discard.iter().map(|c| (&c.effects, true));
+            for (effects, is_discard) in live.chain(dead) {
                 for eff in effects {
+                    let in_discard_scoped = eff.duration == Duration::WhileInDiscard;
+                    if in_discard_scoped != is_discard {
+                        continue; // effect not active from this zone
+                    }
                     let hit = eff.actions.iter().any(|a| {
                         matches!(a, Action::BlankText { selector, who }
                             if self.who_key(decl_owner, *who) == owner

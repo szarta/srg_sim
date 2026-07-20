@@ -940,7 +940,8 @@
       "enum": [
         "WHILE_IN_PLAY",
         "WHILE_GIMMICK_ACTIVE",
-        "INSTANT"
+        "INSTANT",
+        "WHILE_IN_DISCARD"
       ],
       "type": "string"
     },
@@ -3226,5 +3227,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 29
+  "version": 30
 }

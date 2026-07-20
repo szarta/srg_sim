@@ -120,6 +120,10 @@ WHILE_IN_PLAY        # card-sourced buffs: active while the SOURCE CARD is in pl
 WHILE_GIMMICK_ACTIVE # competitor-gimmick buffs (e.g. Tytan +1 Power): active while the
                      #   competitor's Gimmick is NOT blanked.
 INSTANT              # one-shot mutation (draw, bury, ±roll), no lasting state.
+WHILE_IN_DISCARD     # active ONLY while the source card sits in its owner's discard pile
+                     #   ("when this card is in your discard pile, …"). Scanned from the
+                     #   discard zone; inert while the card is in play. Honored by
+                     #   is_text_blanked (the in-discard Spotlight blanks). schema v30
 ```
 **Gimmick blanking** is itself `WHILE_IN_PLAY`: a blanker card sets `gimmick_blanked` on the
 target while the blanker is in play; when the blanker leaves play the Gimmick un-blanks and

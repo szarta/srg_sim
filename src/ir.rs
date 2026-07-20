@@ -306,6 +306,10 @@ pub enum Duration {
     WhileInPlay,
     WhileGimmickActive,
     Instant,
+    /// Active only while the source card sits in its owner's **discard pile** —
+    /// "when this card is in your discard pile, …" (the in-discard Spotlight blanks).
+    /// Scanned from the discard zone; inert while the card is in play.
+    WhileInDiscard,
 }
 
 /// Where an effect originates.
