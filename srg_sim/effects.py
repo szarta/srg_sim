@@ -437,6 +437,10 @@ class OnHit(IRNode):
     # Play-order gate on the HIT card — "when you hit a Lead" (Sticky Sailboat, Asia,
     # Chip Day; 22 cards). None = any order. ANDed with atk_type / name / text gates.
     order: PlayOrder | None = None
+    # WHOSE hit fires this, from the owner's POV. SELF (the default, and every pre-v43
+    # node) = "when YOU hit a card"; OPP = "after your OPPONENT hits a Follow Up" (El
+    # Super Hombre V2). Same scoping convention as OnBreakout / OnBury. schema v43
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)

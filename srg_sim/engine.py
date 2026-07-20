@@ -786,8 +786,8 @@ class Engine:
         self._enforce_hand_caps()  # a new Static max-handsize mod may force a discard
         return not self._ended()
 
-    def _run_hit_gimmicks(self, card: Card, key: str) -> None:
-        """Fire ``key``'s standing ``OnHit`` gimmicks for a card that just hit — gated
+    def _run_hit_gimmicks(self, card: Card, hitter: str) -> None:
+        """Fire the standing ``OnHit`` gimmicks for a card ``hitter`` just hit — gated
         by attack type (D1: "when you hit a Submission, draw 1") and/or the hit card's
         name/text ("when you hit a card with 'X' in the name"). A bare OnHit (no gate)
         is the card's own "when this hits" (already resolved via :meth:`_run_effects`)
@@ -798,28 +798,39 @@ class Engine:
         # count must drop it (Draw.per_excludes_trigger).
         self._hit_card = card
         try:
-            for eff in self._standing_effects(key):
-                trig = eff.trigger
-                if not isinstance(trig, fx.OnHit):
-                    continue
-                has_name_gate = bool(trig.name_contains or trig.text_contains)
-                if (
-                    trig.atk_type is None
-                    and not has_name_gate
-                    and trig.order is None
-                    and not trig.on_any
-                ):
-                    continue
-                type_ok = trig.atk_type is None or trig.atk_type is card.atk_type
-                # "When you hit a Lead" — the play-order gate on the HIT card (ANDed).
-                order_ok = trig.order is None or trig.order is card.play_order
-                gate = fx.CardFilter(
-                    name_contains=trig.name_contains, text_contains=trig.text_contains
-                )
-                if type_ok and order_ok and conditions.card_matches(card, gate):
-                    self._fire_if_ready(eff, key, None)
+            for key in ("A", "B"):
+                self._run_hit_gimmicks_for(card, key, hitter)
         finally:
             self._hit_card = None
+
+    def _run_hit_gimmicks_for(self, card: Card, key: str, hitter: str) -> None:
+        """``key``'s OnHit gimmicks for a hit made by ``hitter``. Both players are
+        scanned so an ``OnHit(who=OPP)`` gimmick fires for the NON-hitter."""
+        for eff in self._standing_effects(key):
+            trig = eff.trigger
+            if not isinstance(trig, fx.OnHit):
+                continue
+            # Whose hit this fires on. The default (SELF) reproduces the pre-v43
+            # behavior exactly: only the hitter's own gimmicks fire.
+            subject = key if trig.who is fx.Who.SELF else self.state.opponent_of(key)
+            if subject != hitter:
+                continue
+            has_name_gate = bool(trig.name_contains or trig.text_contains)
+            if (
+                trig.atk_type is None
+                and not has_name_gate
+                and trig.order is None
+                and not trig.on_any
+            ):
+                continue
+            type_ok = trig.atk_type is None or trig.atk_type is card.atk_type
+            # "When you hit a Lead" — the play-order gate on the HIT card (ANDed).
+            order_ok = trig.order is None or trig.order is card.play_order
+            gate = fx.CardFilter(
+                name_contains=trig.name_contains, text_contains=trig.text_contains
+            )
+            if type_ok and order_ok and conditions.card_matches(card, gate):
+                self._fire_if_ready(eff, key, None)
 
     def _injected_text(self, key: str, card: Card) -> list[fx.Effect]:
         """"Added text" effects ``key``'s active gimmicks grant to ``card`` (El Super

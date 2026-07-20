@@ -2683,3 +2683,51 @@ def test_blanked_gimmick_declares_no_dq_immunity() -> None:
     assert eng._is_dq_immune("A")
     eng.state.players["A"].gimmick_blanked = True
     assert not eng._is_dq_immune("A")
+
+
+def _on_hit_draw(who: fx.Who) -> fx.Effect:
+    return fx.Effect(
+        trigger=fx.OnHit(order=PlayOrder.FOLLOWUP, who=who),
+        actions=(fx.Draw(n=1, who=fx.Who.SELF),),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+
+def _followup() -> Card:
+    return Card(
+        db_uuid="fu",
+        name="Follow Through",
+        number=1,
+        atk_type=AtkType.STRIKE,
+        play_order=PlayOrder.FOLLOWUP,
+    )
+
+
+def test_on_hit_who_opp_fires_only_on_the_opponents_hit() -> None:
+    """El Super Hombre V2: "after your OPPONENT hits a Follow Up" (schema v43)."""
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(_on_hit_draw(fx.Who.OPP),)
+    )
+    before = len(eng.state.players["A"].hand)
+    eng._run_hit_gimmicks(_followup(), "B")  # opponent hit it
+    assert len(eng.state.players["A"].hand) == before + 1
+    held = len(eng.state.players["A"].hand)
+    eng._run_hit_gimmicks(_followup(), "A")  # A's own hit must NOT fire it
+    assert len(eng.state.players["A"].hand) == held
+
+
+def test_on_hit_who_self_is_unchanged_by_the_new_field() -> None:
+    """The default, and every pre-v43 node: only the hitter's own gimmicks fire."""
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor, effects=(_on_hit_draw(fx.Who.SELF),)
+    )
+    before = len(eng.state.players["A"].hand)
+    eng._run_hit_gimmicks(_followup(), "A")
+    assert len(eng.state.players["A"].hand) == before + 1
+    held = len(eng.state.players["A"].hand)
+    eng._run_hit_gimmicks(_followup(), "B")
+    assert len(eng.state.players["A"].hand) == held

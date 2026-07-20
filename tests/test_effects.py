@@ -145,6 +145,7 @@ SAMPLES: list[IRNode] = [
     OnStop(Direction.YOURS),
     OnHit(name_contains=("Signature",)),  # gimmick "when you hit a card with X in the name"
     OnHit(atk_type=AtkType.SUBMISSION),  # gimmick "when you hit a Submission"
+    OnHit(order=PlayOrder.FOLLOWUP, who=Who.OPP),  # El Super Hombre V2 (schema v43)
     OnBump(),
     OnBury(who=Who.SELF, from_hand_only=True, also_discard=True),  # Tommy Stillwell
     OnBreakout(),
