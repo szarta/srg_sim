@@ -6099,3 +6099,49 @@ b83fd4886d314b15b249a4fc97512e25:
     with their card effect or Gimmick, discard 1 card they have in play.
   source: gimmick
   optional: false
+
+# Snake Pitt (Super Lucha) — "When you roll Power for your turn roll: +1 to Strike
+# and +5 to Submission until the start of your next turn (Max +5 to each)."
+# Hand-adjudicated 2026-07-20: the buff STACKS across repeat Power turn rolls and
+# `cap` is the ceiling on the accumulated total (so Strike climbs +1 per roll toward
+# +5, Submission hits its +5 cap on the first). It survives every turn the owner is
+# not the active player, and is swept right after the turn roll that next makes them
+# active — so it still feeds that roll. Base Sub is 5, so a capped +5 doubles it.
+a9e25560225244d3accd57034587220b:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Strike
+    delta: 1
+    who: SELF
+    duration: UNTIL_START_OF_YOUR_NEXT_TURN
+    target_highest: false
+    per_crowd: false
+    cap: 5
+    per: null
+    per_zone: IN_PLAY
+  - '@type': BuffSkill
+    skill: Submission
+    delta: 5
+    who: SELF
+    duration: UNTIL_START_OF_YOUR_NEXT_TURN
+    target_highest: false
+    per_crowd: false
+    cap: 5
+    per: null
+    per_zone: IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'When you roll Power for your turn roll: +1 to Strike and +5 to Submission
+    until the start of your next turn (Max +5 to each).'
+  source: gimmick
+  optional: false

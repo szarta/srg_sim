@@ -723,6 +723,89 @@ def test_on_discard_move_fires_once_per_effect_driven_exit() -> None:
     assert board(eng, "B") == 3
 
 
+def test_timed_buffs_accumulate_cap_and_sweep() -> None:
+    # Snake Pitt (Super Lucha), hand-adjudicated 2026-07-20: each qualifying Power
+    # turn roll adds +1 Strike / +5 Submission, "(Max +5 to each)" caps the
+    # ACCUMULATED total, the buff survives every turn its owner is not active, and is
+    # swept immediately after the roll that next makes them active (so it still feeds
+    # that roll).
+    from srg_sim.state import TimedBuff  # noqa: F401  (round-trip below)
+
+    clause = "+1 to Strike and +5 to Submission (Max +5 to each)"
+
+    def fresh() -> Engine:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng._clause = clause
+        return eng
+
+    def grant(eng: Engine, skill: Skill, delta: int, key: str = "A") -> None:
+        eng._act_buff_skill(
+            fx.BuffSkill(
+                skill=skill,
+                delta=delta,
+                who=fx.Who.SELF,
+                duration=fx.Duration.UNTIL_START_OF_YOUR_NEXT_TURN,
+                cap=5,
+            ),
+            key,
+        )
+
+    def total(eng: Engine, skill: Skill, key: str = "A") -> int:
+        return sum(b.delta for b in eng.state.players[key].timed_buffs if b.skill is skill)
+
+    # Repeat firings of ONE clause accumulate into a single entry and clamp to cap.
+    eng = fresh()
+    for expected in range(1, 6):
+        grant(eng, Skill.STRIKE, 1)
+        grant(eng, Skill.SUBMISSION, 5)
+        assert total(eng, Skill.STRIKE) == expected
+        assert total(eng, Skill.SUBMISSION) == 5  # caps on the first grant
+    grant(eng, Skill.STRIKE, 1)
+    assert total(eng, Skill.STRIKE) == 5
+    assert len(eng.state.players["A"].timed_buffs) == 2  # one per (clause, skill)
+
+    # It reaches the derived stats (the view feeding turn / Finish / breakout rolls).
+    eng = fresh()
+    base = eng.state.effective_stats("A")[Skill.SUBMISSION.value]
+    grant(eng, Skill.SUBMISSION, 5)
+    assert eng.state.effective_stats("A")[Skill.SUBMISSION.value] == base + 5
+
+    # Granted on turn 3's roll -> that turn's own sweep must not take it.
+    eng = fresh()
+    eng.state.turn_no = 3
+    grant(eng, Skill.SUBMISSION, 5)
+    eng._sweep_next_turn_buffs("A")
+    assert total(eng, Skill.SUBMISSION) == 5
+    # Survives every turn its owner is not the active player...
+    for turn in (4, 5):
+        eng.state.turn_no = turn
+        eng._sweep_next_turn_buffs("B")
+        assert total(eng, Skill.SUBMISSION) == 5
+    # ...and is swept right after the roll that next makes them active.
+    eng.state.turn_no = 6
+    eng._sweep_next_turn_buffs("A")
+    assert total(eng, Skill.SUBMISSION) == 0
+
+    # The two durations have separate sweeps; the roll-time one ignores end-of-turn.
+    eng = fresh()
+    eng._clause = "until the end of the turn"
+    eng._act_buff_skill(
+        fx.BuffSkill(
+            skill=Skill.STRIKE, delta=2, who=fx.Who.SELF, duration=fx.Duration.UNTIL_END_OF_TURN
+        ),
+        "A",
+    )
+    eng.state.turn_no = 9
+    eng._sweep_next_turn_buffs("A")
+    assert total(eng, Skill.STRIKE) == 2
+
+    # Timed buffs are real state -> they must survive a snapshot round-trip.
+    from srg_sim.state import GameState
+
+    restored = GameState.from_dict(eng.state.to_dict())
+    assert restored.players["A"].timed_buffs == eng.state.players["A"].timed_buffs
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.

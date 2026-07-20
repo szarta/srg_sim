@@ -30,6 +30,7 @@ from srg_sim.effects import (
     BlankText,
     BuffSkill,
     CardFilter,
+    Duration,
     Condition,
     CountZone,
     Duration,
@@ -46,6 +47,48 @@ if TYPE_CHECKING:
 # A condition evaluator the engine can supply so conditional Static buffs resolve
 # against live state; without one, only unconditional (``Always``) buffs apply.
 ConditionHolds = Callable[[Condition], bool]
+
+
+@dataclass
+class TimedBuff:
+    """One live timed skill buff on a player (DESIGN.md §3).
+
+    Unlike the continuous Static buffs — re-derived from the board on every stats
+    read — a timed buff is granted imperatively when its effect fires and persists
+    as state until its sweep. ``source`` is the granting clause: re-firing the SAME
+    clause accumulates into the existing entry (clamped to ``cap``), which is what
+    makes "(Max +5 to each)" a ceiling across repeat triggers. ``granted_turn`` lets
+    the UNTIL_START_OF_YOUR_NEXT_TURN sweep tell the granting turn from the owner's
+    next active turn.
+    """
+
+    skill: Skill
+    delta: int
+    until: Duration
+    source: str
+    cap: int | None = None
+    granted_turn: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "skill": self.skill.value,
+            "delta": self.delta,
+            "until": self.until.value,
+            "source": self.source,
+            "cap": self.cap,
+            "granted_turn": self.granted_turn,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TimedBuff:
+        return cls(
+            skill=Skill(data["skill"]),
+            delta=data["delta"],
+            until=Duration(data["until"]),
+            source=data["source"],
+            cap=data.get("cap"),
+            granted_turn=data.get("granted_turn", 0),
+        )
 
 
 @dataclass
@@ -67,6 +110,9 @@ class PlayerState:
     # One-shot "re-roll your NEXT turn roll" grants (King Brian Cage): ``next`` set
     # when the effect fires, promoted to ``this`` at the owner's next turn start.
     reroll_grants: dict[str, int] = field(default_factory=lambda: {"this": 0, "next": 0})
+    # Live TIMED skill buffs granted to THIS player (stored on the target, not the
+    # granter); folded into derived stats and swept at the matching turn boundary.
+    timed_buffs: list[TimedBuff] = field(default_factory=list)
     freq_counters: dict[str, int] = field(default_factory=dict)
     gimmick_blanked: bool = False
     gimmick_flipped: bool = False  # competitor card turned to its back side (Copy Kat V2)
@@ -89,6 +135,7 @@ class PlayerState:
             "in_play": _cards_to_list(self.in_play),
             "pending_roll_mods": dict(self.pending_roll_mods),
             "reroll_grants": dict(self.reroll_grants),
+            "timed_buffs": [b.to_dict() for b in self.timed_buffs],
             "freq_counters": dict(self.freq_counters),
             "gimmick_blanked": self.gimmick_blanked,
             "gimmick_flipped": self.gimmick_flipped,
@@ -106,6 +153,7 @@ class PlayerState:
             in_play=_cards_from_list(data["in_play"]),
             pending_roll_mods=dict(data["pending_roll_mods"]),
             reroll_grants=dict(data.get("reroll_grants", {"this": 0, "next": 0})),
+            timed_buffs=[TimedBuff.from_dict(b) for b in data.get("timed_buffs", [])],
             freq_counters=dict(data["freq_counters"]),
             gimmick_blanked=data["gimmick_blanked"],
             gimmick_flipped=data.get("gimmick_flipped", False),
@@ -262,6 +310,13 @@ class GameState:
         stats = self.players[key].competitor.stats.to_dict()
         for owner, player in self.players.items():
             self._apply_owner_buffs(stats, key, owner, player, holds)
+        # TIMED buffs are already resolved (condition checked, delta accumulated and
+        # capped at grant time), so they fold in unconditionally. Folding at this one
+        # chokepoint is what makes them apply to turn rolls, Finish rolls and breakout
+        # rolls alike; a stop that becomes a Finish can roll on the opponent's turn,
+        # while the buff is still live.
+        for buff in self.players[key].timed_buffs:
+            stats[buff.skill.value] += buff.delta
         return stats
 
     def _apply_owner_buffs(

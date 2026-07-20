@@ -163,6 +163,15 @@ class Duration(Enum):
     WHILE_GIMMICK_ACTIVE = "WHILE_GIMMICK_ACTIVE"  # active while gimmick not blanked
     INSTANT = "INSTANT"  # one-shot mutation, no lasting state
     WHILE_IN_DISCARD = "WHILE_IN_DISCARD"  # active while the source sits in its owner's discard
+    # TIMED: granted imperatively when the effect fires, swept at the END of the turn
+    # it was granted in ("until the end of the turn", ~81 cards).
+    UNTIL_END_OF_TURN = "UNTIL_END_OF_TURN"
+    # TIMED: swept at the start of the owner's next ACTIVE turn. A turn is shared and
+    # its active player is only known once the turn roll resolves, so the sweep runs
+    # immediately AFTER that roll: the buff still feeds the roll that makes the turn
+    # yours, then dies. It survives every turn the owner is not active.
+    # Hand-adjudicated 2026-07-20.
+    UNTIL_START_OF_YOUR_NEXT_TURN = "UNTIL_START_OF_YOUR_NEXT_TURN"
 
 
 class Frequency(Enum):

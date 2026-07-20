@@ -34,7 +34,7 @@ from srg_sim import gamelog as gl
 from srg_sim.cards import AtkType, Card, Deck, PlayOrder, Skill
 from srg_sim.finish import is_auto_success, stat_breaks_out
 from srg_sim.rng import SeededRNG
-from srg_sim.state import GameState, PlayerState
+from srg_sim.state import GameState, PlayerState, TimedBuff
 
 if TYPE_CHECKING:
     from srg_sim.policy import Option, Policy
@@ -96,6 +96,9 @@ class Engine:
         # Whether this turn's roll-off involved a bump — read by the finish sequence
         # for "if you bumped on the last turn roll, double these bonuses" (T-Virus).
         self._turn_bumped = False
+        # The clause currently resolving, read only by a TIMED BuffSkill for its
+        # stacking identity (set by `_apply_actions`).
+        self._clause = ""
 
     # -- setup -------------------------------------------------------------
 
@@ -218,7 +221,12 @@ class Engine:
             # accumulate); an unused grant expires.
             player.reroll_grants["this"] = player.reroll_grants["next"]
             player.reroll_grants["next"] = 0
+            # "Until the end of the turn" buffs granted on the turn just finished.
+            player.timed_buffs = [
+                b for b in player.timed_buffs if b.until is not fx.Duration.UNTIL_END_OF_TURN
+            ]
         winner = self._turn_roll()
+        self._sweep_next_turn_buffs(winner)
         if self._ended() or not self._draw_for_turn(winner):
             return
         self._first_turn_option(winner)  # the once-per-player first-turn redraw (§6)
@@ -1157,6 +1165,9 @@ class Engine:
         return self._decide("optional", key, legal)["kind"] == "yes"
 
     def _apply_actions(self, eff: fx.Effect, key: str) -> None:
+        # The granting clause, read only by a TIMED BuffSkill for its stacking
+        # identity. `_act_choice` resolves inside this call, so it inherits it.
+        self._clause = eff.raw_clause
         for action in eff.actions:
             self._apply_action(action, key)
             if self._resolve_pending():
@@ -1809,6 +1820,77 @@ class Engine:
         legal = [{"kind": "seat", "seat": key}, {"kind": "seat", "seat": opp}]
         return self._decide("reshuffle_target", key, legal)["seat"]
 
+    def _sweep_next_turn_buffs(self, winner: str) -> None:
+        """Sweep "until the start of your next turn" buffs now that the turn roll has
+        named ``winner`` the active player.
+
+        A turn is shared and its active player is only known once the roll resolves,
+        so this cannot run before the roll — the buff therefore still feeds the roll
+        that makes the turn yours, and dies immediately after (hand-adjudicated
+        2026-07-20). ``granted_turn >= turn_no`` keeps a buff granted on THIS turn's
+        roll alive; buffs on the non-active player are untouched, which is what lets
+        one survive across every turn its owner does not win.
+        """
+        player = self.state.players[winner]
+        player.timed_buffs = [
+            b
+            for b in player.timed_buffs
+            if b.until is not fx.Duration.UNTIL_START_OF_YOUR_NEXT_TURN
+            or b.granted_turn >= self.state.turn_no
+        ]
+
+    def _act_buff_skill(self, action: fx.BuffSkill, key: str) -> None:
+        """Grant (or accumulate into) a TIMED skill buff; other durations are
+        continuous (folded from the board) and are not executed as a mutation."""
+        if action.duration not in (
+            fx.Duration.UNTIL_END_OF_TURN,
+            fx.Duration.UNTIL_START_OF_YOUR_NEXT_TURN,
+        ):
+            self._log_unsupported(
+                key, repr(action), f"action {type(action).__name__} not modeled"
+            )
+            return
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        player = self.state.players[target]
+        cap = action.cap
+        existing = next(
+            (
+                b
+                for b in player.timed_buffs
+                if b.source == self._clause
+                and b.skill is action.skill
+                and b.until is action.duration
+            ),
+            None,
+        )
+        if existing is None:
+            delta = action.delta if cap is None else min(action.delta, cap)
+            player.timed_buffs.append(
+                TimedBuff(
+                    skill=action.skill,
+                    delta=delta,
+                    until=action.duration,
+                    source=self._clause,
+                    cap=cap,
+                    granted_turn=self.state.turn_no,
+                )
+            )
+        else:
+            total = existing.delta + action.delta
+            existing.delta = total if cap is None else min(total, cap)
+            delta = existing.delta
+        self._log_effect(
+            key,
+            "BuffSkill",
+            target,
+            {
+                "skill": action.skill.value,
+                "delta": action.delta,
+                "total": delta,
+                "until": action.duration.value,
+            },
+        )
+
     def _act_choice(self, action: fx.Choice, key: str) -> None:
         # Pick exactly ONE branch of an "A or B" effect; the acting player decides
         # (a `choice` decision point), then that branch's actions resolve in order.
@@ -2137,5 +2219,6 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.Scry: Engine._act_scry,
     fx.RevealRoute: Engine._act_reveal_route,
     fx.ShuffleHandDraw: Engine._act_shuffle_hand_draw,
+    fx.BuffSkill: Engine._act_buff_skill,
     fx.Choice: Engine._act_choice,
 }
