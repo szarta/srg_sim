@@ -1121,14 +1121,9 @@ impl Engine {
     /// declaration's own condition holding. The read side of the passive-flag actions
     /// (`SuppressOpponentDraw`, `SuppressSelfHandLoss`), which are never executed.
     fn declares_static(&self, key: &str, pred: impl Fn(&Action) -> bool) -> bool {
-        let player = &self.state.players[key];
-        let gimmick = (
-            &player.competitor.effects,
-            !self.state.is_gimmick_blanked(key),
-        );
-        std::iter::once(gimmick)
-            .chain(std::iter::once((&player.entrance.effects, true)))
-            .chain(player.in_play.iter().map(|c| (&c.effects, true)))
+        self.state
+            .declaration_sources(key)
+            .into_iter()
             .any(|(effects, active)| active && self.declares(effects, key, &pred))
     }
 
@@ -2492,11 +2487,12 @@ impl Engine {
     /// play sequence); with no re-enable card modeled yet this is exact.
     fn is_dq_immune(&self, loser: &str) -> bool {
         let mut disabled = false;
-        for (owner, player) in &self.state.players {
-            let sources = std::iter::once(&player.competitor.effects)
-                .chain(std::iter::once(&player.entrance.effects))
-                .chain(player.in_play.iter().map(|c| &c.effects));
-            for effects in sources {
+        let owners: Vec<String> = self.state.players.keys().cloned().collect();
+        for owner in &owners {
+            for (effects, active) in self.state.declaration_sources(owner) {
+                if !active {
+                    continue; // a blanked gimmick declares nothing
+                }
                 for eff in effects {
                     if !matches!(eff.trigger, Trigger::Static) {
                         continue;
@@ -5845,5 +5841,150 @@ mod suppress_hand_loss_tests {
         let mut engine = engine_with(v2_effects(), DRAW_OPT);
         engine.setup().unwrap();
         assert!(!engine.suppresses_self_hand_loss("A", "B"));
+    }
+}
+
+/// Disqualification rules (task #79 / Deathmatch King Matt Cardona, Boatswain):
+/// scope semantics, and the 2026-07-20 adjudication that a BLANKED gimmick declares
+/// no immunity — the same rule the suppression flags and `ConsideredCompare` follow.
+#[cfg(test)]
+mod dq_immunity_tests {
+    use super::*;
+
+    /// A Static no-DQ declaration at `scope`.
+    fn no_dq(scope: &str) -> Value {
+        json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "DisqualificationRule", "enabled": false, "scope": scope}],
+            "duration": "WHILE_GIMMICK_ACTIVE",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "you cannot be disqualified", "source": "gimmick", "optional": false
+        }])
+    }
+
+    /// Engine where A's gimmick carries `a_effects` and B's carries `b_effects`.
+    fn engine_with(a_effects: Value, b_effects: Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..10)
+            .map(|i| {
+                json!({"atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+                       "finish_bonuses": {}, "name": format!("c{i}"), "number": 1,
+                       "play_order": "Lead", "raw_text": "", "tags": []})
+            })
+            .collect();
+        let deck = |id: &str, effects: Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": cards.clone(),
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A", a_effects),
+            deck("B", b_effects),
+            Box::new(FirstLegal),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// Always takes the first legal option (no decision points are exercised here).
+    struct FirstLegal;
+
+    impl Decider for FirstLegal {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+
+        fn policy_name(&self, _viewer: &str) -> String {
+            "first-legal".to_owned()
+        }
+    }
+
+    #[test]
+    fn a_self_scoped_rule_protects_only_its_owner() {
+        let engine = engine_with(no_dq("SELF"), json!([]));
+        assert!(engine.is_dq_immune("A"));
+        assert!(
+            !engine.is_dq_immune("B"),
+            "SELF must not cover the opponent"
+        );
+    }
+
+    #[test]
+    fn a_match_scoped_rule_protects_both_players() {
+        // "This match has no disqualifications" reaches everyone, whoever declares it.
+        let engine = engine_with(json!([]), no_dq("MATCH"));
+        assert!(engine.is_dq_immune("A"));
+        assert!(engine.is_dq_immune("B"));
+    }
+
+    #[test]
+    fn a_blanked_gimmick_declares_no_immunity() {
+        // The 2026-07-20 call: blanking a gimmick makes its text inert, so Cardona's
+        // "you cannot be disqualified" dies with it — matching the suppression flags.
+        let mut engine = engine_with(no_dq("SELF"), json!([]));
+        assert!(engine.is_dq_immune("A"), "active before the blank");
+        engine.state.players.get_mut("A").unwrap().gimmick_blanked = true;
+        assert!(!engine.is_dq_immune("A"), "blanked gimmick grants nothing");
+    }
+
+    #[test]
+    fn blanking_one_side_leaves_the_others_match_rule_standing() {
+        // A match-scoped rule on B still covers A after A's own gimmick is blanked —
+        // the blank silences the DECLARER, not the beneficiary.
+        let mut engine = engine_with(no_dq("SELF"), no_dq("MATCH"));
+        engine.state.players.get_mut("A").unwrap().gimmick_blanked = true;
+        assert!(engine.is_dq_immune("A"));
+    }
+
+    #[test]
+    fn immunity_voids_a_dq_loss_but_not_a_pinfall() {
+        let mut engine = engine_with(no_dq("SELF"), json!([]));
+        engine.setup().unwrap();
+        engine
+            .apply_action(
+                &Action::LoseBy {
+                    kind: LoseKind::Disqualification,
+                    who: Who::SelfSide,
+                },
+                "A",
+                "",
+            )
+            .unwrap();
+        assert!(
+            engine.pending_loss.is_none(),
+            "the DQ loss is voided, nothing is queued"
+        );
+        engine
+            .apply_action(
+                &Action::LoseBy {
+                    kind: LoseKind::Pinfall,
+                    who: Who::SelfSide,
+                },
+                "A",
+                "",
+            )
+            .unwrap();
+        // A pinfall is a different `kind`, so DQ immunity must not touch it. The loss
+        // is QUEUED here (`pending_loss`) and settled at the next resolution point.
+        assert_eq!(
+            engine
+                .pending_loss
+                .as_ref()
+                .map(|(l, r)| (l.as_str(), r.as_str())),
+            Some(("A", "pinfall")),
+        );
     }
 }

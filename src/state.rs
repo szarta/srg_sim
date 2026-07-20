@@ -211,6 +211,24 @@ impl GameState {
     /// active. The re-entrancy guard defends the resulting blank<->blank loop and
     /// the pathological case of a blank gated on a stat comparison (whose
     /// evaluation reads `effective_stats` -> buff sources -> here again).
+    /// `(effects, active)` for each of `owner`'s Static-declaration sources: the
+    /// competitor gimmick (inert while blanked), the entrance, then every card in
+    /// play. The single walk behind every PASSIVE RULE DECLARATION — the suppression
+    /// flags, `ConsideredCompare`, and the disqualification rules — so a blanked
+    /// gimmick silences all of them alike. Hand-adjudicated 2026-07-20.
+    pub fn declaration_sources(&self, owner: &str) -> Vec<(&[Effect], bool)> {
+        let player = &self.players[owner];
+        let mut out = vec![
+            (
+                player.competitor.effects.as_slice(),
+                !self.is_gimmick_blanked(owner),
+            ),
+            (player.entrance.effects.as_slice(), true),
+        ];
+        out.extend(player.in_play.iter().map(|c| (c.effects.as_slice(), true)));
+        out
+    }
+
     pub fn is_gimmick_blanked(&self, key: &str) -> bool {
         if self.players[key].gimmick_blanked {
             return true;
