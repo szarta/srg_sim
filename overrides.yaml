@@ -5257,6 +5257,32 @@ f9cb3b3b788346eda95fcb066e9305ad:
   source: gimmick
   optional: false
 
+# Memes Dealer (V2) (Underworld): "When your opponent shuffles their deck, draw 2
+# cards." OnShuffle(who=OPP) -> Draw(2, SELF). Fires on ANY effect-caused shuffle of
+# the opponent's deck (search/tutor/shuffle-into-deck/hand-into-deck or an explicit
+# "shuffle your deck") — NOT the match-start setup shuffle (schema v32, Brandon
+# confirmed 2026-07-19).
+c6cea4fe18774ca5a4f879c8a243821a:
+- '@type': Effect
+  trigger:
+    '@type': OnShuffle
+    who: OPP
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When your opponent shuffles their deck, draw 2 cards.
+  source: gimmick
+  optional: false
+
 # ---------------------------------------------------------------------------
 # Spotlight family (main-deck). The DB `spotlight: true` flag is folded into a
 # synthetic "Spotlight" tag at load time (loader card_tags / _card_tags), so

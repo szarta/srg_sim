@@ -70,6 +70,7 @@ from srg_sim.effects import (
     OnPlay,
     OnRoll,
     OnRollBoost,
+    OnShuffle,
     OnStop,
     OnWinTurn,
     OppWonLastRoll,
@@ -140,6 +141,7 @@ SAMPLES: list[IRNode] = [
     OnBump(),
     OnBury(who=Who.SELF, from_hand_only=True, also_discard=True),  # Tommy Stillwell
     OnBreakout(),
+    OnShuffle(who=Who.OPP),  # Memes Dealer V2 "when your opponent shuffles their deck"
     StartOfTurn(),
     StartOfMatch(),
     Static(),

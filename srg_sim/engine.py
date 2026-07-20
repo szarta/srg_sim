@@ -1210,8 +1210,29 @@ class Engine:
 
     def _act_shuffle_deck(self, action: fx.ShuffleDeck, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
-        self.state.rng.shuffle(self.state.players[target].deck)
         self._log_effect(key, "ShuffleDeck", target, None)
+        self._shuffle_deck(target)
+
+    def _shuffle_deck(self, key: str) -> None:
+        """Shuffle ``key``'s deck as an EFFECT-caused shuffle and fire any OnShuffle
+        gimmicks. The match-start setup shuffle and the private bury-ordering shuffle
+        deliberately bypass this (not a card/gimmick "shuffling your deck")."""
+        self.state.rng.shuffle(self.state.players[key].deck)
+        self._run_on_shuffle(key)
+
+    def _run_on_shuffle(self, shuffled: str) -> None:
+        """Fire standing OnShuffle gimmicks after ``shuffled``'s deck was shuffled by an
+        effect. Scans BOTH players so a ``who=OPP`` ("when your opponent shuffles their
+        deck" — Memes Dealer V2) variant works; fires once per shuffle."""
+        for owner in (shuffled, self.state.opponent_of(shuffled)):
+            for eff in self._standing_effects(owner):
+                trig = eff.trigger
+                if not isinstance(trig, fx.OnShuffle):
+                    continue
+                # SELF fires when the owner shuffled their own deck; OPP when the
+                # shuffled deck belongs to the owner's opponent.
+                if (trig.who is fx.Who.SELF) == (owner == shuffled):
+                    self._fire_if_ready(eff, owner, None)
 
     def _act_bury(self, action: fx.Bury, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
@@ -1293,7 +1314,7 @@ class Engine:
             player.deck.remove(card)
         # The picked card is out of the deck for the shuffle either way, so a HAND
         # search shuffles identically to before (byte-for-byte parity).
-        self.state.rng.shuffle(player.deck)
+        self._shuffle_deck(key)
         if card is not None:
             if action.dest is fx.Dest.DECK_TOP:
                 player.deck.insert(0, card)  # top of deck
@@ -1336,7 +1357,7 @@ class Engine:
                     hidden=False,  # deck -> discard: the binned card is public in discard
                 )
             )
-        self.state.rng.shuffle(player.deck)
+        self._shuffle_deck(key)
 
     def _act_shuffle_into_deck(self, action: fx.ShuffleIntoDeck, key: str) -> None:
         # Recur ONE matching card from discard into the deck, then shuffle. The IR
@@ -1353,7 +1374,7 @@ class Engine:
                     t=self.state.turn_no, player=key, cards=[card.db_uuid], source="discard"
                 )
             )
-        self.state.rng.shuffle(player.deck)
+        self._shuffle_deck(key)
 
     def _act_add_from_discard(self, action: fx.AddFromDiscard, key: str) -> None:
         # Recur a matching card from discard to hand ("add 1 <type> from your
@@ -1754,7 +1775,7 @@ class Engine:
             self._log(
                 gl.Bury(t=self.state.turn_no, player=target, cards=uuids, source="hand")
             )
-        self.state.rng.shuffle(player.deck)
+        self._shuffle_deck(target)
         self._draw(target, max(action.count, 0))
 
     def _decide_reshuffle_target(self, key: str) -> str:

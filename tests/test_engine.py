@@ -630,6 +630,44 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def test_on_shuffle_draws_only_on_an_opponents_effect_shuffle() -> None:
+    # Memes Dealer V2 on A: OnShuffle{who=OPP} -> Draw 2. A draws when B's deck is
+    # shuffled by an effect, not on A's own shuffle nor the match-start setup shuffle.
+    gimmick = fx.Effect(
+        trigger=fx.OnShuffle(who=fx.Who.OPP),
+        actions=(fx.Draw(n=2),),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+    def card(u: str) -> Card:
+        return Card(db_uuid=u, name=u, number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+
+    def fresh() -> Engine:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng.state.players["A"].competitor = replace(
+            eng.state.players["A"].competitor, effects=(gimmick,)
+        )
+        for k in ("A", "B"):
+            eng.state.players[k].deck = [card(f"{k}{i}") for i in range(10)]
+            eng.state.players[k].hand = []
+        return eng
+
+    # B shuffles their own deck via an effect -> A (opponent) draws 2.
+    eng = fresh()
+    eng._act_shuffle_deck(fx.ShuffleDeck(who=fx.Who.SELF), "B")
+    assert len(eng.state.players["A"].hand) == 2
+    # A shuffles their OWN deck -> who=OPP does not fire.
+    eng = fresh()
+    eng._act_shuffle_deck(fx.ShuffleDeck(who=fx.Who.SELF), "A")
+    assert len(eng.state.players["A"].hand) == 0
+    # The match-start setup shuffle bypasses OnShuffle: only the opening hand is drawn.
+    eng = fresh()
+    eng.setup()
+    from srg_sim.engine import OPENING_HAND
+
+    assert len(eng.state.players["A"].hand) == OPENING_HAND
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.

@@ -471,6 +471,17 @@ class OnBreakout(IRNode):
 
 
 @dataclass(frozen=True)
+class OnShuffle(IRNode):
+    """Fires when the ``who``-side's deck is shuffled by a card/gimmick EFFECT (any
+    effect-caused shuffle: explicit "shuffle your deck", or the incidental shuffle after
+    a search/tutor/shuffle-into-deck/hand-into-deck). NOT the match-start setup shuffle,
+    nor the private bury-ordering shuffle. ``who`` = whose shuffle fires it from the
+    owner's POV (OPP = "when your opponent shuffles their deck" — Memes Dealer V2)."""
+
+    who: Who
+
+
+@dataclass(frozen=True)
 class Static(IRNode):
     """Always-on passive; scoped by the effect's ``duration``."""
 
