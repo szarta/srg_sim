@@ -2816,19 +2816,27 @@ impl Engine {
         Ok(!self.ended())
     }
 
-    /// Fire `key`'s standing type-gated `OnHit` gimmicks for a card of `card`'s
-    /// attack type that just hit (D1). A card's own untyped OnHit already resolved
-    /// via `run_effects`, so it is not re-fired.
-    fn run_hit_gimmicks(&mut self, card: &Card, key: &str) -> Eng<()> {
+    /// Fire the standing type-gated `OnHit` gimmicks for a card of `card`'s attack
+    /// type that `hitter` just hit (D1). A card's own untyped OnHit already resolved
+    /// via `run_effects`, so it is not re-fired. BOTH players are scanned: an
+    /// `OnHit{who=Opp}` gimmick fires for the NON-hitter ("after your opponent hits a
+    /// Follow Up" — El Super Hombre V2), matching how OnBreakout/OnBury scope.
+    fn run_hit_gimmicks(&mut self, card: &Card, hitter: &str) -> Eng<()> {
         // The hit card is already on the board here, so a "for each OTHER … in play"
         // count must drop it (`Draw.per_excludes_trigger`).
         self.hit_card = Some(card.db_uuid.clone());
-        let result = self.run_hit_gimmicks_inner(card, key);
+        let mut result = Ok(());
+        for owner in ["A", "B"] {
+            result = self.run_hit_gimmicks_inner(card, owner, hitter);
+            if result.is_err() {
+                break;
+            }
+        }
         self.hit_card = None;
         result
     }
 
-    fn run_hit_gimmicks_inner(&mut self, card: &Card, key: &str) -> Eng<()> {
+    fn run_hit_gimmicks_inner(&mut self, card: &Card, key: &str, hitter: &str) -> Eng<()> {
         let effects = self.standing_effects(key);
         for eff in &effects {
             let Trigger::OnHit {
@@ -2837,10 +2845,16 @@ impl Engine {
                 text_contains,
                 on_any,
                 order,
+                who,
             } = &eff.trigger
             else {
                 continue;
             };
+            // Whose hit this fires on. The default (SELF) reproduces the pre-v43
+            // behavior exactly: only the hitter's own gimmicks fire.
+            if self.target(*who, key) != hitter {
+                continue;
+            }
             // A bare OnHit (no gate) is the card's OWN "when this hits", already fired
             // via `run_effects` — skipped here UNLESS it explicitly sets `on_any` ("when
             // you hit a card" — Bartholomew Hooke), which fires on every hit. `on_any`
@@ -5985,6 +5999,137 @@ mod dq_immunity_tests {
                 .as_ref()
                 .map(|(l, r)| (l.as_str(), r.as_str())),
             Some(("A", "pinfall")),
+        );
+    }
+}
+
+/// `OnHit.who` (task #79 / El Super Hombre V2): an OnHit gimmick can key on the
+/// OPPONENT's hit ("after your opponent hits a Follow Up"). Both players are scanned
+/// at every hit; the default `SELF` must reproduce the pre-v43 behavior exactly.
+#[cfg(test)]
+mod on_hit_who_tests {
+    use super::*;
+
+    struct FirstLegal;
+
+    impl Decider for FirstLegal {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+
+        fn policy_name(&self, _viewer: &str) -> String {
+            "first-legal".to_owned()
+        }
+    }
+
+    /// A "when `who` hits a Followup, draw 1" gimmick.
+    fn on_hit_draw(who: &str) -> Value {
+        json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "OnHit", "atk_type": null, "name_contains": [],
+                        "text_contains": [], "on_any": false, "order": "Followup",
+                        "who": who},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF",
+                         "per": null, "per_who": "SELF"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "on hit draw 1", "source": "gimmick", "optional": false
+        }])
+    }
+
+    fn engine_with(a_effects: Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..10)
+            .map(|i| {
+                json!({"atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+                       "finish_bonuses": {}, "name": format!("c{i}"), "number": 1,
+                       "play_order": "Lead", "raw_text": "", "tags": []})
+            })
+            .collect();
+        let deck = |id: &str, effects: Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": cards.clone(),
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A", a_effects),
+            deck("B", json!([])),
+            Box::new(FirstLegal),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn followup() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "fu", "effects": [], "finish_bonuses": {},
+            "name": "Follow Through", "number": 1, "play_order": "Followup",
+            "raw_text": "", "tags": []
+        }))
+        .expect("card")
+    }
+
+    /// Cards A drew while `hitter` hit a Follow Up.
+    fn a_drew_on_hit_by(engine: &mut Engine, hitter: &str) -> usize {
+        let before = engine.state.players["A"].hand.len();
+        engine.run_hit_gimmicks(&followup(), hitter).unwrap();
+        engine.state.players["A"].hand.len() - before
+    }
+
+    #[test]
+    fn who_opp_fires_only_on_the_opponents_hit() {
+        let mut engine = engine_with(on_hit_draw("OPP"));
+        engine.setup().unwrap();
+        assert_eq!(
+            a_drew_on_hit_by(&mut engine, "B"),
+            1,
+            "opponent's hit fires"
+        );
+        assert_eq!(a_drew_on_hit_by(&mut engine, "A"), 0, "own hit does not");
+    }
+
+    #[test]
+    fn who_self_is_unchanged_from_before_the_field_existed() {
+        // The default. Every pre-v43 OnHit node carries SELF, so this is the
+        // regression guard for the whole existing corpus.
+        let mut engine = engine_with(on_hit_draw("SELF"));
+        engine.setup().unwrap();
+        assert_eq!(a_drew_on_hit_by(&mut engine, "A"), 1, "own hit fires");
+        assert_eq!(
+            a_drew_on_hit_by(&mut engine, "B"),
+            0,
+            "opponent's hit does not"
+        );
+    }
+
+    #[test]
+    fn the_play_order_gate_still_applies_to_an_opponent_scoped_hit() {
+        // who=OPP composes with the existing order gate rather than bypassing it.
+        let mut engine = engine_with(on_hit_draw("OPP"));
+        engine.setup().unwrap();
+        let lead: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "ld", "effects": [], "finish_bonuses": {},
+            "name": "Jab", "number": 1, "play_order": "Lead", "raw_text": "", "tags": []
+        }))
+        .expect("card");
+        let before = engine.state.players["A"].hand.len();
+        engine.run_hit_gimmicks(&lead, "B").unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            before,
+            "a Lead does not satisfy an order=Followup gate"
         );
     }
 }

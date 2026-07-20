@@ -81,7 +81,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
@@ -110,7 +111,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
@@ -407,7 +409,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -457,7 +460,8 @@
         ],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -1154,7 +1158,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
@@ -2063,7 +2068,8 @@
         "name_contains": [],
         "on_any": false,
         "order": "Lead",
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -2121,7 +2127,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -2900,7 +2907,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -3753,7 +3761,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
@@ -3788,7 +3797,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -4084,7 +4094,8 @@
         ],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
@@ -4123,7 +4134,8 @@
         ],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
@@ -4162,7 +4174,8 @@
         ],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
@@ -4874,7 +4887,8 @@
         ],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -6143,7 +6157,8 @@
         "name_contains": [],
         "on_any": true,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -6231,7 +6246,8 @@
         ],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -7060,7 +7076,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -7124,7 +7141,8 @@
         "order": null,
         "text_contains": [
           "Disqualification"
-        ]
+        ],
+        "who": "SELF"
       }
     }
   ],
@@ -8467,7 +8485,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -8605,6 +8624,169 @@
         "@type": "OnStop",
         "dir": "THEIRS",
         "order": null
+      }
+    }
+  ],
+  "d149b71b56624078bea5794ee597e7b1": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "cap": null,
+                  "n": 1,
+                  "per": null,
+                  "per_excludes_trigger": false,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "draw 1"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "play_orders": [],
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  }
+                },
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "play_orders": [],
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  }
+                }
+              ],
+              "label": "shuffle 2 from discard into deck"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "after your opponent hits a Follow Up, draw 1 card or shuffle 2 cards from your discard pile into your deck",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": "Followup",
+        "text_contains": [],
+        "who": "OPP"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "cap": null,
+                  "n": 1,
+                  "per": null,
+                  "per_excludes_trigger": false,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "draw 1"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "play_orders": [],
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  }
+                },
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "play_orders": [],
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  }
+                }
+              ],
+              "label": "shuffle 2 from discard into deck"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "after you breakout, draw 1 card or shuffle 2 cards from your discard pile into your deck",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnBreakout",
+        "who": "SELF"
       }
     }
   ],
@@ -9131,7 +9313,8 @@
         ],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
@@ -9300,7 +9483,8 @@
         "name_contains": [],
         "on_any": false,
         "order": null,
-        "text_contains": []
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],

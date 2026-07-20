@@ -7323,3 +7323,89 @@ c38c2c3ef1154d008cb129120a95bdb6:
   raw_clause: you do not bury or discard cards from your hand for your own card effects
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Top-96: opponent-scoped OnHit (new OnHit.who; schema v43).
+# ---------------------------------------------------------------------------
+
+# El Super Hombre (V2): "After your opponent hits a Follow Up OR you breakout, draw
+# 1 card or shuffle 2 cards from your discard pile into your deck." The OR of two
+# TRIGGERS is two Effects sharing one action list (an override is a list, so this
+# needs no OR-trigger node): OnHit(who=OPP, order=Followup) and OnBreakout(who=SELF).
+# The "draw or shuffle" is the existing mandatory Choice.
+d149b71b56624078bea5794ee597e7b1:
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    text_contains: []
+    on_any: false
+    order: Followup
+    who: OPP
+  condition:
+    '@type': Always
+  actions: &esh2_choice
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: draw 1
+      actions:
+      - '@type': Draw
+        n: 1
+        who: SELF
+        source: TOP
+        per: null
+        per_who: SELF
+    - '@type': ChoiceOption
+      label: shuffle 2 from discard into deck
+      actions:
+      - '@type': ShuffleIntoDeck
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          play_orders: []
+          tag: null
+          name: null
+          raw: null
+          name_contains: []
+          text_contains: []
+      - '@type': ShuffleIntoDeck
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          play_orders: []
+          tag: null
+          name: null
+          raw: null
+          name_contains: []
+          text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: after your opponent hits a Follow Up, draw 1 card or shuffle 2 cards from
+    your discard pile into your deck
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnBreakout
+    who: SELF
+  condition:
+    '@type': Always
+  actions: *esh2_choice
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: after you breakout, draw 1 card or shuffle 2 cards from your discard pile
+    into your deck
+  source: gimmick
+  optional: false

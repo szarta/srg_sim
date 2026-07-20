@@ -378,7 +378,8 @@
     "name_contains": [],
     "on_any": false,
     "order": null,
-    "text_contains": []
+    "text_contains": [],
+    "who": "SELF"
   },
   {
     "@type": "OnLoseTurn",

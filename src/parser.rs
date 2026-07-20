@@ -61,6 +61,7 @@ fn on_hit() -> Trigger {
         name_contains: Vec::new(),
         text_contains: Vec::new(),
         on_any: false,
+        who: Who::SelfSide, // the parser only ever produces "when YOU hit"
     }
 }
 

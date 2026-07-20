@@ -480,6 +480,12 @@ pub enum Trigger {
         /// schema v38
         #[serde(default)]
         order: Option<PlayOrder>,
+        /// WHOSE hit fires this, from the owner's POV. `SelfSide` (the default, and
+        /// every pre-v43 node) = "when YOU hit a card"; `Opp` = "after your OPPONENT
+        /// hits a Follow Up" (El Super Hombre V2). Same scoping convention as
+        /// [`Trigger::OnBreakout`] / [`Trigger::OnBury`]. schema v43
+        #[serde(default)]
+        who: Who,
     },
     OnBump,
     /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
@@ -1130,6 +1136,12 @@ pub enum IrNode {
         /// schema v38
         #[serde(default)]
         order: Option<PlayOrder>,
+        /// WHOSE hit fires this, from the owner's POV. `SelfSide` (the default, and
+        /// every pre-v43 node) = "when YOU hit a card"; `Opp` = "after your OPPONENT
+        /// hits a Follow Up" (El Super Hombre V2). Same scoping convention as
+        /// [`Trigger::OnBreakout`] / [`Trigger::OnBury`]. schema v43
+        #[serde(default)]
+        who: Who,
     },
     OnBump,
     /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone

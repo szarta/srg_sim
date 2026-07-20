@@ -2369,6 +2369,9 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
         }
       },
       "required": [
@@ -2377,7 +2380,8 @@
         "name_contains",
         "on_any",
         "order",
-        "text_contains"
+        "text_contains",
+        "who"
       ],
       "type": "object"
     },
@@ -3521,5 +3525,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 42
+  "version": 43
 }
