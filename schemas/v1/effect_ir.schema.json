@@ -1242,6 +1242,9 @@
               "$ref": "#/$defs/OnBreakout"
             },
             {
+              "$ref": "#/$defs/OnShuffle"
+            },
+            {
               "$ref": "#/$defs/Static"
             },
             {
@@ -1686,6 +1689,9 @@
         },
         {
           "$ref": "#/$defs/OnBreakout"
+        },
+        {
+          "$ref": "#/$defs/OnShuffle"
         },
         {
           "$ref": "#/$defs/OnBump"
@@ -2232,6 +2238,22 @@
         "skill",
         "delta",
         "on_bump"
+      ],
+      "type": "object"
+    },
+    "OnShuffle": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnShuffle"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
       ],
       "type": "object"
     },
@@ -3238,5 +3260,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 31
+  "version": 32
 }

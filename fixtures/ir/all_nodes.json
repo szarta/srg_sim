@@ -317,6 +317,10 @@
     "who": null
   },
   {
+    "@type": "OnShuffle",
+    "who": "OPP"
+  },
+  {
     "@type": "OnBump"
   },
   {

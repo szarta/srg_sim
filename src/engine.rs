@@ -821,7 +821,7 @@ impl Engine {
                 dest,
                 count,
             } => self.act_search(filter, *dest, *count, key)?,
-            Action::ShuffleDeck { who } => self.act_shuffle_deck(*who, key),
+            Action::ShuffleDeck { who } => self.act_shuffle_deck(*who, key)?,
             Action::ShuffleIntoDeck { selector } => self.act_shuffle_into_deck(selector, key)?,
             Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
             Action::SwapHandDiscard => self.act_swap_hand_discard(key)?,
@@ -1017,11 +1017,41 @@ impl Engine {
         })
     }
 
-    fn act_shuffle_deck(&mut self, who: Who, key: &str) {
+    fn act_shuffle_deck(&mut self, who: Who, key: &str) -> Eng<()> {
         let target = self.target(who, key);
-        let deck = &mut self.state.players.get_mut(&target).unwrap().deck;
-        self.state.rng.shuffle(deck);
         self.log_effect(key, "ShuffleDeck", Some(&target), Value::Null);
+        self.shuffle_deck(&target)
+    }
+
+    /// Shuffle `key`'s deck as an EFFECT-caused shuffle and fire any `OnShuffle`
+    /// gimmicks. The match-start setup shuffle and the private bury-ordering shuffle
+    /// deliberately bypass this (they are not a card/gimmick "shuffling your deck").
+    fn shuffle_deck(&mut self, key: &str) -> Eng<()> {
+        let deck = &mut self.state.players.get_mut(key).unwrap().deck;
+        self.state.rng.shuffle(deck);
+        self.run_on_shuffle(key)
+    }
+
+    /// Fire standing `OnShuffle` gimmicks after `shuffled`'s deck was shuffled by an
+    /// effect. Scans BOTH players so a `who=OPP` ("when your opponent shuffles their
+    /// deck" — Memes Dealer V2) variant works; fires once per shuffle.
+    fn run_on_shuffle(&mut self, shuffled: &str) -> Eng<()> {
+        let opp = self.state.opponent_of(shuffled);
+        for owner in [shuffled.to_owned(), opp] {
+            let effects = self.standing_effects(&owner);
+            for eff in &effects {
+                let Trigger::OnShuffle { who } = &eff.trigger else {
+                    continue;
+                };
+                // SELF fires when the owner shuffled their own deck; OPP when the
+                // shuffled deck belongs to the owner's opponent.
+                let dir_ok = (*who == Who::SelfSide) == (owner.as_str() == shuffled);
+                if dir_ok {
+                    self.fire_if_ready(eff, &owner, None)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     fn act_bury(
@@ -1185,8 +1215,7 @@ impl Engine {
         // You looked through the deck — shuffle the remainder. The picked card is out
         // of the deck for the shuffle whether it lands in hand or back on top, so a
         // `Hand` search shuffles identically to before (byte-for-byte parity).
-        let deck = &mut self.state.players.get_mut(key).unwrap().deck;
-        self.state.rng.shuffle(deck);
+        self.shuffle_deck(key)?;
         if let Some(card) = picked {
             let player = self.state.players.get_mut(key).unwrap();
             match dest {
@@ -1242,9 +1271,7 @@ impl Engine {
                 hidden: false, // deck -> discard: the binned card is public in discard
             }));
         }
-        let deck = &mut self.state.players.get_mut(key).unwrap().deck;
-        self.state.rng.shuffle(deck);
-        Ok(())
+        self.shuffle_deck(key)
     }
 
     /// Recur one matching card from discard into the deck, then shuffle ("shuffle N
@@ -1278,9 +1305,7 @@ impl Engine {
                 hidden: false,
             }));
         }
-        let deck = &mut self.state.players.get_mut(key).unwrap().deck;
-        self.state.rng.shuffle(deck);
-        Ok(())
+        self.shuffle_deck(key)
     }
 
     /// Recur a matching card from discard to hand ("add 1 <type> from your discard
@@ -1953,8 +1978,7 @@ impl Engine {
                 hidden: false,
             }));
         }
-        let deck = &mut self.state.players.get_mut(&target).unwrap().deck;
-        self.state.rng.shuffle(deck);
+        self.shuffle_deck(&target)?;
         self.draw(&target, count.max(0) as usize, DeckEnd::Top)
     }
 
@@ -3488,6 +3512,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::StartOfTurn => "StartOfTurn",
         Trigger::StartOfMatch => "StartOfMatch",
         Trigger::OnBreakout { .. } => "OnBreakout",
+        Trigger::OnShuffle { .. } => "OnShuffle",
         Trigger::Static => "Static",
     }
 }
@@ -3907,6 +3932,85 @@ mod on_stop_order_tests {
         assert!(
             !tutored(&engine),
             "the order=Finish gate stays inert when a Lead is stopped"
+        );
+    }
+}
+
+#[cfg(test)]
+mod on_shuffle_tests {
+    use super::*;
+
+    fn card(uuid: &str) -> Value {
+        json!({
+            "atk_type": "Strike", "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+            "name": uuid, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []
+        })
+    }
+
+    /// Memes Dealer V2 on A: `OnShuffle{who=OPP}` → Draw 2, so A draws whenever B's
+    /// deck is shuffled by an effect. Both decks hold cards so the draw is observable.
+    fn memes_engine() -> Engine {
+        let gimmick = json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnShuffle", "who": "OPP"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 2, "source": "TOP", "who": "SELF",
+                         "per": null, "per_who": "SELF"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "test", "source": "gimmick", "optional": false
+        });
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..10).map(|i| card(&format!("c{i}"))).collect();
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "MD", "name": "Memes", "division": "Underworld",
+                "stats": stats, "effects": [gimmick]},
+            "entrance": {"db_uuid": "MD-ent", "name": "ent"}, "cards": cards.clone(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "Underworld", "stats": stats},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": cards,
+        }))
+        .expect("deck B");
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(deck_a, deck_b, decider, 1, String::new(), "sim".into())
+    }
+
+    fn hand(engine: &Engine, key: &str) -> usize {
+        engine.state.players[key].hand.len()
+    }
+
+    #[test]
+    fn opponents_effect_shuffle_fires_the_draw() {
+        // B shuffles their own deck via an effect -> A (the opponent) draws 2.
+        let mut engine = memes_engine();
+        engine.act_shuffle_deck(Who::SelfSide, "B").unwrap();
+        assert_eq!(hand(&engine, "A"), 2, "A draws 2 when B's deck is shuffled");
+    }
+
+    #[test]
+    fn own_shuffle_does_not_fire_the_opp_gated_draw() {
+        // A shuffling their OWN deck must not fire A's who=OPP OnShuffle.
+        let mut engine = memes_engine();
+        engine.act_shuffle_deck(Who::SelfSide, "A").unwrap();
+        assert_eq!(
+            hand(&engine, "A"),
+            0,
+            "who=OPP does not fire on your own shuffle"
+        );
+    }
+
+    #[test]
+    fn setup_shuffle_does_not_fire_on_shuffle() {
+        // The match-start setup shuffle bypasses OnShuffle: A gets only its opening hand.
+        let mut engine = memes_engine();
+        engine.setup().unwrap();
+        assert_eq!(
+            hand(&engine, "A"),
+            OPENING_HAND,
+            "setup shuffle draws no OnShuffle bonus"
         );
     }
 }

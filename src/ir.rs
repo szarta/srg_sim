@@ -479,6 +479,15 @@ pub enum Trigger {
         #[serde(default)]
         who: Option<Who>,
     },
+    /// Fires when the `who`-side's deck is shuffled by a card/gimmick EFFECT (any
+    /// effect-caused shuffle: explicit "shuffle your deck", or the incidental shuffle
+    /// after a search/tutor/shuffle-into-deck/hand-into-deck). NOT the match-start
+    /// setup shuffle, nor the private bury-ordering shuffle. `who` = whose shuffle
+    /// fires it from the owner's POV (OPP = "when your opponent shuffles their deck" —
+    /// Memes Dealer V2). Override-only.
+    OnShuffle {
+        who: Who,
+    },
     Static,
 }
 
@@ -1010,6 +1019,15 @@ pub enum IrNode {
         /// opponent broke out ("if your opponent breaks out" — the Spotlight recur).
         #[serde(default)]
         who: Option<Who>,
+    },
+    /// Fires when the `who`-side's deck is shuffled by a card/gimmick EFFECT (any
+    /// effect-caused shuffle: explicit "shuffle your deck", or the incidental shuffle
+    /// after a search/tutor/shuffle-into-deck/hand-into-deck). NOT the match-start
+    /// setup shuffle, nor the private bury-ordering shuffle. `who` = whose shuffle
+    /// fires it from the owner's POV (OPP = "when your opponent shuffles their deck" —
+    /// Memes Dealer V2). Override-only.
+    OnShuffle {
+        who: Who,
     },
     Static,
 

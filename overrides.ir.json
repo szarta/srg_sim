@@ -6400,6 +6400,37 @@
       }
     }
   ],
+  "c6cea4fe18774ca5a4f879c8a243821a": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "n": 2,
+          "per": null,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When your opponent shuffles their deck, draw 2 cards.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnShuffle",
+        "who": "OPP"
+      }
+    }
+  ],
   "c79de6acd1954441970f9b1901a55e01": [
     {
       "@type": "Effect",
