@@ -1234,6 +1234,21 @@ class Engine:
                 if (trig.who is fx.Who.SELF) == (owner == shuffled):
                     self._fire_if_ready(eff, owner, None)
 
+    def _run_on_discard_move(self, pile: str) -> None:
+        """Fire standing OnDiscardMove gimmicks after an effect moved one or more cards
+        OUT of ``pile``'s discard pile. Scans BOTH players so a ``who=OPP`` variant
+        ("when your opponent moves any number of cards from their discard pile" —
+        Brumeister V2) works; fires once per action, however many cards moved."""
+        for owner in (pile, self.state.opponent_of(pile)):
+            for eff in self._standing_effects(owner):
+                trig = eff.trigger
+                if not isinstance(trig, fx.OnDiscardMove):
+                    continue
+                # SELF fires when the owner's own pile was drawn from; OPP when the
+                # pile belongs to the owner's opponent.
+                if (trig.who is fx.Who.SELF) == (owner == pile):
+                    self._fire_if_ready(eff, owner, None)
+
     def _act_bury(self, action: fx.Bury, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         if action.source is fx.BuryFrom.HAND:
@@ -1249,6 +1264,7 @@ class Engine:
         if cards:
             self._bury_cards(target, cards)
             self._run_on_bury(target, from_hand=False, is_discard=False)  # effect-caused discard-pile bury
+            self._run_on_discard_move(target)
 
     def _bury_from_hand(
         self, key: str, count: int, random: bool, selector: fx.CardFilter
@@ -1374,6 +1390,8 @@ class Engine:
                     t=self.state.turn_no, player=key, cards=[card.db_uuid], source="discard"
                 )
             )
+            # The card has left the pile; fires ahead of the shuffle's own OnShuffle.
+            self._run_on_discard_move(key)
         self._shuffle_deck(key)
 
     def _act_add_from_discard(self, action: fx.AddFromDiscard, key: str) -> None:
@@ -1391,6 +1409,7 @@ class Engine:
                 t=self.state.turn_no, player=key, cards=[card.db_uuid], source="discard"
             )
         )
+        self._run_on_discard_move(key)
         self._hand_cap(key)
 
     def _act_swap_hand_discard(self, action: fx.SwapHandDiscard, key: str) -> None:
@@ -1408,19 +1427,22 @@ class Engine:
         player.hand.append(into)
         player.discard.append(out)
         self._log_effect(key, "SwapHandDiscard", key, {"hand_out": out.db_uuid, "discard_in": into.db_uuid})
+        self._run_on_discard_move(key)
 
     def _act_recur_to_deck_top(self, action: fx.RecurToDeckTop, key: str) -> None:
         # Put up to `count` matching cards from discard ON TOP of the deck ("Put up
         # to 3 Finishes from your discard pile on top of your deck"). The owner
         # picks how many and which; discard->deck is logged like other recur moves.
         player = self.state.players[key]
+        moved = 0
         for _ in range(action.count):
             matches = [c for c in player.discard if conditions.card_matches(c, action.selector)]
             if not matches:
-                return
+                break
             card = self._pick_optional_from(key, matches, "target")
             if card is None:
-                return  # owner declined to recur more ("up to")
+                break  # owner declined to recur more ("up to")
+            moved += 1
             player.discard.remove(card)
             player.deck.insert(0, card)  # top of deck (redraw next turn)
             self._log(
@@ -1428,6 +1450,8 @@ class Engine:
                     t=self.state.turn_no, player=key, cards=[card.db_uuid], source="discard"
                 )
             )
+        if moved:
+            self._run_on_discard_move(key)  # once per action, not per card
 
     def _act_play_extra_card(self, action: fx.PlayExtraCard, key: str) -> None:
         # Grant one more turn action this turn ("you may play an additional card").

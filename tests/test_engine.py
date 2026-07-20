@@ -668,6 +668,61 @@ def test_on_shuffle_draws_only_on_an_opponents_effect_shuffle() -> None:
     assert len(eng.state.players["A"].hand) == OPENING_HAND
 
 
+def test_on_discard_move_fires_once_per_effect_driven_exit() -> None:
+    # Brumeister V2 on A: OnDiscardMove{who=OPP} -> RemoveFromPlay{OPP, 1}. A discards
+    # one of B's in-play cards whenever an effect pulls cards out of B's discard pile.
+    gimmick = fx.Effect(
+        trigger=fx.OnDiscardMove(who=fx.Who.OPP),
+        actions=(fx.RemoveFromPlay(selector=fx.CardFilter(), who=fx.Who.OPP, count=1),),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+    def card(u: str) -> Card:
+        return Card(db_uuid=u, name=u, number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+
+    def fresh() -> Engine:
+        eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+        eng.state.players["A"].competitor = replace(
+            eng.state.players["A"].competitor, effects=(gimmick,)
+        )
+        # Stock every zone the discard-exit paths read: a pile to pull from, a board to
+        # be punished, and a hand so the hand/discard swap is not a no-op.
+        for k in ("A", "B"):
+            eng.state.players[k].deck = [card(f"{k}n{i}") for i in range(10)]
+            eng.state.players[k].discard = [card(f"{k}d{i}") for i in range(3)]
+            eng.state.players[k].in_play = [card(f"{k}p{i}") for i in range(3)]
+            eng.state.players[k].hand = [card(f"{k}h{i}") for i in range(3)]
+        return eng
+
+    def board(eng: Engine, k: str) -> int:
+        return len(eng.state.players[k].in_play)
+
+    # B pulls a card out of their own discard -> A discards one of B's in-play cards.
+    eng = fresh()
+    eng._act_add_from_discard(fx.AddFromDiscard(filter=fx.CardFilter()), "B")
+    assert board(eng, "B") == 2
+    assert board(eng, "A") == 3  # A's own board is untouched
+    # A pulling from their OWN pile must not fire A's who=OPP trigger.
+    eng = fresh()
+    eng._act_add_from_discard(fx.AddFromDiscard(filter=fx.CardFilter()), "A")
+    assert board(eng, "B") == 3
+    # Every other effect-driven exit from B's pile counts as a "move" too.
+    eng = fresh()
+    eng._act_shuffle_into_deck(fx.ShuffleIntoDeck(selector=fx.CardFilter()), "B")
+    assert board(eng, "B") == 2
+    eng = fresh()
+    eng._act_swap_hand_discard(fx.SwapHandDiscard(), "B")
+    assert board(eng, "B") == 2
+    # "Moves ANY NUMBER of cards": a 2-card recur is still a single trigger.
+    eng = fresh()
+    eng._act_recur_to_deck_top(fx.RecurToDeckTop(selector=fx.CardFilter(), count=2), "B")
+    assert board(eng, "B") == 2
+    # The mechanical pass-and-recycle is not a card effect.
+    eng = fresh()
+    eng._do_pass("B")
+    assert board(eng, "B") == 3
+
+
 def test_reveal_for_draw_rolled_skill_draws_on_matching_move_type() -> None:
     # The Winning Ticket: reveal 1 from the opponent's hand; if its move type matches
     # the skill you just rolled, draw 1. The rolled skill comes from the roll context.
