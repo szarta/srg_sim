@@ -138,6 +138,8 @@ SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?, vs_skill?
 HandSizeCompare(cmp, vs=OPP|VALUE, value?)
 CrowdMeterCompare(cmp, value)
 HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
+InPlayCompare(filter, cmp, who, vs_who)  # cross-board: who's count of filter in play `cmp` vs_who's count ("target has more
+                             # Strikes in play than you" — Snake Pitt V3: who=OPP, vs_who=SELF, cmp=>). Honors CountsAsInPlay. schema v33
 RollWasSkill(skill) / RollGapExactly(k) / RollGapAtLeast(k)   # gap = opp - self, positive = self rolled lower
 RollLeadAtLeast(k)           # self rolled >= k HIGHER than opp (gap <= -k) — mirror of RollGapAtLeast (YamatoHama). schema v2.
 RollValue(cmp, value)        # the actual number rolled this turn, read via the trigger's `who` (Mrs. Apocalypse, Numer01)

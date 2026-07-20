@@ -279,6 +279,23 @@
     "who": "SELF"
   },
   {
+    "@type": "InPlayCompare",
+    "cmp": ">",
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    },
+    "vs_who": "SELF",
+    "who": "OPP"
+  },
+  {
     "@type": "InRoll",
     "either": false,
     "skill": null,

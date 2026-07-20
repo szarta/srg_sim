@@ -542,6 +542,17 @@ pub enum Condition {
         who: Who,
         filter: CardFilter,
     },
+    /// Cross-board in-play count compare: `who`'s count of cards in play matching
+    /// `filter` compared (`cmp`) against `vs_who`'s count of the same filter. "When
+    /// your target has more Strikes in play [than you]" (Snake Pitt V3): `who=OPP`,
+    /// `vs_who=SELF`, `cmp=">"`, filter `atk_type=Strike`. Honors `CountsAsInPlay`
+    /// on both boards (via `count_in_play`).
+    InPlayCompare {
+        filter: CardFilter,
+        cmp: Comparator,
+        who: Who,
+        vs_who: Who,
+    },
     RollWasSkill {
         skill: Skill,
     },
@@ -1074,6 +1085,17 @@ pub enum IrNode {
     HasInDiscard {
         who: Who,
         filter: CardFilter,
+    },
+    /// Cross-board in-play count compare: `who`'s count of cards in play matching
+    /// `filter` compared (`cmp`) against `vs_who`'s count of the same filter. "When
+    /// your target has more Strikes in play [than you]" (Snake Pitt V3): `who=OPP`,
+    /// `vs_who=SELF`, `cmp=">"`, filter `atk_type=Strike`. Honors `CountsAsInPlay`
+    /// on both boards (via `count_in_play`).
+    InPlayCompare {
+        filter: CardFilter,
+        cmp: Comparator,
+        who: Who,
+        vs_who: Who,
     },
     RollWasSkill {
         skill: Skill,

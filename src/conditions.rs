@@ -283,6 +283,18 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .iter()
                 .any(|c| card_matches(c, filter))
         }
+        Condition::InPlayCompare {
+            filter,
+            cmp,
+            who,
+            vs_who,
+        } => {
+            let left = who_key(state, owner, *who);
+            let right = who_key(state, owner, *vs_who);
+            let n = count_in_play(&state.players[&left].in_play, filter, None);
+            let m = count_in_play(&state.players[&right].in_play, filter, None);
+            cmp_apply(*cmp, n, m)
+        }
         Condition::RollWasSkill { skill } => roll.is_some_and(|r| r.skill == Some(*skill)),
         Condition::RollGapExactly { k } => roll.is_some_and(|r| r.gap == Some(*k)),
         Condition::RollGapAtLeast { k } => roll.is_some_and(|r| r.gap.is_some_and(|g| g >= *k)),

@@ -81,6 +81,9 @@
               "$ref": "#/$defs/HasInDiscard"
             },
             {
+              "$ref": "#/$defs/InPlayCompare"
+            },
+            {
               "$ref": "#/$defs/RollWasSkill"
             },
             {
@@ -169,6 +172,9 @@
               },
               {
                 "$ref": "#/$defs/HasInDiscard"
+              },
+              {
+                "$ref": "#/$defs/InPlayCompare"
               },
               {
                 "$ref": "#/$defs/RollWasSkill"
@@ -1157,6 +1163,9 @@
               "$ref": "#/$defs/HasInDiscard"
             },
             {
+              "$ref": "#/$defs/InPlayCompare"
+            },
+            {
               "$ref": "#/$defs/RollWasSkill"
             },
             {
@@ -1664,6 +1673,9 @@
           "$ref": "#/$defs/HasInDiscard"
         },
         {
+          "$ref": "#/$defs/InPlayCompare"
+        },
+        {
           "$ref": "#/$defs/HasInHand"
         },
         {
@@ -1842,6 +1854,34 @@
         }
       ]
     },
+    "InPlayCompare": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "InPlayCompare"
+        },
+        "cmp": {
+          "$ref": "#/$defs/Comparator"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "vs_who": {
+          "$ref": "#/$defs/Who"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "filter",
+        "cmp",
+        "who",
+        "vs_who"
+      ],
+      "type": "object"
+    },
     "InRoll": {
       "additionalProperties": false,
       "properties": {
@@ -2012,6 +2052,9 @@
             },
             {
               "$ref": "#/$defs/HasInDiscard"
+            },
+            {
+              "$ref": "#/$defs/InPlayCompare"
             },
             {
               "$ref": "#/$defs/RollWasSkill"
@@ -2346,6 +2389,9 @@
               },
               {
                 "$ref": "#/$defs/HasInDiscard"
+              },
+              {
+                "$ref": "#/$defs/InPlayCompare"
               },
               {
                 "$ref": "#/$defs/RollWasSkill"
@@ -2888,6 +2934,9 @@
               "$ref": "#/$defs/HasInDiscard"
             },
             {
+              "$ref": "#/$defs/InPlayCompare"
+            },
+            {
               "$ref": "#/$defs/RollWasSkill"
             },
             {
@@ -3260,5 +3309,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 32
+  "version": 33
 }
