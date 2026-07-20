@@ -6175,6 +6175,119 @@
       }
     }
   ],
+  "c4a11e2c1cc1428c82d6c46a4f1f3646": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddText",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Bury",
+                  "count": 1,
+                  "random": true,
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  },
+                  "source": "HAND",
+                  "who": "OPP"
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "added text: Your opponent buries 1 random card in their hand",
+              "source": "gimmick",
+              "trigger": {
+                "@type": "OnPlay"
+              }
+            }
+          ],
+          "name_contains": [
+            "Bar",
+            "Shot",
+            "Bender"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your cards with \"Bar\", \"Shot\", or \"Bender\" in the name have the added text: \"Your opponent buries 1 random card in their hand.\"",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankGimmick",
+          "duration": "WHILE_IN_PLAY",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 5,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": null,
+          "name_contains": [
+            "Bar",
+            "Shot",
+            "Bender"
+          ],
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null,
+          "text_contains": []
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When you have 5 cards with \"Bar\", \"Shot\", or \"Bender\" in the name in play, your opponent's Gimmick is blank.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "c4a7dc18e187401ba7632cc682b14879": [
     {
       "@type": "Effect",
@@ -7494,6 +7607,117 @@
         "@type": "OnRoll",
         "skill": null,
         "who": "SELF"
+      }
+    }
+  ],
+  "f9cb3b3b788346eda95fcb066e9305ad": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddText",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Bury",
+                  "count": 1,
+                  "random": true,
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  },
+                  "source": "HAND",
+                  "who": "OPP"
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "added text: Your opponent buries 1 random card in their hand",
+              "source": "gimmick",
+              "trigger": {
+                "@type": "OnPlay"
+              }
+            }
+          ],
+          "name_contains": [
+            "Snap",
+            "Finger Lock"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your cards with \"Snap\" or \"Finger Lock\" in the name have the added text, \"Your opponent buries 1 random card in their hand.\"",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankGimmick",
+          "duration": "WHILE_IN_PLAY",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 4,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "name": null,
+          "name_contains": [
+            "Snap",
+            "Finger Lock"
+          ],
+          "number": null,
+          "play_order": null,
+          "raw": null,
+          "tag": null,
+          "text_contains": []
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When you have 4 of those cards in play; your opponent's Gimmick is blank.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],

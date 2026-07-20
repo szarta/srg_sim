@@ -8,7 +8,7 @@
 //! stats, derived hand cap, gimmick-blank derivation, and the `observable`
 //! projection for both viewers.
 
-use serde_json::Value;
+use serde_json::{json, Value};
 use srg_core::state::GameState;
 use std::path::PathBuf;
 
@@ -112,4 +112,69 @@ fn observable_projection_matches_oracle() {
             name(&pos)
         );
     }
+}
+
+fn lead_card(name: &str, i: usize) -> Value {
+    json!({
+        "atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+        "finish_bonuses": {}, "name": name, "number": 1, "play_order": "Lead",
+        "raw_text": "", "tags": []
+    })
+}
+
+fn static_blank_opp(source: &str, condition: Value) -> Value {
+    json!({
+        "@type": "Effect", "trigger": {"@type": "Static"}, "condition": condition,
+        "actions": [{"@type": "BlankGimmick", "who": "OPP", "duration": "WHILE_IN_PLAY"}],
+        "duration": "WHILE_IN_PLAY",
+        "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+        "raw_clause": "test", "source": source, "optional": false
+    })
+}
+
+/// A gimmick-sourced Static conditional `BlankGimmick` blanks the opponent (GM
+/// Calace V2 / Mr. Snap V1 shape) — but only while its count condition holds AND
+/// the owner's own gimmick is still active.
+#[test]
+fn gimmick_sourced_conditional_blank() {
+    let mut base = positions()[0]["state"].clone();
+    for k in ["A", "B"] {
+        base["players"][k]["competitor"]["effects"] = json!([]);
+        base["players"][k]["entrance"]["effects"] = json!([]);
+        base["players"][k]["in_play"] = json!([]);
+        base["players"][k]["gimmick_blanked"] = json!(false);
+    }
+    // A's gimmick: while A has >=2 "Bar"-named cards in play, B's gimmick is blank.
+    let has_two_bars = json!({
+        "@type": "HasInPlay", "who": "SELF", "count": 2, "cmp": ">=",
+        "filter": {"@type": "CardFilter", "number": null, "atk_type": null,
+                   "play_order": null, "tag": null, "name": null, "raw": null,
+                   "name_contains": ["Bar"], "text_contains": []}
+    });
+    base["players"]["A"]["competitor"]["effects"] =
+        json!([static_blank_opp("gimmick", has_two_bars)]);
+
+    // 1 matching card -> below the threshold -> not blanked.
+    let mut state = base.clone();
+    state["players"]["A"]["in_play"] = json!([lead_card("Crowbar", 1)]);
+    assert!(!GameState::from_dict(state).unwrap().is_gimmick_blanked("B"));
+
+    // 2 matching cards -> the count holds -> B is blanked.
+    let mut state = base.clone();
+    state["players"]["A"]["in_play"] = json!([lead_card("Crowbar", 1), lead_card("Sidebar", 2)]);
+    assert!(GameState::from_dict(state).unwrap().is_gimmick_blanked("B"));
+
+    // 2 matching, but B's ENTRANCE unconditionally blanks A: A's gimmick is now
+    // inactive, so A's gimmick-sourced blank of B no longer fires (the "only while
+    // your own gimmick is active" gate; the blank<->blank loop is guard-bounded).
+    let mut state = base.clone();
+    state["players"]["A"]["in_play"] = json!([lead_card("Crowbar", 1), lead_card("Sidebar", 2)]);
+    state["players"]["B"]["entrance"]["effects"] =
+        json!([static_blank_opp("entrance", json!({"@type": "Always"}))]);
+    let gs = GameState::from_dict(state).unwrap();
+    assert!(gs.is_gimmick_blanked("A"), "B's entrance blanks A");
+    assert!(
+        !gs.is_gimmick_blanked("B"),
+        "A's blanked gimmick cannot blank B"
+    );
 }
