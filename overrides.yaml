@@ -5222,14 +5222,12 @@ f9cb3b3b788346eda95fcb066e9305ad:
 
 # La Fenix (Super Lucha) (World Championship): 'When your opponent stops your
 # Finish, search your deck for 1 La Fenix Finish and add it to your hand, shuffle
-# your deck.' A Finish is stopped two ways in the engine: a stop card in the stop
-# window (apply_stop -> OnStop, dir YOURS = your card stopped), or the defender
-# breaking out of the finish roll-off (OnBreakout, who OPP = your opponent broke
-# out of your finish). Model BOTH paths (mutually exclusive per finish, so no
-# double-fire), each tutoring a Finish. `order: Finish` (schema v31) gates the
-# OnStop path to a stopped Finish. "La Fenix Finish" = any Finish in your own deck
-# (play_order Finish); Search(dest HAND) shuffles the deck afterwards (the explicit
-# "shuffle your deck").
+# your deck.' Per srgpc.net rulings (confirmed by Brandon 2026-07-19): "stop" is a
+# stop CARD interrupting the Finish before it hits (apply_stop -> OnStop, dir YOURS
+# = your card was stopped) — NOT breaking out (a separate defense after a Finish
+# hits). So a single OnStop path, gated by `order: Finish` (schema v31) to a stopped
+# Finish. "La Fenix Finish" = any Finish in your own deck (play_order Finish);
+# Search(dest HAND) shuffles the deck afterwards (the explicit "shuffle your deck").
 80ae186a6d6a43ee8402b85c112964c1:
 - '@type': Effect
   trigger:
@@ -5255,33 +5253,7 @@ f9cb3b3b788346eda95fcb066e9305ad:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
-  raw_clause: when your opponent stops your Finish (stop-card path), search your deck for 1 La Fenix Finish and add it to your hand, shuffle your deck
-  source: gimmick
-  optional: false
-- '@type': Effect
-  trigger:
-    '@type': OnBreakout
-    who: OPP
-  condition:
-    '@type': Always
-  actions:
-  - '@type': Search
-    filter:
-      '@type': CardFilter
-      number: null
-      atk_type: null
-      play_order: Finish
-      tag: null
-      name: null
-      raw: null
-    dest: HAND
-    count: 1
-  duration: INSTANT
-  frequency:
-    '@type': FrequencyGuard
-    kind: UNLIMITED
-    n: null
-  raw_clause: when your opponent stops your Finish (breakout path), search your deck for 1 La Fenix Finish and add it to your hand, shuffle your deck
+  raw_clause: when your opponent stops your Finish, search your deck for 1 La Fenix Finish and add it to your hand, shuffle your deck
   source: gimmick
   optional: false
 
