@@ -2386,6 +2386,99 @@
       }
     }
   ],
+  "59a06bccbea64d1bb1d6301449190e81": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddText",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Bury",
+                  "count": 2,
+                  "random": false,
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  },
+                  "source": "HAND",
+                  "who": "OPP"
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "added text: Your opponent buries 2 cards in their hand",
+              "source": "gimmick",
+              "trigger": {
+                "@type": "OnPlay"
+              }
+            }
+          ],
+          "name_contains": [
+            "Super"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your cards with \"Super\" in the name have the added text \"Your opponent buries 2 cards in their hand.\"",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BreakoutModifier",
+          "attempts": 3,
+          "delta": 2
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your 3rd breakout roll each turn is +2.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "5c61b09db55549b6a957926b3ae14a4b": [
     {
       "@type": "Effect",

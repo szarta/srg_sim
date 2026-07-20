@@ -2676,20 +2676,49 @@ impl Engine {
         });
     }
 
+    /// Total breakout-roll modifier for `defender`'s attempt number `attempt_no`
+    /// (1-indexed): the sum of active `BreakoutModifier` deltas from the defender's
+    /// own standing effects (gimmick/entrance/in-play combo), each gated by its
+    /// condition. An `attempts` gate restricts a modifier to a single attempt
+    /// ("your 3rd breakout roll each turn is +2"); `None` applies to every attempt
+    /// ("your breakout rolls are +1"). Scans the same standing set as
+    /// [`finish_roll_bonus`](Self::finish_roll_bonus).
+    fn breakout_bonus(&self, defender: &str, attempt_no: i64) -> i64 {
+        let mut total = 0;
+        for eff in self.standing_effects(defender) {
+            if !conditions::holds(&eff.condition, &self.state, defender, None) {
+                continue;
+            }
+            for a in &eff.actions {
+                if let Action::BreakoutModifier { delta, attempts } = a {
+                    if attempts.is_none() || *attempts == Some(attempt_no) {
+                        total += *delta;
+                    }
+                }
+            }
+        }
+        total
+    }
+
     /// Up to `BREAKOUT_ATTEMPTS` defender rolls; the first that beats the finish
     /// value breaks out. Returns whether the defender broke out.
     fn breakout(&mut self, defender: &str, finish_value: i64) -> bool {
         let cm = self.state.crowd_meter;
         let mut rolls: Vec<BreakoutRoll> = Vec::new();
         let mut broke = false;
-        for _ in 0..BREAKOUT_ATTEMPTS {
+        for i in 0..BREAKOUT_ATTEMPTS {
             let skill = self.state.rng.roll();
             let val = self.stat(defender, skill);
-            let success = crate::finish::stat_breaks_out(val, finish_value, 0, cm);
+            // A `BreakoutModifier{delta}` raises the roll by `delta`; passing it as a
+            // NEGATIVE `penalty` keeps the raw-10-always-breaks rule on the unboosted
+            // value (a boosted 8->10 is not a "raw 10"). No modifier -> penalty 0 ->
+            // byte-identical to before (the frozen corpus has none).
+            let penalty = -self.breakout_bonus(defender, i as i64 + 1);
+            let success = crate::finish::stat_breaks_out(val, finish_value, penalty, cm);
             rolls.push(BreakoutRoll {
                 skill: skill.name().to_owned(),
                 value: val,
-                penalty: 0,
+                penalty,
                 success,
             });
             if success {
@@ -3649,4 +3678,153 @@ fn find_by_uuid(pool: &[Card], chosen: &Value) -> Card {
         .find(|c| c.db_uuid == uuid)
         .expect("chosen card is in the pool")
         .clone()
+}
+
+#[cfg(test)]
+mod breakout_modifier_tests {
+    use super::*;
+
+    fn deck(uuid: &str) -> Deck {
+        serde_json::from_value(json!({
+            "competitor": {
+                "db_uuid": uuid, "name": uuid, "division": "World Championship",
+                "stats": {"Power": 5, "Agility": 5, "Technique": 5,
+                          "Submission": 5, "Grapple": 5, "Strike": 5},
+            },
+            "entrance": {"db_uuid": format!("{uuid}-ent"), "name": "ent"},
+            "cards": [],
+        }))
+        .expect("deck")
+    }
+
+    /// A `Static` gimmick effect wrapping a single `BreakoutModifier`, gated by
+    /// `condition` ("Always" by default).
+    fn breakout_mod(delta: i64, attempts: Value, condition: Value) -> Value {
+        json!({
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": condition,
+            "actions": [{"@type": "BreakoutModifier", "delta": delta, "attempts": attempts}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "test", "source": "gimmick", "optional": false
+        })
+    }
+
+    fn engine() -> Engine {
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            decider,
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn push_gimmick(engine: &mut Engine, key: &str, eff: Value) {
+        engine
+            .state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .competitor
+            .effects
+            .push(serde_json::from_value(eff).expect("effect"));
+    }
+
+    #[test]
+    fn attempts_gate_selects_the_nth_roll() {
+        // El Super Hombre V1: "Your 3rd breakout roll each turn is +2." Applies only
+        // to the 3rd attempt; the 1st and 2nd see nothing.
+        let mut engine = engine();
+        push_gimmick(
+            &mut engine,
+            "A",
+            breakout_mod(2, json!(3), json!({"@type": "Always"})),
+        );
+        assert_eq!(engine.breakout_bonus("A", 1), 0);
+        assert_eq!(engine.breakout_bonus("A", 2), 0);
+        assert_eq!(engine.breakout_bonus("A", 3), 2);
+    }
+
+    #[test]
+    fn unattempted_modifier_applies_to_every_roll_and_stacks() {
+        // A flat "your breakout rolls are +1" (attempts null) applies to all three,
+        // and stacks additively with an attempt-gated modifier.
+        let mut engine = engine();
+        push_gimmick(
+            &mut engine,
+            "A",
+            breakout_mod(1, Value::Null, json!({"@type": "Always"})),
+        );
+        push_gimmick(
+            &mut engine,
+            "A",
+            breakout_mod(2, json!(3), json!({"@type": "Always"})),
+        );
+        assert_eq!(engine.breakout_bonus("A", 1), 1);
+        assert_eq!(engine.breakout_bonus("A", 3), 3);
+    }
+
+    #[test]
+    fn false_condition_and_wrong_side_do_not_count() {
+        // A gated modifier whose condition is false contributes nothing, and a
+        // modifier on B never leaks into A's breakout (each reads its own standing set).
+        let mut engine = engine();
+        push_gimmick(
+            &mut engine,
+            "A",
+            breakout_mod(
+                2,
+                Value::Null,
+                json!({"@type": "CrowdMeterCompare", "cmp": ">=", "value": 5}),
+            ),
+        );
+        push_gimmick(
+            &mut engine,
+            "B",
+            breakout_mod(4, Value::Null, json!({"@type": "Always"})),
+        );
+        assert_eq!(engine.breakout_bonus("A", 1), 0);
+        assert_eq!(engine.breakout_bonus("B", 1), 4);
+    }
+
+    #[test]
+    fn blanked_gimmick_suppresses_the_modifier() {
+        // A blanked gimmick contributes no breakout modifier (standing_effects skips it).
+        let mut engine = engine();
+        push_gimmick(
+            &mut engine,
+            "A",
+            breakout_mod(2, json!(3), json!({"@type": "Always"})),
+        );
+        engine.state.players.get_mut("A").unwrap().gimmick_blanked = true;
+        assert_eq!(engine.breakout_bonus("A", 3), 0);
+    }
+
+    #[test]
+    fn breakout_roll_honors_the_modifier() {
+        // The defender's stats are all 5, so a finish of 8 is unbreakable (5 < 8) with
+        // no modifier — but a flat +5 breakout modifier lifts every roll to 10 and
+        // breaks out on the first attempt. Drives the real `breakout()` roll, proving
+        // the bonus reaches `stat_breaks_out` as a negative penalty.
+        let mut engine = engine();
+        assert!(!engine.breakout("A", 8), "5 < 8 cannot break out unaided");
+        push_gimmick(
+            &mut engine,
+            "A",
+            breakout_mod(5, Value::Null, json!({"@type": "Always"})),
+        );
+        assert!(
+            engine.breakout("A", 8),
+            "+5 lifts the roll to 10 and breaks out"
+        );
+        // The applied modifier is recorded as a negative penalty on the roll.
+        let Some(Event::Breakout { rolls, .. }) = engine.log.events.last() else {
+            panic!("last event is a Breakout");
+        };
+        assert_eq!(rolls[0].penalty, -5);
+    }
 }
