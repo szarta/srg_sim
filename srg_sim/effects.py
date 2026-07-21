@@ -1126,6 +1126,33 @@ class AlsoLead(IRNode):
 
 
 @dataclass(frozen=True)
+class StopCountsOrderAs(IRNode):
+    """Static stop-reframe (Jokerfish V2: "your opponent's Finishes are also Follow
+    Ups for your Stop cards"). schema v45
+
+    For the DECLARER-as-defender, an attack whose order is ``attack_order`` also
+    satisfies a ``Stop`` of ``as_order``. Read in ``_card_can_stop``; never executed.
+    """
+
+    attack_order: PlayOrder = PlayOrder.FINISH
+    as_order: PlayOrder = PlayOrder.FOLLOWUP
+
+
+@dataclass(frozen=True)
+class SuppressStop(IRNode):
+    """Static declaration that the declarer's OWN cards whose deck number is in
+    ``[number_min, number_max]`` cannot act as Stops (Jokerfish V2: "your cards
+    #19-21 cannot stop cards"). schema v45
+
+    Only the Stop ability is suppressed — the rest of each card's text is unaffected.
+    Read in ``_card_can_stop``; never executed.
+    """
+
+    number_min: int = 0
+    number_max: int = 0
+
+
+@dataclass(frozen=True)
 class DoubleFinishIfBumped(IRNode):
     """A static self-declaration: double THIS card's printed Finish bonuses if the
     finisher bumped on the turn roll that set up the finish ("If you bumped on the
@@ -1518,6 +1545,8 @@ Action = (
     | FlipGimmickSigns
     | Unstoppable
     | AlsoLead
+    | StopCountsOrderAs
+    | SuppressStop
     | DoubleFinishIfBumped
     | Choice
 )

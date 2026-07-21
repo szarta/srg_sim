@@ -895,15 +895,40 @@ class Engine:
             return False
         if self.state.is_text_blanked(stopper, defender):
             return False  # a text-blanked stop card cannot stop
+        if self._stop_suppressed(defender, stopper):
+            return False  # Jokerfish "your cards #N-N cannot stop cards"
         return any(
             conditions.holds(eff.condition, self.state, defender)
             and _attacker_meets_tag_gates(eff, attack)
             and any(
-                isinstance(action, fx.Stop) and _stop_matches(action, attack)
+                isinstance(action, fx.Stop) and self._stop_matches_for(defender, action, attack)
                 for action in eff.actions
             )
             for eff in stopper.effects
         )
+
+    def _stop_suppressed(self, defender: str, stopper: Card) -> bool:
+        """Whether ``defender`` declares that ``stopper`` (by its deck number) cannot
+        act as a Stop — Jokerfish V2's ``SuppressStop`` number range."""
+        n = stopper.number
+        return self._declares_static(
+            defender, fx.SuppressStop, lambda a: a.number_min <= n <= a.number_max
+        )
+
+    def _stop_matches_for(self, defender: str, stop: fx.Stop, attack: Card) -> bool:
+        """Whether ``stop``'s order/type filter covers ``attack``, honoring ``defender``'s
+        active ``StopCountsOrderAs`` reframes: an attack whose order is reframed also
+        satisfies a ``Stop`` of the reframed order ("your opponent's Finishes are also
+        Follow Ups for your Stop cards"). ``None`` order = any."""
+        if stop.order is not None and stop.order is not attack.play_order:
+            reframed = self._declares_static(
+                defender,
+                fx.StopCountsOrderAs,
+                lambda a: a.attack_order is attack.play_order and a.as_order is stop.order,
+            )
+            if not reframed:
+                return False
+        return stop.atk_type is None or stop.atk_type is attack.atk_type
 
     def _apply_stop(self, active: str, defender: str, attack: Card, stop: Card) -> None:
         # Only the stopped ATTACK goes to the attacker's discard; the stopping card
@@ -1289,19 +1314,26 @@ class Engine:
         opponent's effect still takes the cards."""
         return key == target and self._declares_static(key, fx.SuppressSelfHandLoss)
 
-    def _declares_static(self, key: str, node: type[fx.IRNode]) -> bool:
+    def _declares_static(
+        self,
+        key: str,
+        node: type[fx.IRNode],
+        pred: Callable[[Any], bool] | None = None,
+    ) -> bool:
         """Whether ``key`` holds an active Static declaration of a ``node`` action — on
         their own gimmick (unless blanked), entrance, or in-play, with the declaration's
-        own condition holding. The read side of the passive-flag actions, never executed."""
+        own condition holding. Optional ``pred`` further filters on the action's fields
+        (e.g. a deck-number range). The read side of the passive-flag actions, never
+        executed."""
         for effects, active in self.state._buff_sources(key, self.state.players[key]):
             if not active:
                 continue
             for eff in effects:
-                if (
-                    isinstance(eff.trigger, fx.Static)
-                    and any(isinstance(a, node) for a in eff.actions)
-                    and conditions.holds(eff.condition, self.state, key)
-                ):
+                if not isinstance(eff.trigger, fx.Static):
+                    continue
+                if not any(isinstance(a, node) and (pred is None or pred(a)) for a in eff.actions):
+                    continue
+                if conditions.holds(eff.condition, self.state, key):
                     return True
         return False
 
@@ -2323,13 +2355,6 @@ class Engine:
         return card
 
 
-def _stop_matches(stop: fx.Stop, attack: Card) -> bool:
-    """Whether a ``Stop`` action's order/type filter covers this attack (None = any)."""
-    if stop.order is not None and stop.order is not attack.play_order:
-        return False
-    return stop.atk_type is None or stop.atk_type is attack.atk_type
-
-
 def _attacker_meets_tag_gates(eff: fx.Effect, attack: Card) -> bool:
     """Whether ``attack`` satisfies every ``StopRequiresTag`` gate in a stop ``eff`` —
     a passive marker paired with a sibling ``Stop``, requiring the attacked card carry
@@ -2432,6 +2457,8 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.Reroll: Engine._act_reroll,  # THIS: structural no-op; NEXT: grants a next-turn re-roll
     fx.Unstoppable: Engine._act_noop,  # Static, read via _is_unstoppable_by; never executed
     fx.AlsoLead: Engine._act_noop,  # Static, read via _also_lead_now; never executed
+    fx.StopCountsOrderAs: Engine._act_noop,  # Static, read via _card_can_stop; never executed
+    fx.SuppressStop: Engine._act_noop,  # Static, read via _card_can_stop; never executed
     fx.DoubleFinishIfBumped: Engine._act_noop,  # Static, read in the finish sequence
     fx.RevealAndDiscard: Engine._act_reveal_and_discard,
     fx.RevealForDraw: Engine._act_reveal_for_draw,

@@ -630,6 +630,61 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def test_stop_counts_order_as_lets_a_followup_stop_catch_a_finish() -> None:
+    # Jokerfish V2: "your opponent's Finishes are also Follow Ups for your Stop cards."
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    followup_stop = Card(
+        db_uuid="fs", name="FollowStop", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD,
+        effects=(fx.Effect(trigger=fx.Static(), actions=(fx.Stop(order=PlayOrder.FOLLOWUP),)),),
+    )
+    finish = Card(db_uuid="fin", name="Fin", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.FINISH)
+    lead = Card(db_uuid="ld", name="Ld", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    # Without the declaration a Follow-Up stop cannot stop a Finish.
+    assert not eng._card_can_stop("A", followup_stop, finish)
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor,
+        effects=(
+            fx.Effect(
+                trigger=fx.Static(),
+                actions=(fx.StopCountsOrderAs(PlayOrder.FINISH, PlayOrder.FOLLOWUP),),
+                source=fx.EffectSource.GIMMICK,
+            ),
+        ),
+    )
+    assert eng._card_can_stop("A", followup_stop, finish)  # reframe applies
+    assert not eng._card_can_stop("A", followup_stop, lead)  # only Finish->Follow Up
+
+
+def test_suppress_stop_disables_only_cards_in_the_number_range() -> None:
+    # Jokerfish V2: "your cards #19-21 cannot stop cards."
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+
+    def stopper(number: int) -> Card:
+        return Card(
+            db_uuid=f"s{number}", name="S", number=number, atk_type=AtkType.STRIKE,
+            play_order=PlayOrder.LEAD,
+            effects=(fx.Effect(trigger=fx.Static(), actions=(fx.Stop(order=PlayOrder.LEAD),)),),
+        )
+
+    lead = Card(db_uuid="ld", name="Ld", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    # Baseline: both stop.
+    assert eng._card_can_stop("A", stopper(20), lead)
+    eng.state.players["A"].competitor = replace(
+        eng.state.players["A"].competitor,
+        effects=(
+            fx.Effect(
+                trigger=fx.Static(),
+                actions=(fx.SuppressStop(19, 21),),
+                source=fx.EffectSource.GIMMICK,
+            ),
+        ),
+    )
+    assert not eng._card_can_stop("A", stopper(20), lead)  # in range -> disabled
+    assert eng._card_can_stop("A", stopper(18), lead)  # outside range -> unaffected
+
+
 def test_on_shuffle_draws_only_on_an_opponents_effect_shuffle() -> None:
     # Memes Dealer V2 on A: OnShuffle{who=OPP} -> Draw 2. A draws when B's deck is
     # shuffled by an effect, not on A's own shuffle nor the match-start setup shuffle.

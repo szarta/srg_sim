@@ -66,6 +66,8 @@ from srg_sim.effects import (
     LowestRollWins,
     MaxHandSize,
     MinHandSize,
+    StopCountsOrderAs,
+    SuppressStop,
     ModifyRoll,
     Not,
     OnBreakout,
@@ -258,6 +260,8 @@ SAMPLES: list[IRNode] = [
     LowestRollWins(),
     Unstoppable(by_order=PlayOrder.FOLLOWUP),  # "Cannot be stopped by Follow Ups"
     AlsoLead(HandSizeCompare(Comparator.LE, Vs.VALUE, 1)),  # Broken Butterfly empty-hand Lead
+    StopCountsOrderAs(PlayOrder.FINISH, PlayOrder.FOLLOWUP),  # Jokerfish V2 stop reframe
+    SuppressStop(19, 21),  # Jokerfish V2 "#19-21 cannot stop"
     DoubleFinishIfBumped(),  # T-Virus "double these bonuses if you bumped"
     ChoiceOption("draw", (Draw(n=1),)),
     Choice(
