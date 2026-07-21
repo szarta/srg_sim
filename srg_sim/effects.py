@@ -962,6 +962,18 @@ class ForceRevealPlay(IRNode):
 
 
 @dataclass(frozen=True)
+class CopyEntrance(IRNode):
+    """Copy ``who``'s Entrance onto the actor's (El Ganso Ruso: "Copy your target's
+    Entrance"): append the target entrance's effects to the actor's own entrance,
+    so the actor gains that entrance's ability (in addition to their own). Resolved
+    live — the engine sees both loaded entrances. Authored under a ``StartOfMatch``
+    ``Choice``; copied *ongoing* abilities (OnRoll/Static) fire naturally, but a
+    copied ``StartOfMatch`` ability has already missed its window."""
+
+    who: Who = Who.OPP
+
+
+@dataclass(frozen=True)
 class Scry(IRNode):
     """Look at / reveal cards from the top (and/or bottom) of ``deck``'s deck, then
     route them by value. The effect owner (the "actor") takes ``to_hand`` of them to

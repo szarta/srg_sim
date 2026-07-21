@@ -94,6 +94,7 @@ from srg_sim.effects import (
     Or,
     Peek,
     ForceRevealPlay,
+    CopyEntrance,
     PlayExtraCard,
     RecurToDeckTop,
     RemoveFromPlay,
@@ -217,6 +218,7 @@ SAMPLES: list[IRNode] = [
     ReturnToHand(CardFilter(), Who.OPP, 1, choose=True),  # Fox Assassin V2
     Peek(Who.OPP),
     ForceRevealPlay(Who.OPP),
+    CopyEntrance(Who.OPP),  # El Ganso Ruso
     Scry(deck=Who.SELF, top=2, to_hand=1, bury=1, reveal=True, rest=ScryRest.CHOOSE),
     RevealRoute(
         deck=Who.OPP,

@@ -2054,6 +2054,21 @@ class Engine:
         self.state.players[target].flags["forced_reveal_play"] = True
         self._log_effect(key, "ForceRevealPlay", target, {})
 
+    def _act_copy_entrance(self, action: fx.CopyEntrance, key: str) -> None:
+        # Copy the target's Entrance onto key's own (El Ganso Ruso): append the
+        # target entrance's effects to key's entrance, so key gains that entrance's
+        # ability. Resolved live from the loaded entrances. A copied StartOfMatch
+        # ability has already missed its window; ongoing abilities fire naturally.
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        if target == key:
+            return
+        effects = self.state.players[target].entrance.effects
+        player = self.state.players[key]
+        player.entrance = replace(
+            player.entrance, effects=tuple(player.entrance.effects) + tuple(effects)
+        )
+        self._log_effect(key, "CopyEntrance", target, {"effects": len(effects)})
+
     def _consume_forced_reveal_play(self, key: str) -> bool:
         # Consume key's armed forced reveal-and-play flag, if set.
         flags = self.state.players[key].flags
@@ -2787,6 +2802,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.PlayExtraCard: Engine._act_play_extra_card,
     fx.Peek: Engine._act_peek,
     fx.ForceRevealPlay: Engine._act_force_reveal_play,
+    fx.CopyEntrance: Engine._act_copy_entrance,
     fx.Scry: Engine._act_scry,
     fx.RevealRoute: Engine._act_reveal_route,
     fx.ShuffleHandDraw: Engine._act_shuffle_hand_draw,

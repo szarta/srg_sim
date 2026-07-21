@@ -3298,3 +3298,46 @@ def test_srg_boss_absorbing_multiple_effects_adds_them_all() -> None:
     n = len(eng.state.players["A"].competitor.effects)
     eng._act_absorb_gimmick(fx.AbsorbGimmick((_onroll_draw(), _onroll_draw())), "A")  # V2 = 2 effects
     assert len(eng.state.players["A"].competitor.effects) == n + 2
+
+
+# -- El Ganso Ruso: copy your target's entrance (schema v58) ------------------
+
+
+def test_el_ganso_copy_appends_targets_entrance_effects() -> None:
+    from dataclasses import replace as _replace
+
+    eng = _fresh()
+    eff = fx.Effect(trigger=fx.OnRoll(skill=Skill.AGILITY, who=fx.Who.SELF),
+                    condition=fx.Always(), actions=(fx.Draw(n=1),), raw_clause="opp-entrance")
+    eng.state.players["B"].entrance = _replace(eng.state.players["B"].entrance, effects=(eff,))
+    n_a = len(eng.state.players["A"].entrance.effects)
+    eng._act_copy_entrance(fx.CopyEntrance(fx.Who.OPP), "A")  # A copies B's entrance
+    assert len(eng.state.players["A"].entrance.effects) == n_a + 1  # A gained B's ability
+    assert len(eng.state.players["B"].entrance.effects) == 1  # B's own untouched
+
+
+def test_el_ganso_copied_ongoing_ability_fires_for_the_copier() -> None:
+    from dataclasses import replace as _replace
+    from srg_sim.conditions import RollContext
+
+    eng = _fresh()
+    eng.state.players["A"].deck = [_mk("c1", PlayOrder.LEAD, 301)]
+    eng.state.players["A"].hand = []
+    eff = fx.Effect(trigger=fx.OnRoll(skill=Skill.AGILITY, who=fx.Who.SELF),
+                    condition=fx.Always(), actions=(fx.Draw(n=1),), raw_clause="opp-entrance")
+    eng.state.players["B"].entrance = _replace(eng.state.players["B"].entrance, effects=(eff,))
+    eng._act_copy_entrance(fx.CopyEntrance(fx.Who.OPP), "A")
+    eng._roll_ctx["A"] = RollContext(skill=Skill.AGILITY, gap=0, value=7)
+    eng._run_on_roll("A")
+    assert len(eng.state.players["A"].hand) == 1  # copied OnRoll->Draw fired
+
+
+def test_el_ganso_copying_own_entrance_is_a_noop() -> None:
+    from dataclasses import replace as _replace
+
+    eng = _fresh()
+    eff = fx.Effect(trigger=fx.OnRoll(skill=Skill.AGILITY, who=fx.Who.SELF),
+                    condition=fx.Always(), actions=(fx.Draw(n=1),), raw_clause="own")
+    eng.state.players["A"].entrance = _replace(eng.state.players["A"].entrance, effects=(eff,))
+    eng._act_copy_entrance(fx.CopyEntrance(fx.Who.SELF), "A")  # SELF -> no-op
+    assert len(eng.state.players["A"].entrance.effects) == 1
