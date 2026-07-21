@@ -459,6 +459,10 @@
     "who": "SELF"
   },
   {
+    "@type": "ForceRevealPlay",
+    "who": "OPP"
+  },
+  {
     "@type": "Scry",
     "bottom": 0,
     "bury": 1,

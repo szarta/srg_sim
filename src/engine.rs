@@ -1007,6 +1007,7 @@ impl Engine {
                 match_on,
             } => self.act_reveal_for_draw(*who, *count, *draw, *match_on, key)?,
             Action::Peek { who } => self.act_peek(*who, key),
+            Action::ForceRevealPlay { who } => self.act_force_reveal_play(*who, key),
             Action::Scry {
                 deck,
                 top,
@@ -2144,6 +2145,79 @@ impl Engine {
         self.log_effect(key, "Peek", Some(&target), json!({"hand_size": hand_size}));
     }
 
+    /// Arm the deferred "forced reveal-and-play" on `who` for their next won turn
+    /// (Father Light). A one-shot flag on the target; the actual reveal+play fires
+    /// from `take_turn_action` when that player next takes a turn. Idempotent —
+    /// re-arming before the target takes a turn leaves it armed exactly once.
+    fn act_force_reveal_play(&mut self, who: Who, key: &str) {
+        let target = self.target(who, key);
+        self.state
+            .players
+            .get_mut(&target)
+            .unwrap()
+            .flags
+            .insert("forced_reveal_play".to_owned(), json!(true));
+        self.log_effect(key, "ForceRevealPlay", Some(&target), json!({}));
+    }
+
+    /// Consume `key`'s armed "forced reveal-and-play" flag, if set.
+    fn consume_forced_reveal_play(&mut self, key: &str) -> bool {
+        let flags = &mut self.state.players.get_mut(key).unwrap().flags;
+        if flags
+            .get("forced_reveal_play")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
+            flags.remove("forced_reveal_play");
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Father Light's forced play: reveal `active`'s hand one card at a time in
+    /// random order until a playable card turns up, then force-play it (no free
+    /// choice). Playability is the ordinary rule — a Lead, a Follow-Up with a Lead
+    /// in play, or a Finish with a Follow-Up in play (a stop counts as its play
+    /// order); an `AlsoLead` self-declaration also qualifies. Returns `true` iff a
+    /// card was forced; `false` (whole hand revealed, nothing playable) lets the
+    /// caller fall through to the ordinary — necessarily pass-only — turn action.
+    fn forced_reveal_and_play(&mut self, active: &str, defender: &str) -> Eng<bool> {
+        let chain = self.state.players[active].in_play.clone();
+        let mut remaining: Vec<Card> = self.state.players[active].hand.clone();
+        let mut revealed: Vec<String> = Vec::new();
+        let mut chosen: Option<Card> = None;
+        while !remaining.is_empty() {
+            let card = self.state.rng.reveal(&remaining).cloned().unwrap();
+            let pos = remaining
+                .iter()
+                .position(|c| c.number == card.number)
+                .unwrap();
+            remaining.remove(pos);
+            revealed.push(card.db_uuid.clone());
+            if playable(&chain, &card) || self.also_lead_now(active, &card) {
+                chosen = Some(card);
+                break;
+            }
+        }
+        self.log_effect(
+            active,
+            "ForcedReveal",
+            None,
+            json!({"revealed": revealed,
+                   "played": chosen.as_ref().map(|c| c.db_uuid.clone())}),
+        );
+        let Some(card) = chosen else {
+            return Ok(false);
+        };
+        let taken = self.take_from_hand(active, card.number);
+        let landed = self.resolve_play(active, defender, taken.clone())?;
+        if landed && taken.play_order == PlayOrder::Finish {
+            self.finish_sequence(active, defender, &taken)?;
+        }
+        Ok(true)
+    }
+
     /// Look at / reveal cards from the top (and/or bottom) of `deck`'s deck and
     /// route them by value. The effect owner (`key`) is the actor: it takes the
     /// `to_hand` best cards to the deck owner's hand, buries `bury` of them to the
@@ -2943,6 +3017,14 @@ impl Engine {
     /// triggers the finish sequence.
     fn take_turn_action(&mut self, active: &str) -> Eng<()> {
         let defender = self.state.opponent_of(active);
+        // Father Light: a deferred forced reveal-and-play consumes this turn's play
+        // when armed and a card is playable; if nothing is playable the whole hand
+        // is revealed and play falls through to the ordinary (pass-only) action.
+        if self.consume_forced_reveal_play(active)
+            && self.forced_reveal_and_play(active, &defender)?
+        {
+            return Ok(());
+        }
         let mut legal = self.playable_options(active);
         legal.push(json!({"kind": "pass"}));
         let choice = self.decide("turn_action", active, legal)?;
@@ -4598,6 +4680,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RevealAndDiscard { .. } => "RevealAndDiscard",
         Action::RevealForDraw { .. } => "RevealForDraw",
         Action::Peek { .. } => "Peek",
+        Action::ForceRevealPlay { .. } => "ForceRevealPlay",
         Action::Scry { .. } => "Scry",
         Action::RevealRoute { .. } => "RevealRoute",
         Action::ShuffleHandDraw { .. } => "ShuffleHandDraw",
@@ -7680,5 +7763,129 @@ mod el_super_hombre_v3_tests {
             .offer_roll_boost("A", Skill::Power, 7, false)
             .unwrap();
         assert_eq!(v, 7, "the Agility gate keeps it inert on a Power roll");
+    }
+}
+
+/// Father Light (schema v55: ForceRevealPlay) — "When you roll Agility for your
+/// turn roll, during your opponent's next turn, they randomly reveal a card in
+/// their hand until they reveal a playable card; they must play that card."
+#[cfg(test)]
+mod father_light_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::{json, Value};
+
+    fn card(uuid: &str, order: &str, number: i64) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": number,
+               "play_order": order, "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []})
+    }
+
+    fn heuristic_pair() -> Policies {
+        Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        )
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(heuristic_pair()),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn hand(engine: &mut Engine, key: &str, cards: &[Value]) {
+        engine.state.players.get_mut(key).unwrap().hand = cards
+            .iter()
+            .map(|c| serde_json::from_value(c.clone()).unwrap())
+            .collect();
+    }
+
+    #[test]
+    fn arming_sets_a_one_shot_flag_on_the_opponent_and_is_idempotent() {
+        let mut engine = engine();
+        engine.act_force_reveal_play(Who::Opp, "A"); // A's gimmick arms B
+        assert!(engine.state.players["B"]
+            .flags
+            .contains_key("forced_reveal_play"));
+        assert!(!engine.state.players["A"]
+            .flags
+            .contains_key("forced_reveal_play"));
+        engine.act_force_reveal_play(Who::Opp, "A"); // re-arm: still armed exactly once
+        assert!(engine.consume_forced_reveal_play("B"));
+        assert!(
+            !engine.consume_forced_reveal_play("B"),
+            "consumed once, then clear"
+        );
+    }
+
+    #[test]
+    fn forces_the_only_playable_card_the_lead() {
+        // B holds a Lead and a Follow Up with an empty board: only the Lead is
+        // playable, so whatever the random reveal order, the Lead is force-played.
+        let mut engine = engine();
+        hand(
+            &mut engine,
+            "B",
+            &[card("b-lead", "Lead", 1), card("b-fu", "Followup", 2)],
+        );
+        let played = engine.forced_reveal_and_play("B", "A").unwrap();
+        assert!(played, "a playable card was forced");
+        let b = &engine.state.players["B"];
+        assert!(
+            b.in_play.iter().any(|c| c.db_uuid == "b-lead"),
+            "the Lead landed"
+        );
+        assert_eq!(b.hand.len(), 1, "only the Follow Up remains in hand");
+        assert!(b.hand.iter().any(|c| c.db_uuid == "b-fu"));
+    }
+
+    #[test]
+    fn nothing_playable_reveals_the_whole_hand_and_plays_nothing() {
+        // All Follow Ups and Finishes, no Lead in play: nothing is playable, so the
+        // whole hand is revealed and no card is played (returns false → the turn
+        // falls through to the ordinary pass).
+        let mut engine = engine();
+        hand(
+            &mut engine,
+            "B",
+            &[card("b-fu", "Followup", 1), card("b-fin", "Finish", 2)],
+        );
+        let played = engine.forced_reveal_and_play("B", "A").unwrap();
+        assert!(!played, "no playable card");
+        let b = &engine.state.players["B"];
+        assert_eq!(b.hand.len(), 2, "the hand is untouched");
+        assert!(b.in_play.is_empty());
+    }
+
+    #[test]
+    fn take_turn_action_consumes_the_armed_forced_play() {
+        // The full wiring: an armed B, on taking its turn, is forced to play its
+        // only playable card (the Lead) and the flag is consumed.
+        let mut engine = engine();
+        engine.act_force_reveal_play(Who::Opp, "A");
+        hand(&mut engine, "B", &[card("b-lead", "Lead", 1)]);
+        engine.state.active = "B".into();
+        engine.take_turn_action("B").unwrap();
+        let b = &engine.state.players["B"];
+        assert!(
+            b.in_play.iter().any(|c| c.db_uuid == "b-lead"),
+            "forced to play the Lead"
+        );
+        assert!(!b.flags.contains_key("forced_reveal_play"), "flag consumed");
     }
 }

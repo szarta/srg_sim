@@ -659,6 +659,9 @@
                 "$ref": "#/$defs/Peek"
               },
               {
+                "$ref": "#/$defs/ForceRevealPlay"
+              },
+              {
                 "$ref": "#/$defs/Scry"
               },
               {
@@ -1217,6 +1220,9 @@
                 "$ref": "#/$defs/Peek"
               },
               {
+                "$ref": "#/$defs/ForceRevealPlay"
+              },
+              {
                 "$ref": "#/$defs/Scry"
               },
               {
@@ -1673,6 +1679,22 @@
       ],
       "type": "object"
     },
+    "ForceRevealPlay": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ForceRevealPlay"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
     "Frequency": {
       "enum": [
         "UNLIMITED",
@@ -2019,6 +2041,9 @@
         },
         {
           "$ref": "#/$defs/Peek"
+        },
+        {
+          "$ref": "#/$defs/ForceRevealPlay"
         },
         {
           "$ref": "#/$defs/Scry"
@@ -3871,5 +3896,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 54
+  "version": 55
 }

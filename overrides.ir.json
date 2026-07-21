@@ -343,6 +343,34 @@
       }
     }
   ],
+  "0a72bde2abe84fef92b5695e8ec53a86": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ForceRevealPlay",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll agility for your turn roll, during your opponent's next turn, they randomly reveal a card in their hand until they reveal a playable card; they must play that card",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Agility",
+        "who": "SELF"
+      }
+    }
+  ],
   "0be595fb7e6e4f96a766d8bbdbb28f10": [
     {
       "@type": "Effect",

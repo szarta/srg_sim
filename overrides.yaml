@@ -7856,3 +7856,38 @@ b70afdfa287e4ca6be73ee9f03c863ea:
   raw_clause: when you roll Agility for your turn roll, draw 1 card or your roll is +1
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Father Light (top-96) — deferred forced reveal-and-play (schema v55:
+# ForceRevealPlay). "When you roll Agility for your turn roll, during your
+# opponent's next turn, they randomly reveal a card in their hand until they
+# reveal a playable card; they must play that card." OnRoll(Agility) arms a
+# one-shot flag on the opponent (idempotent — bumps/multiple Agility rolls arm
+# once); on the opponent's next won turn the engine reveals their hand in random
+# order until a playable card (Lead / Follow-Up-with-Lead / Finish-with-Follow-Up;
+# stops count as their play order) turns up and force-plays it, consuming that
+# turn's play. If nothing is playable the whole hand is revealed and no card is
+# played (their turn falls through to the ordinary pass). Mandatory (optional:
+# false) — the arming always happens on an Agility roll.
+# ---------------------------------------------------------------------------
+0a72bde2abe84fef92b5695e8ec53a86:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Agility
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ForceRevealPlay
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll agility for your turn roll, during your opponent's next
+    turn, they randomly reveal a card in their hand until they reveal a playable card;
+    they must play that card
+  source: gimmick
+  optional: false

@@ -803,6 +803,17 @@ pub enum Action {
     Peek {
         who: Who,
     },
+    /// Arm a deferred, mandatory "forced reveal-and-play" on `who` for their next
+    /// turn (Father Light: "during your opponent's next turn, they randomly reveal
+    /// a card in their hand until they reveal a playable card; they must play that
+    /// card"). Sets a one-shot flag on the target; at the start of that player's
+    /// next won turn the engine reveals their hand in random order until a card is
+    /// playable (Lead / Follow-Up-with-Lead / Finish-with-Follow-Up, stops count as
+    /// their play order) and force-plays it. Idempotent: re-arming before the target
+    /// takes a turn still fires once.
+    ForceRevealPlay {
+        who: Who,
+    },
     /// Look at / reveal cards from the top (and/or bottom) of `deck`'s deck, then
     /// route them: the effect owner (the "actor") takes `to_hand` of them to the
     /// deck owner's hand, buries `bury` to the deck bottom, and disposes of the
@@ -1528,6 +1539,17 @@ pub enum IrNode {
         match_on: RevealMatch,
     },
     Peek {
+        who: Who,
+    },
+    /// Arm a deferred, mandatory "forced reveal-and-play" on `who` for their next
+    /// turn (Father Light: "during your opponent's next turn, they randomly reveal
+    /// a card in their hand until they reveal a playable card; they must play that
+    /// card"). Sets a one-shot flag on the target; at the start of that player's
+    /// next won turn the engine reveals their hand in random order until a card is
+    /// playable (Lead / Follow-Up-with-Lead / Finish-with-Follow-Up, stops count as
+    /// their play order) and force-plays it. Idempotent: re-arming before the target
+    /// takes a turn still fires once.
+    ForceRevealPlay {
         who: Who,
     },
     /// Look at / reveal cards from the top (and/or bottom) of `deck`'s deck, then
