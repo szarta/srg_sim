@@ -12,6 +12,7 @@ from srg_sim.effects import (
     Effect,
     EffectSource,
     MaxHandSize,
+    MinHandSize,
     OnPlay,
     Static,
     Who,
@@ -47,10 +48,11 @@ def _card(number: int, effects: tuple[Effect, ...] = ()) -> Card:
 def _state(
     a_comp_effects: tuple[Effect, ...] = (),
     a_in_play: tuple[Card, ...] = (),
+    b_comp_effects: tuple[Effect, ...] = (),
 ) -> GameState:
     ent = EntranceCard("u-ent", "Entrance")
     bull = Competitor("u-bull", "The Bull", "Worlds", BULL_STATS, effects=a_comp_effects)
-    fae = Competitor("u-fae", "Fae Dragon", "Worlds", FAE_STATS)
+    fae = Competitor("u-fae", "Fae Dragon", "Worlds", FAE_STATS, effects=b_comp_effects)
     a = PlayerState(competitor=bull, entrance=ent, in_play=list(a_in_play))
     b = PlayerState(competitor=fae, entrance=ent)
     return GameState(players={"A": a, "B": b}, rng=SeededRNG(1))
@@ -152,9 +154,53 @@ def test_blanked_gimmick_drops_its_hand_cap_mod() -> None:
     assert gs.effective_hand_cap("B", 10) == 10
 
 
-def test_hand_cap_never_goes_below_zero() -> None:
+def test_hand_cap_floored_at_default_minimum() -> None:
+    # A max-handsize reduction can never drop the cap below the default minimum (3),
+    # per the SRG ruling — not to zero. -20 would give -10; the floor holds it at 3.
     gs = _state(a_comp_effects=(_static_hand_mod(-20, Who.OPP),))
-    assert gs.effective_hand_cap("B", 10) == 0
+    assert gs.effective_hand_cap("B", 10) == 3
+
+
+def _static_min_hand_mod(delta: int, who: Who) -> Effect:
+    return Effect(
+        trigger=Static(),
+        actions=(MinHandSize(delta=delta, who=who),),
+        duration=Duration.WHILE_IN_PLAY,
+    )
+
+
+def test_min_handsize_raises_floor_on_reduced_cap() -> None:
+    # Quadruple H raises the minimum +2 (floor 5). An opponent reducing the max to 4
+    # is clamped up to that floor.
+    gs = _state(
+        a_comp_effects=(_static_min_hand_mod(2, Who.SELF),),
+        b_comp_effects=(_static_hand_mod(-6, Who.OPP),),  # A's max: 10-6 = 4
+    )
+    assert gs.effective_hand_cap("A", 10) == 5
+
+
+def test_min_handsize_alone_does_not_lower_a_healthy_cap() -> None:
+    # Minimum above default but below the (unreduced) maximum: no effect on the cap.
+    gs = _state(a_comp_effects=(_static_min_hand_mod(2, Who.SELF),))
+    assert gs.effective_hand_cap("A", 10) == 10
+
+
+def test_quadruple_h_min_and_max_plus_two() -> None:
+    # Both +2: max 12, min floor 5 -> cap = max(12, 5) = 12.
+    gs = _state(
+        a_comp_effects=(_static_hand_mod(2, Who.SELF), _static_min_hand_mod(2, Who.SELF)),
+    )
+    assert gs.effective_hand_cap("A", 10) == 12
+
+
+def test_min_above_max_becomes_new_max() -> None:
+    # Minimum raised above a reduced maximum becomes the new maximum: max -6 (=4),
+    # min +4 (floor 7) -> cap 7.
+    gs = _state(
+        a_comp_effects=(_static_min_hand_mod(4, Who.SELF),),
+        b_comp_effects=(_static_hand_mod(-6, Who.OPP),),
+    )
+    assert gs.effective_hand_cap("A", 10) == 7
 
 
 def test_draw_moves_top_of_deck_to_hand() -> None:

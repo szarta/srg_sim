@@ -7409,3 +7409,54 @@ d149b71b56624078bea5794ee597e7b1:
     into your deck
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Quadruple H (top-96) — minimum-handsize (schema v44, MinHandSize).
+# "At the start of the match, draw 2 additional cards.
+#  Your minimum and maximum handsize are +2."
+# StartOfMatch Draw 2 (the extra opening cards). The second clause is TWO Static
+# hand mods: MaxHandSize +2 (raises the cap) AND MinHandSize +2. Per the SRG ruling
+# the minimum is not a draw-up floor — it is a floor on the maximum (a reduction
+# can't drop the cap below it), folded in effective_hand_cap.
+# ---------------------------------------------------------------------------
+50446df532b14eb784abe67b262181cd:
+- '@type': Effect
+  trigger:
+    '@type': StartOfMatch
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: at the start of the match, draw 2 additional cards
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': MaxHandSize
+    delta: 2
+    who: SELF
+    duration: WHILE_IN_PLAY
+  - '@type': MinHandSize
+    delta: 2
+    who: SELF
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your minimum and maximum handsize are +2
+  source: gimmick
+  optional: false

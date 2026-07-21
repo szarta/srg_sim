@@ -36,6 +36,7 @@ from srg_sim.effects import (
     Duration,
     Effect,
     MaxHandSize,
+    MinHandSize,
     Static,
     Who,
 )
@@ -47,6 +48,10 @@ if TYPE_CHECKING:
 # A condition evaluator the engine can supply so conditional Static buffs resolve
 # against live state; without one, only unconditional (``Always``) buffs apply.
 ConditionHolds = Callable[[Condition], bool]
+
+# Default minimum hand size (SRG ruling): a max-handsize reduction can never take a
+# player's cap below this. ``MinHandSize`` mods shift it. See ``effective_hand_cap``.
+MIN_HAND_SIZE = 3
 
 
 @dataclass
@@ -231,13 +236,15 @@ def _iter_static_buffs(effects: Iterable[Effect]) -> Iterator[tuple[Effect, Buff
                     yield eff, action
 
 
-def _iter_static_hand_mods(effects: Iterable[Effect]) -> Iterator[tuple[Effect, MaxHandSize]]:
-    """Yield ``(effect, MaxHandSize)`` for every Static hand-cap modifier in
+def _iter_static_hand_mods(
+    effects: Iterable[Effect],
+) -> Iterator[tuple[Effect, MaxHandSize | MinHandSize]]:
+    """Yield ``(effect, mod)`` for every Static hand-cap modifier (max or min) in
     ``effects`` — the derived-hand-cap analogue of :func:`_iter_static_buffs`."""
     for eff in effects:
         if isinstance(eff.trigger, Static):
             for action in eff.actions:
-                if isinstance(action, MaxHandSize):
+                if isinstance(action, (MaxHandSize, MinHandSize)):
                     yield eff, action
 
 
@@ -425,27 +432,38 @@ class GameState:
     def effective_hand_cap(self, key: str, base: int, holds: ConditionHolds | None = None) -> int:
         """Derived maximum hand size for ``key`` (``base`` + active Static hand mods).
 
-        Folds every :class:`MaxHandSize` the way :meth:`effective_stats` folds
-        Static buffs: a card raising your own cap or lowering your opponent's is
-        read here on demand (DESIGN.md §5/§6). ``holds`` resolves conditional mods;
-        without it only unconditional ones apply. Clamped at zero.
+        Folds every :class:`MaxHandSize`/:class:`MinHandSize` the way
+        :meth:`effective_stats` folds Static buffs: a card raising your own cap or
+        lowering your opponent's is read here on demand (DESIGN.md §5/§6). Per the
+        SRG ruling the minimum (default :data:`MIN_HAND_SIZE`, + ``MinHandSize``
+        mods) is a **floor on the maximum**, so both collapse to
+        ``max(base + max_mods, effective_min)``. ``holds`` resolves conditional
+        mods; without it only unconditional ones apply.
         """
-        cap = base
+        max_mods = min_mods = 0
         for owner, player in self.players.items():
-            cap += self._owner_hand_mods(key, owner, player, holds)
-        return max(0, cap)
+            mx, mn = self._owner_hand_mods(key, owner, player, holds)
+            max_mods += mx
+            min_mods += mn
+        floor = max(0, MIN_HAND_SIZE + min_mods)
+        return max(base + max_mods, floor)
 
     def _owner_hand_mods(
         self, target: str, owner: str, player: PlayerState, holds: ConditionHolds | None
-    ) -> int:
-        total = 0
+    ) -> tuple[int, int]:
+        """``(max_mods, min_mods)`` this player's active Static hand mods add to
+        ``target``'s cap."""
+        max_mods = min_mods = 0
         for effects, active in self._buff_sources(owner, player):
             if not active:
                 continue
             for eff, mod in _iter_static_hand_mods(effects):
                 if _targets(owner, mod.who, target) and _condition_ok(eff.condition, holds):
-                    total += mod.delta
-        return total
+                    if isinstance(mod, MinHandSize):
+                        min_mods += mod.delta
+                    else:
+                        max_mods += mod.delta
+        return max_mods, min_mods
 
     def observable(self, viewer: str) -> dict[str, Any]:
         """What ``viewer`` may legitimately see (DESIGN.md §7 information model).

@@ -989,6 +989,24 @@ class MaxHandSize(IRNode):
 
 
 @dataclass(frozen=True)
+class MinHandSize(IRNode):
+    """Modify a player's minimum hand size (Quadruple H: "Your minimum … handsize
+    is +2"). schema v44
+
+    NOT a draw-up floor — a player may still fall below it by playing, burying or
+    discarding. Per the SRG ruling it is a **floor on the maximum**: a
+    :class:`MaxHandSize` reduction can never take the cap below it, and a minimum
+    raised above the maximum becomes the new maximum. Both collapse to
+    ``max(base + max_mods, min_size + min_mods)`` in :meth:`GameState.effective_hand_cap`.
+    Like :class:`MaxHandSize` it folds into the derived cap and is never executed.
+    """
+
+    delta: int
+    who: Who = Who.SELF
+    duration: Duration = Duration.WHILE_IN_PLAY
+
+
+@dataclass(frozen=True)
 class AddText(IRNode):
     """"Your cards with ``name_contains`` in the name have the added text ``effects``"
     (El Super Santa / Sabu / El Super Hombre). A ``Static`` gimmick declaration read
@@ -1313,6 +1331,7 @@ _SIGNED_DELTA = (
     BuffSkill,
     CrowdMeter,
     MaxHandSize,
+    MinHandSize,
     FinishBonus,
     FinishRollBonus,
     BreakoutModifier,
@@ -1470,6 +1489,7 @@ Action = (
     | ModifyRoll
     | BuffSkill
     | MaxHandSize
+    | MinHandSize
     | AddText
     | AddTextToNext
     | Reroll
