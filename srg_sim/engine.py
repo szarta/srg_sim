@@ -477,9 +477,16 @@ class Engine:
             )
             if not (self._may_fire(eff, owner) and conditions.holds(eff.condition, self.state, owner, gate_ctx)):
                 continue
+            # A costed re-roll (Mr. Hyde) is offered only while the owner can pay it —
+            # an in-play card matching ``cost`` to shuffle away. Unaffordable => not
+            # offered, and the frequency charge is left unspent.
+            if reroll.cost is not None and not self._has_in_play(owner, reroll.cost):
+                continue
             if eff.optional and not self._take_optional(eff, owner):
                 continue  # declined "you may" — charge left for a later roll
             self._mark_fired(eff, owner)
+            if reroll.cost is not None:
+                self._pay_reroll_cost(owner, reroll.cost)
             if reroll.choose:
                 return self._decide_reroll_target(owner)
             if reroll.who is fx.Who.OPP:
@@ -503,6 +510,22 @@ class Engine:
         ``NEXT`` re-roll grants a one-shot for ``key``'s next turn roll (King Brian Cage)."""
         if action.when is fx.RollWhen.NEXT:
             self.state.players[key].reroll_grants["next"] += 1
+
+    def _has_in_play(self, owner: str, filt: fx.CardFilter) -> bool:
+        """Whether ``owner`` has any in-play card matching ``filt`` (re-roll cost check)."""
+        return any(conditions.card_matches(c, filt) for c in self.state.players[owner].in_play)
+
+    def _pay_reroll_cost(self, owner: str, filt: fx.CardFilter) -> None:
+        """Pay a costed re-roll: shuffle the first in-play card matching ``filt`` into
+        ``owner``'s deck (Mr. Hyde's "Potion"). Fires ``OnShuffle`` like any shuffle."""
+        player = self.state.players[owner]
+        card = next((c for c in player.in_play if conditions.card_matches(c, filt)), None)
+        if card is None:
+            return  # affordability was checked before offering
+        player.in_play.remove(card)
+        player.deck.append(card)
+        self._log(gl.Bury(t=self.state.turn_no, player=owner, cards=[card.db_uuid], source="in_play"))
+        self._shuffle_deck(owner)
 
     def _offer_yes_no(self, key: str) -> bool:
         """A bare optional yes/no offer to ``key`` (no backing effect)."""

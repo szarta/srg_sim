@@ -7593,3 +7593,45 @@ d9e5097bbec7440c997cfff511cf0f39:
   raw_clause: when you roll Technique for your Finish roll, look at your opponent's hand, choose 1 Follow Up or Finish and bury it
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Mr. Hyde (top-96, #99) — costed re-roll (schema v48: Reroll.cost).
+# "Once per turn or turn roll: You may shuffle 1 card with "Potion" in the name
+#  that you have in play into your deck to re-roll any roll."
+# A Static (ungated) once-per-turn optional self re-roll, offered at each turn-roll
+# point, whose COST is shuffling an in-play "Potion" card into the deck. Offered only
+# while such a card is in play; taking it shuffles one away. ("any roll" is modeled as
+# the turn roll-off, the reroll family's scope.)
+# ---------------------------------------------------------------------------
+ceb9126b162c4be69b9291c088d3fe5b:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Reroll
+    who: SELF
+    once: true
+    choose: false
+    when: THIS
+    cost:
+      '@type': CardFilter
+      atk_type: null
+      name: null
+      name_contains:
+      - Potion
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: once per turn roll, you may shuffle 1 card with "Potion" in the name that you have in play into your deck to re-roll
+  source: gimmick
+  optional: true

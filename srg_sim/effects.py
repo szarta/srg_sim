@@ -1072,6 +1072,11 @@ class Reroll(IRNode):
     # ``THIS`` re-rolls the current roll (structural, read in the roll-off); ``NEXT``
     # grants a one-shot re-roll for the owner's next turn roll (King Brian Cage).
     when: RollWhen = RollWhen.THIS
+    # An in-play card the owner must shuffle into their deck to re-roll (Mr. Hyde:
+    # "shuffle 1 card with 'Potion' in the name that you have in play into your deck
+    # to re-roll"). ``None`` = free; when set, the re-roll is offered only while a
+    # matching card is in play, and taking it shuffles one away. schema v48
+    cost: CardFilter | None = None
 
 
 @dataclass(frozen=True)

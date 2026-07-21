@@ -630,6 +630,54 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def _hyde_engine() -> Engine:
+    # Mr. Hyde: a Static once-per-turn optional self re-roll costing an in-play "Potion".
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    gimmick = fx.Effect(
+        trigger=fx.Static(),
+        actions=(
+            fx.Reroll(
+                who=fx.Who.SELF, once=True, choose=False, when=fx.RollWhen.THIS,
+                cost=fx.CardFilter(name_contains=("Potion",)),
+            ),
+        ),
+        source=fx.EffectSource.GIMMICK,
+        optional=True,
+        frequency=fx.FrequencyGuard(kind=fx.Frequency.ONCE_PER_TURN),
+    )
+    eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, effects=(gimmick,))
+    return eng
+
+
+def _potion(uuid: str) -> Card:
+    return Card(db_uuid=uuid, name="Health Potion", number=1, atk_type=AtkType.STRIKE,
+                play_order=PlayOrder.LEAD)
+
+
+def test_costed_reroll_fires_and_shuffles_the_potion_away() -> None:
+    from srg_sim import conditions
+    eng = _hyde_engine()
+    eng.state.players["A"].in_play = [_potion("p1")]
+    ctx = conditions.RollContext(skill=Skill.POWER, gap=0, value=5, opp_skill=Skill.POWER)
+    target = eng._offer_reroll("A", ctx, ctx)
+    assert target == "A"  # offered and taken
+    a = eng.state.players["A"]
+    assert not a.in_play  # the Potion left play
+    assert any(c.db_uuid == "p1" for c in a.deck)  # shuffled into the deck
+
+
+def test_costed_reroll_is_not_offered_without_the_potion() -> None:
+    from srg_sim import conditions
+    eng = _hyde_engine()
+    eng.state.players["A"].in_play = [
+        Card(db_uuid="x", name="Chair", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    ]
+    ctx = conditions.RollContext(skill=Skill.POWER, gap=0, value=5, opp_skill=Skill.POWER)
+    assert eng._offer_reroll("A", ctx, ctx) is None
+    assert len(eng.state.players["A"].in_play) == 1  # untouched
+
+
 def test_burying_the_opponents_discard_does_not_crash() -> None:
     # Regression: the heuristic _at_bury used to look the chosen card up in the ACTOR's
     # discard, failing when burying the OPPONENT's. A buries 1 from B's discard; the
