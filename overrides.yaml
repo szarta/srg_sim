@@ -7811,3 +7811,48 @@ ef8dfa451af8437f813ffece624bad4f:
   raw_clause: triple the numbers in the text of your Entrance cards with "Training with" in the name
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# El Super Hombre (V3) (top-96) — in-roll choice (schema v54: RollBoost).
+# "When you roll Agility for your turn roll: Draw 1 card or your roll is +1."
+# OnRollBoost{skill=Agility, delta=0, on_bump=false} (the mutable in-roll decision
+# point) -> a mandatory Choice: draw 1, OR RollBoost(+1) which adds to THIS roll via
+# the engine's pending_roll_boost. The "+1" only matters in-roll (before the winner is
+# decided), which is why it routes through offer_roll_boost, not an after-the-fact OnRoll.
+# ---------------------------------------------------------------------------
+b70afdfa287e4ca6be73ee9f03c863ea:
+- '@type': Effect
+  trigger:
+    '@type': OnRollBoost
+    skill: Agility
+    delta: 0
+    on_bump: false
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: draw 1 card
+      actions:
+      - '@type': Draw
+        n: 1
+        source: TOP
+        who: SELF
+        cap: null
+        per: null
+        per_excludes_trigger: false
+        per_who: SELF
+    - '@type': ChoiceOption
+      label: your roll is +1
+      actions:
+      - '@type': RollBoost
+        delta: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Agility for your turn roll, draw 1 card or your roll is +1
+  source: gimmick
+  optional: false

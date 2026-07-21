@@ -630,6 +630,58 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+class _PickChoice(HeuristicPolicy):
+    def __init__(self, pick: int) -> None:
+        super().__init__()
+        self.pick = pick
+
+    def choose(self, point, legal, state, key):  # type: ignore[no-untyped-def]
+        if point == "choice":
+            return next((o for o in legal if o["index"] == self.pick), legal[0])
+        return super().choose(point, legal, state, key)
+
+
+def _eshv3_engine(pick: int) -> Engine:
+    eng = Engine(*bull_vs_fae(), _PickChoice(pick), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    gimmick = fx.Effect(
+        trigger=fx.OnRollBoost(skill=Skill.AGILITY, delta=0, on_bump=False),
+        actions=(
+            fx.Choice(options=(
+                fx.ChoiceOption(label="draw", actions=(fx.Draw(n=1),)),
+                fx.ChoiceOption(label="boost", actions=(fx.RollBoost(1),)),
+            )),
+        ),
+        source=fx.EffectSource.GIMMICK,
+    )
+    eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, effects=(gimmick,))
+    eng.state.players["A"].deck = [
+        Card(db_uuid="d", name="d", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    ]
+    return eng
+
+
+def test_eshv3_boost_branch_adds_one_to_the_roll() -> None:
+    eng = _eshv3_engine(pick=1)  # "boost"
+    before = len(eng.state.players["A"].hand)
+    v = eng._offer_roll_boost("A", Skill.AGILITY, 7, on_bump=False)
+    assert v == 8
+    assert len(eng.state.players["A"].hand) == before  # no draw
+
+
+def test_eshv3_draw_branch_leaves_the_roll_and_draws() -> None:
+    eng = _eshv3_engine(pick=0)  # "draw"
+    before = len(eng.state.players["A"].hand)
+    v = eng._offer_roll_boost("A", Skill.AGILITY, 7, on_bump=False)
+    assert v == 7
+    assert len(eng.state.players["A"].hand) == before + 1
+
+
+def test_eshv3_does_not_fire_on_a_non_agility_roll() -> None:
+    eng = _eshv3_engine(pick=1)
+    assert eng._offer_roll_boost("A", Skill.POWER, 7, on_bump=False) == 7
+
+
 def _pedro_engine(ent_name: str, declare: bool = True) -> Engine:
     from srg_sim.cards import EntranceCard
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")

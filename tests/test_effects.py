@@ -70,6 +70,7 @@ from srg_sim.effects import (
     StopCountsOrderAs,
     SuppressStop,
     ModifyRoll,
+    RollBoost,
     Not,
     OnBreakout,
     OnBump,
@@ -231,6 +232,7 @@ SAMPLES: list[IRNode] = [
     RevealAndDiscard(3, Who.OPP),  # Spin Wheel Kick reveal-3-discard-Stops
     RevealForDraw(Who.OPP, 1, 2),  # Bartholomew Hooke
     ModifyRoll(Who.SELF, 1, RollWhen.NEXT),
+    RollBoost(1),  # El Super Hombre V3
     Draw(1, per=CardFilter(play_order=PlayOrder.LEAD), per_who=Who.SELF),  # per-count draw
     Discard(  # per-count opponent discard (Field of Fire)
         count=1, who=Who.OPP, per=CardFilter(atk_type=AtkType.STRIKE), per_who=Who.SELF

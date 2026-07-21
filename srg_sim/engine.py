@@ -96,6 +96,9 @@ class Engine:
         # Whether this turn's roll-off involved a bump — read by the finish sequence
         # for "if you bumped on the last turn roll, double these bonuses" (T-Virus).
         self._turn_bumped = False
+        # In-roll boost accumulated by a RollBoost action during an _offer_roll_boost call
+        # (El Super Hombre V3's "or your roll is +1" choice branch); transient.
+        self._pending_roll_boost = 0
         # The clause currently resolving, read only by a TIMED BuffSkill for its
         # stacking identity (set by `_apply_actions`).
         self._clause = ""
@@ -635,9 +638,15 @@ class Engine:
             if eff.optional and not self._take_optional(eff, key):
                 continue
             self._mark_fired(eff, key)
-            self._apply_actions(eff, key)  # pay the cost (e.g. discard a matching card)
-            value += trig.delta
-            self._log_effect(key, "RollBoost", key, {"skill": skill.value, "delta": trig.delta})
+            # A RollBoost action inside the effect (e.g. a Choice branch, El Super Hombre
+            # V3) reports its in-roll delta through _pending_roll_boost; the trigger's own
+            # fixed delta (Rey Zerblade) is added on top.
+            self._pending_roll_boost = 0
+            self._apply_actions(eff, key)  # pay the cost / run the chosen branch
+            applied = trig.delta + self._pending_roll_boost
+            value += applied
+            if applied != 0:
+                self._log_effect(key, "RollBoost", key, {"skill": skill.value, "delta": applied})
         return value
 
     def _apply_in_roll_mods(self, sa: Skill, va: int, sb: Skill, vb: int) -> tuple[int, int]:
@@ -1943,6 +1952,10 @@ class Engine:
             gl.CrowdMeter(t=self.state.turn_no, delta=action.delta, value=self.state.crowd_meter)
         )
 
+    def _act_roll_boost(self, action: fx.RollBoost, key: str) -> None:
+        # Report an in-roll boost through _pending_roll_boost, read by _offer_roll_boost.
+        self._pending_roll_boost += action.delta
+
     def _act_modify_roll(self, action: fx.ModifyRoll, key: str) -> None:
         target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         slot = "this" if action.when is fx.RollWhen.THIS else "next"
@@ -2624,6 +2637,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.Flip: Engine._act_flip,
     fx.Discard: Engine._act_discard,
     fx.CrowdMeter: Engine._act_crowd,
+    fx.RollBoost: Engine._act_roll_boost,
     fx.ModifyRoll: Engine._act_modify_roll,
     fx.WinTie: Engine._act_win_tie,
     fx.BlankGimmick: Engine._act_blank_gimmick,

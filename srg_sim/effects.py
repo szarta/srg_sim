@@ -1002,6 +1002,17 @@ class ModifyRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class RollBoost(IRNode):
+    """Add ``delta`` to the owner's CURRENT roll value, mid-roll-off — a choice branch
+    inside an ``OnRollBoost`` offer (El Super Hombre V3: "when you roll Agility … or your
+    roll is +1"). Unlike ``ModifyRoll(when=THIS)`` (a pending mod consumed at roll start),
+    this applies to a roll already made. Read by ``_offer_roll_boost`` via the engine's
+    ``_pending_roll_boost``. schema v54"""
+
+    delta: int = 0
+
+
+@dataclass(frozen=True)
 class BuffSkill(IRNode):
     """A persistent ``+delta`` (or ``-delta``) to ``who``'s ``skill``, folded into the
     derived stats (DESIGN.md §5). Two dynamic variants (Copy Kat V2): ``target_highest``
@@ -1636,6 +1647,7 @@ Action = (
     | RevealForDraw
     | Peek
     | ModifyRoll
+    | RollBoost
     | BuffSkill
     | MaxHandSize
     | MinHandSize
