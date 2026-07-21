@@ -699,6 +699,13 @@
     "@type": "BumpDrawReplace"
   },
   {
+    "@type": "ScaleEntranceNumbers",
+    "factor": 3,
+    "name_contains": [
+      "Training with"
+    ]
+  },
+  {
     "@type": "RevealForDraw",
     "count": 1,
     "draw": 2,

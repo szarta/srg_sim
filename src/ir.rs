@@ -1044,6 +1044,16 @@ pub enum Action {
     /// instead of drawing (Mack-a-Tack: "when you bump, your opponent discards 1 card
     /// instead of drawing"). Read in `do_bump`, never executed. schema v50
     BumpDrawReplace,
+    /// Static declaration that multiplies every number in the owner's Entrance card's
+    /// effects by `factor`, when the entrance name matches `name_contains` (Pedro
+    /// Valiant: "triple the numbers in the text of your Entrance cards with 'Training
+    /// with' in the name"). Applied to the entrance effects in `gimmick_standing_effects`
+    /// (like Cassandra's sign-flip), never executed. Inert while the matching entrances
+    /// parse to `Unsupported`; forward-compatible when they are modeled. schema v53
+    ScaleEntranceNumbers {
+        name_contains: Vec<String>,
+        factor: i64,
+    },
     CrowdMeter {
         delta: i64,
     },
@@ -1753,6 +1763,16 @@ pub enum IrNode {
     /// instead of drawing (Mack-a-Tack: "when you bump, your opponent discards 1 card
     /// instead of drawing"). Read in `do_bump`, never executed. schema v50
     BumpDrawReplace,
+    /// Static declaration that multiplies every number in the owner's Entrance card's
+    /// effects by `factor`, when the entrance name matches `name_contains` (Pedro
+    /// Valiant: "triple the numbers in the text of your Entrance cards with 'Training
+    /// with' in the name"). Applied to the entrance effects in `gimmick_standing_effects`
+    /// (like Cassandra's sign-flip), never executed. Inert while the matching entrances
+    /// parse to `Unsupported`; forward-compatible when they are modeled. schema v53
+    ScaleEntranceNumbers {
+        name_contains: Vec<String>,
+        factor: i64,
+    },
     CrowdMeter {
         delta: i64,
     },

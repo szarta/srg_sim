@@ -782,6 +782,9 @@
                 "$ref": "#/$defs/BumpDrawReplace"
               },
               {
+                "$ref": "#/$defs/ScaleEntranceNumbers"
+              },
+              {
                 "$ref": "#/$defs/RevealForDraw"
               },
               {
@@ -1335,6 +1338,9 @@
               },
               {
                 "$ref": "#/$defs/BumpDrawReplace"
+              },
+              {
+                "$ref": "#/$defs/ScaleEntranceNumbers"
               },
               {
                 "$ref": "#/$defs/RevealForDraw"
@@ -2127,6 +2133,9 @@
         },
         {
           "$ref": "#/$defs/BumpDrawReplace"
+        },
+        {
+          "$ref": "#/$defs/ScaleEntranceNumbers"
         },
         {
           "$ref": "#/$defs/RevealForDraw"
@@ -3260,6 +3269,29 @@
       ],
       "type": "object"
     },
+    "ScaleEntranceNumbers": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ScaleEntranceNumbers"
+        },
+        "factor": {
+          "type": "integer"
+        },
+        "name_contains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "name_contains",
+        "factor"
+      ],
+      "type": "object"
+    },
     "Scry": {
       "additionalProperties": false,
       "properties": {
@@ -3814,5 +3846,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 52
+  "version": 53
 }

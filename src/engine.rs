@@ -282,6 +282,44 @@ fn negate_action(action: &Action) -> Action {
     }
 }
 
+/// Multiply every "number" on one action by `factor`, recursing into a `Choice`'s
+/// branches — the transform Pedro Valiant's `ScaleEntranceNumbers` applies to a
+/// matching Entrance card's effects. Covers the signed deltas plus the count-like
+/// fields ("draw 1" → "draw 3"); anything with no number is returned unchanged.
+fn scale_action(action: &Action, factor: i64) -> Action {
+    let mut a = action.clone();
+    match &mut a {
+        Action::Choice { options } => {
+            for o in options.iter_mut() {
+                o.actions = o.actions.iter().map(|x| scale_action(x, factor)).collect();
+            }
+        }
+        Action::ModifyRoll { delta, .. }
+        | Action::BuffSkill { delta, .. }
+        | Action::CrowdMeter { delta }
+        | Action::MaxHandSize { delta, .. }
+        | Action::MinHandSize { delta, .. }
+        | Action::FinishBonus { delta, .. }
+        | Action::FinishRollBonus { delta, .. }
+        | Action::BreakoutModifier { delta, .. } => *delta *= factor,
+        Action::Draw { n, .. } => *n *= factor,
+        Action::Discard { count, .. } => *count *= factor,
+        _ => {}
+    }
+    a
+}
+
+/// A copy of `effect` with every number in its actions multiplied by `factor`.
+fn scale_effect(effect: &Effect, factor: i64) -> Effect {
+    let mut out = effect.clone();
+    out.actions = effect
+        .actions
+        .iter()
+        .map(|a| scale_action(a, factor))
+        .collect();
+    out
+}
+
 /// A copy of `effect` with every printed +/- modifier negated — the transform
 /// Cassandra's `FlipGimmickSigns` applies to the opponent's gimmick.
 fn flip_signs(effect: &Effect) -> Effect {
@@ -523,8 +561,49 @@ impl Engine {
                 out.extend(player.competitor.effects.iter().cloned());
             }
         }
-        out.extend(player.entrance.effects.iter().cloned());
+        match self.entrance_scale_factor(key) {
+            Some(factor) => out.extend(
+                player
+                    .entrance
+                    .effects
+                    .iter()
+                    .map(|e| scale_effect(e, factor)),
+            ),
+            None => out.extend(player.entrance.effects.iter().cloned()),
+        }
         out
+    }
+
+    /// The factor `key`'s active `ScaleEntranceNumbers` declaration applies to their
+    /// Entrance card, if its name matches (Pedro Valiant). `None` = no scaling.
+    fn entrance_scale_factor(&self, key: &str) -> Option<i64> {
+        if self.state.is_gimmick_blanked(key) {
+            return None;
+        }
+        let player = &self.state.players[key];
+        let ename = player.entrance.name.to_lowercase();
+        for eff in &player.competitor.effects {
+            if !matches!(eff.trigger, Trigger::Static)
+                || !conditions::holds(&eff.condition, &self.state, key, None)
+            {
+                continue;
+            }
+            for a in &eff.actions {
+                if let Action::ScaleEntranceNumbers {
+                    name_contains,
+                    factor,
+                } = a
+                {
+                    if name_contains
+                        .iter()
+                        .any(|s| ename.contains(&s.to_lowercase()))
+                    {
+                        return Some(*factor);
+                    }
+                }
+            }
+        }
+        None
     }
 
     fn standing_effects(&self, key: &str) -> Vec<Effect> {
@@ -994,7 +1073,8 @@ impl Engine {
             | Action::MirrorOpponentIncrease
             | Action::StopCountsOrderAs { .. }
             | Action::SuppressStop { .. }
-            | Action::BumpDrawReplace => {}
+            | Action::BumpDrawReplace
+            | Action::ScaleEntranceNumbers { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
@@ -4516,6 +4596,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::StopCountsOrderAs { .. } => "StopCountsOrderAs",
         Action::SuppressStop { .. } => "SuppressStop",
         Action::BumpDrawReplace => "BumpDrawReplace",
+        Action::ScaleEntranceNumbers { .. } => "ScaleEntranceNumbers",
         Action::AddText { .. } => "AddText",
         Action::AddTextToNext { .. } => "AddTextToNext",
         Action::StopRequiresTag { .. } => "StopRequiresTag",
@@ -7356,6 +7437,114 @@ mod memes_dealer_tests {
             engine.state.players["A"].hand.len(),
             1,
             "A acted during the opponent's turn"
+        );
+    }
+}
+
+#[cfg(test)]
+mod pedro_valiant_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::{json, Value};
+
+    /// An entrance whose effects are a Static [Draw 1, ModifyRoll +1] — a stand-in for
+    /// a modeled "Training with" entrance (the real ones parse to Unsupported).
+    fn entrance(name: &str) -> Value {
+        json!({"db_uuid": "ent", "name": name, "effects": [{
+            "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+            "actions": [
+                {"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF", "cap": null,
+                 "per": null, "per_excludes_trigger": false, "per_who": "SELF"},
+                {"@type": "ModifyRoll", "who": "SELF", "delta": 1, "when": "NEXT",
+                 "per": null, "per_who": "SELF"}
+            ],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "e", "source": "entrance", "optional": false
+        }]})
+    }
+
+    fn scale_decl() -> Value {
+        json!({
+            "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+            "actions": [{"@type": "ScaleEntranceNumbers", "name_contains": ["Training with"],
+                         "factor": 3}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "p", "source": "gimmick", "optional": false
+        })
+    }
+
+    fn engine(a_effects: Value, ent_name: &str) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "A", "name": "A", "division": "World Championship",
+                "stats": stats, "effects": a_effects},
+            "entrance": entrance(ent_name), "cards": [],
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "World Championship",
+                "stats": stats, "effects": []},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": [],
+        }))
+        .expect("deck B");
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck_a,
+            deck_b,
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// The entrance's Draw.n and ModifyRoll.delta as seen in standing_effects.
+    fn entrance_numbers(engine: &Engine) -> (i64, i64) {
+        let (mut n, mut d) = (0, 0);
+        for eff in engine.standing_effects("A") {
+            for a in &eff.actions {
+                match a {
+                    Action::Draw { n: dn, .. } => n = *dn,
+                    Action::ModifyRoll { delta, .. } => d = *delta,
+                    _ => {}
+                }
+            }
+        }
+        (n, d)
+    }
+
+    #[test]
+    fn scales_a_matching_entrances_numbers() {
+        let engine = engine(json!([scale_decl()]), "Power Training with Rock Newman");
+        assert_eq!(
+            entrance_numbers(&engine),
+            (3, 3),
+            "draw 1 -> 3, +1 roll -> +3"
+        );
+    }
+
+    #[test]
+    fn does_not_scale_a_non_matching_entrance() {
+        // Entrance name lacks "Training with" -> numbers untouched.
+        let engine = engine(json!([scale_decl()]), "Some Other Entrance");
+        assert_eq!(entrance_numbers(&engine), (1, 1));
+    }
+
+    #[test]
+    fn a_blanked_gimmick_stops_scaling() {
+        let mut engine = engine(json!([scale_decl()]), "Power Training with Rock Newman");
+        assert_eq!(entrance_numbers(&engine), (3, 3));
+        engine.state.players.get_mut("A").unwrap().gimmick_blanked = true;
+        assert_eq!(
+            entrance_numbers(&engine),
+            (1, 1),
+            "blanked gimmick declares nothing"
         );
     }
 }

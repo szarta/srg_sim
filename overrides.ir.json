@@ -10122,6 +10122,35 @@
       }
     }
   ],
+  "ef8dfa451af8437f813ffece624bad4f": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ScaleEntranceNumbers",
+          "factor": 3,
+          "name_contains": [
+            "Training with"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "triple the numbers in the text of your Entrance cards with \"Training with\" in the name",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "f4a3aea48e544fac9e4edf24b5d07235": [
     {
       "@type": "Effect",
