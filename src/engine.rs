@@ -981,6 +981,7 @@ impl Engine {
             Action::ShuffleIntoDeck { selector } => self.act_shuffle_into_deck(selector, key)?,
             Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
             Action::SwapHandDiscard => self.act_swap_hand_discard(key)?,
+            Action::GrantSwapNextTurn { who } => self.act_grant_swap_next_turn(*who, key),
             Action::RecurToDeckTop { selector, count } => {
                 self.act_recur_to_deck_top(selector, *count, key)?
             }
@@ -1757,6 +1758,65 @@ impl Engine {
             json!({"hand_out": out.db_uuid, "discard_in": into.db_uuid}),
         );
         self.run_on_discard_move(key)
+    }
+
+    /// Arm a deferred, one-shot optional hand↔discard swap on `who` for their next
+    /// turn (Mr. Rey). The grant is promoted to usable at the start of that player's
+    /// following turn (`promote_swap_grant`) and offered there (`offer_swap_grant`).
+    fn act_grant_swap_next_turn(&mut self, who: Who, key: &str) {
+        let target = self.target(who, key);
+        self.state
+            .players
+            .get_mut(&target)
+            .unwrap()
+            .flags
+            .insert("swap_grant_next".to_owned(), json!(true));
+        self.log_effect(key, "GrantSwapNextTurn", Some(&target), json!({}));
+    }
+
+    /// Promote `key`'s deferred swap grant at turn start: a "next turn" grant becomes
+    /// usable "this turn"; an unused "this turn" grant EXPIRES (SET, not accumulate —
+    /// "once on the next turn"). Mirrors the `reroll_grants` next→this promotion, but
+    /// flag-based so it needs no serialized `PlayerState` field.
+    fn promote_swap_grant(&mut self, key: &str) {
+        let flags = &mut self.state.players.get_mut(key).unwrap().flags;
+        if flags.remove("swap_grant_next").is_some() {
+            flags.insert("swap_grant_this".to_owned(), json!(true));
+        } else {
+            flags.remove("swap_grant_this");
+        }
+    }
+
+    /// Offer `key` their usable swap grant, if any, before they act on this turn: a
+    /// single optional hand↔discard swap (Mr. Rey). The grant is consumed whether
+    /// taken, declined, or impossible (empty hand/discard) — "once on the next turn".
+    fn offer_swap_grant(&mut self, key: &str) -> Eng<()> {
+        let has = self.state.players[key]
+            .flags
+            .get("swap_grant_this")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        if !has {
+            return Ok(());
+        }
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .flags
+            .remove("swap_grant_this");
+        let p = &self.state.players[key];
+        if p.hand.is_empty() || p.discard.is_empty() {
+            return Ok(()); // nothing to switch — the window still passes
+        }
+        let legal = vec![
+            json!({"kind": "yes", "clause": "switch a hand card with a discard card"}),
+            json!({"kind": "no", "clause": "switch a hand card with a discard card"}),
+        ];
+        if self.decide("optional_swap", key, legal)?["kind"] == "yes" {
+            self.act_swap_hand_discard(key)?;
+        }
+        Ok(())
     }
 
     /// Put up to `count` matching cards from discard on top of the deck; the owner
@@ -2823,6 +2883,9 @@ impl Engine {
             player.reroll_grants.this_turn = player.reroll_grants.next_turn;
             player.reroll_grants.next_turn = 0;
         }
+        for key in ["A", "B"] {
+            self.promote_swap_grant(key); // a "swap next turn" grant becomes usable (Mr. Rey)
+        }
         self.sweep_end_of_turn();
         let winner = self.turn_roll()?;
         self.sweep_next_turn_buffs(&winner);
@@ -2833,6 +2896,8 @@ impl Engine {
         self.run_start_of_turn(&winner)?; // "once during your turn" gimmicks (Candyman Dan)
         let defender = self.state.opponent_of(&winner);
         self.run_opponent_turn(&defender)?; // "once during your opponent's turn" (Memes Dealer V1)
+        self.offer_swap_grant(&winner)?; // a granted "swap on the next turn" (Mr. Rey)
+        self.offer_swap_grant(&defender)?; // the grantee need not be the turn winner
         if self.ended() {
             return Ok(());
         }
@@ -4672,6 +4737,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::ShuffleIntoDeck { .. } => "ShuffleIntoDeck",
         Action::AddFromDiscard { .. } => "AddFromDiscard",
         Action::SwapHandDiscard => "SwapHandDiscard",
+        Action::GrantSwapNextTurn { .. } => "GrantSwapNextTurn",
         Action::RecurToDeckTop { .. } => "RecurToDeckTop",
         Action::CountsAsInPlay { .. } => "CountsAsInPlay",
         Action::RemoveFromPlay { .. } => "RemoveFromPlay",
@@ -7887,5 +7953,143 @@ mod father_light_tests {
             "forced to play the Lead"
         );
         assert!(!b.flags.contains_key("forced_reveal_play"), "flag consumed");
+    }
+}
+
+/// The Magnificient Mr. Rey (schema v56: GrantSwapNextTurn) — "When you roll
+/// Technique for your turn roll: Once on the next turn, you may switch 1 card in
+/// your hand with 1 card in your discard pile."
+#[cfg(test)]
+mod mr_rey_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    /// Always says "yes" to the optional swap and picks the first card at each
+    /// zone pick (so the swap is deterministic).
+    struct AlwaysSwap;
+    impl Decider for AlwaysSwap {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            legal: &[Value],
+            _: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "always-swap".to_owned()
+        }
+    }
+
+    fn card(uuid: &str, number: i64) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": number,
+               "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []})
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(AlwaysSwap),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn grant_arms_next_then_promotes_to_this_then_expires_if_unused() {
+        let mut engine = engine();
+        engine.act_grant_swap_next_turn(Who::SelfSide, "A"); // A grants itself
+        assert!(engine.state.players["A"]
+            .flags
+            .contains_key("swap_grant_next"));
+        engine.promote_swap_grant("A"); // next -> this (usable this turn)
+        assert!(engine.state.players["A"]
+            .flags
+            .contains_key("swap_grant_this"));
+        assert!(!engine.state.players["A"]
+            .flags
+            .contains_key("swap_grant_next"));
+        engine.promote_swap_grant("A"); // unused -> expires (SET, not accumulate)
+        assert!(!engine.state.players["A"]
+            .flags
+            .contains_key("swap_grant_this"));
+    }
+
+    #[test]
+    fn offer_performs_the_swap_when_the_grant_is_usable() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().hand =
+            vec![serde_json::from_value(card("h1", 1)).unwrap()];
+        engine.state.players.get_mut("A").unwrap().discard =
+            vec![serde_json::from_value(card("d1", 2)).unwrap()];
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flags
+            .insert("swap_grant_this".into(), json!(true));
+        engine.offer_swap_grant("A").unwrap();
+        let a = &engine.state.players["A"];
+        assert!(
+            a.hand.iter().any(|c| c.db_uuid == "d1"),
+            "the discard card came into hand"
+        );
+        assert!(
+            a.discard.iter().any(|c| c.db_uuid == "h1"),
+            "the hand card went to discard"
+        );
+        assert!(!a.flags.contains_key("swap_grant_this"), "grant consumed");
+    }
+
+    #[test]
+    fn offer_is_a_noop_without_a_usable_grant() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().hand =
+            vec![serde_json::from_value(card("h1", 1)).unwrap()];
+        engine.state.players.get_mut("A").unwrap().discard =
+            vec![serde_json::from_value(card("d1", 2)).unwrap()];
+        engine.offer_swap_grant("A").unwrap(); // no swap_grant_this set
+        assert!(
+            engine.state.players["A"]
+                .hand
+                .iter()
+                .any(|c| c.db_uuid == "h1"),
+            "unchanged"
+        );
+    }
+
+    #[test]
+    fn empty_discard_consumes_the_grant_without_a_swap() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().hand =
+            vec![serde_json::from_value(card("h1", 1)).unwrap()];
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flags
+            .insert("swap_grant_this".into(), json!(true));
+        engine.offer_swap_grant("A").unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(a.hand.len(), 1, "nothing to swap into");
+        assert!(
+            !a.flags.contains_key("swap_grant_this"),
+            "window still passes (consumed)"
+        );
     }
 }

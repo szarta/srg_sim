@@ -463,6 +463,10 @@
     "who": "OPP"
   },
   {
+    "@type": "GrantSwapNextTurn",
+    "who": "SELF"
+  },
+  {
     "@type": "Scry",
     "bottom": 0,
     "bury": 1,

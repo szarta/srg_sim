@@ -9293,6 +9293,34 @@
       }
     }
   ],
+  "dba1b354303a48338e6e3362cdd62083": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "GrantSwapNextTurn",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll technique for your turn roll: once on the next turn, you may switch 1 card in your hand with 1 card in your discard pile",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
+        "who": "SELF"
+      }
+    }
+  ],
   "def74dd5530540ce8a9e903bc10fd620": [
     {
       "@type": "Effect",

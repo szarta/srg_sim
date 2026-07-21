@@ -726,6 +726,15 @@ pub enum Action {
     /// [`Effect::optional`]. Picks route to the `discard` (shed) / `target` (tutor)
     /// decision points.
     SwapHandDiscard,
+    /// Grant `who` a deferred, one-shot optional hand↔discard swap on their next
+    /// turn (Mr. Rey: "When you roll Technique for your turn roll: Once on the next
+    /// turn, you may switch 1 card in your hand with 1 card in your discard pile").
+    /// Sets a next-turn grant that promotes to usable at the start of the grantee's
+    /// following turn (SET, not accumulate — an unused grant expires after that one
+    /// turn) and is offered as an optional [`SwapHandDiscard`] before they act.
+    GrantSwapNextTurn {
+        who: Who,
+    },
     Flip {
         n: i64,
         who: Who,
@@ -1464,6 +1473,15 @@ pub enum IrNode {
     /// [`Effect::optional`]. Picks route to the `discard` (shed) / `target` (tutor)
     /// decision points.
     SwapHandDiscard,
+    /// Grant `who` a deferred, one-shot optional hand↔discard swap on their next
+    /// turn (Mr. Rey: "When you roll Technique for your turn roll: Once on the next
+    /// turn, you may switch 1 card in your hand with 1 card in your discard pile").
+    /// Sets a next-turn grant that promotes to usable at the start of the grantee's
+    /// following turn (SET, not accumulate — an unused grant expires after that one
+    /// turn) and is offered as an optional [`SwapHandDiscard`] before they act.
+    GrantSwapNextTurn {
+        who: Who,
+    },
     Flip {
         n: i64,
         who: Who,
