@@ -37,6 +37,7 @@ from srg_sim.effects import (
     Effect,
     MaxHandSize,
     MinHandSize,
+    MirrorOpponentIncrease,
     Static,
     Who,
 )
@@ -371,6 +372,29 @@ class GameState:
         ``holds`` optionally resolves conditional Static buffs against live state;
         without it, only unconditional buffs contribute (DESIGN.md §5).
         """
+        stats = self._effective_stats_base(key, holds)
+        # Mimic: "when your opponent increases their skills, your skills are also
+        # increased the same amount." A final fold over the OPPONENT's base-derived
+        # stats (no mirror, so a mirror-vs-mirror match can't recurse): add each
+        # skill's positive ``effective - base``. The opponent's side uses unconditional
+        # buffs (``None``) since this side's ``holds`` resolves this player's
+        # conditions, not the opponent's.
+        if self._declares_mirror(key, holds):
+            opp = self.opponent_of(key)
+            opp_eff = self._effective_stats_base(opp, None)
+            opp_base = self.players[opp].competitor.stats.to_dict()
+            for skill_key, eff in opp_eff.items():
+                inc = eff - opp_base[skill_key]
+                if inc > 0:
+                    stats[skill_key] += inc
+        return stats
+
+    def _effective_stats_base(
+        self, key: str, holds: ConditionHolds | None
+    ) -> dict[str, int]:
+        """Derived stats WITHOUT the Mimic mirror — competitor base + active Static
+        buffs + resolved timed buffs. The mirror wrapper folds this for the opponent,
+        so keeping it mirror-free is what prevents infinite recursion."""
         stats = self.players[key].competitor.stats.to_dict()
         for owner, player in self.players.items():
             self._apply_owner_buffs(stats, key, owner, player, holds)
@@ -382,6 +406,20 @@ class GameState:
         for buff in self.players[key].timed_buffs:
             stats[buff.skill.value] += buff.delta
         return stats
+
+    def _declares_mirror(self, key: str, holds: ConditionHolds | None) -> bool:
+        """Whether ``key`` holds an active Static ``MirrorOpponentIncrease``."""
+        for effects, active in self._buff_sources(key, self.players[key]):
+            if not active:
+                continue
+            for eff in effects:
+                if (
+                    isinstance(eff.trigger, Static)
+                    and any(isinstance(a, MirrorOpponentIncrease) for a in eff.actions)
+                    and _condition_ok(eff.condition, holds)
+                ):
+                    return True
+        return False
 
     def _apply_owner_buffs(
         self,

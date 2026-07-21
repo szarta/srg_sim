@@ -2464,6 +2464,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.RevealForDraw: Engine._act_reveal_for_draw,
     fx.MaxHandSize: Engine._act_noop,  # Static, read via effective_hand_cap; never executed
     fx.MinHandSize: Engine._act_noop,  # Static, read via effective_hand_cap; never executed
+    fx.MirrorOpponentIncrease: Engine._act_noop,  # Static, read via effective_stats; never executed
     fx.ShuffleDeck: Engine._act_shuffle_deck,
     fx.Search: Engine._act_search,
     fx.ShuffleIntoDeck: Engine._act_shuffle_into_deck,

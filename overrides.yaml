@@ -7505,3 +7505,27 @@ d9e5097bbec7440c997cfff511cf0f39:
   raw_clause: your cards #19-21 cannot stop cards
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Mimic (top-96, #107) — skill-increase mirror (schema v46, MirrorOpponentIncrease).
+# "When your opponent increases their skills, your skills are also increased the
+# same amount." A derived-stats fold: read in effective_stats, the declarer gains
+# the positive part of the opponent's (effective - base) per skill. Not a reactive
+# trigger — recomputed on demand like any Static buff.
+# ---------------------------------------------------------------------------
+924e81a6d29b4983bf9be0918a459760:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': MirrorOpponentIncrease
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when your opponent increases their skills, your skills are also increased the same amount
+  source: gimmick
+  optional: false

@@ -13,6 +13,7 @@ from srg_sim.effects import (
     EffectSource,
     MaxHandSize,
     MinHandSize,
+    MirrorOpponentIncrease,
     OnPlay,
     Static,
     Who,
@@ -87,6 +88,42 @@ def test_card_in_play_buff_folds_in_and_out() -> None:
     assert gs.effective_stat("A", Skill.GRAPPLE) == 12
     gs.players["A"].in_play.clear()  # card leaves play -> buff gone
     assert gs.effective_stat("A", Skill.GRAPPLE) == 9
+
+
+def _mirror() -> Effect:
+    return Effect(
+        trigger=Static(),
+        actions=(MirrorOpponentIncrease(),),
+        duration=Duration.WHILE_IN_PLAY,
+    )
+
+
+def test_mimic_mirrors_opponent_skill_increase() -> None:
+    # B raises its own Power +3; A (Mimic) gains the same +3. B is unchanged.
+    b_buff = _static_buff(Skill.POWER, 3, Who.SELF, EffectSource.GIMMICK)
+    base = _state(b_comp_effects=(b_buff,))
+    a_power = base.effective_stat("A", Skill.POWER)
+    mimic = _state(a_comp_effects=(_mirror(),), b_comp_effects=(b_buff,))
+    assert mimic.effective_stat("A", Skill.POWER) == a_power + 3
+    assert mimic.effective_stat("B", Skill.POWER) == base.effective_stat("B", Skill.POWER)
+
+
+def test_mimic_ignores_a_decrease() -> None:
+    # "increases their skills" — a debuff on B is not mirrored onto A.
+    plain = _state(a_comp_effects=(_mirror(),))
+    a_strike = plain.effective_stat("A", Skill.STRIKE)
+    debuffed = _state(
+        a_comp_effects=(_mirror(),),
+        b_comp_effects=(_static_buff(Skill.STRIKE, -3, Who.SELF, EffectSource.GIMMICK),),
+    )
+    assert debuffed.effective_stat("A", Skill.STRIKE) == a_strike
+
+
+def test_mimic_is_inert_without_the_declaration() -> None:
+    b_buff = _static_buff(Skill.AGILITY, 4, Who.SELF, EffectSource.GIMMICK)
+    with_buff = _state(b_comp_effects=(b_buff,))
+    plain = _state()
+    assert with_buff.effective_stat("A", Skill.AGILITY) == plain.effective_stat("A", Skill.AGILITY)
 
 
 def test_only_static_trigger_folds_into_derived_stats() -> None:

@@ -1007,6 +1007,18 @@ class MinHandSize(IRNode):
 
 
 @dataclass(frozen=True)
+class MirrorOpponentIncrease(IRNode):
+    """Static declaration that the declarer mirrors the opponent's skill increases
+    (Mimic: "when your opponent increases their skills, your skills are also increased
+    the same amount"). schema v46
+
+    Read in :meth:`GameState.effective_stats` — for each skill the declarer gains the
+    positive part of the opponent's ``effective - base``. A derived-stats fold like
+    :class:`BuffSkill`; never executed.
+    """
+
+
+@dataclass(frozen=True)
 class AddText(IRNode):
     """"Your cards with ``name_contains`` in the name have the added text ``effects``"
     (El Super Santa / Sabu / El Super Hombre). A ``Static`` gimmick declaration read
@@ -1517,6 +1529,7 @@ Action = (
     | BuffSkill
     | MaxHandSize
     | MinHandSize
+    | MirrorOpponentIncrease
     | AddText
     | AddTextToNext
     | Reroll

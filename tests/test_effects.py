@@ -66,6 +66,7 @@ from srg_sim.effects import (
     LowestRollWins,
     MaxHandSize,
     MinHandSize,
+    MirrorOpponentIncrease,
     StopCountsOrderAs,
     SuppressStop,
     ModifyRoll,
@@ -225,6 +226,7 @@ SAMPLES: list[IRNode] = [
     BuffSkill(Skill.GRAPPLE, 0, Who.SELF, target_highest=True, per_crowd=True, cap=5),
     MaxHandSize(-1, Who.OPP),
     MinHandSize(2, Who.SELF),  # Quadruple H
+    MirrorOpponentIncrease(),  # Mimic
     AddText(("Super",), (Effect(trigger=OnPlay(), actions=(Draw(n=2),)),)),  # El Super Santa
     AddTextToNext(  # the Madness trio: poison the opponent's next Grapple
         who=Who.OPP,
