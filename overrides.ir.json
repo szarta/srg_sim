@@ -1758,6 +1758,7 @@
         {
           "@type": "Reroll",
           "choose": false,
+          "cost": null,
           "once": true,
           "when": "THIS",
           "who": "OPP"
@@ -2621,6 +2622,7 @@
         {
           "@type": "Reroll",
           "choose": false,
+          "cost": null,
           "once": true,
           "when": "NEXT",
           "who": "SELF"
@@ -3477,6 +3479,7 @@
         {
           "@type": "Reroll",
           "choose": false,
+          "cost": null,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -3858,6 +3861,7 @@
         {
           "@type": "Reroll",
           "choose": false,
+          "cost": null,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -5549,6 +5553,7 @@
         {
           "@type": "Reroll",
           "choose": false,
+          "cost": null,
           "once": true,
           "when": "NEXT",
           "who": "SELF"
@@ -6358,6 +6363,7 @@
         {
           "@type": "Reroll",
           "choose": false,
+          "cost": null,
           "once": true,
           "when": "THIS",
           "who": "OPP"
@@ -7148,6 +7154,7 @@
         {
           "@type": "Reroll",
           "choose": false,
+          "cost": null,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -7574,6 +7581,7 @@
         {
           "@type": "Reroll",
           "choose": true,
+          "cost": null,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -8557,6 +8565,7 @@
         {
           "@type": "Reroll",
           "choose": false,
+          "cost": null,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -8746,6 +8755,49 @@
       "optional": false,
       "raw_clause": "if you have another Follow Up or Finish Strike in play, your Agility is +1",
       "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "ceb9126b162c4be69b9291c088d3fe5b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "choose": false,
+          "cost": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [
+              "Potion"
+            ],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "once": true,
+          "when": "THIS",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once per turn roll, you may shuffle 1 card with \"Potion\" in the name that you have in play into your deck to re-roll",
+      "source": "gimmick",
       "trigger": {
         "@type": "Static"
       }
@@ -9905,6 +9957,7 @@
         {
           "@type": "Reroll",
           "choose": true,
+          "cost": null,
           "once": true,
           "when": "THIS",
           "who": "SELF"

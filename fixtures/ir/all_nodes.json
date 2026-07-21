@@ -510,6 +510,7 @@
   {
     "@type": "Reroll",
     "choose": false,
+    "cost": null,
     "once": false,
     "when": "THIS",
     "who": "SELF"

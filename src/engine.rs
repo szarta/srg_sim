@@ -3731,13 +3731,14 @@ impl Engine {
         for eff in &effects {
             // Only a THIS re-roll is offered structurally; a NEXT re-roll is a
             // deferred grant (handled by `act_reroll` + `reroll_grants`), not fired here.
-            let Some((who, choose)) = eff.actions.iter().find_map(|a| match a {
+            let Some((who, choose, cost)) = eff.actions.iter().find_map(|a| match a {
                 Action::Reroll {
                     who,
                     choose,
                     when: RollWhen::This,
+                    cost,
                     ..
-                } => Some((*who, *choose)),
+                } => Some((*who, *choose, cost.clone())),
                 _ => None,
             }) else {
                 continue;
@@ -3751,10 +3752,21 @@ impl Engine {
             {
                 continue;
             }
+            // A costed re-roll (Mr. Hyde) is offered only while the owner can pay it —
+            // an in-play card matching `cost` to shuffle away. Unaffordable ⇒ not
+            // offered, and the frequency charge is left unspent.
+            if let Some(filter) = &cost {
+                if !self.has_in_play(owner, filter) {
+                    continue;
+                }
+            }
             if eff.optional && !self.take_optional(eff, owner)? {
                 continue; // declined "you may" — charge left for a later roll
             }
             self.mark_fired(eff, owner);
+            if let Some(filter) = &cost {
+                self.pay_reroll_cost(owner, filter)?;
+            }
             let target = if choose {
                 self.decide_reroll_target(owner)?
             } else if who == Who::Opp {
@@ -3776,6 +3788,39 @@ impl Engine {
             return Ok(Some(owner.to_owned()));
         }
         Ok(None)
+    }
+
+    /// Whether `owner` has any in-play card matching `filter` (the re-roll cost check).
+    fn has_in_play(&self, owner: &str, filter: &CardFilter) -> bool {
+        self.state.players[owner]
+            .in_play
+            .iter()
+            .any(|c| conditions::card_matches(c, filter))
+    }
+
+    /// Pay a costed re-roll: shuffle the first in-play card matching `filter` into
+    /// `owner`'s deck (Mr. Hyde's "Potion"). Fires `OnShuffle` like any deck shuffle.
+    fn pay_reroll_cost(&mut self, owner: &str, filter: &CardFilter) -> Eng<()> {
+        let player = self.state.players.get_mut(owner).unwrap();
+        let Some(pos) = player
+            .in_play
+            .iter()
+            .position(|c| conditions::card_matches(c, filter))
+        else {
+            return Ok(()); // affordability was checked before offering
+        };
+        let card = player.in_play.remove(pos);
+        let uuid = card.db_uuid.clone();
+        player.deck.push(card);
+        let t = self.state.turn_no;
+        self.log(Event::Bury(CardMovement {
+            t,
+            player: owner.to_owned(),
+            cards: vec![uuid],
+            source: Some("in_play".to_owned()),
+            hidden: false,
+        }));
+        self.shuffle_deck(owner)
     }
 
     /// A bare optional yes/no offer to `key` (no backing effect) — the policy's
@@ -6634,5 +6679,107 @@ mod bury_opp_discard_tests {
         assert_eq!(b.deck.len(), 1, "one card reached B's deck bottom");
         // The Finish (most recyclable) is the one buried.
         assert!(b.deck.iter().any(|c| c.db_uuid == "b-fin"));
+    }
+}
+
+#[cfg(test)]
+mod reroll_cost_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    /// Mr. Hyde: a Static once-per-turn optional self re-roll costing an in-play
+    /// "Potion" card shuffled into the deck.
+    fn hyde_gimmick() -> serde_json::Value {
+        json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Reroll", "who": "SELF", "once": true, "choose": false,
+                "when": "THIS", "cost": {"@type": "CardFilter", "atk_type": null, "name": null,
+                    "name_contains": ["Potion"], "number": null, "play_order": null,
+                    "play_orders": [], "raw": null, "tag": null, "text_contains": []}}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "ONCE_PER_TURN", "n": null},
+            "raw_clause": "hyde", "source": "gimmick", "optional": true
+        }])
+    }
+
+    fn potion(uuid: &str) -> Card {
+        serde_json::from_value(
+            json!({"atk_type": "Strike", "db_uuid": uuid, "name": "Health Potion",
+            "number": 1, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []}),
+        )
+        .unwrap()
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str, effects: serde_json::Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck("A", hyde_gimmick()),
+            deck("B", json!([])),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn ctx() -> RollContext {
+        RollContext {
+            skill: Some(Skill::Power),
+            gap: Some(0),
+            value: Some(5),
+            opp_skill: Some(Skill::Power),
+        }
+    }
+
+    #[test]
+    fn costed_reroll_fires_and_shuffles_the_potion_away() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![potion("p1")];
+        let (own, opp) = (ctx(), ctx());
+        let target = engine.offer_reroll("A", &own, &opp).unwrap();
+        assert_eq!(
+            target,
+            Some("A".to_owned()),
+            "the re-roll is offered and taken"
+        );
+        let a = &engine.state.players["A"];
+        assert!(a.in_play.is_empty(), "the Potion left play");
+        assert!(
+            a.deck.iter().any(|c| c.db_uuid == "p1"),
+            "the Potion was shuffled into the deck"
+        );
+    }
+
+    #[test]
+    fn costed_reroll_is_not_offered_without_the_potion() {
+        let mut engine = engine();
+        // A has an in-play card that is NOT a Potion — cannot pay.
+        engine.state.players.get_mut("A").unwrap().in_play = vec![serde_json::from_value(
+            json!({"atk_type": "Strike", "db_uuid": "x", "name": "Chair",
+                "number": 1, "play_order": "Lead", "raw_text": "", "tags": [],
+                "finish_bonuses": {}, "effects": []}),
+        )
+        .unwrap()];
+        let (own, opp) = (ctx(), ctx());
+        assert_eq!(engine.offer_reroll("A", &own, &opp).unwrap(), None);
+        // The non-Potion card is untouched.
+        assert_eq!(engine.state.players["A"].in_play.len(), 1);
     }
 }

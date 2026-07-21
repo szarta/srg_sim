@@ -919,6 +919,12 @@ pub enum Action {
         /// may re-roll your next turn roll" — King Brian Cage / El Gato Shinobi).
         #[serde(default)]
         when: RollWhen,
+        /// An in-play card the owner must shuffle into their deck to re-roll (Mr.
+        /// Hyde: "shuffle 1 card with 'Potion' in the name that you have in play into
+        /// your deck to re-roll"). `None` = free. When set, the re-roll is offered
+        /// only while a matching card is in play, and taking it shuffles one away.
+        #[serde(default)]
+        cost: Option<CardFilter>,
     },
     /// "When you roll `from` for your turn roll or Finish roll, you may switch it to
     /// `to`" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn
@@ -1591,6 +1597,12 @@ pub enum IrNode {
         /// may re-roll your next turn roll" — King Brian Cage / El Gato Shinobi).
         #[serde(default)]
         when: RollWhen,
+        /// An in-play card the owner must shuffle into their deck to re-roll (Mr.
+        /// Hyde: "shuffle 1 card with 'Potion' in the name that you have in play into
+        /// your deck to re-roll"). `None` = free. When set, the re-roll is offered
+        /// only while a matching card is in play, and taking it shuffles one away.
+        #[serde(default)]
+        cost: Option<CardFilter>,
     },
     /// "When you roll `from` for your turn roll or Finish roll, you may switch it to
     /// `to`" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn
