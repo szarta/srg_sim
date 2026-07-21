@@ -23,6 +23,7 @@ from srg_sim.effects import (
     Bury,
     BuryFrom,
     AddText,
+    AbsorbGimmick,
     AddTextToNext,
     CardFilter,
     Choice,
@@ -247,6 +248,7 @@ SAMPLES: list[IRNode] = [
     MinHandSize(2, Who.SELF),  # Quadruple H
     MirrorOpponentIncrease(),  # Mimic
     AddText(("Super",), (Effect(trigger=OnPlay(), actions=(Draw(n=2),)),)),  # El Super Santa
+    AbsorbGimmick((Effect(trigger=OnPlay(), actions=(Draw(n=1),)),)),  # The SRG Boss (GAWEL)
     AddTextToNext(  # the Madness trio: poison the opponent's next Grapple
         who=Who.OPP,
         selector=CardFilter(atk_type=AtkType.GRAPPLE),

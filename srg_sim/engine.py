@@ -2303,6 +2303,17 @@ class Engine:
         )
         self._log_effect(key, "AddTextToNext", target, {"text": source})
 
+    def _act_absorb_gimmick(self, action: fx.AbsorbGimmick, key: str) -> None:
+        """Add a chosen competitor's Gimmick to ``key``'s own (The SRG Boss): append
+        ``effects`` to ``key``'s competitor effects so they fire as standing effects
+        (blanked together with the rest of ``key``'s gimmick). Candidate gimmicks are
+        baked into the authoring Choice; the engine has no card index to resolve them."""
+        player = self.state.players[key]
+        player.competitor = replace(
+            player.competitor, effects=tuple(player.competitor.effects) + tuple(action.effects)
+        )
+        self._log_effect(key, "AbsorbGimmick", key, {"gimmick": [e.raw_clause for e in action.effects]})
+
     def _apply_pending_text(self, key: str, card: Card) -> Card:
         """Consume any queued PendingText matching ``card`` and fold its effects onto
         the card instance, so the added text travels with it through the stop exchange
@@ -2746,6 +2757,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.ElectBumpOnSameSkill: Engine._act_noop,  # Static, read in the roll-off; never executed
     fx.SwitchRolledSkill: Engine._act_noop,  # Static, read in both roll paths; never executed
     fx.AddText: Engine._act_noop,  # Static, read via _injected_text at play time; never executed
+    fx.AbsorbGimmick: Engine._act_absorb_gimmick,
     fx.StopRequiresTag: Engine._act_noop,  # marker, read via _card_can_stop; never executed
     fx.BlankText: Engine._act_noop,  # Static, read via is_text_blanked; never executed
     fx.BlankStoppedText: Engine._act_blank_stopped_text,

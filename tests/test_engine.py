@@ -3258,3 +3258,43 @@ def test_mr_rey_empty_discard_consumes_the_grant() -> None:
     eng._offer_swap_grant("A")
     a = eng.state.players["A"]
     assert len(a.hand) == 1 and "swap_grant_this" not in a.flags  # window passes, consumed
+
+
+# -- The SRG Boss (GAWEL): gimmick absorption (schema v57) --------------------
+
+
+def _onroll_draw() -> fx.Effect:
+    return fx.Effect(
+        trigger=fx.OnRoll(skill=Skill.AGILITY, who=fx.Who.SELF),
+        condition=fx.Always(),
+        actions=(fx.Draw(n=1),),
+        raw_clause="absorbed",
+    )
+
+
+def test_srg_boss_absorb_appends_gimmick_and_it_becomes_standing() -> None:
+    eng = _fresh()
+    assert not any(e.raw_clause == "absorbed" for e in eng._standing_effects("A"))
+    n = len(eng.state.players["A"].competitor.effects)
+    eng._act_absorb_gimmick(fx.AbsorbGimmick((_onroll_draw(),)), "A")
+    assert len(eng.state.players["A"].competitor.effects) == n + 1  # added to the gimmick
+    assert any(e.raw_clause == "absorbed" for e in eng._standing_effects("A"))  # now standing
+
+
+def test_srg_boss_absorbed_effect_fires_as_a_standing_gimmick() -> None:
+    from srg_sim.conditions import RollContext
+
+    eng = _fresh()
+    eng.state.players["A"].deck = [_mk("c1", PlayOrder.LEAD, 201)]
+    eng.state.players["A"].hand = []
+    eng._act_absorb_gimmick(fx.AbsorbGimmick((_onroll_draw(),)), "A")
+    eng._roll_ctx["A"] = RollContext(skill=Skill.AGILITY, gap=0, value=7)
+    eng._run_on_roll("A")
+    assert len(eng.state.players["A"].hand) == 1  # absorbed OnRoll->Draw fired
+
+
+def test_srg_boss_absorbing_multiple_effects_adds_them_all() -> None:
+    eng = _fresh()
+    n = len(eng.state.players["A"].competitor.effects)
+    eng._act_absorb_gimmick(fx.AbsorbGimmick((_onroll_draw(), _onroll_draw())), "A")  # V2 = 2 effects
+    assert len(eng.state.players["A"].competitor.effects) == n + 2

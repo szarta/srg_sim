@@ -1125,6 +1125,18 @@ class AddText(IRNode):
 
 
 @dataclass(frozen=True)
+class AbsorbGimmick(IRNode):
+    """Add a chosen competitor's Gimmick to the actor's own (The SRG Boss — "add
+    their Gimmick to yours"): append ``effects`` to the actor's competitor effects,
+    so they become standing effects (blanked together with the rest of the actor's
+    gimmick). Authored under a ``StartOfMatch`` ``Choice`` whose branches carry each
+    absorbable variant's baked IR — the engine has no card index, so the candidate
+    gimmicks are baked, not resolved at runtime."""
+
+    effects: tuple[Effect, ...] = ()
+
+
+@dataclass(frozen=True)
 class AddTextToNext(IRNode):
     """POISON/DOPING (srgpc): "Your opponent's **next** Grapple has the added text: 'If
     stopped, you lose the match via disqualification'" (the Madness trio).
