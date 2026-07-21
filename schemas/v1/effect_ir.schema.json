@@ -1383,6 +1383,9 @@
               "$ref": "#/$defs/OnFinishRoll"
             },
             {
+              "$ref": "#/$defs/OnRolledAll"
+            },
+            {
               "$ref": "#/$defs/InRoll"
             },
             {
@@ -1911,6 +1914,9 @@
         },
         {
           "$ref": "#/$defs/OnFinishRoll"
+        },
+        {
+          "$ref": "#/$defs/OnRolledAll"
         },
         {
           "$ref": "#/$defs/OnRollBoost"
@@ -2580,6 +2586,29 @@
         "skill",
         "delta",
         "on_bump"
+      ],
+      "type": "object"
+    },
+    "OnRolledAll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnRolledAll"
+        },
+        "skills": {
+          "items": {
+            "$ref": "#/$defs/Skill"
+          },
+          "type": "array"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "skills",
+        "who"
       ],
       "type": "object"
     },
@@ -3681,5 +3710,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 48
+  "version": 49
 }

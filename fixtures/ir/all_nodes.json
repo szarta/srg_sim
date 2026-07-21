@@ -418,6 +418,15 @@
     "who": "SELF"
   },
   {
+    "@type": "OnRolledAll",
+    "skills": [
+      "Power",
+      "Agility",
+      "Technique"
+    ],
+    "who": "SELF"
+  },
+  {
     "@type": "OnRollBoost",
     "delta": 0,
     "on_bump": false,

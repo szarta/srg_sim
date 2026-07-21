@@ -443,6 +443,15 @@ pub enum Trigger {
         skill: Option<Skill>,
         who: Who,
     },
+    /// Fires each time `who` has rolled EVERY skill in `skills` as a turn roll since the
+    /// last firing (General Lee Wong V2: "each time you roll Power, Agility, and
+    /// Technique for your turn rolls"). The engine accumulates the distinct rolled
+    /// skills per effect and resets on fire. Override-only. schema v49
+    OnRolledAll {
+        skills: Vec<Skill>,
+        #[serde(default)]
+        who: Who,
+    },
     InRoll {
         skill: Option<Skill>,
         who: Who,
@@ -1141,6 +1150,15 @@ pub enum IrNode {
     /// turn-roll `OnRoll` nodes stay untouched. schema v47
     OnFinishRoll {
         skill: Option<Skill>,
+        who: Who,
+    },
+    /// Fires each time `who` has rolled EVERY skill in `skills` as a turn roll since the
+    /// last firing (General Lee Wong V2: "each time you roll Power, Agility, and
+    /// Technique for your turn rolls"). The engine accumulates the distinct rolled
+    /// skills per effect and resets on fire. Override-only. schema v49
+    OnRolledAll {
+        skills: Vec<Skill>,
+        #[serde(default)]
         who: Who,
     },
     InRoll {

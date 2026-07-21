@@ -3372,6 +3372,7 @@ impl Engine {
             self.roll_ctx.get("B").and_then(|c| c.value).unwrap_or(0),
         ) {
             self.run_on_roll(key)?;
+            self.run_on_rolled_all(key)?;
         }
         self.state.last_roll_winner = Some(winner.clone()); // "last turn roll" next turn (Dunn)
         Ok(winner)
@@ -3404,6 +3405,53 @@ impl Engine {
             let ctx = self.roll_ctx.get(ctx_key).cloned().unwrap_or_default();
             if skill.is_none() || ctx.skill == *skill {
                 self.fire_if_ready(eff, key, Some(&ctx))?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Accumulate `key`'s turn-roll skills for its `OnRolledAll` gimmicks. Each records
+    /// the rolled skill in a per-effect bitmask (in `freq_counters`, so it persists
+    /// across turns — not a `"turn:"` guard); when a gimmick has seen EVERY required
+    /// skill, it fires and its accumulator resets ("each time you roll Power, Agility,
+    /// and Technique for your turn rolls" — General Lee Wong V2).
+    fn run_on_rolled_all(&mut self, key: &str) -> Eng<()> {
+        let opp = self.state.opponent_of(key);
+        let effects = self.standing_effects(key);
+        for eff in &effects {
+            let Trigger::OnRolledAll { skills, who } = &eff.trigger else {
+                continue;
+            };
+            let ctx_key = if *who == Who::SelfSide {
+                key
+            } else {
+                opp.as_str()
+            };
+            let ctx = self.roll_ctx.get(ctx_key).cloned().unwrap_or_default();
+            let Some(rolled) = ctx.skill else {
+                continue;
+            };
+            if !skills.contains(&rolled) {
+                continue;
+            }
+            let fc = &mut self.state.players.get_mut(key).unwrap().freq_counters;
+            *fc.entry(rolled_set_key(eff)).or_insert(0) |= skill_bit(rolled);
+            let want: i64 = skills.iter().map(|&s| skill_bit(s)).fold(0, |a, b| a | b);
+            let have = *self.state.players[key]
+                .freq_counters
+                .get(&rolled_set_key(eff))
+                .unwrap_or(&0);
+            if (have & want) == want {
+                self.state
+                    .players
+                    .get_mut(key)
+                    .unwrap()
+                    .freq_counters
+                    .remove(&rolled_set_key(eff)); // reset the set — "each time"
+                self.fire_if_ready(eff, key, Some(&ctx))?;
+            }
+            if self.ended() {
+                return Ok(());
             }
         }
         Ok(())
@@ -4148,6 +4196,18 @@ fn deck_end_str(source: DeckEnd) -> &'static str {
 }
 
 /// The per-effect frequency-counter key (`turn:`/`match:` + clause + trigger).
+/// The `freq_counters` key holding an `OnRolledAll` effect's rolled-skill bitmask.
+/// A distinct `"rollset:"` namespace, so the per-turn / per-match frequency sweeps
+/// leave it alone — the set accumulates across turns until the gimmick fires.
+fn rolled_set_key(eff: &Effect) -> String {
+    format!("rollset:{}", eff.raw_clause)
+}
+
+/// A single-bit mask for `skill` (its index in [`Skill::ALL`]).
+fn skill_bit(skill: Skill) -> i64 {
+    1 << Skill::ALL.iter().position(|&s| s == skill).unwrap()
+}
+
 fn freq_key(eff: &Effect) -> String {
     let prefix = if eff.frequency.kind == crate::ir::Frequency::OncePerTurn {
         "turn:"
@@ -4164,6 +4224,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnPlay => "OnPlay",
         Trigger::OnRoll { .. } => "OnRoll",
         Trigger::OnFinishRoll { .. } => "OnFinishRoll",
+        Trigger::OnRolledAll { .. } => "OnRolledAll",
         Trigger::InRoll { .. } => "InRoll",
         Trigger::OnRollBoost { .. } => "OnRollBoost",
         Trigger::OnWinTurn => "OnWinTurn",
@@ -6781,5 +6842,130 @@ mod reroll_cost_tests {
         assert_eq!(engine.offer_reroll("A", &own, &opp).unwrap(), None);
         // The non-Potion card is untouched.
         assert_eq!(engine.state.players["A"].in_play.len(), 1);
+    }
+}
+
+#[cfg(test)]
+mod on_rolled_all_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    /// General Lee Wong V2: OnRolledAll{P,A,T} -> Draw 3 + next roll +2.
+    fn glw_gimmick() -> serde_json::Value {
+        json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "OnRolledAll", "skills": ["Power", "Agility", "Technique"], "who": "SELF"},
+            "condition": {"@type": "Always"},
+            "actions": [
+                {"@type": "Draw", "n": 3, "source": "TOP", "who": "SELF", "cap": null,
+                 "per": null, "per_excludes_trigger": false, "per_who": "SELF"},
+                {"@type": "ModifyRoll", "who": "SELF", "delta": 2, "when": "NEXT",
+                 "per": null, "per_who": "SELF"}
+            ],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "glw", "source": "gimmick", "optional": false
+        }])
+    }
+
+    fn card(uuid: &str) -> serde_json::Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+               "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []})
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "A", "name": "A", "division": "World Championship",
+                "stats": stats, "effects": glw_gimmick()},
+            "entrance": {"db_uuid": "A-ent", "name": "ent"},
+            "cards": (0..3).map(|i| card(&format!("c{i}"))).collect::<Vec<_>>(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "World Championship",
+                "stats": stats, "effects": []},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": [],
+        }))
+        .expect("deck B");
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck_a,
+            deck_b,
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn roll(engine: &mut Engine, skill: Skill) {
+        engine.roll_ctx.insert(
+            "A".to_owned(),
+            RollContext {
+                skill: Some(skill),
+                gap: Some(0),
+                value: Some(5),
+                opp_skill: Some(Skill::Power),
+            },
+        );
+        engine.run_on_rolled_all("A").unwrap();
+    }
+
+    #[test]
+    fn fires_only_after_all_three_distinct_skills_then_resets() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().deck = (0..6)
+            .map(|i| serde_json::from_value(card(&format!("d{i}"))).unwrap())
+            .collect();
+        // Power then Agility: incomplete, no reward.
+        roll(&mut engine, Skill::Power);
+        roll(&mut engine, Skill::Agility);
+        assert_eq!(engine.state.players["A"].hand.len(), 0);
+        // Repeating Power is idempotent — the set stays {P, A}.
+        roll(&mut engine, Skill::Power);
+        assert_eq!(engine.state.players["A"].hand.len(), 0);
+        // Technique completes {P, A, T}: draw 3 + next roll +2, and the set resets.
+        roll(&mut engine, Skill::Technique);
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            3,
+            "drew 3 on completion"
+        );
+        assert_eq!(
+            engine.state.players["A"].pending_roll_mods.next_turn, 2,
+            "next roll +2"
+        );
+        // The accumulator reset — one more Technique does NOT re-fire.
+        roll(&mut engine, Skill::Technique);
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            3,
+            "no re-fire until the set is rebuilt"
+        );
+    }
+
+    #[test]
+    fn a_non_required_skill_does_not_accumulate() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().deck = (0..6)
+            .map(|i| serde_json::from_value(card(&format!("d{i}"))).unwrap())
+            .collect();
+        // Submission/Grapple/Strike are not in the set — no progress toward the reward.
+        roll(&mut engine, Skill::Submission);
+        roll(&mut engine, Skill::Grapple);
+        roll(&mut engine, Skill::Power);
+        roll(&mut engine, Skill::Agility);
+        roll(&mut engine, Skill::Technique);
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            3,
+            "only P/A/T count toward completion"
+        );
     }
 }

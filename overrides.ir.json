@@ -9984,6 +9984,52 @@
       }
     }
   ],
+  "ef5f0e0716a54929bba3f278d7f4b354": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 3,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        },
+        {
+          "@type": "ModifyRoll",
+          "delta": 2,
+          "per": null,
+          "per_who": "SELF",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "each time you roll Power, Agility, and Technique for your turn rolls, draw 3 cards and your next turn roll is +2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRolledAll",
+        "skills": [
+          "Power",
+          "Agility",
+          "Technique"
+        ],
+        "who": "SELF"
+      }
+    }
+  ],
   "f4a3aea48e544fac9e4edf24b5d07235": [
     {
       "@type": "Effect",
