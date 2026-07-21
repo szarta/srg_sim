@@ -906,6 +906,7 @@ impl Engine {
                 count,
                 choose,
             } => self.act_remove_from_play(selector, *who, *count, *choose, key)?,
+            Action::DiscardInPlayMatch => self.act_discard_in_play_match(key)?,
             Action::ReturnToHand {
                 selector,
                 who,
@@ -1761,6 +1762,63 @@ impl Engine {
         Ok(())
     }
 
+    /// Candyman Dan: discard 1 of the owner's own in-play cards (they choose), then
+    /// discard 1 of the OPPONENT's in-play cards of the SAME play order. No-op if the
+    /// owner has nothing in play; the second discard is skipped if the opponent has no
+    /// matching card.
+    fn act_discard_in_play_match(&mut self, key: &str) -> Eng<()> {
+        let Some(order) = self.discard_one_in_play(key, key, &CardFilter::default())? else {
+            return Ok(());
+        };
+        let opp = self.state.opponent_of(key);
+        let filter = CardFilter {
+            play_order: Some(order),
+            ..Default::default()
+        };
+        self.discard_one_in_play(key, &opp, &filter)?;
+        Ok(())
+    }
+
+    /// `actor` picks and discards one of `target`'s in-play cards matching `selector`
+    /// (to `target`'s discard). Returns the discarded card's play order, or `None` if
+    /// none matched — the shared step of Candyman Dan's two-ended trade.
+    fn discard_one_in_play(
+        &mut self,
+        actor: &str,
+        target: &str,
+        selector: &CardFilter,
+    ) -> Eng<Option<PlayOrder>> {
+        let matches: Vec<Card> = self.state.players[target]
+            .in_play
+            .iter()
+            .filter(|c| conditions::card_matches(c, selector))
+            .cloned()
+            .collect();
+        if matches.is_empty() {
+            return Ok(None);
+        }
+        let card = self.pick_from(actor, &matches, "target")?;
+        let order = card.play_order;
+        let player = self.state.players.get_mut(target).unwrap();
+        if let Some(pos) = player
+            .in_play
+            .iter()
+            .position(|c| c.db_uuid == card.db_uuid)
+        {
+            player.in_play.remove(pos);
+        }
+        player.discard.push(card.clone());
+        let t = self.state.turn_no;
+        self.log(Event::Discard(CardMovement {
+            t,
+            player: target.to_owned(),
+            cards: vec![card.db_uuid],
+            source: Some("in_play".to_owned()),
+            hidden: false,
+        }));
+        Ok(Some(order))
+    }
+
     /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): bounce matching
     /// in-play cards back to their OWNER's hand. `choose` lets the actor pick from
     /// either board ("any player has in play"); otherwise the pick is over `who`'s.
@@ -2578,11 +2636,23 @@ impl Engine {
             return Ok(());
         }
         self.first_turn_option(&winner)?; // the once-per-player first-turn redraw (§6)
+        self.run_start_of_turn(&winner)?; // "once during your turn" gimmicks (Candyman Dan)
+        if self.ended() {
+            return Ok(());
+        }
         self.take_turn_action(&winner)?; // play ONE card (or pass+bury)
         while !self.ended() && self.consume_extra_play(&winner) {
             self.take_turn_action(&winner)?; // a PlayExtraCard granted another action
         }
         Ok(())
+    }
+
+    /// Fire the active player's `StartOfTurn` gimmicks — "once during your turn, you
+    /// may …" (Candyman Dan). Offered right after the turn draw, before the play action.
+    /// Previously a dead trigger; no parsed card or other override emits it.
+    fn run_start_of_turn(&mut self, key: &str) -> Eng<()> {
+        let effects = self.standing_effects(key);
+        self.run_effects(&effects, "StartOfTurn", key, None)
     }
 
     /// Spend one pending "additional card this turn" grant, if any.
@@ -4385,6 +4455,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RecurToDeckTop { .. } => "RecurToDeckTop",
         Action::CountsAsInPlay { .. } => "CountsAsInPlay",
         Action::RemoveFromPlay { .. } => "RemoveFromPlay",
+        Action::DiscardInPlayMatch => "DiscardInPlayMatch",
         Action::ReturnToHand { .. } => "ReturnToHand",
         Action::RevealAndDiscard { .. } => "RevealAndDiscard",
         Action::RevealForDraw { .. } => "RevealForDraw",
@@ -7064,5 +7135,94 @@ mod mack_a_tack_tests {
         let mut engine = engine;
         engine.state.last_turn_bumped = true;
         assert!(conditions::holds(&cond, &engine.state, "A", None));
+    }
+}
+
+#[cfg(test)]
+mod candyman_dan_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    fn card(uuid: &str, order: &str) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid,
+            "number": 1, "play_order": order, "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []}))
+        .unwrap()
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn discards_own_then_the_opponents_same_order_card() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card("a-fu", "Followup")];
+        engine.state.players.get_mut("B").unwrap().in_play =
+            vec![card("b-fu", "Followup"), card("b-lead", "Lead")];
+        engine.act_discard_in_play_match("A").unwrap();
+        // A discarded its own Follow Up; B lost its Follow Up (same order), kept its Lead.
+        assert!(engine.state.players["A"].in_play.is_empty());
+        assert!(engine.state.players["A"]
+            .discard
+            .iter()
+            .any(|c| c.db_uuid == "a-fu"));
+        assert!(engine.state.players["B"]
+            .in_play
+            .iter()
+            .any(|c| c.db_uuid == "b-lead"));
+        assert!(!engine.state.players["B"]
+            .in_play
+            .iter()
+            .any(|c| c.db_uuid == "b-fu"));
+        assert!(engine.state.players["B"]
+            .discard
+            .iter()
+            .any(|c| c.db_uuid == "b-fu"));
+    }
+
+    #[test]
+    fn no_matching_opponent_card_discards_only_your_own() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card("a-fin", "Finish")];
+        engine.state.players.get_mut("B").unwrap().in_play = vec![card("b-lead", "Lead")];
+        engine.act_discard_in_play_match("A").unwrap();
+        // A discarded its Finish; B has no Finish, so its Lead is untouched.
+        assert!(engine.state.players["A"].in_play.is_empty());
+        assert_eq!(engine.state.players["B"].in_play.len(), 1);
+    }
+
+    #[test]
+    fn no_own_in_play_is_a_noop() {
+        let mut engine = engine();
+        engine.state.players.get_mut("B").unwrap().in_play = vec![card("b-fu", "Followup")];
+        engine.act_discard_in_play_match("A").unwrap();
+        assert_eq!(
+            engine.state.players["B"].in_play.len(),
+            1,
+            "nothing to trade -> B untouched"
+        );
     }
 }

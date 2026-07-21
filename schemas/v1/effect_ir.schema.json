@@ -650,6 +650,9 @@
                 "$ref": "#/$defs/RemoveFromPlay"
               },
               {
+                "$ref": "#/$defs/DiscardInPlayMatch"
+              },
+              {
                 "$ref": "#/$defs/RevealAndDiscard"
               },
               {
@@ -1016,6 +1019,18 @@
       ],
       "type": "object"
     },
+    "DiscardInPlayMatch": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "DiscardInPlayMatch"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "DisqualificationRule": {
       "additionalProperties": false,
       "properties": {
@@ -1173,6 +1188,9 @@
               },
               {
                 "$ref": "#/$defs/RemoveFromPlay"
+              },
+              {
+                "$ref": "#/$defs/DiscardInPlayMatch"
               },
               {
                 "$ref": "#/$defs/RevealAndDiscard"
@@ -1989,6 +2007,9 @@
         },
         {
           "$ref": "#/$defs/RemoveFromPlay"
+        },
+        {
+          "$ref": "#/$defs/DiscardInPlayMatch"
         },
         {
           "$ref": "#/$defs/Reroll"
@@ -3764,5 +3785,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 50
+  "version": 51
 }

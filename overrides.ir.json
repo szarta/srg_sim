@@ -10181,6 +10181,31 @@
       }
     }
   ],
+  "f8dad17fa6a940b89d0466691d98b7fc": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "DiscardInPlayMatch"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "once during your turn, you may discard 1 card you have in play, then discard 1 card of the same card type your opponent has in play",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfTurn"
+      }
+    }
+  ],
   "f908c048e5f84b9caf403a88fd63d15a": [
     {
       "@type": "Effect",

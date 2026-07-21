@@ -766,6 +766,12 @@ pub enum Action {
         #[serde(default)]
         choose: bool,
     },
+    /// Discard 1 of the owner's own in-play cards, then discard 1 of the OPPONENT's
+    /// in-play cards of the SAME play order (Candyman Dan). The second target's filter
+    /// is bound at runtime to the first pick's play order — a trade the actor chooses
+    /// both ends of. No-op if the owner has nothing in play; the second discard is
+    /// skipped if the opponent has no same-order card. schema v51
+    DiscardInPlayMatch,
     /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): return matching
     /// in-play cards to their OWNER's hand (bounce). `who` picks the board; `choose`
     /// (like [`ShuffleHandDraw`]) lets the actor pick from EITHER board — "any player
@@ -1460,6 +1466,12 @@ pub enum IrNode {
         #[serde(default)]
         choose: bool,
     },
+    /// Discard 1 of the owner's own in-play cards, then discard 1 of the OPPONENT's
+    /// in-play cards of the SAME play order (Candyman Dan). The second target's filter
+    /// is bound at runtime to the first pick's play order — a trade the actor chooses
+    /// both ends of. No-op if the owner has nothing in play; the second discard is
+    /// skipped if the opponent has no same-order card. schema v51
+    DiscardInPlayMatch,
     /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): return matching
     /// in-play cards to their OWNER's hand (bounce). `who` picks the board; `choose`
     /// (like [`ShuffleHandDraw`]) lets the actor pick from EITHER board — "any player

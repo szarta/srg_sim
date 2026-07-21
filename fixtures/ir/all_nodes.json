@@ -520,6 +520,9 @@
     "who": "SELF"
   },
   {
+    "@type": "DiscardInPlayMatch"
+  },
+  {
     "@type": "Reroll",
     "choose": false,
     "cost": null,
