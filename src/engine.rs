@@ -6564,3 +6564,75 @@ mod man_from_it_tests {
         assert!(b.deck.iter().any(|c| c.db_uuid == "b-fin"));
     }
 }
+
+#[cfg(test)]
+mod bury_opp_discard_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    fn card(uuid: &str, order: &str, number: i64) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid,
+            "number": number, "play_order": order, "raw_text": "", "tags": [],
+            "finish_bonuses": {}, "effects": []}))
+        .unwrap()
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn any_filter() -> CardFilter {
+        serde_json::from_value(
+            json!({"@type": "CardFilter", "number": null, "atk_type": null,
+            "play_order": null, "play_orders": [], "tag": null, "name": null, "raw": null,
+            "name_contains": [], "text_contains": []}),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn burying_the_opponents_discard_does_not_panic() {
+        // Regression: the heuristic `at_bury` used to look the chosen card up in the
+        // ACTOR's discard, panicking when burying the OPPONENT's ("chosen card is in
+        // discard"). A buries 1 from B's discard; the card must move to B's deck bottom.
+        let mut engine = engine();
+        engine.state.players.get_mut("B").unwrap().discard =
+            vec![card("b-fin", "Finish", 20), card("b-lead", "Lead", 1)];
+        let spec = BurySpec {
+            selector: any_filter(),
+            count: 1,
+            who: Who::Opp,
+            random: false,
+            source: BuryFrom::Discard,
+            choose: false,
+        };
+        engine.act_bury(spec, "A").unwrap(); // must not panic
+        let b = &engine.state.players["B"];
+        assert_eq!(b.discard.len(), 1, "one card left B's discard");
+        assert_eq!(b.deck.len(), 1, "one card reached B's deck bottom");
+        // The Finish (most recyclable) is the one buried.
+        assert!(b.deck.iter().any(|c| c.db_uuid == "b-fin"));
+    }
+}

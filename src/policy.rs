@@ -307,10 +307,14 @@ impl HeuristicPolicy {
             return legal[0].clone(); // recycles carelessly — no plan
         }
         // Recycle the most valuable discard card (Finish > stop > dead); on a tie,
-        // the earliest option (Python `max` keeps the first maximum).
+        // the earliest option (Python `max` keeps the first maximum). The pool may span
+        // the opponent's discard ("bury N in your opponent's discard") or either pile
+        // (Cherry Glamazon), so each card is looked up in its OWN pile — the option's
+        // `owner`, defaulting to `key` for the own-discard pass (`do_pass`).
         let best = (0..legal.len())
             .max_by_key(|&i| {
-                let card = discard_card(state, key, ocard(&legal[i]));
+                let owner = oowner(&legal[i]).unwrap_or(key);
+                let card = discard_card(state, owner, ocard(&legal[i]));
                 (recycle_value(card), Reverse(i))
             })
             .unwrap();
@@ -401,6 +405,12 @@ fn oorder(o: &Value) -> &str {
 
 fn ocard(o: &Value) -> &str {
     o.get("card").and_then(Value::as_str).unwrap_or("")
+}
+
+/// The pile owner an option carries (`bury_from_discard` tags each candidate), or
+/// `None` for own-pile options (`do_pass`).
+fn oowner(o: &Value) -> Option<&str> {
+    o.get("owner").and_then(Value::as_str)
 }
 
 fn ovs_order(o: &Value) -> &str {
