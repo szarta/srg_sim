@@ -289,6 +289,10 @@ def _h_opp_won_last(c: fx.OppWonLastRoll, s: GameState, o: str, r: RollContext |
     return s.last_roll_winner is not None and s.last_roll_winner == s.opponent_of(o)
 
 
+def _h_bumped_last(c: fx.BumpedLastTurnRoll, s: GameState, o: str, r: RollContext | None) -> bool:
+    return s.last_turn_bumped
+
+
 def _h_gimmick_flipped(c: fx.GimmickFlipped, s: GameState, o: str, r: RollContext | None) -> bool:
     return s.players[_who(s, o, c.who)].gimmick_flipped
 
@@ -318,6 +322,7 @@ _HANDLERS: dict[type, Callable[[Any, GameState, str, RollContext | None], bool]]
     fx.PrintedRollValue: _h_printed_roll_value,
     fx.SameRolledSkill: _h_same_rolled_skill,
     fx.OppWonLastRoll: _h_opp_won_last,
+    fx.BumpedLastTurnRoll: _h_bumped_last,
     fx.GimmickFlipped: _h_gimmick_flipped,
     fx.DuringTurn: _h_during_turn,
 }

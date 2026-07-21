@@ -383,6 +383,7 @@ class Engine:
             if forced is not None:
                 self._record_roll_ctx(sa, va, sb, vb)
                 self._turn_bumped = bumps > 0
+                self.state.last_turn_bumped = bumps > 0  # read by the NEXT turn (Mack-a-Tack)
                 self._log(gl.TurnResult(t=self.state.turn_no, winner=forced, tie_bumps=bumps))
                 return forced
             # Would-bump replacement (Rey Zerblade): on a tie, before bumping, a player
@@ -398,15 +399,26 @@ class Engine:
         winner = self._roll_winner(va, vb, lowest)
         self._record_roll_ctx(sa, va, sb, vb)
         self._turn_bumped = bumps > 0
+        self.state.last_turn_bumped = bumps > 0  # read by the NEXT turn (Mack-a-Tack)
         self._log(gl.TurnResult(t=self.state.turn_no, winner=winner, tie_bumps=bumps))
         return winner
 
+    def _bump_draw(self, key: str) -> None:
+        """A player's bump card: normally draw 1, but if their OPPONENT declares
+        ``BumpDrawReplace`` (Mack-a-Tack), discard 1 from hand INSTEAD ("when you bump,
+        your opponent discards 1 card instead of drawing")."""
+        opp = self.state.opponent_of(key)
+        if self._declares_static(opp, fx.BumpDrawReplace):
+            self._discard_from_hand(key, 1, False)
+        else:
+            self._draw(key, 1)
+
     def _do_bump(self, bumps: int) -> tuple[Skill, int, Skill, int, int]:
-        """Perform a bump: both players draw 1, fire OnBump punishes, and re-roll
-        (pending mods are dropped on a bump re-roll). Returns the fresh
-        ``(sa, va, sb, vb, bumps+1)`` for the roll-off loop."""
-        self._draw("A", 1)
-        self._draw("B", 1)
+        """Perform a bump: both players draw 1 (unless replaced by a discard), fire
+        OnBump punishes, and re-roll (pending mods are dropped on a bump re-roll).
+        Returns the fresh ``(sa, va, sb, vb, bumps+1)`` for the roll-off loop."""
+        self._bump_draw("A")
+        self._bump_draw("B")
         bumps += 1
         self._run_on_bump()  # bump-punish gimmicks (Mastermind: opp next roll -2)
         sa, va = self._roll_for("A", use_pending=False)
@@ -2541,6 +2553,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.ConsideredCompare: Engine._act_noop,  # Static, read in conditions.holds; never executed
     fx.SuppressOpponentDraw: Engine._act_noop,  # Static, read in _act_draw; never executed
     fx.SuppressSelfHandLoss: Engine._act_noop,  # Static, read at the hand-loss points
+    fx.BumpDrawReplace: Engine._act_noop,  # Static, read in _do_bump; never executed
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed

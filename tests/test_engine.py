@@ -630,6 +630,38 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def test_bump_replace_makes_the_opponent_discard_instead_of_drawing() -> None:
+    # Mack-a-Tack (A) declares BumpDrawReplace: on a bump, B discards 1 instead of drawing.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    gimmick = fx.Effect(
+        trigger=fx.Static(), actions=(fx.BumpDrawReplace(),), source=fx.EffectSource.GIMMICK
+    )
+    eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, effects=(gimmick,))
+    for k in ("A", "B"):
+        eng.state.players[k].hand = [
+            Card(db_uuid=f"{k}1", name="c", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+        ]
+        eng.state.players[k].deck = [
+            Card(db_uuid=f"{k}d", name="d", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+        ]
+    eng._bump_draw("B")  # A declares -> B discards 1, does not draw
+    assert len(eng.state.players["B"].hand) == 0
+    assert len(eng.state.players["B"].deck) == 1
+    eng._bump_draw("A")  # B declares nothing -> A draws
+    assert len(eng.state.players["A"].hand) == 2
+    assert len(eng.state.players["A"].deck) == 0
+
+
+def test_bumped_last_turn_roll_condition_reads_the_flag() -> None:
+    from srg_sim import conditions
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    assert not conditions.holds(fx.BumpedLastTurnRoll(), eng.state, "A")
+    eng.state.last_turn_bumped = True
+    assert conditions.holds(fx.BumpedLastTurnRoll(), eng.state, "A")
+
+
 def _glw_engine() -> Engine:
     # General Lee Wong V2: OnRolledAll{P,A,T} -> Draw 3 + next roll +2.
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")

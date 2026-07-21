@@ -265,6 +265,10 @@ class GameState:
     # The previous turn's roll-off winner (None before turn 1), for a re-roll gimmick
     # gated on "your opponent won the last turn roll" (Robert 'The Brain' Dunn).
     last_roll_winner: str | None = None
+    # Whether the PREVIOUS turn's roll-off bumped (False before turn 1), for a re-roll
+    # gated on "if you bumped on the last turn roll" (Mack-a-Tack). Set at each roll-off's
+    # end, so the current roll-off reads the prior turn's value.
+    last_turn_bumped: bool = False
     # db_uuids whose text is blanked for the REST OF THIS TURN by BlankStoppedText;
     # card-identity scoped (not selector scoped) and cleared by the turn-boundary sweep.
     blanked_text: set[str] = field(default_factory=set)
@@ -565,6 +569,7 @@ class GameState:
             "active": self.active,
             "turn_no": self.turn_no,
             "last_roll_winner": self.last_roll_winner,
+            "last_turn_bumped": self.last_turn_bumped,
             "blanked_text": sorted(self.blanked_text),
         }
 
@@ -577,6 +582,7 @@ class GameState:
             active=data["active"],
             turn_no=data["turn_no"],
             last_roll_winner=data.get("last_roll_winner"),
+            last_turn_bumped=data.get("last_turn_bumped", False),
             blanked_text=set(data.get("blanked_text", [])),
         )
 

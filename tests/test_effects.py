@@ -86,6 +86,8 @@ from srg_sim.effects import (
     OnStop,
     OnWinTurn,
     OppWonLastRoll,
+    BumpedLastTurnRoll,
+    BumpDrawReplace,
     Or,
     Peek,
     PlayExtraCard,
@@ -184,6 +186,7 @@ SAMPLES: list[IRNode] = [
     RollGapAtLeast(3),
     RollLeadAtLeast(3),
     OppWonLastRoll(),
+    BumpedLastTurnRoll(),  # Mack-a-Tack
     SameRolledSkill(),  # Hex / Nic Nemeth
     RollValue(Comparator.LE, 7),
     PrintedRollValue(Who.OPP, 8),  # Collin the Chrononaut
@@ -256,6 +259,7 @@ SAMPLES: list[IRNode] = [
     ConsideredCompare(domain=CompareDomain.SKILL, order=CompareOrder.GREATER),  # RaRa Perre
     SuppressOpponentDraw(),  # Sami "The Draw" Callihan
     SuppressSelfHandLoss(),  # Sami "Death Machine" (V2)
+    BumpDrawReplace(),  # Mack-a-Tack
     CrowdMeter(1),
     PlayExtraCard(PlayOrder.FINISH),
     SetFinishRoll(11, CrowdMeterCompare(Comparator.GT, 0)),

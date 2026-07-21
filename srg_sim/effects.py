@@ -687,6 +687,13 @@ class OppWonLastRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class BumpedLastTurnRoll(IRNode):
+    """True iff the PREVIOUS turn's roll-off bumped (``GameState.last_turn_bumped``).
+    False before turn 1. Gates Mack-a-Tack's "if you bumped on the last turn roll"
+    re-roll. schema v50"""
+
+
+@dataclass(frozen=True)
 class GimmickFlipped(IRNode):
     """True iff ``who``'s competitor card has been turned over to its back side (by
     :class:`FlipGimmick`). Gates a two-sided gimmick's front effects (``Not(...)``)
@@ -1323,6 +1330,13 @@ class SuppressSelfHandLoss(IRNode):
 
 
 @dataclass(frozen=True)
+class BumpDrawReplace(IRNode):
+    """A Static declaration: on a BUMP the declarer's opponent discards 1 card instead
+    of drawing (Mack-a-Tack: "when you bump, your opponent discards 1 card instead of
+    drawing"). Read in ``_do_bump``; not executed as a mutation. schema v50"""
+
+
+@dataclass(frozen=True)
 class CrowdMeter(IRNode):
     delta: int
 
@@ -1537,6 +1551,7 @@ Condition = (
     | PrintedRollValue
     | SameRolledSkill
     | OppWonLastRoll
+    | BumpedLastTurnRoll
     | GimmickFlipped
     | DuringTurn
 )
@@ -1581,6 +1596,7 @@ Action = (
     | ConsideredCompare
     | SuppressOpponentDraw
     | SuppressSelfHandLoss
+    | BumpDrawReplace
     | CrowdMeter
     | PlayExtraCard
     | SetFinishRoll
