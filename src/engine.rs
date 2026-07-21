@@ -952,9 +952,12 @@ impl Engine {
                 *match_parity,
                 key,
             )?,
-            Action::ShuffleHandDraw { who, count, choose } => {
-                self.act_shuffle_hand_draw(*who, *count, *choose, key)?
-            }
+            Action::ShuffleHandDraw {
+                who,
+                count,
+                choose,
+                hand_count,
+            } => self.act_shuffle_hand_draw(*who, *count, *choose, *hand_count, key)?,
             Action::ModifyRoll {
                 who,
                 delta,
@@ -2319,23 +2322,34 @@ impl Engine {
     /// Shuffle a player's hand back into their deck, shuffle, then draw `count` — a
     /// mid-match hand refresh (Cyclone V2, on a bump). `choose` lets the actor pick
     /// which player ("either player"); the default policy picks itself.
-    fn act_shuffle_hand_draw(&mut self, who: Who, count: i64, choose: bool, key: &str) -> Eng<()> {
+    fn act_shuffle_hand_draw(
+        &mut self,
+        who: Who,
+        count: i64,
+        choose: bool,
+        hand_count: Option<i64>,
+        key: &str,
+    ) -> Eng<()> {
         let target = if choose {
             self.decide_reshuffle_target(key)?
         } else {
             self.target(who, key)
         };
-        let hand: Vec<Card> =
-            std::mem::take(&mut self.state.players.get_mut(&target).unwrap().hand);
-        if !hand.is_empty() {
-            let uuids: Vec<String> = hand.iter().map(|c| c.db_uuid.clone()).collect();
+        // `None` shuffles the WHOLE hand (Cyclone); `Some(n)` reveals and shuffles `n`
+        // chosen cards (Memes Dealer). The public Bury (hand→deck) is the "reveal".
+        let shed: Vec<Card> = match hand_count {
+            None => std::mem::take(&mut self.state.players.get_mut(&target).unwrap().hand),
+            Some(n) => self.pick_hand_cards(&target, n.max(0) as usize)?,
+        };
+        if !shed.is_empty() {
+            let uuids: Vec<String> = shed.iter().map(|c| c.db_uuid.clone()).collect();
             let t = self.state.turn_no;
             self.state
                 .players
                 .get_mut(&target)
                 .unwrap()
                 .deck
-                .extend(hand);
+                .extend(shed);
             self.log(Event::Bury(CardMovement {
                 t,
                 player: target.clone(),
@@ -2346,6 +2360,26 @@ impl Engine {
         }
         self.shuffle_deck(&target)?;
         self.draw(&target, count.max(0) as usize, DeckEnd::Top)
+    }
+
+    /// The owner of `target` reveals and removes up to `n` chosen cards from their hand
+    /// (least valuable first, via the `discard` point) — the pick step of a partial
+    /// hand shuffle (Memes Dealer).
+    fn pick_hand_cards(&mut self, target: &str, n: usize) -> Eng<Vec<Card>> {
+        let mut picked: Vec<Card> = Vec::new();
+        for _ in 0..n {
+            let hand: Vec<Card> = self.state.players[target].hand.clone();
+            if hand.is_empty() {
+                break;
+            }
+            let card = self.pick_from(target, &hand, "discard")?;
+            let h = &mut self.state.players.get_mut(target).unwrap().hand;
+            if let Some(pos) = h.iter().position(|c| c.db_uuid == card.db_uuid) {
+                h.remove(pos);
+            }
+            picked.push(card);
+        }
+        Ok(picked)
     }
 
     /// "Either player" pick for [`Self::act_shuffle_hand_draw`] — the actor chooses
@@ -2637,6 +2671,8 @@ impl Engine {
         }
         self.first_turn_option(&winner)?; // the once-per-player first-turn redraw (§6)
         self.run_start_of_turn(&winner)?; // "once during your turn" gimmicks (Candyman Dan)
+        let defender = self.state.opponent_of(&winner);
+        self.run_opponent_turn(&defender)?; // "once during your opponent's turn" (Memes Dealer V1)
         if self.ended() {
             return Ok(());
         }
@@ -2653,6 +2689,14 @@ impl Engine {
     fn run_start_of_turn(&mut self, key: &str) -> Eng<()> {
         let effects = self.standing_effects(key);
         self.run_effects(&effects, "StartOfTurn", key, None)
+    }
+
+    /// Fire the NON-active player's `DuringOpponentTurn` gimmicks — "once during your
+    /// opponent's turn, you may …" (Memes Dealer V1), the mirror of `run_start_of_turn`.
+    /// A previously-unused trigger; no parsed card or other override emits it.
+    fn run_opponent_turn(&mut self, key: &str) -> Eng<()> {
+        let effects = self.standing_effects(key);
+        self.run_effects(&effects, "DuringOpponentTurn", key, None)
     }
 
     /// Spend one pending "additional card this turn" grant, if any.
@@ -4319,6 +4363,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnBump => "OnBump",
         Trigger::OnBury { .. } => "OnBury",
         Trigger::StartOfTurn => "StartOfTurn",
+        Trigger::DuringOpponentTurn => "DuringOpponentTurn",
         Trigger::StartOfMatch => "StartOfMatch",
         Trigger::OnBreakout { .. } => "OnBreakout",
         Trigger::OnShuffle { .. } => "OnShuffle",
@@ -7223,6 +7268,94 @@ mod candyman_dan_tests {
             engine.state.players["B"].in_play.len(),
             1,
             "nothing to trade -> B untouched"
+        );
+    }
+}
+
+#[cfg(test)]
+mod memes_dealer_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::{json, Value};
+
+    fn card(uuid: &str) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid,
+            "number": 1, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []}))
+        .unwrap()
+    }
+
+    fn engine(a_effects: Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str, effects: Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck("A", a_effects),
+            deck("B", json!([])),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn reveal_one_shuffles_a_single_card_and_draws() {
+        let mut engine = engine(json!([]));
+        engine.state.players.get_mut("A").unwrap().hand = vec![card("h1"), card("h2")];
+        engine.state.players.get_mut("A").unwrap().deck = vec![card("d1"), card("d2")];
+        // Reveal+shuffle 1 chosen card, draw 1: hand size unchanged, one hand card left play.
+        engine
+            .act_shuffle_hand_draw(Who::SelfSide, 1, false, Some(1), "A")
+            .unwrap();
+        let a = &engine.state.players["A"];
+        // hand size 2 proves exactly 1 was shed (a whole-hand shuffle would leave 1).
+        assert_eq!(a.hand.len(), 2, "shed 1 + drew 1 -> net unchanged");
+        assert_eq!(a.hand.len() + a.deck.len(), 4, "no cards lost");
+    }
+
+    #[test]
+    fn whole_hand_path_is_unchanged_when_hand_count_is_none() {
+        let mut engine = engine(json!([]));
+        engine.state.players.get_mut("A").unwrap().hand = vec![card("h1"), card("h2"), card("h3")];
+        engine.state.players.get_mut("A").unwrap().deck = vec![card("d1")];
+        engine
+            .act_shuffle_hand_draw(Who::SelfSide, 2, false, None, "A")
+            .unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(a.hand.len(), 2, "whole hand shuffled, drew 2");
+        assert_eq!(a.hand.len() + a.deck.len(), 4);
+    }
+
+    #[test]
+    fn during_opponent_turn_fires_for_the_non_active_player() {
+        let gimmick = json!([{
+            "@type": "Effect", "trigger": {"@type": "DuringOpponentTurn"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF", "cap": null,
+                "per": null, "per_excludes_trigger": false, "per_who": "SELF"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "m", "source": "gimmick", "optional": false
+        }]);
+        let mut engine = engine(gimmick);
+        engine.state.players.get_mut("A").unwrap().deck = vec![card("d1")];
+        engine.run_opponent_turn("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            1,
+            "A acted during the opponent's turn"
         );
     }
 }

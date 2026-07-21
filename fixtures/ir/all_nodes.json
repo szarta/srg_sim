@@ -479,6 +479,7 @@
     "@type": "ShuffleHandDraw",
     "choose": true,
     "count": 4,
+    "hand_count": null,
     "who": "SELF"
   },
   {
@@ -613,6 +614,9 @@
   },
   {
     "@type": "StartOfTurn"
+  },
+  {
+    "@type": "DuringOpponentTurn"
   },
   {
     "@type": "Static"

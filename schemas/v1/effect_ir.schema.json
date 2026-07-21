@@ -1131,6 +1131,18 @@
       ],
       "type": "string"
     },
+    "DuringOpponentTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "DuringOpponentTurn"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "DuringTurn": {
       "additionalProperties": false,
       "properties": {
@@ -1465,6 +1477,9 @@
             },
             {
               "$ref": "#/$defs/StartOfTurn"
+            },
+            {
+              "$ref": "#/$defs/DuringOpponentTurn"
             },
             {
               "$ref": "#/$defs/StartOfMatch"
@@ -2058,6 +2073,9 @@
         },
         {
           "$ref": "#/$defs/StartOfTurn"
+        },
+        {
+          "$ref": "#/$defs/DuringOpponentTurn"
         },
         {
           "$ref": "#/$defs/Static"
@@ -3431,6 +3449,16 @@
         "count": {
           "type": "integer"
         },
+        "hand_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
@@ -3439,7 +3467,8 @@
         "@type",
         "who",
         "count",
-        "choose"
+        "choose",
+        "hand_count"
       ],
       "type": "object"
     },
@@ -3785,5 +3814,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 51
+  "version": 52
 }

@@ -521,6 +521,10 @@ pub enum Trigger {
         also_discard: bool,
     },
     StartOfTurn,
+    /// Fires for the NON-active player during the active player's turn — "once during
+    /// your opponent's turn, you may …" (Memes Dealer V1). The mirror of `StartOfTurn`;
+    /// offered once, at the opponent's turn start. Override-only. schema v52
+    DuringOpponentTurn,
     StartOfMatch,
     OnBreakout {
         /// Whose breakout fires this: `None` = any breakout ("after a breakout" —
@@ -855,6 +859,11 @@ pub enum Action {
         count: i64,
         #[serde(default)]
         choose: bool,
+        /// How many hand cards to shuffle in: `None` = the WHOLE hand (Cyclone V2);
+        /// `Some(n)` = the owner reveals and shuffles `n` chosen cards (Memes Dealer V1:
+        /// "reveal 1 card in your hand, shuffle it into your deck, and draw 1"). schema v52
+        #[serde(default)]
+        hand_count: Option<i64>,
     },
     ModifyRoll {
         who: Who,
@@ -1243,6 +1252,10 @@ pub enum IrNode {
         also_discard: bool,
     },
     StartOfTurn,
+    /// Fires for the NON-active player during the active player's turn — "once during
+    /// your opponent's turn, you may …" (Memes Dealer V1). The mirror of `StartOfTurn`;
+    /// offered once, at the opponent's turn start. Override-only. schema v52
+    DuringOpponentTurn,
     StartOfMatch,
     OnBreakout {
         /// Whose breakout fires this: `None` = any breakout ("after a breakout" —
@@ -1555,6 +1568,11 @@ pub enum IrNode {
         count: i64,
         #[serde(default)]
         choose: bool,
+        /// How many hand cards to shuffle in: `None` = the WHOLE hand (Cyclone V2);
+        /// `Some(n)` = the owner reveals and shuffles `n` chosen cards (Memes Dealer V1:
+        /// "reveal 1 card in your hand, shuffle it into your deck, and draw 1"). schema v52
+        #[serde(default)]
+        hand_count: Option<i64>,
     },
     ModifyRoll {
         who: Who,
