@@ -630,6 +630,46 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def _lead(uuid: str) -> Card:
+    return Card(db_uuid=uuid, name=uuid, number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+
+
+def test_shuffle_hand_draw_reveal_one_shuffles_a_single_card() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].hand = [_lead("h1"), _lead("h2")]
+    eng.state.players["A"].deck = [_lead("d1"), _lead("d2")]
+    eng._act_shuffle_hand_draw(fx.ShuffleHandDraw(who=fx.Who.SELF, count=1, hand_count=1), "A")
+    a = eng.state.players["A"]
+    # hand size 2 proves exactly 1 was shed (a whole-hand shuffle would leave 1 = draw only).
+    assert len(a.hand) == 2  # shed 1 + drew 1
+    assert len(a.hand) + len(a.deck) == 4  # no cards lost
+
+
+def test_shuffle_hand_draw_whole_hand_when_hand_count_none() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].hand = [_lead("h1"), _lead("h2"), _lead("h3")]
+    eng.state.players["A"].deck = [_lead("d1")]
+    eng._act_shuffle_hand_draw(fx.ShuffleHandDraw(who=fx.Who.SELF, count=2), "A")
+    a = eng.state.players["A"]
+    assert len(a.hand) == 2
+    assert len(a.hand) + len(a.deck) == 4
+
+
+def test_during_opponent_turn_fires_for_the_non_active_player() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    gimmick = fx.Effect(
+        trigger=fx.DuringOpponentTurn(), actions=(fx.Draw(n=1),), source=fx.EffectSource.GIMMICK
+    )
+    eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, effects=(gimmick,))
+    eng.state.players["A"].hand = []
+    eng.state.players["A"].deck = [_lead("d1")]
+    eng._run_opponent_turn("A")
+    assert len(eng.state.players["A"].hand) == 1
+
+
 def _inplay(uuid: str, order: PlayOrder) -> Card:
     return Card(db_uuid=uuid, name=uuid, number=1, atk_type=AtkType.STRIKE, play_order=order)
 

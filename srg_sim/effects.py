@@ -475,6 +475,13 @@ class StartOfTurn(IRNode):
 
 
 @dataclass(frozen=True)
+class DuringOpponentTurn(IRNode):
+    """Fires for the NON-active player during the active player's turn — "once during
+    your opponent's turn, you may …" (Memes Dealer V1). The mirror of :class:`StartOfTurn`;
+    offered once, at the opponent's turn start. Override-only. schema v52"""
+
+
+@dataclass(frozen=True)
 class StartOfMatch(IRNode):
     """At match setup, before opening hands."""
 
@@ -973,11 +980,16 @@ class RevealRoute(IRNode):
 class ShuffleHandDraw(IRNode):
     """Shuffle a player's hand back into their deck, shuffle it, then draw ``count``
     fresh cards — a mid-match hand refresh (Cyclone V2, on a bump). ``choose`` lets
-    the actor pick which player ("either player"); otherwise ``who`` selects."""
+    the actor pick which player ("either player"); otherwise ``who`` selects.
+
+    ``hand_count`` is how many hand cards to shuffle in: ``None`` = the WHOLE hand
+    (Cyclone); ``Some(n)`` = the owner reveals and shuffles ``n`` chosen cards (Memes
+    Dealer V1: "reveal 1 card in your hand, shuffle it into your deck, and draw 1")."""
 
     who: Who
     count: int
     choose: bool = False
+    hand_count: int | None = None
 
 
 @dataclass(frozen=True)
@@ -1531,6 +1543,7 @@ Trigger = (
     | OnBump
     | OnBury
     | StartOfTurn
+    | DuringOpponentTurn
     | StartOfMatch
     | OnBreakout
     | OnShuffle

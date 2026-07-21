@@ -233,6 +233,7 @@ class Engine:
             return
         self._first_turn_option(winner)  # the once-per-player first-turn redraw (§6)
         self._run_start_of_turn(winner)  # "once during your turn" gimmicks (Candyman Dan)
+        self._run_opponent_turn(self.state.opponent_of(winner))  # "once during your opponent's turn"
         if self._ended():
             return
         self._take_turn_action(winner)  # play ONE card (or pass+bury); the board persists
@@ -244,6 +245,12 @@ class Engine:
         you may …" (Candyman Dan). Offered right after the turn draw, before the play
         action. Previously a dead trigger; no parsed card / other override emits it."""
         self._run_effects(self._standing_effects(key), fx.StartOfTurn, key)
+
+    def _run_opponent_turn(self, key: str) -> None:
+        """Fire the NON-active player's ``DuringOpponentTurn`` gimmicks — "once during
+        your opponent's turn, you may …" (Memes Dealer V1), the mirror of
+        :meth:`_run_start_of_turn`. Previously unused; no parsed card / override emits it."""
+        self._run_effects(self._standing_effects(key), fx.DuringOpponentTurn, key)
 
     def _consume_extra_play(self, key: str) -> bool:
         """Spend one pending "additional card this turn" grant, if any."""
@@ -2124,16 +2131,35 @@ class Engine:
         else:
             target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
         player = self.state.players[target]
-        hand = player.hand
-        if hand:
-            uuids = [c.db_uuid for c in hand]
-            player.deck.extend(hand)
+        # None shuffles the WHOLE hand (Cyclone); Some(n) reveals and shuffles n chosen
+        # cards (Memes Dealer). The public Bury (hand->deck) is the "reveal".
+        if action.hand_count is None:
+            shed = player.hand
             player.hand = []
+        else:
+            shed = self._pick_hand_cards(target, max(action.hand_count, 0))
+        if shed:
+            uuids = [c.db_uuid for c in shed]
+            player.deck.extend(shed)
             self._log(
                 gl.Bury(t=self.state.turn_no, player=target, cards=uuids, source="hand")
             )
         self._shuffle_deck(target)
         self._draw(target, max(action.count, 0))
+
+    def _pick_hand_cards(self, target: str, n: int) -> list[Card]:
+        """The owner of ``target`` reveals and removes up to ``n`` chosen cards from
+        their hand (least valuable first, via the ``discard`` point) — the pick step of
+        a partial hand shuffle (Memes Dealer)."""
+        picked: list[Card] = []
+        for _ in range(n):
+            hand = self.state.players[target].hand
+            if not hand:
+                break
+            card = self._pick_from(target, hand, "discard")
+            hand.remove(card)
+            picked.append(card)
+        return picked
 
     def _decide_reshuffle_target(self, key: str) -> str:
         # "Either player" pick — the actor chooses itself or its opponent; the

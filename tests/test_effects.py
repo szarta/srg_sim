@@ -123,6 +123,7 @@ from srg_sim.effects import (
     SuppressOpponentDraw,
     SuppressSelfHandLoss,
     StartOfTurn,
+    DuringOpponentTurn,
     Static,
     Stop,
     StopRequiresTag,
@@ -163,6 +164,7 @@ SAMPLES: list[IRNode] = [
     OnShuffle(who=Who.OPP),  # Memes Dealer V2 "when your opponent shuffles their deck"
     OnDiscardMove(who=Who.OPP),  # Brumeister V2 "when your opponent moves ... from their discard pile"
     StartOfTurn(),
+    DuringOpponentTurn(),  # Memes Dealer V1
     StartOfMatch(),
     Static(),
     # conditions
@@ -220,6 +222,7 @@ SAMPLES: list[IRNode] = [
         match_parity=True,
     ),
     ShuffleHandDraw(who=Who.SELF, count=4, choose=True),
+    ShuffleHandDraw(who=Who.SELF, count=1, hand_count=1),  # Memes Dealer V1 (reveal 1)
     RecurToDeckTop(CardFilter(play_order=PlayOrder.FINISH), 3),
     CountsAsInPlay(  # "counts as 2 Lead Strikes in play" (Double Cross)
         CardFilter(play_order=PlayOrder.LEAD, atk_type=AtkType.STRIKE), 2
