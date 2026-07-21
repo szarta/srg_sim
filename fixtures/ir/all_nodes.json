@@ -763,6 +763,41 @@
     ]
   },
   {
+    "@type": "AbsorbGimmick",
+    "effects": [
+      {
+        "@type": "Effect",
+        "actions": [
+          {
+            "@type": "Draw",
+            "cap": null,
+            "n": 1,
+            "per": null,
+            "per_excludes_trigger": false,
+            "per_who": "SELF",
+            "source": "TOP",
+            "who": "SELF"
+          }
+        ],
+        "condition": {
+          "@type": "Always"
+        },
+        "duration": "INSTANT",
+        "frequency": {
+          "@type": "FrequencyGuard",
+          "kind": "UNLIMITED",
+          "n": null
+        },
+        "optional": false,
+        "raw_clause": "",
+        "source": "gimmick",
+        "trigger": {
+          "@type": "OnPlay"
+        }
+      }
+    ]
+  },
+  {
     "@type": "AddTextToNext",
     "effects": [
       {

@@ -945,6 +945,15 @@ pub enum Action {
         name_contains: Vec<String>,
         effects: Vec<Effect>,
     },
+    /// Add a chosen competitor's Gimmick to the actor's own (The SRG Boss — "add
+    /// their Gimmick to yours"): append `effects` to the actor's competitor
+    /// effects, so they become standing effects (and are suppressed together if
+    /// the actor's gimmick is blanked). Authored under a `StartOfMatch` `Choice`
+    /// whose branches carry each absorbable variant's baked IR; the engine has no
+    /// card index, so the candidate gimmicks are baked, not resolved at runtime.
+    AbsorbGimmick {
+        effects: Vec<Effect>,
+    },
     /// POISON/DOPING (srgpc): "Your opponent's **next** Grapple has the added text:
     /// 'If stopped, you lose the match via disqualification'" (the Madness trio).
     /// Attaches `effects` to the NEXT card `who` plays matching `selector`, then is
@@ -1690,6 +1699,15 @@ pub enum IrNode {
     MirrorOpponentIncrease,
     AddText {
         name_contains: Vec<String>,
+        effects: Vec<Effect>,
+    },
+    /// Add a chosen competitor's Gimmick to the actor's own (The SRG Boss — "add
+    /// their Gimmick to yours"): append `effects` to the actor's competitor
+    /// effects, so they become standing effects (and are suppressed together if
+    /// the actor's gimmick is blanked). Authored under a `StartOfMatch` `Choice`
+    /// whose branches carry each absorbable variant's baked IR; the engine has no
+    /// card index, so the candidate gimmicks are baked, not resolved at runtime.
+    AbsorbGimmick {
         effects: Vec<Effect>,
     },
     /// POISON/DOPING (srgpc): "Your opponent's **next** Grapple has the added text:

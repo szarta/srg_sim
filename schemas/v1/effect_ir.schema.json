@@ -1,5 +1,24 @@
 {
   "$defs": {
+    "AbsorbGimmick": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "AbsorbGimmick"
+        },
+        "effects": {
+          "items": {
+            "$ref": "#/$defs/Effect"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "effects"
+      ],
+      "type": "object"
+    },
     "AddFromDiscard": {
       "additionalProperties": false,
       "properties": {
@@ -800,6 +819,9 @@
                 "$ref": "#/$defs/AddText"
               },
               {
+                "$ref": "#/$defs/AbsorbGimmick"
+              },
+              {
                 "$ref": "#/$defs/AddTextToNext"
               },
               {
@@ -1365,6 +1387,9 @@
               },
               {
                 "$ref": "#/$defs/AddText"
+              },
+              {
+                "$ref": "#/$defs/AbsorbGimmick"
               },
               {
                 "$ref": "#/$defs/AddTextToNext"
@@ -2201,6 +2226,9 @@
         },
         {
           "$ref": "#/$defs/AddText"
+        },
+        {
+          "$ref": "#/$defs/AbsorbGimmick"
         },
         {
           "$ref": "#/$defs/AddTextToNext"
@@ -3921,5 +3949,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 56
+  "version": 57
 }

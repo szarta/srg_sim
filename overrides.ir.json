@@ -5697,6 +5697,212 @@
       }
     }
   ],
+  "8f2c00bb6fdd44a4aa6742ddd90650eb": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AbsorbGimmick",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "ModifyRoll",
+                          "delta": 1,
+                          "per": null,
+                          "per_who": "OPP",
+                          "when": "NEXT",
+                          "who": "SELF"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "INSTANT",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "when you roll Strike for your turn roll, your next turn roll is +1",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "OnRoll",
+                        "skill": "Strike",
+                        "who": "SELF"
+                      }
+                    },
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "ModifyRoll",
+                          "delta": 1,
+                          "per": null,
+                          "per_who": "OPP",
+                          "when": "NEXT",
+                          "who": "SELF"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "INSTANT",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "when you roll Submission for your turn roll, your next turn roll is +1",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "OnRoll",
+                        "skill": "Submission",
+                        "who": "SELF"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "label": "add The SRG Boss (V2)'s Gimmick"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AbsorbGimmick",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "At the start of the match you may reveal 2 different additional Entrance cards.",
+                          "reason": "no grammar match"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "INSTANT",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "At the start of the match you may reveal 2 different additional Entrance cards.",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "OnPlay"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "label": "add The SRG Boss (V1)'s Gimmick"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AbsorbGimmick",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Your Power is +1 during your Finish rolls and breakout rolls.",
+                          "reason": "no grammar match"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "INSTANT",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "Your Power is +1 during your Finish rolls and breakout rolls.",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "OnPlay"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "label": "add The SRG Boss (V3)'s Gimmick"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AbsorbGimmick",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "When you have a card in play with \"Boss\" and a card in play with \"Chop\" in the name: +1 to Strike and +2 to Submission.",
+                          "reason": "no grammar match"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "INSTANT",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "When you have a card in play with \"Boss\" and a card in play with \"Chop\" in the name: +1 to Strike and +2 to Submission.",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "OnPlay"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "label": "add The SRG Boss (V4)'s Gimmick"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "at the start of the match reveal any number of singles competitors with the srg boss (v1) logo: choose 1 and add their gimmick to yours",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfMatch"
+      }
+    }
+  ],
   "90a42698903e4468bab2c42d61cf3bc2": [
     {
       "@type": "Effect",

@@ -1059,6 +1059,7 @@ impl Engine {
             Action::LoseBy { kind, who } => self.act_lose_by(*kind, *who, key),
             Action::PlayExtraCard { .. } => self.act_play_extra_card(key),
             Action::Choice { options } => self.act_choice(options, key, source)?,
+            Action::AbsorbGimmick { effects } => self.act_absorb_gimmick(effects, key),
             // Passive markers, read where they matter (roll-off, finish, hand-cap,
             // count_in_play), never executed as a mutation — a no-op, not Unsupported.
             Action::LowestRollWins
@@ -2639,6 +2640,23 @@ impl Engine {
                 source: source.clone(),
             });
         self.log_effect(key, "AddTextToNext", Some(&target), json!({"text": source}));
+    }
+
+    /// Add a chosen competitor's Gimmick to `key`'s own (The SRG Boss — "add their
+    /// Gimmick to yours"): append `effects` to `key`'s competitor effects so they
+    /// fire as standing effects thereafter (and are blanked together with the rest
+    /// of `key`'s gimmick). The candidate gimmicks are baked into the authoring
+    /// `Choice`; the engine holds no card index to resolve them at runtime.
+    fn act_absorb_gimmick(&mut self, effects: &[Effect], key: &str) {
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .competitor
+            .effects
+            .extend(effects.iter().cloned());
+        let clauses: Vec<String> = effects.iter().map(|e| e.raw_clause.clone()).collect();
+        self.log_effect(key, "AbsorbGimmick", Some(key), json!({"gimmick": clauses}));
     }
 
     /// Consume any queued `PendingText` matching `card` and fold its effects onto the
@@ -4761,6 +4779,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BumpDrawReplace => "BumpDrawReplace",
         Action::ScaleEntranceNumbers { .. } => "ScaleEntranceNumbers",
         Action::AddText { .. } => "AddText",
+        Action::AbsorbGimmick { .. } => "AbsorbGimmick",
         Action::AddTextToNext { .. } => "AddTextToNext",
         Action::StopRequiresTag { .. } => "StopRequiresTag",
         Action::Reroll { .. } => "Reroll",
@@ -8091,5 +8110,110 @@ mod mr_rey_tests {
             !a.flags.contains_key("swap_grant_this"),
             "window still passes (consumed)"
         );
+    }
+}
+
+/// The SRG Boss (The Greatest American Who Ever Lived) (schema v57: AbsorbGimmick)
+/// — "At the start of the match reveal any number of Singles Competitors with the
+/// SRG Boss (V1) logo: Choose 1 and add their Gimmick to yours."
+#[cfg(test)]
+mod srg_boss_tests {
+    use super::*;
+    use crate::conditions::RollContext;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::{json, Value};
+
+    fn heuristic_pair() -> Policies {
+        Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        )
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(heuristic_pair()),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// An absorbable gimmick: OnRoll(Agility) -> Draw 1.
+    fn onroll_draw() -> Effect {
+        serde_json::from_value(json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnRoll", "skill": "Agility", "who": "SELF"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF",
+                         "cap": null, "per": null, "per_excludes_trigger": false, "per_who": "SELF"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "absorbed", "source": "gimmick", "optional": false
+        }))
+        .unwrap()
+    }
+
+    fn a_card(uuid: &str) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+               "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []})
+    }
+
+    #[test]
+    fn absorb_appends_the_gimmick_and_it_becomes_standing() {
+        let mut engine = engine();
+        assert_eq!(engine.standing_effects("A").len(), 0);
+        engine.act_absorb_gimmick(&[onroll_draw()], "A");
+        assert_eq!(
+            engine.state.players["A"].competitor.effects.len(),
+            1,
+            "added to the gimmick"
+        );
+        assert_eq!(
+            engine.standing_effects("A").len(),
+            1,
+            "and it is now standing"
+        );
+    }
+
+    #[test]
+    fn absorbed_effect_fires_as_a_standing_gimmick() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().deck =
+            vec![serde_json::from_value(a_card("c1")).unwrap()];
+        engine.act_absorb_gimmick(&[onroll_draw()], "A");
+        engine.roll_ctx.insert(
+            "A".into(),
+            RollContext {
+                skill: Some(Skill::Agility),
+                value: Some(7),
+                ..Default::default()
+            },
+        );
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            1,
+            "absorbed OnRoll->Draw fired"
+        );
+    }
+
+    #[test]
+    fn absorbing_multiple_effects_adds_them_all() {
+        let mut engine = engine();
+        engine.act_absorb_gimmick(&[onroll_draw(), onroll_draw()], "A"); // V2 = 2 effects
+        assert_eq!(engine.standing_effects("A").len(), 2);
     }
 }
