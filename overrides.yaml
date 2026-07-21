@@ -8070,3 +8070,47 @@ b70afdfa287e4ca6be73ee9f03c863ea:
   raw_clause: 'at the start of the match reveal any number of singles competitors with the srg boss (v1) logo: choose 1 and add their gimmick to yours'
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# El Ganso Ruso (top-96) — copy-entrance choice (schema v58: CopyEntrance).
+# "Copy your target's Entrance or your 1st turn roll is +6." A StartOfMatch
+# Choice: (B) ModifyRoll(SELF, +6, NEXT) = "your 1st turn roll is +6" (the
+# StartOfMatch NEXT mod promotes onto turn 1's roll via promote_pending); or
+# (A) CopyEntrance(OPP) = append the opponent's entrance effects to El Ganso
+# Ruso's own entrance (resolved live — the engine sees both loaded entrances).
+# Order: the +6 branch is FIRST so the heuristic's index-0 default takes the
+# clean, always-live roll bonus. Copied ONGOING entrance abilities (OnRoll/
+# Static) fire naturally; a copied StartOfMatch ability has already missed its
+# window (setup is past) — a small noted fidelity gap. Mandatory choice.
+# ---------------------------------------------------------------------------
+8ce649bcffc94efbb19e5639e0e76472:
+- '@type': Effect
+  trigger:
+    '@type': StartOfMatch
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: your 1st turn roll is +6
+      actions:
+      - '@type': ModifyRoll
+        who: SELF
+        delta: 6
+        when: NEXT
+        per: null
+        per_who: SELF
+    - '@type': ChoiceOption
+      label: copy your target's entrance
+      actions:
+      - '@type': CopyEntrance
+        who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: copy your target's entrance or your 1st turn roll is +6
+  source: gimmick
+  optional: false

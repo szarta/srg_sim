@@ -823,6 +823,15 @@ pub enum Action {
     ForceRevealPlay {
         who: Who,
     },
+    /// Copy `who`'s Entrance onto the actor's (El Ganso Ruso: "Copy your target's
+    /// Entrance"): append the target entrance's effects to the actor's own
+    /// entrance, so the actor gains that entrance's ability (in addition to their
+    /// own). Resolved live — the engine sees both loaded entrances. Authored under
+    /// a `StartOfMatch` `Choice`; copied *ongoing* abilities (OnRoll/Static) fire
+    /// naturally, but a copied `StartOfMatch` ability has already missed its window.
+    CopyEntrance {
+        who: Who,
+    },
     /// Look at / reveal cards from the top (and/or bottom) of `deck`'s deck, then
     /// route them: the effect owner (the "actor") takes `to_hand` of them to the
     /// deck owner's hand, buries `bury` to the deck bottom, and disposes of the
@@ -1577,6 +1586,15 @@ pub enum IrNode {
     /// their play order) and force-plays it. Idempotent: re-arming before the target
     /// takes a turn still fires once.
     ForceRevealPlay {
+        who: Who,
+    },
+    /// Copy `who`'s Entrance onto the actor's (El Ganso Ruso: "Copy your target's
+    /// Entrance"): append the target entrance's effects to the actor's own
+    /// entrance, so the actor gains that entrance's ability (in addition to their
+    /// own). Resolved live — the engine sees both loaded entrances. Authored under
+    /// a `StartOfMatch` `Choice`; copied *ongoing* abilities (OnRoll/Static) fire
+    /// naturally, but a copied `StartOfMatch` ability has already missed its window.
+    CopyEntrance {
         who: Who,
     },
     /// Look at / reveal cards from the top (and/or bottom) of `deck`'s deck, then

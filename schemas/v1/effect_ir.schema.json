@@ -681,6 +681,9 @@
                 "$ref": "#/$defs/ForceRevealPlay"
               },
               {
+                "$ref": "#/$defs/CopyEntrance"
+              },
+              {
                 "$ref": "#/$defs/GrantSwapNextTurn"
               },
               {
@@ -922,6 +925,22 @@
         "@type",
         "domain",
         "order"
+      ],
+      "type": "object"
+    },
+    "CopyEntrance": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CopyEntrance"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
       ],
       "type": "object"
     },
@@ -1246,6 +1265,9 @@
               },
               {
                 "$ref": "#/$defs/ForceRevealPlay"
+              },
+              {
+                "$ref": "#/$defs/CopyEntrance"
               },
               {
                 "$ref": "#/$defs/GrantSwapNextTurn"
@@ -2091,6 +2113,9 @@
         },
         {
           "$ref": "#/$defs/ForceRevealPlay"
+        },
+        {
+          "$ref": "#/$defs/CopyEntrance"
         },
         {
           "$ref": "#/$defs/GrantSwapNextTurn"
@@ -3949,5 +3974,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 57
+  "version": 58
 }

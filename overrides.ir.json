@@ -5624,6 +5624,57 @@
       }
     }
   ],
+  "8ce649bcffc94efbb19e5639e0e76472": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ModifyRoll",
+                  "delta": 6,
+                  "per": null,
+                  "per_who": "SELF",
+                  "when": "NEXT",
+                  "who": "SELF"
+                }
+              ],
+              "label": "your 1st turn roll is +6"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "CopyEntrance",
+                  "who": "OPP"
+                }
+              ],
+              "label": "copy your target's entrance"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "copy your target's entrance or your 1st turn roll is +6",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfMatch"
+      }
+    }
+  ],
   "8d1c80c7bbf34977ae298f810ac15af8": [
     {
       "@type": "Effect",

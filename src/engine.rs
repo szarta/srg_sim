@@ -1009,6 +1009,7 @@ impl Engine {
             } => self.act_reveal_for_draw(*who, *count, *draw, *match_on, key)?,
             Action::Peek { who } => self.act_peek(*who, key),
             Action::ForceRevealPlay { who } => self.act_force_reveal_play(*who, key),
+            Action::CopyEntrance { who } => self.act_copy_entrance(*who, key),
             Action::Scry {
                 deck,
                 top,
@@ -2219,6 +2220,33 @@ impl Engine {
             .flags
             .insert("forced_reveal_play".to_owned(), json!(true));
         self.log_effect(key, "ForceRevealPlay", Some(&target), json!({}));
+    }
+
+    /// Copy `who`'s Entrance onto `key`'s own (El Ganso Ruso): append the target
+    /// entrance's effects to `key`'s entrance, so `key` gains that entrance's
+    /// ability. Resolved live from the loaded entrances. A copied `StartOfMatch`
+    /// ability has already missed its window (setup is past); copied *ongoing*
+    /// abilities (OnRoll / Static / etc.) fire naturally thereafter.
+    fn act_copy_entrance(&mut self, who: Who, key: &str) {
+        let target = self.target(who, key);
+        if target == key {
+            return;
+        }
+        let effects: Vec<Effect> = self.state.players[&target].entrance.effects.clone();
+        let copied = effects.len();
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .entrance
+            .effects
+            .extend(effects);
+        self.log_effect(
+            key,
+            "CopyEntrance",
+            Some(&target),
+            json!({"effects": copied}),
+        );
     }
 
     /// Consume `key`'s armed "forced reveal-and-play" flag, if set.
@@ -4765,6 +4793,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RevealForDraw { .. } => "RevealForDraw",
         Action::Peek { .. } => "Peek",
         Action::ForceRevealPlay { .. } => "ForceRevealPlay",
+        Action::CopyEntrance { .. } => "CopyEntrance",
         Action::Scry { .. } => "Scry",
         Action::RevealRoute { .. } => "RevealRoute",
         Action::ShuffleHandDraw { .. } => "ShuffleHandDraw",
@@ -8215,5 +8244,111 @@ mod srg_boss_tests {
         let mut engine = engine();
         engine.act_absorb_gimmick(&[onroll_draw(), onroll_draw()], "A"); // V2 = 2 effects
         assert_eq!(engine.standing_effects("A").len(), 2);
+    }
+}
+
+/// El Ganso Ruso (schema v58: CopyEntrance) — "Copy your target's Entrance or
+/// your 1st turn roll is +6."
+#[cfg(test)]
+mod el_ganso_ruso_tests {
+    use super::*;
+    use crate::conditions::RollContext;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::{json, Value};
+
+    fn heuristic_pair() -> Policies {
+        Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        )
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(heuristic_pair()),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// An ongoing entrance ability: OnRoll(Agility) -> Draw 1.
+    fn onroll_draw() -> Effect {
+        serde_json::from_value(json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnRoll", "skill": "Agility", "who": "SELF"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF",
+                         "cap": null, "per": null, "per_excludes_trigger": false, "per_who": "SELF"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "opp-entrance", "source": "entrance", "optional": false
+        }))
+        .unwrap()
+    }
+
+    fn a_card(uuid: &str) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+               "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []})
+    }
+
+    #[test]
+    fn copy_appends_the_targets_entrance_effects() {
+        let mut engine = engine();
+        engine.state.players.get_mut("B").unwrap().entrance.effects = vec![onroll_draw()];
+        engine.act_copy_entrance(Who::Opp, "A"); // A copies B's entrance
+        assert_eq!(
+            engine.state.players["A"].entrance.effects.len(),
+            1,
+            "A gained B's entrance ability"
+        );
+        assert_eq!(
+            engine.state.players["B"].entrance.effects.len(),
+            1,
+            "B's own entrance untouched"
+        );
+    }
+
+    #[test]
+    fn a_copied_ongoing_entrance_ability_fires_for_the_copier() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().deck =
+            vec![serde_json::from_value(a_card("c1")).unwrap()];
+        engine.state.players.get_mut("B").unwrap().entrance.effects = vec![onroll_draw()];
+        engine.act_copy_entrance(Who::Opp, "A");
+        engine.roll_ctx.insert(
+            "A".into(),
+            RollContext {
+                skill: Some(Skill::Agility),
+                value: Some(7),
+                ..Default::default()
+            },
+        );
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            1,
+            "copied OnRoll->Draw fired for A"
+        );
+    }
+
+    #[test]
+    fn copying_your_own_entrance_is_a_noop() {
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().entrance.effects = vec![onroll_draw()];
+        engine.act_copy_entrance(Who::SelfSide, "A"); // SELF -> no-op (no doubling)
+        assert_eq!(engine.state.players["A"].entrance.effects.len(), 1);
     }
 }
