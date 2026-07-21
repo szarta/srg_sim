@@ -88,6 +88,7 @@ from srg_sim.effects import (
     OppWonLastRoll,
     BumpedLastTurnRoll,
     BumpDrawReplace,
+    ScaleEntranceNumbers,
     Or,
     Peek,
     PlayExtraCard,
@@ -265,6 +266,7 @@ SAMPLES: list[IRNode] = [
     SuppressOpponentDraw(),  # Sami "The Draw" Callihan
     SuppressSelfHandLoss(),  # Sami "Death Machine" (V2)
     BumpDrawReplace(),  # Mack-a-Tack
+    ScaleEntranceNumbers(("Training with",), 3),  # Pedro Valiant
     CrowdMeter(1),
     PlayExtraCard(PlayOrder.FINISH),
     SetFinishRoll(11, CrowdMeterCompare(Comparator.GT, 0)),

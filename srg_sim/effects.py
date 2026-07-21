@@ -1357,6 +1357,19 @@ class BumpDrawReplace(IRNode):
 
 
 @dataclass(frozen=True)
+class ScaleEntranceNumbers(IRNode):
+    """A Static declaration that multiplies every number in the owner's Entrance card's
+    effects by ``factor``, when the entrance name matches ``name_contains`` (Pedro
+    Valiant: "triple the numbers in the text of your Entrance cards with 'Training with'
+    in the name"). Applied to the entrance effects in ``_gimmick_standing_effects`` (like
+    Cassandra's sign-flip); not executed. Inert while the matching entrances parse to
+    ``Unsupported``; forward-compatible when they are modeled. schema v53"""
+
+    name_contains: tuple[str, ...] = ()
+    factor: int = 1
+
+
+@dataclass(frozen=True)
 class CrowdMeter(IRNode):
     delta: int
 
@@ -1466,6 +1479,33 @@ def flip_signs(effect: Effect) -> Effect:
     """Return a copy of ``effect`` with every printed +/- modifier negated — the
     transform Cassandra's :class:`FlipGimmickSigns` applies to the opponent's gimmick."""
     return replace(effect, actions=tuple(_negate_action(a) for a in effect.actions))
+
+
+def _scale_action(action: _A, factor: int) -> _A:
+    """Multiply every number on one action by ``factor`` (recursing into a
+    :class:`Choice`'s branches) — the transform Pedro Valiant's
+    :class:`ScaleEntranceNumbers` applies. Covers the signed deltas plus the count-like
+    fields ("draw 1" -> "draw 3"); anything with no number is returned unchanged."""
+    if isinstance(action, Choice):
+        return replace(
+            action,
+            options=tuple(
+                replace(opt, actions=tuple(_scale_action(a, factor) for a in opt.actions))
+                for opt in action.options
+            ),
+        )
+    if isinstance(action, _SIGNED_DELTA):
+        return replace(action, delta=action.delta * factor)
+    if isinstance(action, Draw):
+        return replace(action, n=action.n * factor)
+    if isinstance(action, Discard):
+        return replace(action, count=action.count * factor)
+    return action
+
+
+def scale_effect(effect: Effect, factor: int) -> Effect:
+    """Return a copy of ``effect`` with every number in its actions multiplied by ``factor``."""
+    return replace(effect, actions=tuple(_scale_action(a, factor) for a in effect.actions))
 
 
 @dataclass(frozen=True)
@@ -1619,6 +1659,7 @@ Action = (
     | SuppressOpponentDraw
     | SuppressSelfHandLoss
     | BumpDrawReplace
+    | ScaleEntranceNumbers
     | CrowdMeter
     | PlayExtraCard
     | SetFinishRoll

@@ -630,6 +630,58 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def _pedro_engine(ent_name: str, declare: bool = True) -> Engine:
+    from srg_sim.cards import EntranceCard
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    ent = EntranceCard(
+        db_uuid="ent", name=ent_name,
+        effects=(
+            fx.Effect(
+                trigger=fx.Static(),
+                actions=(fx.Draw(n=1), fx.ModifyRoll(who=fx.Who.SELF, delta=1, when=fx.RollWhen.NEXT)),
+            ),
+        ),
+    )
+    eng.state.players["A"].entrance = ent
+    if declare:
+        decl = fx.Effect(
+            trigger=fx.Static(),
+            actions=(fx.ScaleEntranceNumbers(name_contains=("Training with",), factor=3),),
+            source=fx.EffectSource.GIMMICK,
+        )
+        eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, effects=(decl,))
+    return eng
+
+
+def _entrance_numbers(eng: Engine) -> tuple[int, int]:
+    n = d = 0
+    for eff in eng._standing_effects("A"):
+        for a in eff.actions:
+            if isinstance(a, fx.Draw):
+                n = a.n
+            elif isinstance(a, fx.ModifyRoll):
+                d = a.delta
+    return n, d
+
+
+def test_pedro_scales_a_matching_entrance() -> None:
+    eng = _pedro_engine("Power Training with Rock Newman")
+    assert _entrance_numbers(eng) == (3, 3)  # draw 1 -> 3, +1 roll -> +3
+
+
+def test_pedro_does_not_scale_a_non_matching_entrance() -> None:
+    eng = _pedro_engine("Some Other Entrance")
+    assert _entrance_numbers(eng) == (1, 1)
+
+
+def test_pedro_blanked_gimmick_stops_scaling() -> None:
+    eng = _pedro_engine("Power Training with Rock Newman")
+    assert _entrance_numbers(eng) == (3, 3)
+    eng.state.players["A"].gimmick_blanked = True
+    assert _entrance_numbers(eng) == (1, 1)
+
+
 def _lead(uuid: str) -> Card:
     return Card(db_uuid=uuid, name=uuid, number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
 

@@ -1306,8 +1306,29 @@ class Engine:
             if self._gimmick_signs_flipped(key):  # Cassandra flips this player's gimmick
                 gimmick = tuple(fx.flip_signs(e) for e in gimmick)
             out.extend(gimmick)
-        out.extend(player.entrance.effects)
+        factor = self._entrance_scale_factor(key)  # Pedro Valiant triples the entrance's numbers
+        if factor is not None:
+            out.extend(fx.scale_effect(e, factor) for e in player.entrance.effects)
+        else:
+            out.extend(player.entrance.effects)
         return tuple(out)
+
+    def _entrance_scale_factor(self, key: str) -> int | None:
+        """The factor ``key``'s active ``ScaleEntranceNumbers`` declaration applies to
+        their Entrance card, if its name matches (Pedro Valiant). ``None`` = no scaling."""
+        if self.state.is_gimmick_blanked(key):
+            return None
+        player = self.state.players[key]
+        ename = player.entrance.name.lower()
+        for eff in player.competitor.effects:
+            if not isinstance(eff.trigger, fx.Static) or not conditions.holds(eff.condition, self.state, key):
+                continue
+            for a in eff.actions:
+                if isinstance(a, fx.ScaleEntranceNumbers) and any(
+                    s.lower() in ename for s in a.name_contains
+                ):
+                    return a.factor
+        return None
 
     def _gimmick_signs_flipped(self, key: str) -> bool:
         """True iff ``key``'s opponent has an active (unblanked) ``Static``
@@ -2613,6 +2634,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.SuppressOpponentDraw: Engine._act_noop,  # Static, read in _act_draw; never executed
     fx.SuppressSelfHandLoss: Engine._act_noop,  # Static, read at the hand-loss points
     fx.BumpDrawReplace: Engine._act_noop,  # Static, read in _do_bump; never executed
+    fx.ScaleEntranceNumbers: Engine._act_noop,  # Static, read in _gimmick_standing_effects; never executed
     fx.LowestRollWins: Engine._act_noop,
     fx.FlipGimmickSigns: Engine._act_noop,
     fx.CountsAsInPlay: Engine._act_noop,  # Static, read via count_in_play; never executed
