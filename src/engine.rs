@@ -1233,7 +1233,12 @@ impl Engine {
                 );
                 return Ok(());
             }
-            let n = self.bury_from_hand(&target, count.max(0) as usize, random, selector)?;
+            // `choose` makes the EFFECT OWNER pick which of the target's hand cards to
+            // bury (The Man from I.T. looks at the opponent's hand and chooses);
+            // otherwise the hand owner sheds their least valuable.
+            let chooser = if choose { key } else { target.as_str() };
+            let n =
+                self.bury_from_hand(&target, chooser, count.max(0) as usize, random, selector)?;
             if n > 0 {
                 self.run_on_bury(&target, true, false)?; // effect-caused hand bury
             }
@@ -1361,10 +1366,19 @@ impl Engine {
     fn bury_from_hand(
         &mut self,
         key: &str,
+        chooser: &str,
         count: usize,
         random: bool,
         selector: &CardFilter,
     ) -> Eng<usize> {
+        // When the chooser is not the hand owner, the effect owner is picking from the
+        // opponent's hand (The Man from I.T.) — a distinct decision point whose value
+        // read looks in the OTHER player's hand and disrupts the most valuable card.
+        let point = if chooser == key {
+            "bury_hand"
+        } else {
+            "bury_opp_hand"
+        };
         let mut buried: Vec<Card> = Vec::new();
         for _ in 0..count {
             let pool: Vec<Card> = self.state.players[key]
@@ -1379,7 +1393,7 @@ impl Engine {
             let card = if random {
                 self.state.rng.reveal(&pool).cloned().unwrap()
             } else {
-                self.pick_from(key, &pool, "bury_hand")?
+                self.pick_from(chooser, &pool, point)?
             };
             let hand = &mut self.state.players.get_mut(key).unwrap().hand;
             if let Some(pos) = hand.iter().position(|c| c.db_uuid == card.db_uuid) {
@@ -3154,6 +3168,13 @@ impl Engine {
         let value = base + bonus + cm;
         let auto = crate::finish::is_auto_success(value, cm);
         self.log_finish_attempt(finisher, card, skill, bonus, value, cm, auto);
+        // "When you roll <skill> for your Finish roll" gimmicks fire here, after the
+        // roll is determined but before it resolves (The Man from I.T.). No deck card
+        // carries `OnFinishRoll`, so the frozen finish games are untouched.
+        self.run_on_finish_roll(finisher, skill, value)?;
+        if self.ended() {
+            return Ok(());
+        }
         if !auto && self.breakout(defender, value) {
             self.on_broken_out(finisher)?; // defender broke out; the match resumes
             return Ok(());
@@ -3383,6 +3404,39 @@ impl Engine {
             let ctx = self.roll_ctx.get(ctx_key).cloned().unwrap_or_default();
             if skill.is_none() || ctx.skill == *skill {
                 self.fire_if_ready(eff, key, Some(&ctx))?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Fire `OnFinishRoll` gimmicks for `finisher`'s Finish roll (`skill`/`value`).
+    /// A separate trigger from the turn-roll `OnRoll`, so no existing gimmick fires on
+    /// a Finish roll. BOTH players are scanned: `who=SELF` fires for the finisher, and
+    /// an `OnFinishRoll{who=OPP}` fires for the NON-finisher ("when your opponent rolls
+    /// … for their Finish"), matching `OnRoll`'s `who` convention. The Finish roll does
+    /// not populate `self.roll_ctx`, so a local context carries the skill/value.
+    fn run_on_finish_roll(&mut self, finisher: &str, skill: Skill, value: i64) -> Eng<()> {
+        let ctx = RollContext {
+            skill: Some(skill),
+            value: Some(value),
+            gap: None,
+            opp_skill: None,
+        };
+        for owner in ["A", "B"] {
+            let effects = self.standing_effects(owner);
+            for eff in &effects {
+                let Trigger::OnFinishRoll { skill: want, who } = &eff.trigger else {
+                    continue;
+                };
+                if self.target(*who, owner) != finisher {
+                    continue;
+                }
+                if want.is_none() || *want == Some(skill) {
+                    self.fire_if_ready(eff, owner, Some(&ctx))?;
+                }
+                if self.ended() {
+                    return Ok(());
+                }
             }
         }
         Ok(())
@@ -4064,6 +4118,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
     match trigger {
         Trigger::OnPlay => "OnPlay",
         Trigger::OnRoll { .. } => "OnRoll",
+        Trigger::OnFinishRoll { .. } => "OnFinishRoll",
         Trigger::InRoll { .. } => "InRoll",
         Trigger::OnRollBoost { .. } => "OnRollBoost",
         Trigger::OnWinTurn => "OnWinTurn",
@@ -6405,5 +6460,107 @@ mod jokerfish_stop_tests {
     fn suppress_stop_is_inert_without_the_declaration() {
         let engine = engine_with(json!([]));
         assert!(engine.card_can_stop("A", &stopper(20, "Lead"), &attack("Lead")));
+    }
+}
+
+#[cfg(test)]
+mod man_from_it_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::{json, Value};
+
+    fn card(uuid: &str, order: &str, number: i64) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": number,
+               "play_order": order, "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []})
+    }
+
+    fn heuristic_pair() -> Policies {
+        Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        )
+    }
+
+    fn engine_with(a_effects: Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str, effects: Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A", a_effects),
+            deck("B", json!([])),
+            Box::new(heuristic_pair()),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// An OnFinishRoll(Technique) gimmick that draws 1 when it fires.
+    fn on_finish_draw() -> Value {
+        json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "OnFinishRoll", "skill": "Technique", "who": "SELF"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF",
+                         "cap": null, "per": null, "per_excludes_trigger": false, "per_who": "SELF"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "d", "source": "gimmick", "optional": false
+        }])
+    }
+
+    #[test]
+    fn on_finish_roll_fires_only_on_the_gated_skill() {
+        let mut engine = engine_with(on_finish_draw());
+        engine.state.players.get_mut("A").unwrap().deck =
+            vec![serde_json::from_value(card("c1", "Lead", 1)).unwrap()];
+        // A Power finish roll does not fire the Technique gimmick.
+        engine.run_on_finish_roll("A", Skill::Power, 20).unwrap();
+        assert_eq!(engine.state.players["A"].hand.len(), 0);
+        // A Technique finish roll fires it: A draws 1.
+        engine
+            .run_on_finish_roll("A", Skill::Technique, 20)
+            .unwrap();
+        assert_eq!(engine.state.players["A"].hand.len(), 1);
+    }
+
+    #[test]
+    fn choose_hand_bury_lets_the_attacker_bury_the_opponents_best() {
+        // A buries 1 of B's Follow Up / Finish hand cards, choosing (sabotage = the
+        // most valuable, a Finish). B's Lead is out of the filter and untouched.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("B").unwrap().hand = vec![
+            serde_json::from_value(card("b-lead", "Lead", 1)).unwrap(),
+            serde_json::from_value(card("b-fu", "Followup", 2)).unwrap(),
+            serde_json::from_value(card("b-fin", "Finish", 3)).unwrap(),
+        ];
+        let selector: CardFilter = serde_json::from_value(json!({
+            "@type": "CardFilter", "number": null, "atk_type": null, "play_order": null,
+            "play_orders": ["Followup", "Finish"], "tag": null, "name": null, "raw": null,
+            "name_contains": [], "text_contains": []
+        }))
+        .unwrap();
+        let spec = BurySpec {
+            selector,
+            count: 1,
+            who: Who::Opp,
+            random: false,
+            source: BuryFrom::Hand,
+            choose: true,
+        };
+        engine.act_bury(spec, "A").unwrap();
+        let b = &engine.state.players["B"];
+        // The Finish was buried (moved to B's deck bottom); the Lead stayed in hand.
+        assert!(b.hand.iter().any(|c| c.db_uuid == "b-lead"));
+        assert!(b.hand.iter().any(|c| c.db_uuid == "b-fu"));
+        assert!(!b.hand.iter().any(|c| c.db_uuid == "b-fin"));
+        assert!(b.deck.iter().any(|c| c.db_uuid == "b-fin"));
     }
 }

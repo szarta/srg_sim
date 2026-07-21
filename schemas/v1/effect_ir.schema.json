@@ -1380,6 +1380,9 @@
               "$ref": "#/$defs/OnRoll"
             },
             {
+              "$ref": "#/$defs/OnFinishRoll"
+            },
+            {
               "$ref": "#/$defs/InRoll"
             },
             {
@@ -1907,6 +1910,9 @@
           "$ref": "#/$defs/OnRoll"
         },
         {
+          "$ref": "#/$defs/OnFinishRoll"
+        },
+        {
           "$ref": "#/$defs/OnRollBoost"
         },
         {
@@ -2397,6 +2403,33 @@
       },
       "required": [
         "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "OnFinishRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnFinishRoll"
+        },
+        "skill": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skill"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "skill",
         "who"
       ],
       "type": "object"
@@ -3637,5 +3670,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 46
+  "version": 47
 }

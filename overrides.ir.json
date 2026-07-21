@@ -2779,6 +2779,106 @@
       }
     }
   ],
+  "49295df8c3bb48778a446b6eeba6982f": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Peek",
+          "who": "OPP"
+        },
+        {
+          "@type": "Bury",
+          "choose": true,
+          "count": 1,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [
+              "Followup",
+              "Finish"
+            ],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "HAND",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Technique for your turn roll, look at your opponent's hand, choose 1 Follow Up or Finish and bury it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Technique",
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Peek",
+          "who": "OPP"
+        },
+        {
+          "@type": "Bury",
+          "choose": true,
+          "count": 1,
+          "random": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [
+              "Followup",
+              "Finish"
+            ],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "HAND",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Technique for your Finish roll, look at your opponent's hand, choose 1 Follow Up or Finish and bury it",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnFinishRoll",
+        "skill": "Technique",
+        "who": "SELF"
+      }
+    }
+  ],
   "4c2e124efe254e4597eb5696e7d34ff6": [
     {
       "@type": "Effect",

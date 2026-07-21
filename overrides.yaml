@@ -7529,3 +7529,67 @@ d9e5097bbec7440c997cfff511cf0f39:
   raw_clause: when your opponent increases their skills, your skills are also increased the same amount
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# The Man from I.T. (top-96) — OnFinishRoll trigger + effect-owner hand-bury
+# (schema v47: OnFinishRoll; choose=true hand-bury).
+# "When you roll Technique for your turn or Finish roll, look at your opponent's
+#  hand, choose 1 Follow Up or Finish and bury it."
+# Two effects sharing one action list via a YAML anchor (the "OR two triggers"
+# pattern): OnRoll(Technique) and OnFinishRoll(Technique), each -> Peek(OPP) +
+# Bury(OPP, HAND, choose=true = the attacker picks, play_orders [Followup, Finish]).
+# ---------------------------------------------------------------------------
+49295df8c3bb48778a446b6eeba6982f:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions: &manit_actions
+  - '@type': Peek
+    who: OPP
+  - '@type': Bury
+    choose: true
+    count: 1
+    random: false
+    source: HAND
+    who: OPP
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders:
+      - Followup
+      - Finish
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your turn roll, look at your opponent's hand, choose 1 Follow Up or Finish and bury it
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnFinishRoll
+    skill: Technique
+    who: SELF
+  condition:
+    '@type': Always
+  actions: *manit_actions
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you roll Technique for your Finish roll, look at your opponent's hand, choose 1 Follow Up or Finish and bury it
+  source: gimmick
+  optional: false

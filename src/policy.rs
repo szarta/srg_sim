@@ -331,6 +331,19 @@ impl HeuristicPolicy {
         legal[worst].clone()
     }
 
+    /// The effect owner burying the OPPONENT's hand (The Man from I.T.): disrupt the
+    /// most valuable card, looked up in the opponent's hand (the pool owner). Negated
+    /// `min_by_key` keeps the FIRST maximum on a tie, matching Python `max`.
+    fn at_bury_opp_hand(&self, legal: &[Value], state: &GameState, key: &str) -> Value {
+        let owner = state.opponent_of(key);
+        let best = (0..legal.len())
+            .min_by_key(|&i| {
+                -discard_keep_value(hand_card(state, &owner, ocard(&legal[i])), state, &owner)
+            })
+            .unwrap();
+        legal[best].clone()
+    }
+
     fn at_optional(&self, legal: &[Value]) -> Value {
         or_first(by_kind(legal, "yes"), legal) // take optional edges (reroll / buff)
     }
@@ -360,6 +373,7 @@ impl Policy for HeuristicPolicy {
             // Burying from hand is the affected player shedding a hand card (to the
             // deck bottom) — same "drop your least valuable" read as a discard.
             "bury_hand" => self.at_discard(legal, state, key),
+            "bury_opp_hand" => self.at_bury_opp_hand(legal, state, key),
             "discard" => self.at_discard(legal, state, key),
             "optional" => self.at_optional(legal),
             "elect_bump" => self.at_elect_bump(legal),

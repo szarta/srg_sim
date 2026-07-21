@@ -413,6 +413,11 @@
     "who": "SELF"
   },
   {
+    "@type": "OnFinishRoll",
+    "skill": null,
+    "who": "SELF"
+  },
+  {
     "@type": "OnRollBoost",
     "delta": 0,
     "on_bump": false,

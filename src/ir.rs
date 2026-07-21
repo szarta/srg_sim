@@ -435,6 +435,14 @@ pub enum Trigger {
         skill: Option<Skill>,
         who: Who,
     },
+    /// Fires on a FINISH roll (not the turn roll-off) — "when you roll `skill` for
+    /// your Finish roll" (The Man from I.T.). `who` follows the finisher like
+    /// `OnRoll`'s does; the parser never emits it (override-only), so existing
+    /// turn-roll `OnRoll` nodes stay untouched. schema v47
+    OnFinishRoll {
+        skill: Option<Skill>,
+        who: Who,
+    },
     InRoll {
         skill: Option<Skill>,
         who: Who,
@@ -1118,6 +1126,14 @@ pub enum IrNode {
     // Triggers
     OnPlay,
     OnRoll {
+        skill: Option<Skill>,
+        who: Who,
+    },
+    /// Fires on a FINISH roll (not the turn roll-off) — "when you roll `skill` for
+    /// your Finish roll" (The Man from I.T.). `who` follows the finisher like
+    /// `OnRoll`'s does; the parser never emits it (override-only), so existing
+    /// turn-roll `OnRoll` nodes stay untouched. schema v47
+    OnFinishRoll {
         skill: Option<Skill>,
         who: Who,
     },
