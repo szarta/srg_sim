@@ -1035,6 +1035,22 @@ pub enum Action {
     AlsoLead {
         condition: Condition,
     },
+    /// Static stop-reframe (Jokerfish V2: "your opponent's Finishes are also Follow
+    /// Ups for your Stop cards"). For the DECLARER-as-defender, an attack whose order
+    /// is `attack_order` also satisfies a `Stop{order: as_order}`. Read in
+    /// `card_can_stop`, never executed. schema v45
+    StopCountsOrderAs {
+        attack_order: PlayOrder,
+        as_order: PlayOrder,
+    },
+    /// Static declaration that the declarer's OWN cards whose deck number is in
+    /// `[number_min, number_max]` cannot act as Stops (Jokerfish V2: "your cards
+    /// #19-21 cannot stop cards"). The rest of each card's text is unaffected — only
+    /// its Stop ability is suppressed. Read in `card_can_stop`, never executed. schema v45
+    SuppressStop {
+        number_min: i64,
+        number_max: i64,
+    },
     DoubleFinishIfBumped,
     Choice {
         options: Vec<ChoiceOption>,
@@ -1676,6 +1692,22 @@ pub enum IrNode {
     },
     AlsoLead {
         condition: Condition,
+    },
+    /// Static stop-reframe (Jokerfish V2: "your opponent's Finishes are also Follow
+    /// Ups for your Stop cards"). For the DECLARER-as-defender, an attack whose order
+    /// is `attack_order` also satisfies a `Stop{order: as_order}`. Read in
+    /// `card_can_stop`, never executed. schema v45
+    StopCountsOrderAs {
+        attack_order: PlayOrder,
+        as_order: PlayOrder,
+    },
+    /// Static declaration that the declarer's OWN cards whose deck number is in
+    /// `[number_min, number_max]` cannot act as Stops (Jokerfish V2: "your cards
+    /// #19-21 cannot stop cards"). The rest of each card's text is unaffected — only
+    /// its Stop ability is suppressed. Read in `card_can_stop`, never executed. schema v45
+    SuppressStop {
+        number_min: i64,
+        number_max: i64,
     },
     DoubleFinishIfBumped,
     Choice {

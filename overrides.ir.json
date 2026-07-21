@@ -8854,6 +8854,58 @@
       }
     }
   ],
+  "d9e5097bbec7440c997cfff511cf0f39": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "StopCountsOrderAs",
+          "as_order": "Followup",
+          "attack_order": "Finish"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your opponent's Finishes are also Follow Ups for your Stop cards",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "SuppressStop",
+          "number_max": 21,
+          "number_min": 19
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your cards",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "da0099e73b9344f9a3197a13652623ec": [
     {
       "@type": "Effect",

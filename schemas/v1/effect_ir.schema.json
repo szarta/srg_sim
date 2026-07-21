@@ -710,6 +710,12 @@
                 "$ref": "#/$defs/AlsoLead"
               },
               {
+                "$ref": "#/$defs/StopCountsOrderAs"
+              },
+              {
+                "$ref": "#/$defs/SuppressStop"
+              },
+              {
                 "$ref": "#/$defs/DoubleFinishIfBumped"
               },
               {
@@ -1223,6 +1229,12 @@
                 "$ref": "#/$defs/AlsoLead"
               },
               {
+                "$ref": "#/$defs/StopCountsOrderAs"
+              },
+              {
+                "$ref": "#/$defs/SuppressStop"
+              },
+              {
                 "$ref": "#/$defs/DoubleFinishIfBumped"
               },
               {
@@ -1731,6 +1743,12 @@
         },
         {
           "$ref": "#/$defs/AlsoLead"
+        },
+        {
+          "$ref": "#/$defs/StopCountsOrderAs"
+        },
+        {
+          "$ref": "#/$defs/SuppressStop"
         },
         {
           "$ref": "#/$defs/Always"
@@ -3407,6 +3425,26 @@
       ],
       "type": "object"
     },
+    "StopCountsOrderAs": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "StopCountsOrderAs"
+        },
+        "as_order": {
+          "$ref": "#/$defs/PlayOrder"
+        },
+        "attack_order": {
+          "$ref": "#/$defs/PlayOrder"
+        }
+      },
+      "required": [
+        "@type",
+        "attack_order",
+        "as_order"
+      ],
+      "type": "object"
+    },
     "StopRequiresTag": {
       "additionalProperties": false,
       "properties": {
@@ -3444,6 +3482,26 @@
       },
       "required": [
         "@type"
+      ],
+      "type": "object"
+    },
+    "SuppressStop": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SuppressStop"
+        },
+        "number_max": {
+          "type": "integer"
+        },
+        "number_min": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "number_min",
+        "number_max"
       ],
       "type": "object"
     },
@@ -3558,5 +3616,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 44
+  "version": 45
 }

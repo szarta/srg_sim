@@ -7460,3 +7460,48 @@ d149b71b56624078bea5794ee597e7b1:
   raw_clause: your minimum and maximum handsize are +2
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Jokerfish (V2) (top-96) — stop reframe + number-range stop suppression
+# (schema v45: StopCountsOrderAs, SuppressStop).
+# "Your opponent's Finishes are also Follow Ups for your Stop cards.
+#  Your cards #19-21 cannot stop cards."
+# Clause 1: for the declarer's Stop cards, an attacking Finish also counts as a
+# Follow Up. Clause 2: the declarer's own cards whose deck_card_number is 19-21
+# lose their Stop ability (rest of the card unaffected). Both read in card_can_stop.
+# ---------------------------------------------------------------------------
+d9e5097bbec7440c997cfff511cf0f39:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': StopCountsOrderAs
+    attack_order: Finish
+    as_order: Followup
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your opponent's Finishes are also Follow Ups for your Stop cards
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': SuppressStop
+    number_min: 19
+    number_max: 21
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your cards #19-21 cannot stop cards
+  source: gimmick
+  optional: false

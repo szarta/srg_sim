@@ -21,6 +21,16 @@
     }
   },
   {
+    "@type": "StopCountsOrderAs",
+    "attack_order": "Finish",
+    "as_order": "Followup"
+  },
+  {
+    "@type": "SuppressStop",
+    "number_min": 19,
+    "number_max": 21
+  },
+  {
     "@type": "Always"
   },
   {

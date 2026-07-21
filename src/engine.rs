@@ -986,7 +986,9 @@ impl Engine {
             | Action::StopRequiresTag { .. }
             | Action::BlankText { .. }
             | Action::MaxHandSize { .. }
-            | Action::MinHandSize { .. } => {}
+            | Action::MinHandSize { .. }
+            | Action::StopCountsOrderAs { .. }
+            | Action::SuppressStop { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
@@ -2962,13 +2964,51 @@ impl Engine {
         if self.state.is_text_blanked(stopper, defender) {
             return false; // a text-blanked stop card cannot stop
         }
+        if self.stop_suppressed(defender, stopper) {
+            return false; // Jokerfish "your cards #N-N cannot stop cards"
+        }
         stopper.effects.iter().any(|eff| {
             conditions::holds(&eff.condition, &self.state, defender, None)
                 && attacker_meets_tag_gates(eff, attack)
                 && eff.actions.iter().any(|action| {
-                    matches!(action, Action::Stop { .. }) && stop_matches(action, attack)
+                    matches!(action, Action::Stop { .. })
+                        && self.stop_matches_for(defender, action, attack)
                 })
         })
+    }
+
+    /// Whether `defender` declares that `stopper` (by its deck number) cannot act as a
+    /// Stop — Jokerfish V2's `SuppressStop` number range.
+    fn stop_suppressed(&self, defender: &str, stopper: &Card) -> bool {
+        let n = stopper.number;
+        self.declares_static(defender, |a| {
+            matches!(a, Action::SuppressStop { number_min, number_max }
+                if n >= *number_min && n <= *number_max)
+        })
+    }
+
+    /// Whether a `Stop` action's order/type filter covers `attack`, honoring
+    /// `defender`'s active `StopCountsOrderAs` reframes: an attack whose order is
+    /// reframed also satisfies a `Stop` of the reframed order ("your opponent's
+    /// Finishes are also Follow Ups for your Stop cards"). `None` order = any.
+    fn stop_matches_for(&self, defender: &str, stop: &Action, attack: &Card) -> bool {
+        let Action::Stop {
+            order, atk_type, ..
+        } = stop
+        else {
+            return false;
+        };
+        let order_ok = match order {
+            None => true,
+            Some(o) => {
+                *o == attack.play_order
+                    || self.declares_static(defender, |a| {
+                        matches!(a, Action::StopCountsOrderAs { attack_order, as_order }
+                            if *attack_order == attack.play_order && *as_order == *o)
+                    })
+            }
+        };
+        order_ok && (atk_type.is_none() || *atk_type == Some(attack.atk_type))
     }
 
     /// Apply a stop: the stopped ATTACK goes to the attacker's discard; the stopping
@@ -4083,21 +4123,6 @@ fn attacker_meets_tag_gates(eff: &Effect, attack: &Card) -> bool {
     })
 }
 
-fn stop_matches(stop: &Action, attack: &Card) -> bool {
-    let Action::Stop {
-        order, atk_type, ..
-    } = stop
-    else {
-        return false;
-    };
-    if let Some(o) = order {
-        if *o != attack.play_order {
-            return false;
-        }
-    }
-    atk_type.is_none() || *atk_type == Some(attack.atk_type)
-}
-
 /// Whether `attack` declares itself `Unstoppable` against `stopper` — an
 /// `Unstoppable` whose `by_order` is the stopper's play order (or `None` = by
 /// anything). "Cannot be stopped by Follow Ups".
@@ -4194,6 +4219,8 @@ fn action_name(action: &Action) -> &'static str {
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",
         Action::MinHandSize { .. } => "MinHandSize",
+        Action::StopCountsOrderAs { .. } => "StopCountsOrderAs",
+        Action::SuppressStop { .. } => "SuppressStop",
         Action::AddText { .. } => "AddText",
         Action::AddTextToNext { .. } => "AddTextToNext",
         Action::StopRequiresTag { .. } => "StopRequiresTag",
@@ -6253,5 +6280,128 @@ mod min_hand_size_tests {
             json!([hand_mod("MaxHandSize", -6, "OPP")]),
         );
         assert_eq!(cap(&engine, "A", 10), 7);
+    }
+}
+
+#[cfg(test)]
+mod jokerfish_stop_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    /// A Static effect whose sole action is `node` (a stop declaration).
+    fn decl(node: Value) -> Value {
+        json!({
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [node],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "decl", "source": "gimmick", "optional": false
+        })
+    }
+
+    /// A card of deck `number` carrying a `Stop{order}` (any atk_type).
+    fn stopper(number: i64, order: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "stop", "name": "stop", "number": number,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": order, "atk_type": null,
+                             "source_is_skillreq": false}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stopper")
+    }
+
+    fn attack(order: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": order, "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []
+        }))
+        .expect("attack")
+    }
+
+    /// Engine where DEFENDER A's gimmick carries `a_effects`.
+    fn engine_with(a_effects: Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str, effects: Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A", a_effects),
+            deck("B", json!([])),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            legal: &[Value],
+            _: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    #[test]
+    fn followup_stop_cannot_stop_a_finish_without_the_reframe() {
+        let engine = engine_with(json!([]));
+        assert!(!engine.card_can_stop("A", &stopper(1, "Followup"), &attack("Finish")));
+    }
+
+    #[test]
+    fn reframe_lets_a_followup_stop_catch_the_opponents_finish() {
+        // Jokerfish: "your opponent's Finishes are also Follow Ups for your Stop cards".
+        let engine = engine_with(json!([decl(
+            json!({"@type": "StopCountsOrderAs", "attack_order": "Finish", "as_order": "Followup"})
+        )]));
+        assert!(engine.card_can_stop("A", &stopper(1, "Followup"), &attack("Finish")));
+    }
+
+    #[test]
+    fn reframe_does_not_touch_an_unrelated_order() {
+        // The reframe only maps Finish->Follow Up; a Lead attack is still unstoppable
+        // by a Follow-Up stop.
+        let engine = engine_with(json!([decl(
+            json!({"@type": "StopCountsOrderAs", "attack_order": "Finish", "as_order": "Followup"})
+        )]));
+        assert!(!engine.card_can_stop("A", &stopper(1, "Followup"), &attack("Lead")));
+    }
+
+    #[test]
+    fn suppress_stop_disables_a_card_in_the_number_range() {
+        // "your cards #19-21 cannot stop cards": a #20 stop is disabled, a #18 is not.
+        let engine = engine_with(json!([decl(
+            json!({"@type": "SuppressStop", "number_min": 19, "number_max": 21})
+        )]));
+        assert!(!engine.card_can_stop("A", &stopper(20, "Lead"), &attack("Lead")));
+        assert!(engine.card_can_stop("A", &stopper(18, "Lead"), &attack("Lead")));
+    }
+
+    #[test]
+    fn suppress_stop_is_inert_without_the_declaration() {
+        let engine = engine_with(json!([]));
+        assert!(engine.card_can_stop("A", &stopper(20, "Lead"), &attack("Lead")));
     }
 }
