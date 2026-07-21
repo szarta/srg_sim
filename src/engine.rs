@@ -371,6 +371,10 @@ pub struct Engine {
     /// duration of `run_hit_gimmicks` so a `per_excludes_trigger` count can drop it.
     /// Transient, never serialized.
     hit_card: Option<String>,
+    /// In-roll boost accumulated by a `RollBoost` action during an `offer_roll_boost`
+    /// call (El Super Hombre V3's "or your roll is +1" choice branch). Reset before each
+    /// effect's actions run and read back into the roll value. Transient, never serialized.
+    pending_roll_boost: i64,
     decider: Box<dyn Decider>,
     /// Monotonic counter of decisions offered, for `request_id`/`seq`.
     decision_index: u64,
@@ -427,6 +431,7 @@ impl Engine {
             turn_bumped: false,
             stopped_card: None,
             hit_card: None,
+            pending_roll_boost: 0,
             decider,
             decision_index: 0,
         }
@@ -1045,6 +1050,7 @@ impl Engine {
                 per_who,
             } => self.act_modify_roll(*who, *delta, *when, per.as_ref(), *per_who, key),
             Action::CrowdMeter { delta } => self.act_crowd(*delta, key),
+            Action::RollBoost { delta } => self.pending_roll_boost += *delta,
             Action::WinTie { who } => self.act_win_tie(*who, key),
             Action::BlankGimmick { who, duration } => self.act_blank_gimmick(*who, *duration, key),
             Action::FlipGimmick { who } => self.act_flip_gimmick(*who, key),
@@ -4168,14 +4174,21 @@ impl Engine {
                 continue;
             }
             self.mark_fired(eff, key);
-            self.apply_actions(eff, key)?; // pay the cost (e.g. a type-matched discard)
-            value += *delta;
-            self.log_effect(
-                key,
-                "RollBoost",
-                Some(key),
-                json!({"skill": skill.name(), "delta": *delta}),
-            );
+            // A `RollBoost` action inside the effect (e.g. a Choice branch, El Super
+            // Hombre V3) reports its in-roll delta through `pending_roll_boost`; the
+            // trigger's own fixed `delta` (Rey Zerblade) is added on top.
+            self.pending_roll_boost = 0;
+            self.apply_actions(eff, key)?; // pay the cost / run the chosen branch
+            let applied = *delta + self.pending_roll_boost;
+            value += applied;
+            if applied != 0 {
+                self.log_effect(
+                    key,
+                    "RollBoost",
+                    Some(key),
+                    json!({"skill": skill.name(), "delta": applied}),
+                );
+            }
         }
         Ok(value)
     }
@@ -4592,6 +4605,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",
         Action::MinHandSize { .. } => "MinHandSize",
+        Action::RollBoost { .. } => "RollBoost",
         Action::MirrorOpponentIncrease => "MirrorOpponentIncrease",
         Action::StopCountsOrderAs { .. } => "StopCountsOrderAs",
         Action::SuppressStop { .. } => "SuppressStop",
@@ -7546,5 +7560,125 @@ mod pedro_valiant_tests {
             (1, 1),
             "blanked gimmick declares nothing"
         );
+    }
+}
+
+#[cfg(test)]
+mod el_super_hombre_v3_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    /// Picks the choice option with the given index at a "choice" point; legal[0] else.
+    struct PickChoice(usize);
+    impl Decider for PickChoice {
+        fn decide(
+            &mut self,
+            point: &str,
+            _: &str,
+            legal: &[Value],
+            _: &mut GameState,
+        ) -> Option<Value> {
+            if point == "choice" {
+                legal
+                    .iter()
+                    .find(|o| o["index"].as_u64() == Some(self.0 as u64))
+                    .cloned()
+            } else {
+                legal.first().cloned()
+            }
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "pick".to_owned()
+        }
+    }
+
+    /// El Super Hombre V3: OnRollBoost(Agility) -> Choice[Draw 1 | RollBoost +1].
+    fn gimmick() -> Value {
+        json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "OnRollBoost", "skill": "Agility", "delta": 0, "on_bump": false},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Choice", "options": [
+                {"@type": "ChoiceOption", "label": "draw", "actions": [{"@type": "Draw", "n": 1,
+                    "source": "TOP", "who": "SELF", "cap": null, "per": null,
+                    "per_excludes_trigger": false, "per_who": "SELF"}]},
+                {"@type": "ChoiceOption", "label": "boost", "actions": [{"@type": "RollBoost", "delta": 1}]}
+            ]}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "eshv3", "source": "gimmick", "optional": false
+        }])
+    }
+
+    fn engine(pick: usize) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str, effects: Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"},
+                "cards": [{"atk_type": "Strike", "db_uuid": "c", "name": "c", "number": 1,
+                    "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []}],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A", gimmick()),
+            deck("B", json!([])),
+            Box::new(PickChoice(pick)),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn boost_branch_adds_one_to_the_current_roll() {
+        let mut engine = engine(1); // pick "boost"
+        engine.state.players.get_mut("A").unwrap().deck =
+            vec![
+                serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": "d", "name": "d",
+                "number": 1, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+                "effects": []}))
+                .unwrap(),
+            ];
+        let before = engine.state.players["A"].hand.len();
+        let v = engine
+            .offer_roll_boost("A", Skill::Agility, 7, false)
+            .unwrap();
+        assert_eq!(v, 8, "the +1 branch boosts the roll");
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            before,
+            "no draw on the boost branch"
+        );
+    }
+
+    #[test]
+    fn draw_branch_leaves_the_roll_and_draws() {
+        let mut engine = engine(0); // pick "draw"
+        engine.state.players.get_mut("A").unwrap().deck =
+            vec![
+                serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": "d", "name": "d",
+                "number": 1, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+                "effects": []}))
+                .unwrap(),
+            ];
+        let before = engine.state.players["A"].hand.len();
+        let v = engine
+            .offer_roll_boost("A", Skill::Agility, 7, false)
+            .unwrap();
+        assert_eq!(v, 7, "the draw branch does not boost the roll");
+        assert_eq!(engine.state.players["A"].hand.len(), before + 1, "drew 1");
+    }
+
+    #[test]
+    fn does_not_fire_on_a_non_agility_roll() {
+        let mut engine = engine(1);
+        let v = engine
+            .offer_roll_boost("A", Skill::Power, 7, false)
+            .unwrap();
+        assert_eq!(v, 7, "the Agility gate keeps it inert on a Power roll");
     }
 }

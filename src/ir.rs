@@ -872,6 +872,14 @@ pub enum Action {
         per: Option<CardFilter>,
         per_who: Who,
     },
+    /// Add `delta` to the owner's CURRENT roll value, mid-roll-off. Unlike
+    /// `ModifyRoll{when=This}` (a pending mod consumed at roll start), this applies to a
+    /// roll ALREADY made — a choice branch inside an `OnRollBoost` offer (El Super Hombre
+    /// V3: "when you roll Agility … or your roll is +1"). Read by `offer_roll_boost` via
+    /// the engine's `pending_roll_boost`. schema v54
+    RollBoost {
+        delta: i64,
+    },
     BuffSkill {
         skill: Skill,
         delta: i64,
@@ -1590,6 +1598,14 @@ pub enum IrNode {
         when: RollWhen,
         per: Option<CardFilter>,
         per_who: Who,
+    },
+    /// Add `delta` to the owner's CURRENT roll value, mid-roll-off. Unlike
+    /// `ModifyRoll{when=This}` (a pending mod consumed at roll start), this applies to a
+    /// roll ALREADY made — a choice branch inside an `OnRollBoost` offer (El Super Hombre
+    /// V3: "when you roll Agility … or your roll is +1"). Read by `offer_roll_boost` via
+    /// the engine's `pending_roll_boost`. schema v54
+    RollBoost {
+        delta: i64,
     },
     BuffSkill {
         skill: Skill,

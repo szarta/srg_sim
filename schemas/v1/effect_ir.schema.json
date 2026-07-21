@@ -671,6 +671,9 @@
                 "$ref": "#/$defs/ModifyRoll"
               },
               {
+                "$ref": "#/$defs/RollBoost"
+              },
+              {
                 "$ref": "#/$defs/BuffSkill"
               },
               {
@@ -1224,6 +1227,9 @@
               },
               {
                 "$ref": "#/$defs/ModifyRoll"
+              },
+              {
+                "$ref": "#/$defs/RollBoost"
               },
               {
                 "$ref": "#/$defs/BuffSkill"
@@ -1962,6 +1968,9 @@
         },
         {
           "$ref": "#/$defs/ModifyRoll"
+        },
+        {
+          "$ref": "#/$defs/RollBoost"
         },
         {
           "$ref": "#/$defs/Not"
@@ -3166,6 +3175,22 @@
       ],
       "type": "object"
     },
+    "RollBoost": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RollBoost"
+        },
+        "delta": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "delta"
+      ],
+      "type": "object"
+    },
     "RollGapAtLeast": {
       "additionalProperties": false,
       "properties": {
@@ -3846,5 +3871,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 53
+  "version": 54
 }

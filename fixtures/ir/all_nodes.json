@@ -371,6 +371,10 @@
     "who": "SELF"
   },
   {
+    "@type": "RollBoost",
+    "delta": 0
+  },
+  {
     "@type": "Not",
     "item": {
       "@type": "Always"

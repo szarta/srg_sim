@@ -7495,6 +7495,62 @@
       }
     }
   ],
+  "b70afdfa287e4ca6be73ee9f03c863ea": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "cap": null,
+                  "n": 1,
+                  "per": null,
+                  "per_excludes_trigger": false,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "draw 1 card"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "RollBoost",
+                  "delta": 1
+                }
+              ],
+              "label": "your roll is +1"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Agility for your turn roll, draw 1 card or your roll is +1",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRollBoost",
+        "delta": 0,
+        "on_bump": false,
+        "skill": "Agility"
+      }
+    }
+  ],
   "b724c6a2db604a95971f30f7a424d2de": [
     {
       "@type": "Effect",
