@@ -3203,3 +3203,58 @@ def test_father_light_take_turn_action_consumes_the_armed_forced_play() -> None:
     b = eng.state.players["B"]
     assert any(c.db_uuid == "b-lead" for c in b.in_play)  # forced to play the Lead
     assert "forced_reveal_play" not in b.flags  # flag consumed
+
+
+# -- Mr. Rey: deferred next-turn hand<->discard swap grant (schema v56) -------
+
+
+class _AlwaysSwap(HeuristicPolicy):
+    """Says yes to the optional swap and picks the first card at each zone pick."""
+
+    def decide(self, point: str, key: str, legal: list) -> dict:  # type: ignore[override]
+        return legal[0]
+
+
+def test_mr_rey_grant_arms_then_promotes_then_expires() -> None:
+    eng = _fresh()
+    eng._act_grant_swap_next_turn(fx.GrantSwapNextTurn(fx.Who.SELF), "A")  # A grants itself
+    assert eng.state.players["A"].flags.get("swap_grant_next")
+    eng._promote_swap_grant_for(eng.state.players["A"])  # next -> this
+    assert eng.state.players["A"].flags.get("swap_grant_this")
+    assert "swap_grant_next" not in eng.state.players["A"].flags
+    eng._promote_swap_grant_for(eng.state.players["A"])  # unused -> expires
+    assert "swap_grant_this" not in eng.state.players["A"].flags
+
+
+def test_mr_rey_offer_performs_the_swap_when_usable() -> None:
+    eng = Engine(*bull_vs_fae(), _AlwaysSwap(), _AlwaysSwap(), seed=1, created="x")
+    eng.state.turn_no = 1
+    h1 = _mk("h1", PlayOrder.LEAD, 101)
+    d1 = _mk("d1", PlayOrder.LEAD, 102)
+    eng.state.players["A"].hand = [h1]
+    eng.state.players["A"].discard = [d1]
+    eng.state.players["A"].flags["swap_grant_this"] = True
+    eng._offer_swap_grant("A")
+    a = eng.state.players["A"]
+    assert any(c.db_uuid == "d1" for c in a.hand)  # discard card entered hand
+    assert any(c.db_uuid == "h1" for c in a.discard)  # hand card went to discard
+    assert "swap_grant_this" not in a.flags  # consumed
+
+
+def test_mr_rey_offer_is_a_noop_without_a_grant() -> None:
+    eng = Engine(*bull_vs_fae(), _AlwaysSwap(), _AlwaysSwap(), seed=1, created="x")
+    eng.state.turn_no = 1
+    eng.state.players["A"].hand = [_mk("h1", PlayOrder.LEAD, 101)]
+    eng.state.players["A"].discard = [_mk("d1", PlayOrder.LEAD, 102)]
+    eng._offer_swap_grant("A")  # no swap_grant_this
+    assert any(c.db_uuid == "h1" for c in eng.state.players["A"].hand)  # unchanged
+
+
+def test_mr_rey_empty_discard_consumes_the_grant() -> None:
+    eng = _fresh()
+    eng.state.players["A"].hand = [_mk("h1", PlayOrder.LEAD, 101)]
+    eng.state.players["A"].discard = []
+    eng.state.players["A"].flags["swap_grant_this"] = True
+    eng._offer_swap_grant("A")
+    a = eng.state.players["A"]
+    assert len(a.hand) == 1 and "swap_grant_this" not in a.flags  # window passes, consumed

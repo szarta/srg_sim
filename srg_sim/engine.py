@@ -229,6 +229,7 @@ class Engine:
             # accumulate); an unused grant expires.
             player.reroll_grants["this"] = player.reroll_grants["next"]
             player.reroll_grants["next"] = 0
+            self._promote_swap_grant_for(player)  # a "swap next turn" grant (Mr. Rey)
         self._sweep_end_of_turn()
         winner = self._turn_roll()
         self._sweep_next_turn_buffs(winner)
@@ -237,6 +238,8 @@ class Engine:
         self._first_turn_option(winner)  # the once-per-player first-turn redraw (§6)
         self._run_start_of_turn(winner)  # "once during your turn" gimmicks (Candyman Dan)
         self._run_opponent_turn(self.state.opponent_of(winner))  # "once during your opponent's turn"
+        self._offer_swap_grant(winner)  # a granted "swap on the next turn" (Mr. Rey)
+        self._offer_swap_grant(self.state.opponent_of(winner))  # grantee need not be the winner
         if self._ended():
             return
         self._take_turn_action(winner)  # play ONE card (or pass+bury); the board persists
@@ -1771,6 +1774,41 @@ class Engine:
         self._log_effect(key, "SwapHandDiscard", key, {"hand_out": out.db_uuid, "discard_in": into.db_uuid})
         self._run_on_discard_move(key)
 
+    def _act_grant_swap_next_turn(self, action: fx.GrantSwapNextTurn, key: str) -> None:
+        # Arm a deferred, one-shot optional hand<->discard swap on the target for
+        # their next turn (Mr. Rey). Promoted to usable at the start of that turn
+        # (_promote_swap_grant_for) and offered there (_offer_swap_grant).
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        self.state.players[target].flags["swap_grant_next"] = True
+        self._log_effect(key, "GrantSwapNextTurn", target, {})
+
+    @staticmethod
+    def _promote_swap_grant_for(player: "PlayerState") -> None:
+        # Turn-start promotion: a "next turn" swap grant becomes usable "this turn";
+        # an unused "this turn" grant EXPIRES (SET, not accumulate). Mirrors the
+        # reroll_grants next->this promotion, flag-based (no serialized field).
+        if player.flags.pop("swap_grant_next", None):
+            player.flags["swap_grant_this"] = True
+        else:
+            player.flags.pop("swap_grant_this", None)
+
+    def _offer_swap_grant(self, key: str) -> None:
+        # Offer key their usable swap grant, if any, before they act this turn: one
+        # optional hand<->discard swap (Mr. Rey). Consumed whether taken, declined,
+        # or impossible (empty hand/discard) — "once on the next turn".
+        if not self.state.players[key].flags.get("swap_grant_this"):
+            return
+        self.state.players[key].flags.pop("swap_grant_this", None)
+        player = self.state.players[key]
+        if not player.hand or not player.discard:
+            return  # nothing to switch — the window still passes
+        legal = [
+            {"kind": "yes", "clause": "switch a hand card with a discard card"},
+            {"kind": "no", "clause": "switch a hand card with a discard card"},
+        ]
+        if self._decide("optional_swap", key, legal)["kind"] == "yes":
+            self._act_swap_hand_discard(fx.SwapHandDiscard(), key)
+
     def _act_recur_to_deck_top(self, action: fx.RecurToDeckTop, key: str) -> None:
         # Put up to `count` matching cards from discard ON TOP of the deck ("Put up
         # to 3 Finishes from your discard pile on top of your deck"). The owner
@@ -2729,6 +2767,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.ShuffleIntoDeck: Engine._act_shuffle_into_deck,
     fx.AddFromDiscard: Engine._act_add_from_discard,
     fx.SwapHandDiscard: Engine._act_swap_hand_discard,
+    fx.GrantSwapNextTurn: Engine._act_grant_swap_next_turn,
     fx.RecurToDeckTop: Engine._act_recur_to_deck_top,
     fx.RemoveFromPlay: Engine._act_remove_from_play,
     fx.DiscardInPlayMatch: Engine._act_discard_in_play_match,

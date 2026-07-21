@@ -851,6 +851,19 @@ class SwapHandDiscard(IRNode):
 
 
 @dataclass(frozen=True)
+class GrantSwapNextTurn(IRNode):
+    """Grant ``who`` a deferred, one-shot optional hand↔discard swap on their next
+    turn (Mr. Rey: "When you roll Technique for your turn roll: Once on the next
+    turn, you may switch 1 card in your hand with 1 card in your discard pile").
+    Sets a next-turn grant that promotes to usable at the start of the grantee's
+    following turn (SET, not accumulate — an unused grant expires after that one
+    turn) and is offered as an optional :class:`SwapHandDiscard` before they act.
+    """
+
+    who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
 class RecurToDeckTop(IRNode):
     """Put up to ``count`` matching cards from the discard pile ON TOP of the deck
     (Chug-Chug-Chug: "Put up to 3 Finishes from your discard pile on top of your

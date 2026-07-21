@@ -117,6 +117,7 @@ from srg_sim.effects import (
     SameRolledSkill,
     Search,
     SwapHandDiscard,
+    GrantSwapNextTurn,
     SetFinishRoll,
     ShuffleDeck,
     ShuffleHandDraw,
@@ -209,6 +210,7 @@ SAMPLES: list[IRNode] = [
     ShuffleIntoDeck(CardFilter(tag="x")),
     AddFromDiscard(CardFilter(atk_type=AtkType.SUBMISSION)),
     SwapHandDiscard(),  # Collin the Chrononaut / Mr. Rey
+    GrantSwapNextTurn(Who.SELF),  # Mr. Rey (deferred next-turn swap)
     RemoveFromPlay(CardFilter(play_order=PlayOrder.FOLLOWUP), Who.OPP, 1),
     DiscardInPlayMatch(),  # Candyman Dan
     ReturnToHand(CardFilter(), Who.OPP, 1, choose=True),  # Fox Assassin V2
