@@ -987,6 +987,7 @@ impl Engine {
             | Action::BlankText { .. }
             | Action::MaxHandSize { .. }
             | Action::MinHandSize { .. }
+            | Action::MirrorOpponentIncrease
             | Action::StopCountsOrderAs { .. }
             | Action::SuppressStop { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
@@ -4219,6 +4220,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",
         Action::MinHandSize { .. } => "MinHandSize",
+        Action::MirrorOpponentIncrease => "MirrorOpponentIncrease",
         Action::StopCountsOrderAs { .. } => "StopCountsOrderAs",
         Action::SuppressStop { .. } => "SuppressStop",
         Action::AddText { .. } => "AddText",

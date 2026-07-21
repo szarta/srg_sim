@@ -360,6 +360,9 @@
     "who": "SELF"
   },
   {
+    "@type": "MirrorOpponentIncrease"
+  },
+  {
     "@type": "ModifyRoll",
     "delta": 0,
     "per": null,

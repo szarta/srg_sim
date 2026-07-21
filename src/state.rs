@@ -335,6 +335,31 @@ impl GameState {
     /// resolves conditional Static buffs against live state; without it, only
     /// unconditional buffs contribute (DESIGN.md §5).
     pub fn effective_stats(&self, key: &str, holds: Option<&ConditionHolds>) -> Skills {
+        let mut stats = self.effective_stats_base(key, holds);
+        // Mimic: "when your opponent increases their skills, your skills are also
+        // increased the same amount." A final fold over the OPPONENT's base-derived
+        // stats (no mirror, so a mirror-vs-mirror match can't recurse): add each
+        // skill's positive `effective - base`. The opponent's side uses unconditional
+        // buffs (`None`) since this side's `holds` closure resolves this player's
+        // conditions, not the opponent's.
+        if self.declares_mirror(key, holds) {
+            let opp = self.opponent_of(key);
+            let opp_eff = self.effective_stats_base(&opp, None);
+            let opp_base = self.players[&opp].competitor.stats;
+            for &s in &Skill::ALL {
+                let inc = opp_eff.get(s) - opp_base.get(s);
+                if inc > 0 {
+                    stats = stats.with(s, stats.get(s) + inc);
+                }
+            }
+        }
+        stats
+    }
+
+    /// Derived stats WITHOUT the Mimic mirror — competitor base plus active Static
+    /// buffs plus resolved timed buffs. The mirror wrapper (`effective_stats`) folds
+    /// this for the opponent, so keeping it mirror-free prevents infinite recursion.
+    fn effective_stats_base(&self, key: &str, holds: Option<&ConditionHolds>) -> Skills {
         let mut stats = self.players[key].competitor.stats;
         for (owner, player) in &self.players {
             self.apply_owner_buffs(&mut stats, key, owner, player, holds);
@@ -348,6 +373,23 @@ impl GameState {
             stats = stats.with(buff.skill, stats.get(buff.skill) + buff.delta);
         }
         stats
+    }
+
+    /// Whether `key` holds an active Static `MirrorOpponentIncrease` declaration.
+    fn declares_mirror(&self, key: &str, holds: Option<&ConditionHolds>) -> bool {
+        self.declaration_sources(key)
+            .into_iter()
+            .any(|(effects, active)| {
+                active
+                    && effects.iter().any(|eff| {
+                        matches!(eff.trigger, Trigger::Static)
+                            && eff
+                                .actions
+                                .iter()
+                                .any(|a| matches!(a, Action::MirrorOpponentIncrease))
+                            && condition_ok(&eff.condition, holds)
+                    })
+            })
     }
 
     /// The single derived value for `skill`.

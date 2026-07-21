@@ -647,6 +647,9 @@
                 "$ref": "#/$defs/MinHandSize"
               },
               {
+                "$ref": "#/$defs/MirrorOpponentIncrease"
+              },
+              {
                 "$ref": "#/$defs/Reroll"
               },
               {
@@ -1164,6 +1167,9 @@
               },
               {
                 "$ref": "#/$defs/MinHandSize"
+              },
+              {
+                "$ref": "#/$defs/MirrorOpponentIncrease"
               },
               {
                 "$ref": "#/$defs/Reroll"
@@ -1868,6 +1874,9 @@
           "$ref": "#/$defs/MinHandSize"
         },
         {
+          "$ref": "#/$defs/MirrorOpponentIncrease"
+        },
+        {
           "$ref": "#/$defs/ModifyRoll"
         },
         {
@@ -2180,6 +2189,18 @@
         "delta",
         "who",
         "duration"
+      ],
+      "type": "object"
+    },
+    "MirrorOpponentIncrease": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "MirrorOpponentIncrease"
+        }
+      },
+      "required": [
+        "@type"
       ],
       "type": "object"
     },
@@ -3616,5 +3637,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 45
+  "version": 46
 }

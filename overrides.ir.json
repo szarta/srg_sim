@@ -5547,6 +5547,31 @@
       }
     }
   ],
+  "924e81a6d29b4983bf9be0918a459760": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "MirrorOpponentIncrease"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when your opponent increases their skills, your skills are also increased the same amount",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "92d9e53180de40039d33b076e18b9127": [
     {
       "@type": "Effect",

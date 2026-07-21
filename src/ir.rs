@@ -872,6 +872,12 @@ pub enum Action {
         who: Who,
         duration: Duration,
     },
+    /// Static declaration that the declarer mirrors the opponent's skill increases
+    /// (Mimic: "when your opponent increases their skills, your skills are also
+    /// increased the same amount"). Read in `effective_stats` — for each skill the
+    /// declarer gains the positive part of the opponent's `effective - base`. A
+    /// derived-stats fold like `BuffSkill`, never executed. schema v46
+    MirrorOpponentIncrease,
     AddText {
         name_contains: Vec<String>,
         effects: Vec<Effect>,
@@ -1530,6 +1536,12 @@ pub enum IrNode {
         who: Who,
         duration: Duration,
     },
+    /// Static declaration that the declarer mirrors the opponent's skill increases
+    /// (Mimic: "when your opponent increases their skills, your skills are also
+    /// increased the same amount"). Read in `effective_stats` — for each skill the
+    /// declarer gains the positive part of the opponent's `effective - base`. A
+    /// derived-stats fold like `BuffSkill`, never executed. schema v46
+    MirrorOpponentIncrease,
     AddText {
         name_contains: Vec<String>,
         effects: Vec<Effect>,
