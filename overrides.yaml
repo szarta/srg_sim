@@ -7725,3 +7725,30 @@ ef5f0e0716a54929bba3f278d7f4b354:
   raw_clause: once a turn roll, if you would bump and you bumped on the last turn roll, choose a player to re-roll
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Candyman Dan (top-96) — same-type in-play trade (schema v51: DiscardInPlayMatch;
+# wires the previously-dead StartOfTurn trigger).
+# "Once during your turn: You may discard 1 card you have in play: Choose 1 card of
+#  the same card type (Lead, Follow Up, or Finish) that your opponent has in play and
+#  discard it."
+# StartOfTurn (fired for the active player after their draw) + optional=true ("you
+# may") + ONCE_PER_TURN, action DiscardInPlayMatch: discard 1 of your own in-play,
+# then discard 1 opponent in-play of the SAME play order (bound at runtime).
+# ---------------------------------------------------------------------------
+f8dad17fa6a940b89d0466691d98b7fc:
+- '@type': Effect
+  trigger:
+    '@type': StartOfTurn
+  condition:
+    '@type': Always
+  actions:
+  - '@type': DiscardInPlayMatch
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: once during your turn, you may discard 1 card you have in play, then discard 1 card of the same card type your opponent has in play
+  source: gimmick
+  optional: true

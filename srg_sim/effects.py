@@ -891,6 +891,14 @@ class RemoveFromPlay(IRNode):
 
 
 @dataclass(frozen=True)
+class DiscardInPlayMatch(IRNode):
+    """Discard 1 of the owner's own in-play cards, then discard 1 of the OPPONENT's
+    in-play cards of the SAME play order (Candyman Dan). The second target's filter is
+    bound at runtime to the first pick's play order. No-op if the owner has nothing in
+    play; the second discard is skipped if the opponent has no same-order card. schema v51"""
+
+
+@dataclass(frozen=True)
 class ReturnToHand(IRNode):
     """"Add ``count`` card(s) in play to their hand" (Fox Assassin V2): bounce
     matching in-play cards back to their OWNER's hand. ``who`` picks the board;
@@ -1569,6 +1577,7 @@ Action = (
     | RecurToDeckTop
     | CountsAsInPlay
     | RemoveFromPlay
+    | DiscardInPlayMatch
     | ReturnToHand
     | RevealAndDiscard
     | RevealForDraw

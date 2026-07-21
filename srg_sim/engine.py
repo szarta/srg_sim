@@ -232,9 +232,18 @@ class Engine:
         if self._ended() or not self._draw_for_turn(winner):
             return
         self._first_turn_option(winner)  # the once-per-player first-turn redraw (§6)
+        self._run_start_of_turn(winner)  # "once during your turn" gimmicks (Candyman Dan)
+        if self._ended():
+            return
         self._take_turn_action(winner)  # play ONE card (or pass+bury); the board persists
         while not self._ended() and self._consume_extra_play(winner):
             self._take_turn_action(winner)  # a PlayExtraCard granted another action
+
+    def _run_start_of_turn(self, key: str) -> None:
+        """Fire the active player's ``StartOfTurn`` gimmicks — "once during your turn,
+        you may …" (Candyman Dan). Offered right after the turn draw, before the play
+        action. Previously a dead trigger; no parsed card / other override emits it."""
+        self._run_effects(self._standing_effects(key), fx.StartOfTurn, key)
 
     def _consume_extra_play(self, key: str) -> bool:
         """Spend one pending "additional card this turn" grant, if any."""
@@ -1772,6 +1781,30 @@ class Engine:
                 )
             )
 
+    def _act_discard_in_play_match(self, action: fx.DiscardInPlayMatch, key: str) -> None:
+        # Candyman Dan: discard 1 of the owner's own in-play cards (they choose), then
+        # discard 1 of the OPPONENT's in-play cards of the SAME play order. No-op if the
+        # owner has nothing in play; the second discard is skipped if the opponent has no
+        # matching card.
+        order = self._discard_one_in_play(key, key, fx.CardFilter())
+        if order is None:
+            return
+        opp = self.state.opponent_of(key)
+        self._discard_one_in_play(key, opp, fx.CardFilter(play_order=order))
+
+    def _discard_one_in_play(self, actor: str, target: str, selector: fx.CardFilter) -> PlayOrder | None:
+        """``actor`` picks and discards one of ``target``'s in-play cards matching
+        ``selector`` (to ``target``'s discard). Returns the discarded card's play order,
+        or ``None`` if none matched — the shared step of Candyman Dan's two-ended trade."""
+        matches = [c for c in self.state.players[target].in_play if conditions.card_matches(c, selector)]
+        if not matches:
+            return None
+        card = self._pick_from(actor, matches, "target")
+        self.state.players[target].in_play.remove(card)
+        self.state.players[target].discard.append(card)
+        self._log(gl.Discard(t=self.state.turn_no, player=target, cards=[card.db_uuid], source="in_play"))
+        return card.play_order
+
     def _act_return_to_hand(self, action: fx.ReturnToHand, key: str) -> None:
         # "Add `count` card(s) in play to their hand" (Fox Assassin V2): the ACTOR
         # (key) bounces matching in-play cards back to their OWNER's hand. `choose`
@@ -2583,6 +2616,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.SwapHandDiscard: Engine._act_swap_hand_discard,
     fx.RecurToDeckTop: Engine._act_recur_to_deck_top,
     fx.RemoveFromPlay: Engine._act_remove_from_play,
+    fx.DiscardInPlayMatch: Engine._act_discard_in_play_match,
     fx.ReturnToHand: Engine._act_return_to_hand,
     fx.PlayExtraCard: Engine._act_play_extra_card,
     fx.Peek: Engine._act_peek,

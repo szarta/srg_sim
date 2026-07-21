@@ -630,6 +630,41 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def _inplay(uuid: str, order: PlayOrder) -> Card:
+    return Card(db_uuid=uuid, name=uuid, number=1, atk_type=AtkType.STRIKE, play_order=order)
+
+
+def test_candyman_discards_own_then_opponents_same_order() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].in_play = [_inplay("a-fu", PlayOrder.FOLLOWUP)]
+    eng.state.players["B"].in_play = [_inplay("b-fu", PlayOrder.FOLLOWUP), _inplay("b-lead", PlayOrder.LEAD)]
+    eng._act_discard_in_play_match(fx.DiscardInPlayMatch(), "A")
+    assert not eng.state.players["A"].in_play
+    assert any(c.db_uuid == "a-fu" for c in eng.state.players["A"].discard)
+    assert any(c.db_uuid == "b-lead" for c in eng.state.players["B"].in_play)  # Lead kept
+    assert not any(c.db_uuid == "b-fu" for c in eng.state.players["B"].in_play)  # Follow Up discarded
+
+
+def test_candyman_no_matching_opponent_card_discards_only_own() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].in_play = [_inplay("a-fin", PlayOrder.FINISH)]
+    eng.state.players["B"].in_play = [_inplay("b-lead", PlayOrder.LEAD)]
+    eng._act_discard_in_play_match(fx.DiscardInPlayMatch(), "A")
+    assert not eng.state.players["A"].in_play
+    assert len(eng.state.players["B"].in_play) == 1  # no Finish to match
+
+
+def test_candyman_no_own_in_play_is_a_noop() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].in_play = []
+    eng.state.players["B"].in_play = [_inplay("b-fu", PlayOrder.FOLLOWUP)]
+    eng._act_discard_in_play_match(fx.DiscardInPlayMatch(), "A")
+    assert len(eng.state.players["B"].in_play) == 1  # nothing to trade
+
+
 def test_bump_replace_makes_the_opponent_discard_instead_of_drawing() -> None:
     # Mack-a-Tack (A) declares BumpDrawReplace: on a bump, B discards 1 instead of drawing.
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
