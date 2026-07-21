@@ -7674,3 +7674,54 @@ ef5f0e0716a54929bba3f278d7f4b354:
   raw_clause: each time you roll Power, Agility, and Technique for your turn rolls, draw 3 cards and your next turn roll is +2
   source: gimmick
   optional: false
+
+# ---------------------------------------------------------------------------
+# Mack-a-Tack (top-96) — bump-draw replacement + bump-gated re-roll
+# (schema v50: BumpDrawReplace action, BumpedLastTurnRoll condition).
+# "When you bump, your opponent discards 1 card instead of drawing.
+#  Once a turn roll: If you would bump, and you bumped on the last turn roll, choose
+#  a player to re-roll."
+# Clause 1: Static BumpDrawReplace (read in do_bump — the opponent discards 1 instead
+# of drawing on a bump). Clause 2: a Reroll offered at the tie (would-bump) point,
+# gated on And[RollGapExactly(0) = tie, BumpedLastTurnRoll], choose=true, ONCE_PER_TURN.
+# ---------------------------------------------------------------------------
+202418b1360d433daf406ee61bfd8e2f:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BumpDrawReplace
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: when you bump, your opponent discards 1 card instead of drawing
+  source: gimmick
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': And
+    items:
+    - '@type': RollGapExactly
+      k: 0
+    - '@type': BumpedLastTurnRoll
+  actions:
+  - '@type': Reroll
+    who: SELF
+    once: true
+    choose: true
+    when: THIS
+    cost: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: once a turn roll, if you would bump and you bumped on the last turn roll, choose a player to re-roll
+  source: gimmick
+  optional: false

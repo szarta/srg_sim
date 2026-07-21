@@ -444,6 +444,9 @@
     "@type": "OppWonLastRoll"
   },
   {
+    "@type": "BumpedLastTurnRoll"
+  },
+  {
     "@type": "Or",
     "items": []
   },
@@ -684,6 +687,9 @@
   },
   {
     "@type": "SuppressSelfHandLoss"
+  },
+  {
+    "@type": "BumpDrawReplace"
   },
   {
     "@type": "RevealForDraw",

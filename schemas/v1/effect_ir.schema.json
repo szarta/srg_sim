@@ -132,6 +132,9 @@
               "$ref": "#/$defs/OppWonLastRoll"
             },
             {
+              "$ref": "#/$defs/BumpedLastTurnRoll"
+            },
+            {
               "$ref": "#/$defs/GimmickFlipped"
             },
             {
@@ -226,6 +229,9 @@
               },
               {
                 "$ref": "#/$defs/OppWonLastRoll"
+              },
+              {
+                "$ref": "#/$defs/BumpedLastTurnRoll"
               },
               {
                 "$ref": "#/$defs/GimmickFlipped"
@@ -413,6 +419,30 @@
       "required": [
         "@type",
         "who"
+      ],
+      "type": "object"
+    },
+    "BumpDrawReplace": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BumpDrawReplace"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "BumpedLastTurnRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BumpedLastTurnRoll"
+        }
+      },
+      "required": [
+        "@type"
       ],
       "type": "object"
     },
@@ -744,6 +774,9 @@
               },
               {
                 "$ref": "#/$defs/SuppressSelfHandLoss"
+              },
+              {
+                "$ref": "#/$defs/BumpDrawReplace"
               },
               {
                 "$ref": "#/$defs/RevealForDraw"
@@ -1271,6 +1304,9 @@
                 "$ref": "#/$defs/SuppressSelfHandLoss"
               },
               {
+                "$ref": "#/$defs/BumpDrawReplace"
+              },
+              {
                 "$ref": "#/$defs/RevealForDraw"
               },
               {
@@ -1341,6 +1377,9 @@
             },
             {
               "$ref": "#/$defs/OppWonLastRoll"
+            },
+            {
+              "$ref": "#/$defs/BumpedLastTurnRoll"
             },
             {
               "$ref": "#/$defs/GimmickFlipped"
@@ -1973,6 +2012,9 @@
           "$ref": "#/$defs/OppWonLastRoll"
         },
         {
+          "$ref": "#/$defs/BumpedLastTurnRoll"
+        },
+        {
           "$ref": "#/$defs/RollWasSkill"
         },
         {
@@ -2043,6 +2085,9 @@
         },
         {
           "$ref": "#/$defs/SuppressSelfHandLoss"
+        },
+        {
+          "$ref": "#/$defs/BumpDrawReplace"
         },
         {
           "$ref": "#/$defs/RevealForDraw"
@@ -2316,6 +2361,9 @@
             },
             {
               "$ref": "#/$defs/OppWonLastRoll"
+            },
+            {
+              "$ref": "#/$defs/BumpedLastTurnRoll"
             },
             {
               "$ref": "#/$defs/GimmickFlipped"
@@ -2741,6 +2789,9 @@
               },
               {
                 "$ref": "#/$defs/OppWonLastRoll"
+              },
+              {
+                "$ref": "#/$defs/BumpedLastTurnRoll"
               },
               {
                 "$ref": "#/$defs/GimmickFlipped"
@@ -3304,6 +3355,9 @@
               "$ref": "#/$defs/OppWonLastRoll"
             },
             {
+              "$ref": "#/$defs/BumpedLastTurnRoll"
+            },
+            {
               "$ref": "#/$defs/GimmickFlipped"
             },
             {
@@ -3710,5 +3764,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 49
+  "version": 50
 }

@@ -526,6 +526,7 @@
         "blanked_text": [],
         "crowd_meter": 0,
         "last_roll_winner": null,
+        "last_turn_bumped": false,
         "players": {
           "A": {
             "blank_until_next_turn": null,
@@ -2597,6 +2598,7 @@
         "blanked_text": [],
         "crowd_meter": 3,
         "last_roll_winner": null,
+        "last_turn_bumped": false,
         "players": {
           "A": {
             "blank_until_next_turn": null,
@@ -4661,6 +4663,7 @@
         "blanked_text": [],
         "crowd_meter": 0,
         "last_roll_winner": null,
+        "last_turn_bumped": false,
         "players": {
           "A": {
             "blank_until_next_turn": null,

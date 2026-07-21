@@ -161,6 +161,11 @@ pub struct GameState {
     /// gimmick gated on "your opponent won the last turn roll" (Dunn).
     #[serde(default)]
     pub last_roll_winner: Option<String>,
+    /// Whether the PREVIOUS turn's roll-off bumped (false before turn 1), for a re-roll
+    /// gated on "if you bumped on the last turn roll" (Mack-a-Tack). Set at each
+    /// roll-off's end, so the current roll-off reads the prior turn's value.
+    #[serde(default)]
+    pub last_turn_bumped: bool,
     /// `db_uuid`s whose text is blanked for the REST OF THIS TURN by a
     /// [`Action::BlankStoppedText`] ("the stopped card has blank text until the end of
     /// the turn"). Card-identity scoped, not selector scoped, and cleared by the
@@ -189,6 +194,7 @@ impl GameState {
             active: default_active(),
             turn_no: 0,
             last_roll_winner: None,
+            last_turn_bumped: false,
             blanked_text: Default::default(),
             blank_guard: RefCell::new(HashSet::new()),
         }

@@ -1203,6 +1203,68 @@
       }
     }
   ],
+  "202418b1360d433daf406ee61bfd8e2f": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BumpDrawReplace"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you bump, your opponent discards 1 card instead of drawing",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Reroll",
+          "choose": true,
+          "cost": null,
+          "once": true,
+          "when": "THIS",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "And",
+        "items": [
+          {
+            "@type": "RollGapExactly",
+            "k": 0
+          },
+          {
+            "@type": "BumpedLastTurnRoll"
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "once a turn roll, if you would bump and you bumped on the last turn roll, choose a player to re-roll",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "2089cbfc2a414f49843cf15b434ea359": [
     {
       "@type": "Effect",

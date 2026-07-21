@@ -656,6 +656,9 @@ pub enum Condition {
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
+    /// The PREVIOUS turn's roll-off bumped (`GameState.last_turn_bumped`); false before
+    /// turn 1. Gates Mack-a-Tack's "if you bumped on the last turn roll" re-roll.
+    BumpedLastTurnRoll,
     GimmickFlipped {
         who: Who,
     },
@@ -1022,6 +1025,10 @@ pub enum Action {
     /// is BOTH the effect's owner and the one losing cards, so an opponent's effect
     /// still takes them. Not executed as a mutation. schema v42
     SuppressSelfHandLoss,
+    /// Static declaration that on a BUMP the declarer's opponent discards 1 card
+    /// instead of drawing (Mack-a-Tack: "when you bump, your opponent discards 1 card
+    /// instead of drawing"). Read in `do_bump`, never executed. schema v50
+    BumpDrawReplace,
     CrowdMeter {
         delta: i64,
     },
@@ -1357,6 +1364,9 @@ pub enum IrNode {
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
+    /// The PREVIOUS turn's roll-off bumped (`GameState.last_turn_bumped`); false before
+    /// turn 1. Gates Mack-a-Tack's "if you bumped on the last turn roll" re-roll.
+    BumpedLastTurnRoll,
     GimmickFlipped {
         who: Who,
     },
@@ -1709,6 +1719,10 @@ pub enum IrNode {
     /// is BOTH the effect's owner and the one losing cards, so an opponent's effect
     /// still takes them. Not executed as a mutation. schema v42
     SuppressSelfHandLoss,
+    /// Static declaration that on a BUMP the declarer's opponent discards 1 card
+    /// instead of drawing (Mack-a-Tack: "when you bump, your opponent discards 1 card
+    /// instead of drawing"). Read in `do_bump`, never executed. schema v50
+    BumpDrawReplace,
     CrowdMeter {
         delta: i64,
     },

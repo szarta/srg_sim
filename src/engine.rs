@@ -989,7 +989,8 @@ impl Engine {
             | Action::MinHandSize { .. }
             | Action::MirrorOpponentIncrease
             | Action::StopCountsOrderAs { .. }
-            | Action::SuppressStop { .. } => {}
+            | Action::SuppressStop { .. }
+            | Action::BumpDrawReplace => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
@@ -3584,6 +3585,7 @@ impl Engine {
     ) -> String {
         self.record_roll_ctx(sa, va, sb, vb);
         self.turn_bumped = bumps > 0;
+        self.state.last_turn_bumped = bumps > 0; // read by the NEXT turn's tie loop (Mack-a-Tack)
         let t = self.state.turn_no;
         self.log(Event::TurnResult {
             t,
@@ -3619,9 +3621,22 @@ impl Engine {
 
     /// Perform a bump: both draw 1, fire OnBump punishes, and re-roll (pending mods
     /// are dropped on a bump re-roll). Returns the fresh `(sa, va, sb, vb, bumps+1)`.
+    /// A player's bump card: normally draw 1, but if their OPPONENT declares
+    /// `BumpDrawReplace` (Mack-a-Tack), discard 1 from hand INSTEAD ("when you bump,
+    /// your opponent discards 1 card instead of drawing").
+    fn bump_draw(&mut self, key: &str) -> Eng<()> {
+        let opp = self.state.opponent_of(key);
+        if self.declares_static(&opp, |a| matches!(a, Action::BumpDrawReplace)) {
+            self.discard_from_hand(key, 1, false, None)?;
+            Ok(())
+        } else {
+            self.draw(key, 1, DeckEnd::Top)
+        }
+    }
+
     fn do_bump(&mut self, bumps: i64) -> Eng<(Skill, i64, Skill, i64, i64)> {
-        self.draw("A", 1, DeckEnd::Top)?;
-        self.draw("B", 1, DeckEnd::Top)?;
+        self.bump_draw("A")?;
+        self.bump_draw("B")?;
         let bumps = bumps + 1;
         self.run_on_bump()?; // bump-punish gimmicks (Mastermind: opp next roll -2)
         let (sa, va) = self.roll_for("A", false);
@@ -4384,6 +4399,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::MirrorOpponentIncrease => "MirrorOpponentIncrease",
         Action::StopCountsOrderAs { .. } => "StopCountsOrderAs",
         Action::SuppressStop { .. } => "SuppressStop",
+        Action::BumpDrawReplace => "BumpDrawReplace",
         Action::AddText { .. } => "AddText",
         Action::AddTextToNext { .. } => "AddTextToNext",
         Action::StopRequiresTag { .. } => "StopRequiresTag",
@@ -6967,5 +6983,86 @@ mod on_rolled_all_tests {
             3,
             "only P/A/T count toward completion"
         );
+    }
+}
+
+#[cfg(test)]
+mod mack_a_tack_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    fn card(uuid: &str) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid,
+            "number": 1, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []}))
+        .unwrap()
+    }
+
+    fn engine(a_effects: serde_json::Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str, effects: serde_json::Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck("A", a_effects),
+            deck("B", json!([])),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn bump_replace() -> serde_json::Value {
+        json!([{
+            "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+            "actions": [{"@type": "BumpDrawReplace"}], "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "m", "source": "gimmick", "optional": false
+        }])
+    }
+
+    #[test]
+    fn bump_replace_makes_the_declarers_opponent_discard_instead_of_drawing() {
+        let mut engine = engine(bump_replace());
+        // B (the declarer A's opponent) has a hand to discard and a deck it would draw from.
+        engine.state.players.get_mut("B").unwrap().hand = vec![card("b1"), card("b2")];
+        engine.state.players.get_mut("B").unwrap().deck = vec![card("bd")];
+        engine.state.players.get_mut("A").unwrap().deck = vec![card("ad")];
+        // B's bump card: A declares BumpDrawReplace -> B discards 1 instead of drawing.
+        engine.bump_draw("B").unwrap();
+        assert_eq!(engine.state.players["B"].hand.len(), 1, "B discarded 1");
+        assert_eq!(
+            engine.state.players["B"].deck.len(),
+            1,
+            "B did NOT draw (deck unchanged)"
+        );
+        // A's bump card: B declares nothing -> A draws normally.
+        engine.bump_draw("A").unwrap();
+        assert_eq!(engine.state.players["A"].hand.len(), 1, "A drew 1");
+        assert_eq!(engine.state.players["A"].deck.len(), 0);
+    }
+
+    #[test]
+    fn bumped_last_turn_roll_condition_reads_the_state_flag() {
+        let engine = engine(json!([]));
+        let cond: Condition =
+            serde_json::from_value(json!({"@type": "BumpedLastTurnRoll"})).unwrap();
+        // Default false, then true once the flag is set.
+        assert!(!conditions::holds(&cond, &engine.state, "A", None));
+        let mut engine = engine;
+        engine.state.last_turn_bumped = true;
+        assert!(conditions::holds(&cond, &engine.state, "A", None));
     }
 }
