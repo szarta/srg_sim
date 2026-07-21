@@ -24,6 +24,10 @@ use serde_json::{json, Map, Value};
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
 
+/// Default minimum hand size (SRG ruling): a max-handsize reduction can never take
+/// a player's cap below this. `MinHandSize` mods shift it. See [`GameState::effective_hand_cap`].
+pub const MIN_HAND_SIZE: i64 = 3;
+
 /// A condition evaluator the engine can supply so conditional `Static` buffs
 /// resolve against live state; without one, only unconditional (`Always`) buffs
 /// apply.
@@ -476,39 +480,54 @@ impl GameState {
     }
 
     /// Derived maximum hand size for `key` (`base` + active Static hand mods),
-    /// folding every `MaxHandSize` the way [`effective_stats`](Self::effective_stats)
-    /// folds Static buffs. Clamped at zero.
+    /// folding every `MaxHandSize`/`MinHandSize` the way
+    /// [`effective_stats`](Self::effective_stats) folds Static buffs. Per the SRG
+    /// ruling the minimum (default [`MIN_HAND_SIZE`], + `MinHandSize` mods) is a
+    /// **floor on the maximum**: a max reduction never drops the cap below it, and
+    /// a minimum raised above the maximum becomes the new maximum. Both collapse to
+    /// `max(base + max_mods, effective_min)`.
     pub fn effective_hand_cap(&self, key: &str, base: i64, holds: Option<&ConditionHolds>) -> i64 {
-        let mut cap = base;
+        let (mut max_mods, mut min_mods) = (0, 0);
         for (owner, player) in &self.players {
-            cap += self.owner_hand_mods(key, owner, player, holds);
+            let (mx, mn) = self.owner_hand_mods(key, owner, player, holds);
+            max_mods += mx;
+            min_mods += mn;
         }
-        cap.max(0)
+        let floor = (MIN_HAND_SIZE + min_mods).max(0);
+        (base + max_mods).max(floor)
     }
 
+    /// `(max_mods, min_mods)` this player's active Static hand modifiers contribute
+    /// to `target`'s cap.
     fn owner_hand_mods(
         &self,
         target: &str,
         owner: &str,
         player: &PlayerState,
         holds: Option<&ConditionHolds>,
-    ) -> i64 {
+    ) -> (i64, i64) {
         let gimmick_active = !self.is_gimmick_blanked(owner);
-        let mut total = 0;
-        total += self.fold_hand_mods(
+        let mut total = (0, 0);
+        let mut add = |(mx, mn): (i64, i64)| {
+            total.0 += mx;
+            total.1 += mn;
+        };
+        add(self.fold_hand_mods(
             &player.competitor.effects,
             gimmick_active,
             target,
             owner,
             holds,
-        );
-        total += self.fold_hand_mods(&player.entrance.effects, true, target, owner, holds);
+        ));
+        add(self.fold_hand_mods(&player.entrance.effects, true, target, owner, holds));
         for card in &player.in_play {
-            total += self.fold_hand_mods(&card.effects, true, target, owner, holds);
+            add(self.fold_hand_mods(&card.effects, true, target, owner, holds));
         }
         total
     }
 
+    /// `(max_mods, min_mods)` from `effects`: sums active Static `MaxHandSize` into
+    /// the first, `MinHandSize` into the second.
     fn fold_hand_mods(
         &self,
         effects: &[crate::ir::Effect],
@@ -516,24 +535,27 @@ impl GameState {
         target: &str,
         owner: &str,
         holds: Option<&ConditionHolds>,
-    ) -> i64 {
+    ) -> (i64, i64) {
         if !active {
-            return 0;
+            return (0, 0);
         }
-        let mut total = 0;
+        let (mut max_mods, mut min_mods) = (0, 0);
         for eff in effects {
             if !matches!(eff.trigger, Trigger::Static) {
                 continue;
             }
             for action in &eff.actions {
-                if let Action::MaxHandSize { delta, who, .. } = action {
-                    if targets(owner, *who, target) && condition_ok(&eff.condition, holds) {
-                        total += *delta;
-                    }
+                let (slot, delta, who) = match action {
+                    Action::MaxHandSize { delta, who, .. } => (&mut max_mods, delta, who),
+                    Action::MinHandSize { delta, who, .. } => (&mut min_mods, delta, who),
+                    _ => continue,
+                };
+                if targets(owner, *who, target) && condition_ok(&eff.condition, holds) {
+                    *slot += *delta;
                 }
             }
         }
-        total
+        (max_mods, min_mods)
     }
 
     // --- information model --------------------------------------------------

@@ -344,6 +344,12 @@
     "who": "SELF"
   },
   {
+    "@type": "MinHandSize",
+    "delta": 0,
+    "duration": "WHILE_IN_PLAY",
+    "who": "SELF"
+  },
+  {
     "@type": "ModifyRoll",
     "delta": 0,
     "per": null,

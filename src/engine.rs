@@ -246,6 +246,15 @@ fn negate_action(action: &Action) -> Action {
             who: *who,
             duration: *duration,
         },
+        Action::MinHandSize {
+            delta,
+            who,
+            duration,
+        } => Action::MinHandSize {
+            delta: -*delta,
+            who: *who,
+            duration: *duration,
+        },
         Action::FinishBonus { skill, delta } => Action::FinishBonus {
             skill: *skill,
             delta: -*delta,
@@ -976,7 +985,8 @@ impl Engine {
             | Action::AddText { .. }
             | Action::StopRequiresTag { .. }
             | Action::BlankText { .. }
-            | Action::MaxHandSize { .. } => {}
+            | Action::MaxHandSize { .. }
+            | Action::MinHandSize { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
@@ -4183,6 +4193,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::ModifyRoll { .. } => "ModifyRoll",
         Action::BuffSkill { .. } => "BuffSkill",
         Action::MaxHandSize { .. } => "MaxHandSize",
+        Action::MinHandSize { .. } => "MinHandSize",
         Action::AddText { .. } => "AddText",
         Action::AddTextToNext { .. } => "AddTextToNext",
         Action::StopRequiresTag { .. } => "StopRequiresTag",
@@ -6131,5 +6142,116 @@ mod on_hit_who_tests {
             before,
             "a Lead does not satisfy an order=Followup gate"
         );
+    }
+}
+
+#[cfg(test)]
+mod min_hand_size_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    /// A Static hand modifier: `kind` is "MaxHandSize" or "MinHandSize".
+    fn hand_mod(kind: &str, delta: i64, who: &str) -> Value {
+        json!({
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": kind, "delta": delta, "who": who, "duration": "WHILE_IN_PLAY"}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "hand mod", "source": "gimmick", "optional": false
+        })
+    }
+
+    /// Engine where A's gimmick carries `a_effects` and B's carries `b_effects`.
+    fn engine_with(a_effects: Value, b_effects: Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str, effects: Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A", a_effects),
+            deck("B", b_effects),
+            Box::new(FirstLegal),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// Never invoked (these tests only read the derived cap), but `Engine::new`
+    /// requires a decider.
+    struct FirstLegal;
+
+    impl Decider for FirstLegal {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+
+        fn policy_name(&self, _viewer: &str) -> String {
+            "first-legal".to_owned()
+        }
+    }
+
+    fn cap(engine: &Engine, key: &str, base: i64) -> i64 {
+        engine.state.effective_hand_cap(key, base, None)
+    }
+
+    #[test]
+    fn default_floor_is_the_minimum_not_zero() {
+        // A max reduction of -20 would give -10; the default minimum (3) floors it.
+        let engine = engine_with(json!([]), json!([hand_mod("MaxHandSize", -20, "OPP")]));
+        assert_eq!(cap(&engine, "A", 10), 3);
+    }
+
+    #[test]
+    fn min_handsize_raises_the_floor_on_a_reduced_cap() {
+        // A's min +2 (floor 5); B reduces A's max to 4 -> clamped up to 5.
+        let engine = engine_with(
+            json!([hand_mod("MinHandSize", 2, "SELF")]),
+            json!([hand_mod("MaxHandSize", -6, "OPP")]),
+        );
+        assert_eq!(cap(&engine, "A", 10), 5);
+    }
+
+    #[test]
+    fn min_handsize_alone_does_not_lower_a_healthy_cap() {
+        let engine = engine_with(json!([hand_mod("MinHandSize", 2, "SELF")]), json!([]));
+        assert_eq!(cap(&engine, "A", 10), 10);
+    }
+
+    #[test]
+    fn quadruple_h_min_and_max_plus_two() {
+        // max 12, min floor 5 -> cap = max(12, 5) = 12.
+        let engine = engine_with(
+            json!([
+                hand_mod("MaxHandSize", 2, "SELF"),
+                hand_mod("MinHandSize", 2, "SELF")
+            ]),
+            json!([]),
+        );
+        assert_eq!(cap(&engine, "A", 10), 12);
+    }
+
+    #[test]
+    fn min_above_max_becomes_new_max() {
+        // max -6 (=4), min +4 (floor 7) -> cap 7.
+        let engine = engine_with(
+            json!([hand_mod("MinHandSize", 4, "SELF")]),
+            json!([hand_mod("MaxHandSize", -6, "OPP")]),
+        );
+        assert_eq!(cap(&engine, "A", 10), 7);
     }
 }

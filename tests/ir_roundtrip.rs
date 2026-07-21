@@ -5,7 +5,7 @@
 //!
 //!   * `fixtures/ir/deck_effects.json` — every `Effect` node compiled from the
 //!     six reference decks (real `cards.ir.json` data, 42 distinct node types).
-//!   * `fixtures/ir/all_nodes.json` — one schema-minimal instance of *all* 70
+//!   * `fixtures/ir/all_nodes.json` — one schema-minimal instance of *all* 97
 //!     node types, so every `IrNode` variant is exercised even if no deck uses
 //!     it yet.
 //!
@@ -57,7 +57,7 @@ fn all_node_types_round_trip() {
     assert_roundtrips(&nodes);
 }
 
-/// The exhaustive corpus must cover exactly the 76 node types in the schema —
+/// The exhaustive corpus must cover exactly the 97 node types in the schema —
 /// a guard that the union stays complete as the contract evolves.
 #[test]
 fn all_nodes_covers_every_type() {
@@ -70,8 +70,8 @@ fn all_nodes_covers_every_type() {
     tags.dedup();
     assert_eq!(
         tags.len(),
-        96,
-        "expected 96 distinct node types, got {}",
+        97,
+        "expected 97 distinct node types, got {}",
         tags.len()
     );
 }

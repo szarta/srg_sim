@@ -644,6 +644,9 @@
                 "$ref": "#/$defs/MaxHandSize"
               },
               {
+                "$ref": "#/$defs/MinHandSize"
+              },
+              {
                 "$ref": "#/$defs/Reroll"
               },
               {
@@ -1152,6 +1155,9 @@
               },
               {
                 "$ref": "#/$defs/MaxHandSize"
+              },
+              {
+                "$ref": "#/$defs/MinHandSize"
               },
               {
                 "$ref": "#/$defs/Reroll"
@@ -1841,6 +1847,9 @@
           "$ref": "#/$defs/MaxHandSize"
         },
         {
+          "$ref": "#/$defs/MinHandSize"
+        },
+        {
           "$ref": "#/$defs/ModifyRoll"
         },
         {
@@ -2113,6 +2122,30 @@
       "properties": {
         "@type": {
           "const": "MaxHandSize"
+        },
+        "delta": {
+          "type": "integer"
+        },
+        "duration": {
+          "$ref": "#/$defs/Duration"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "delta",
+        "who",
+        "duration"
+      ],
+      "type": "object"
+    },
+    "MinHandSize": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "MinHandSize"
         },
         "delta": {
           "type": "integer"
@@ -3525,5 +3558,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 43
+  "version": 44
 }

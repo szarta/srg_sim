@@ -2847,6 +2847,70 @@
       }
     }
   ],
+  "50446df532b14eb784abe67b262181cd": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 2,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "at the start of the match, draw 2 additional cards",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfMatch"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "MaxHandSize",
+          "delta": 2,
+          "duration": "WHILE_IN_PLAY",
+          "who": "SELF"
+        },
+        {
+          "@type": "MinHandSize",
+          "delta": 2,
+          "duration": "WHILE_IN_PLAY",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your minimum and maximum handsize are +2",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "504e8e4759024076b094608d6b8172a6": [
     {
       "@type": "Effect",

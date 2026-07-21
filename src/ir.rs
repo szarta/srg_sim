@@ -864,6 +864,14 @@ pub enum Action {
         who: Who,
         duration: Duration,
     },
+    /// Minimum-handsize modifier (Quadruple H). NOT a draw-up floor: per the SRG
+    /// ruling the minimum is a floor on the MAXIMUM, folded in `effective_hand_cap`.
+    /// Read there, never executed. schema v44
+    MinHandSize {
+        delta: i64,
+        who: Who,
+        duration: Duration,
+    },
     AddText {
         name_contains: Vec<String>,
         effects: Vec<Effect>,
@@ -1494,6 +1502,14 @@ pub enum IrNode {
         per_zone: CountZone,
     },
     MaxHandSize {
+        delta: i64,
+        who: Who,
+        duration: Duration,
+    },
+    /// Minimum-handsize modifier (Quadruple H). NOT a draw-up floor: per the SRG
+    /// ruling the minimum is a floor on the MAXIMUM, folded in `effective_hand_cap`.
+    /// Read there, never executed. schema v44
+    MinHandSize {
         delta: i64,
         who: Who,
         duration: Duration,
