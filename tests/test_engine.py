@@ -630,6 +630,48 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def test_on_finish_roll_fires_only_on_the_gated_skill() -> None:
+    # The Man from I.T.: OnFinishRoll(Technique) fires on a Technique finish roll only.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    gimmick = fx.Effect(
+        trigger=fx.OnFinishRoll(skill=Skill.TECHNIQUE, who=fx.Who.SELF),
+        actions=(fx.Draw(n=1),),
+        source=fx.EffectSource.GIMMICK,
+    )
+    eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, effects=(gimmick,))
+    eng.state.players["A"].deck = [
+        Card(db_uuid="d", name="D", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+    ]
+    before = len(eng.state.players["A"].hand)
+    eng._run_on_finish_roll("A", Skill.POWER, 20)  # wrong skill -> no fire
+    assert len(eng.state.players["A"].hand) == before
+    eng._run_on_finish_roll("A", Skill.TECHNIQUE, 20)  # matches -> draw 1
+    assert len(eng.state.players["A"].hand) == before + 1
+
+
+def test_choose_hand_bury_lets_the_attacker_bury_the_opponents_best() -> None:
+    # A buries 1 of B's Follow Up / Finish hand cards, choosing (sabotage = the Finish).
+    # B's Lead is out of the filter and stays.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["B"].hand = [
+        Card(db_uuid="b-lead", name="L", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD),
+        Card(db_uuid="b-fu", name="F", number=2, atk_type=AtkType.STRIKE, play_order=PlayOrder.FOLLOWUP),
+        Card(db_uuid="b-fin", name="X", number=3, atk_type=AtkType.STRIKE, play_order=PlayOrder.FINISH),
+    ]
+    bury = fx.Bury(
+        selector=fx.CardFilter(play_orders=(PlayOrder.FOLLOWUP, PlayOrder.FINISH)),
+        count=1, who=fx.Who.OPP, random=False, source=fx.BuryFrom.HAND, choose=True,
+    )
+    eng._act_bury(bury, "A")
+    b = eng.state.players["B"]
+    assert any(c.db_uuid == "b-lead" for c in b.hand)  # Lead untouched
+    assert any(c.db_uuid == "b-fu" for c in b.hand)
+    assert not any(c.db_uuid == "b-fin" for c in b.hand)  # Finish buried
+    assert any(c.db_uuid == "b-fin" for c in b.deck)
+
+
 def test_stop_counts_order_as_lets_a_followup_stop_catch_a_finish() -> None:
     # Jokerfish V2: "your opponent's Finishes are also Follow Ups for your Stop cards."
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")

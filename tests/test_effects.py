@@ -75,6 +75,7 @@ from srg_sim.effects import (
     OnBump,
     OnBury,
     OnHit,
+    OnFinishRoll,
     OnLoseTurn,
     OnPlay,
     OnRoll,
@@ -141,6 +142,7 @@ SAMPLES: list[IRNode] = [
     # triggers
     OnPlay(),
     OnRoll(Skill.STRIKE, Who.OPP),
+    OnFinishRoll(Skill.TECHNIQUE, Who.SELF),  # The Man from I.T.
     InRoll(Skill.POWER, either=True),  # Tomato Tomato Jr. capped -1 roll debuff
     OnRollBoost(Skill.GRAPPLE, 1),
     OnRollBoost(None, 1, on_bump=True),  # Rey Zerblade would-bump replacement

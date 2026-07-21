@@ -298,6 +298,27 @@ class Engine:
             if trig.skill is None or ctx.skill is trig.skill:
                 self._fire_if_ready(eff, key, ctx)
 
+    def _run_on_finish_roll(self, finisher: str, skill: Skill, value: int) -> None:
+        """Fire ``OnFinishRoll`` gimmicks for ``finisher``'s Finish roll. A separate
+        trigger from the turn-roll ``OnRoll``, so no existing gimmick fires on a Finish
+        roll. BOTH players are scanned: ``who=SELF`` fires for the finisher and
+        ``who=OPP`` for the non-finisher (matching ``OnRoll``'s convention). The Finish
+        roll does not populate ``_roll_ctx``, so a local context carries skill/value."""
+        ctx = conditions.RollContext(skill=skill, value=value)
+        for owner in ("A", "B"):
+            opp = self.state.opponent_of(owner)
+            for eff in self._standing_effects(owner):
+                trig = eff.trigger
+                if not isinstance(trig, fx.OnFinishRoll):
+                    continue
+                target = owner if trig.who is fx.Who.SELF else opp
+                if target != finisher:
+                    continue
+                if trig.skill is None or trig.skill is skill:
+                    self._fire_if_ready(eff, owner, ctx)
+                if self._ended():
+                    return
+
     # -- roll-off ----------------------------------------------------------
 
     def _roll_off(self) -> str:
@@ -1036,6 +1057,12 @@ class Engine:
         value = base + bonus + cm
         auto = is_auto_success(value, cm)
         self._log_finish_attempt(finisher, card, skill, bonus, value, cm, auto)
+        # "When you roll <skill> for your Finish roll" gimmicks fire here, after the
+        # roll is determined but before it resolves (The Man from I.T.). No deck card
+        # carries OnFinishRoll, so the frozen finish games are untouched.
+        self._run_on_finish_roll(finisher, skill, value)
+        if self._ended():
+            return
         if not auto and self._breakout(defender, value):
             self._on_broken_out(finisher)  # defender broke out; the match resumes
             return
@@ -1456,24 +1483,31 @@ class Engine:
         if self._suppresses_self_hand_loss(key, target):
             self._log_effect(key, "SuppressSelfHandLoss", target, {"n": action.count})
             return
-        n = self._bury_from_hand(target, action.count, action.random, action.selector)
+        # ``choose`` makes the EFFECT OWNER pick which of the target's hand cards to
+        # bury (The Man from I.T. looks at the opponent's hand and chooses); otherwise
+        # the hand owner sheds their least valuable.
+        chooser = key if action.choose else target
+        n = self._bury_from_hand(target, chooser, action.count, action.random, action.selector)
         if n > 0:
             self._run_on_bury(target, from_hand=True, is_discard=False)  # effect-caused hand bury
 
     def _bury_from_hand(
-        self, key: str, count: int, random: bool, selector: fx.CardFilter
+        self, key: str, chooser: str, count: int, random: bool, selector: fx.CardFilter
     ) -> int:
         """"Bury N cards in [your/their] hand": move ``count`` cards from ``key``'s
         hand to the bottom of their deck. The hand owner chooses which (their hidden
-        hand) unless ``random``. Mirrors :meth:`_discard_from_hand` but lands the
-        cards on the deck bottom and logs a ``Bury`` from ``hand``."""
+        hand) unless ``random``; when ``chooser`` is the effect owner (not the hand
+        owner) it is the attacker picking from the opponent's hand, a distinct decision
+        point that disrupts the most valuable card. Mirrors :meth:`_discard_from_hand`
+        but lands the cards on the deck bottom and logs a ``Bury`` from ``hand``."""
         player = self.state.players[key]
+        point = "bury_hand" if chooser == key else "bury_opp_hand"
         buried: list[Card] = []
         for _ in range(count):
             pool = [c for c in player.hand if conditions.card_matches(c, selector)]
             if not pool:
                 break
-            card = self.state.rng.reveal(pool) if random else self._pick_from(key, pool, "bury_hand")
+            card = self.state.rng.reveal(pool) if random else self._pick_from(chooser, pool, point)
             player.hand.remove(card)
             buried.append(card)
         if buried:

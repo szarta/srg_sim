@@ -353,6 +353,19 @@ class OnRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class OnFinishRoll(IRNode):
+    """Fires on a FINISH roll (not the turn roll-off) — "when you roll ``skill`` for
+    your Finish roll" (The Man from I.T.). schema v47
+
+    A separate trigger from :class:`OnRoll`, so no existing turn-roll gimmick fires on
+    a Finish roll; ``who`` follows the finisher like ``OnRoll``'s does. The parser
+    never emits it (override-only)."""
+
+    skill: Skill | None = None
+    who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
 class InRoll(IRNode):
     """An automatic (no-cost) modifier applied DURING the roll-off — after both players
     roll, before the winner is decided — that adjusts the *current* roll via its
@@ -1467,6 +1480,7 @@ class Effect(IRNode):
 Trigger = (
     OnPlay
     | OnRoll
+    | OnFinishRoll
     | InRoll
     | OnRollBoost
     | OnWinTurn

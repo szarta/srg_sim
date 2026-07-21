@@ -172,6 +172,15 @@ class HeuristicPolicy(Policy):
         bottom) — same "drop your least valuable" read as a discard."""
         return self._at_discard(legal, state, key)
 
+    def _at_bury_opp_hand(self, legal: list[Option], state: GameState, key: str) -> Option:
+        """The effect owner burying the OPPONENT's hand (The Man from I.T.): disrupt the
+        most valuable card, looked up in the opponent's hand (the pool owner). ``max``
+        keeps the FIRST maximum on a tie, matching the Rust engine."""
+        owner = state.opponent_of(key)
+        return max(
+            legal, key=lambda o: _discard_keep_value(_hand_card(state, owner, o["card"]), state, owner)
+        )
+
     def _at_optional(self, legal: list[Option], state: GameState, key: str) -> Option:
         """Take optional edges (reroll / self-buff) when offered."""
         return _by_kind(legal, "yes") or legal[0]
