@@ -366,6 +366,19 @@ class OnFinishRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class OnRolledAll(IRNode):
+    """Fires each time ``who`` has rolled EVERY skill in ``skills`` as a turn roll since
+    the last firing (General Lee Wong V2: "each time you roll Power, Agility, and
+    Technique for your turn rolls"). schema v49
+
+    The engine accumulates the distinct rolled skills per effect and resets on fire.
+    Override-only."""
+
+    skills: tuple[Skill, ...] = ()
+    who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
 class InRoll(IRNode):
     """An automatic (no-cost) modifier applied DURING the roll-off — after both players
     roll, before the winner is decided — that adjusts the *current* roll via its
@@ -1486,6 +1499,7 @@ Trigger = (
     OnPlay
     | OnRoll
     | OnFinishRoll
+    | OnRolledAll
     | InRoll
     | OnRollBoost
     | OnWinTurn

@@ -630,6 +630,51 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def _glw_engine() -> Engine:
+    # General Lee Wong V2: OnRolledAll{P,A,T} -> Draw 3 + next roll +2.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    gimmick = fx.Effect(
+        trigger=fx.OnRolledAll(skills=(Skill.POWER, Skill.AGILITY, Skill.TECHNIQUE), who=fx.Who.SELF),
+        actions=(fx.Draw(n=3), fx.ModifyRoll(who=fx.Who.SELF, delta=2, when=fx.RollWhen.NEXT)),
+        source=fx.EffectSource.GIMMICK,
+    )
+    eng.state.players["A"].competitor = replace(eng.state.players["A"].competitor, effects=(gimmick,))
+    eng.state.players["A"].hand = []
+    eng.state.players["A"].deck = [
+        Card(db_uuid=f"d{i}", name=f"d{i}", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD)
+        for i in range(6)
+    ]
+    return eng
+
+
+def _roll_glw(eng: Engine, skill: Skill) -> None:
+    from srg_sim import conditions
+    eng._roll_ctx["A"] = conditions.RollContext(skill=skill, gap=0, value=5, opp_skill=Skill.POWER)
+    eng._run_on_rolled_all("A")
+
+
+def test_on_rolled_all_fires_after_the_set_then_resets() -> None:
+    eng = _glw_engine()
+    _roll_glw(eng, Skill.POWER)
+    _roll_glw(eng, Skill.AGILITY)
+    assert len(eng.state.players["A"].hand) == 0  # incomplete
+    _roll_glw(eng, Skill.POWER)  # idempotent
+    assert len(eng.state.players["A"].hand) == 0
+    _roll_glw(eng, Skill.TECHNIQUE)  # completes {P, A, T}
+    assert len(eng.state.players["A"].hand) == 3  # drew 3
+    assert eng.state.players["A"].pending_roll_mods["next"] == 2  # next roll +2
+    _roll_glw(eng, Skill.TECHNIQUE)  # accumulator reset -> no re-fire
+    assert len(eng.state.players["A"].hand) == 3
+
+
+def test_on_rolled_all_ignores_non_required_skills() -> None:
+    eng = _glw_engine()
+    for s in (Skill.SUBMISSION, Skill.GRAPPLE, Skill.POWER, Skill.AGILITY, Skill.TECHNIQUE):
+        _roll_glw(eng, s)
+    assert len(eng.state.players["A"].hand) == 3  # only P/A/T count
+
+
 def _hyde_engine() -> Engine:
     # Mr. Hyde: a Static once-per-turn optional self re-roll costing an in-play "Potion".
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")

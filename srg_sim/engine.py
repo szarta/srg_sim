@@ -265,6 +265,7 @@ class Engine:
             (self._roll_ctx.get("B").value if self._roll_ctx.get("B") else None) or 0,
         ):
             self._run_on_roll(key)
+            self._run_on_rolled_all(key)
         self.state.last_roll_winner = winner  # "last turn roll" for next turn (Dunn)
         return winner
 
@@ -297,6 +298,31 @@ class Engine:
             ctx = self._roll_ctx[key if trig.who is fx.Who.SELF else opp]
             if trig.skill is None or ctx.skill is trig.skill:
                 self._fire_if_ready(eff, key, ctx)
+
+    def _run_on_rolled_all(self, key: str) -> None:
+        """Accumulate ``key``'s turn-roll skills for its ``OnRolledAll`` gimmicks. Each
+        records the rolled skill in a per-effect bitmask (in ``freq_counters``, so it
+        persists across turns — not a ``turn:`` guard); when a gimmick has seen EVERY
+        required skill, it fires and its accumulator resets (General Lee Wong V2)."""
+        opp = self.state.opponent_of(key)
+        for eff in self._standing_effects(key):
+            trig = eff.trigger
+            if not isinstance(trig, fx.OnRolledAll):
+                continue
+            ctx = self._roll_ctx[key if trig.who is fx.Who.SELF else opp]
+            if ctx.skill is None or ctx.skill not in trig.skills:
+                continue
+            counters = self.state.players[key].freq_counters
+            k = _rolled_set_key(eff)
+            counters[k] = counters.get(k, 0) | _skill_bit(ctx.skill)
+            want = 0
+            for s in trig.skills:
+                want |= _skill_bit(s)
+            if (counters.get(k, 0) & want) == want:
+                counters.pop(k, None)  # reset the set — "each time"
+                self._fire_if_ready(eff, key, ctx)
+            if self._ended():
+                return
 
     def _run_on_finish_roll(self, finisher: str, skill: Skill, value: int) -> None:
         """Fire ``OnFinishRoll`` gimmicks for ``finisher``'s Finish roll. A separate
@@ -2410,6 +2436,21 @@ class Engine:
         card = next(c for c in hand if c.number == number)
         hand.remove(card)
         return card
+
+
+_SKILL_ORDER = list(Skill)
+
+
+def _rolled_set_key(eff: fx.Effect) -> str:
+    """The ``freq_counters`` key holding an ``OnRolledAll`` effect's rolled-skill bitmask.
+    A distinct ``rollset:`` namespace, so the per-turn / per-match frequency sweeps leave
+    it alone — the set accumulates across turns until the gimmick fires."""
+    return f"rollset:{eff.raw_clause}"
+
+
+def _skill_bit(skill: Skill) -> int:
+    """A single-bit mask for ``skill`` (its index in the canonical skill order)."""
+    return 1 << _SKILL_ORDER.index(skill)
 
 
 def _attacker_meets_tag_gates(eff: fx.Effect, attack: Card) -> bool:
