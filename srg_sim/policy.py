@@ -156,8 +156,14 @@ class HeuristicPolicy(Policy):
     def _at_bury(self, legal: list[Option], state: GameState, key: str) -> Option:
         """When passing, recycle the most valuable card from discard back into the
         deck: a Finish to re-attempt (the "keep pushing the stopped Finish" line),
-        then a stop to re-defend, before dead cards."""
-        return max(legal, key=lambda o: _recycle_value(_discard_card(state, key, o["card"])))
+        then a stop to re-defend, before dead cards. The pool may span the opponent's
+        discard ("bury N in your opponent's discard") or either pile (Cherry Glamazon),
+        so each card is looked up in its OWN pile — the option's ``owner``, defaulting
+        to ``key`` for the own-discard pass (``_do_pass``)."""
+        return max(
+            legal,
+            key=lambda o: _recycle_value(_discard_card(state, o.get("owner", key), o["card"])),
+        )
 
     def _at_discard(self, legal: list[Option], state: GameState, key: str) -> Option:
         """Shed the least valuable card (hand-cap or a forced discard): a dead card

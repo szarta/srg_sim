@@ -630,6 +630,26 @@ def test_on_stop_order_gates_on_the_stopped_cards_play_order() -> None:
     assert not tutored(eng)
 
 
+def test_burying_the_opponents_discard_does_not_crash() -> None:
+    # Regression: the heuristic _at_bury used to look the chosen card up in the ACTOR's
+    # discard, failing when burying the OPPONENT's. A buries 1 from B's discard; the
+    # card must move to B's deck bottom (the Finish, most recyclable).
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["B"].discard = [
+        Card(db_uuid="b-fin", name="F", number=20, atk_type=AtkType.STRIKE, play_order=PlayOrder.FINISH),
+        Card(db_uuid="b-lead", name="L", number=1, atk_type=AtkType.STRIKE, play_order=PlayOrder.LEAD),
+    ]
+    bury = fx.Bury(
+        selector=fx.CardFilter(), count=1, who=fx.Who.OPP, random=False,
+        source=fx.BuryFrom.DISCARD, choose=False,
+    )
+    eng._act_bury(bury, "A")  # must not raise
+    b = eng.state.players["B"]
+    assert len(b.discard) == 1
+    assert any(c.db_uuid == "b-fin" for c in b.deck)
+
+
 def test_on_finish_roll_fires_only_on_the_gated_skill() -> None:
     # The Man from I.T.: OnFinishRoll(Technique) fires on a Technique finish roll only.
     eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
