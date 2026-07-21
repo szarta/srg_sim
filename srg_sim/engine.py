@@ -819,6 +819,13 @@ class Engine:
         resolves unstopped triggers the finish sequence.
         """
         defender = self.state.opponent_of(active)
+        # Father Light: a deferred forced reveal-and-play consumes this turn's play
+        # when armed and a card is playable; if nothing is playable the whole hand
+        # is revealed and play falls through to the ordinary (pass-only) action.
+        if self._consume_forced_reveal_play(active) and self._forced_reveal_and_play(
+            active, defender
+        ):
+            return
         legal = self._playable_options(active) + [{"kind": "pass"}]
         choice = self._decide("turn_action", active, legal)
         if choice["kind"] == "pass":
@@ -2001,6 +2008,52 @@ class Engine:
         self.state.players[key].flags["peek"] = {target: self.state.turn_no}
         self._log_effect(key, "Peek", target, {"hand_size": len(self.state.players[target].hand)})
 
+    def _act_force_reveal_play(self, action: fx.ForceRevealPlay, key: str) -> None:
+        # Father Light: arm a deferred, mandatory forced reveal-and-play on the
+        # target for their next won turn. A one-shot flag; the reveal+play fires
+        # from _take_turn_action. Idempotent — re-arming leaves it armed once.
+        target = key if action.who is fx.Who.SELF else self.state.opponent_of(key)
+        self.state.players[target].flags["forced_reveal_play"] = True
+        self._log_effect(key, "ForceRevealPlay", target, {})
+
+    def _consume_forced_reveal_play(self, key: str) -> bool:
+        # Consume key's armed forced reveal-and-play flag, if set.
+        flags = self.state.players[key].flags
+        if flags.get("forced_reveal_play"):
+            del flags["forced_reveal_play"]
+            return True
+        return False
+
+    def _forced_reveal_and_play(self, active: str, defender: str) -> bool:
+        # Father Light's forced play: reveal active's hand one card at a time in
+        # random order until a playable card turns up, then force-play it (no free
+        # choice). Playability is the ordinary rule (_playable) plus AlsoLead.
+        # Returns True iff a card was forced; False (whole hand revealed, nothing
+        # playable) lets the caller fall through to the pass-only turn action.
+        chain = self.state.players[active].in_play
+        remaining = list(self.state.players[active].hand)
+        revealed: list[str] = []
+        chosen: Card | None = None
+        while remaining:
+            card = self.state.rng.reveal(remaining)
+            remaining.remove(card)
+            revealed.append(card.db_uuid)
+            if _playable(chain, card) or self._also_lead_now(active, card):
+                chosen = card
+                break
+        self._log_effect(
+            active,
+            "ForcedReveal",
+            None,
+            {"revealed": revealed, "played": chosen.db_uuid if chosen else None},
+        )
+        if chosen is None:
+            return False
+        taken = self._take_from_hand(active, chosen.number)
+        if self._resolve_play(active, defender, taken) and taken.play_order is PlayOrder.FINISH:
+            self._finish_sequence(active, defender, taken)
+        return True
+
     def _act_scry(self, action: fx.Scry, key: str) -> None:
         # Look at / reveal cards from the top (and/or bottom) of the target deck and
         # route them by value. The effect owner (`key`) is the actor: it keeps the
@@ -2682,6 +2735,7 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.ReturnToHand: Engine._act_return_to_hand,
     fx.PlayExtraCard: Engine._act_play_extra_card,
     fx.Peek: Engine._act_peek,
+    fx.ForceRevealPlay: Engine._act_force_reveal_play,
     fx.Scry: Engine._act_scry,
     fx.RevealRoute: Engine._act_reveal_route,
     fx.ShuffleHandDraw: Engine._act_shuffle_hand_draw,

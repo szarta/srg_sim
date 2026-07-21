@@ -3152,3 +3152,54 @@ def test_on_hit_who_self_is_unchanged_by_the_new_field() -> None:
     held = len(eng.state.players["A"].hand)
     eng._run_hit_gimmicks(_followup(), "B")
     assert len(eng.state.players["A"].hand) == held
+
+
+# -- Father Light: deferred forced reveal-and-play (schema v55) --------------
+
+
+def _mk(uuid: str, order: PlayOrder, number: int) -> Card:
+    return Card(db_uuid=uuid, name=uuid, number=number, atk_type=AtkType.STRIKE, play_order=order)
+
+
+def test_father_light_arming_is_a_one_shot_flag_on_the_opponent() -> None:
+    eng = _fresh()
+    eng._act_force_reveal_play(fx.ForceRevealPlay(fx.Who.OPP), "A")  # A's gimmick arms B
+    assert "forced_reveal_play" in eng.state.players["B"].flags
+    assert "forced_reveal_play" not in eng.state.players["A"].flags
+    eng._act_force_reveal_play(fx.ForceRevealPlay(fx.Who.OPP), "A")  # re-arm: armed once
+    assert eng._consume_forced_reveal_play("B")
+    assert not eng._consume_forced_reveal_play("B")  # consumed, then clear
+
+
+def test_father_light_forces_the_only_playable_card_the_lead() -> None:
+    eng = _fresh()
+    eng.state.players["A"].hand = []  # defender cannot stop
+    eng.state.players["B"].in_play = []
+    eng.state.players["B"].hand = [_mk("b-lead", PlayOrder.LEAD, 101), _mk("b-fu", PlayOrder.FOLLOWUP, 102)]
+    assert eng._forced_reveal_and_play("B", "A")  # a card was forced
+    b = eng.state.players["B"]
+    assert any(c.db_uuid == "b-lead" for c in b.in_play)  # the only playable card landed
+    assert [c.db_uuid for c in b.hand] == ["b-fu"]  # the Follow Up remains
+
+
+def test_father_light_nothing_playable_reveals_the_hand_and_plays_nothing() -> None:
+    eng = _fresh()
+    eng.state.players["A"].hand = []
+    eng.state.players["B"].in_play = []
+    eng.state.players["B"].hand = [_mk("b-fu", PlayOrder.FOLLOWUP, 101), _mk("b-fin", PlayOrder.FINISH, 102)]
+    assert not eng._forced_reveal_and_play("B", "A")  # nothing playable
+    b = eng.state.players["B"]
+    assert len(b.hand) == 2 and b.in_play == []  # hand untouched, nothing played
+
+
+def test_father_light_take_turn_action_consumes_the_armed_forced_play() -> None:
+    eng = _fresh()
+    eng.state.players["A"].hand = []
+    eng.state.players["B"].in_play = []
+    eng.state.players["B"].hand = [_mk("b-lead", PlayOrder.LEAD, 101)]
+    eng._act_force_reveal_play(fx.ForceRevealPlay(fx.Who.OPP), "A")
+    eng.state.active = "B"
+    eng._take_turn_action("B")
+    b = eng.state.players["B"]
+    assert any(c.db_uuid == "b-lead" for c in b.in_play)  # forced to play the Lead
+    assert "forced_reveal_play" not in b.flags  # flag consumed

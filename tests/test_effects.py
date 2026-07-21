@@ -92,6 +92,7 @@ from srg_sim.effects import (
     ScaleEntranceNumbers,
     Or,
     Peek,
+    ForceRevealPlay,
     PlayExtraCard,
     RecurToDeckTop,
     RemoveFromPlay,
@@ -212,6 +213,7 @@ SAMPLES: list[IRNode] = [
     DiscardInPlayMatch(),  # Candyman Dan
     ReturnToHand(CardFilter(), Who.OPP, 1, choose=True),  # Fox Assassin V2
     Peek(Who.OPP),
+    ForceRevealPlay(Who.OPP),
     Scry(deck=Who.SELF, top=2, to_hand=1, bury=1, reveal=True, rest=ScryRest.CHOOSE),
     RevealRoute(
         deck=Who.OPP,

@@ -934,6 +934,21 @@ class Peek(IRNode):
 
 
 @dataclass(frozen=True)
+class ForceRevealPlay(IRNode):
+    """Arm a deferred, mandatory "forced reveal-and-play" on ``who`` for their next
+    turn (Father Light: "during your opponent's next turn, they randomly reveal a
+    card in their hand until they reveal a playable card; they must play that
+    card"). Sets a one-shot flag on the target; at the start of that player's next
+    won turn the engine reveals their hand in random order until a card is playable
+    (Lead / Follow-Up-with-Lead / Finish-with-Follow-Up, a stop counting as its
+    play order) and force-plays it, consuming that turn's play. Idempotent —
+    re-arming before the target takes a turn still fires once.
+    """
+
+    who: Who = Who.OPP
+
+
+@dataclass(frozen=True)
 class Scry(IRNode):
     """Look at / reveal cards from the top (and/or bottom) of ``deck``'s deck, then
     route them by value. The effect owner (the "actor") takes ``to_hand`` of them to
