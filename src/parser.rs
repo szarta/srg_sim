@@ -72,6 +72,13 @@ fn cf_atk(a: AtkType) -> CardFilter {
     }
 }
 
+fn cf_order(o: PlayOrder) -> CardFilter {
+    CardFilter {
+        play_order: Some(o),
+        ..Default::default()
+    }
+}
+
 fn draw(n: i64, who: Who, source: DeckEnd, per: Option<CardFilter>, per_who: Who) -> Action {
     Action::Draw {
         cap: None,
@@ -316,17 +323,11 @@ fn per_roll(delta: i64, desc: &str, per_who: Who, trigger: Trigger) -> Option<Ef
     ))
 }
 
-fn per_draw(n: i64, desc: &str) -> Option<Effect> {
+fn per_draw(n: i64, desc: &str, per_who: Who) -> Option<Effect> {
     let per = count_filter(desc)?;
     Some(eff(
         Trigger::OnPlay,
-        vec![draw(
-            n,
-            Who::SelfSide,
-            DeckEnd::Top,
-            Some(per),
-            Who::SelfSide,
-        )],
+        vec![draw(n, Who::SelfSide, DeckEnd::Top, Some(per), per_who)],
         Condition::Always,
         Duration::Instant,
     ))
@@ -996,7 +997,120 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         ),
         rule(
             r"Draw (\d+) cards? for each (?:other )?(.+?) you have in play",
-            |c| per_draw(num(c, 1), &c[2]),
+            |c| per_draw(num(c, 1), &c[2], Who::SelfSide),
+        ),
+        rule(
+            r"Draw (\d+) cards? for each (?:other )?(.+?) your opponent has in play",
+            |c| per_draw(num(c, 1), &c[2], Who::Opp),
+        ),
+        // --- Draw riders (task #49): deck-position, conditional, compare ------
+        rule(r"[Dd]raw the bottom card of your deck", |_| {
+            Some(eff(
+                on_hit(),
+                vec![draw(1, Who::SelfSide, DeckEnd::Bottom, None, Who::SelfSide)],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        rule(r"[Dd]raw the top and bottom cards? of your deck", |_| {
+            Some(eff(
+                on_hit(),
+                vec![
+                    draw(1, Who::SelfSide, DeckEnd::Top, None, Who::SelfSide),
+                    draw(1, Who::SelfSide, DeckEnd::Bottom, None, Who::SelfSide),
+                ],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // "If you have another <atk>/<order> in play, draw N" (gated, OnPlay).
+        rule(
+            &format!(r"If you have another {ATK} in play, draw (\d+) cards?"),
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![draw(
+                        num(c, 2),
+                        Who::SelfSide,
+                        DeckEnd::Top,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    has_in_play(Who::SelfSide, cf_atk(atk(&c[1])), 1),
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"If you have another (Lead|Follow Up|Finish) in play, draw (\d+) cards?",
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![draw(
+                        num(c, 2),
+                        Who::SelfSide,
+                        DeckEnd::Top,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    has_in_play(Who::SelfSide, cf_order(order(&c[1])), 1),
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "If your <S> skill is greater than your opponent's <S> skill, draw N"
+        // (same- or cross-skill via vs_skill). The "... draw N instead" replacement
+        // form is intentionally NOT matched (anchored $): it replaces a base draw.
+        rule(
+            &format!(
+                r"If your {SK}(?: skill)? is greater than your opponent'?s {SK}(?: skill)?, draw (\d+) cards?"
+            ),
+            |c| {
+                let own = skill(&c[1]);
+                let other = skill(&c[2]);
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![draw(
+                        num(c, 3),
+                        Who::SelfSide,
+                        DeckEnd::Top,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    Condition::SkillCompare {
+                        skill: own,
+                        cmp: Comparator::Gt,
+                        who: Who::SelfSide,
+                        vs: Vs::OppSame,
+                        value: None,
+                        vs_skill: (own != other).then_some(other),
+                    },
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "If you have fewer cards in your hand than your opponent, draw N."
+        rule(
+            r"If you have fewer cards in your hand than your opponent, draw (\d+) cards?",
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![draw(
+                        num(c, 1),
+                        Who::SelfSide,
+                        DeckEnd::Top,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    Condition::HandSizeCompare {
+                        cmp: Comparator::Lt,
+                        vs: Vs::Opp,
+                        value: None,
+                        who: Who::SelfSide,
+                    },
+                    Duration::Instant,
+                ))
+            },
         ),
         rule(
             r"Your opponent discards (\d+) cards?(?: from their hand)? for each (.+?) you have in play",

@@ -453,9 +453,14 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Draw the bottom card of your deck.",
-              "reason": "no grammar match"
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "BOTTOM",
+              "who": "SELF"
             }
           ],
           "condition": {
@@ -471,7 +476,13 @@
           "raw_clause": "Draw the bottom card of your deck.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
           }
         },
         {
@@ -2818,7 +2829,7 @@
             "n": null
           },
           "optional": true,
-          "raw_clause": "your opponent reveals the top card of their deck, they may flip it (owner decides the optional flip \u2014 a close simplification)",
+          "raw_clause": "your opponent reveals the top card of their deck, they may flip it (owner decides the optional flip — a close simplification)",
           "source": "card",
           "trigger": {
             "@type": "OnHit",
@@ -7890,7 +7901,7 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 115,
+    "grammar": 116,
     "override": 58,
     "top_unparsed": [
       [
@@ -7934,10 +7945,6 @@
         1
       ],
       [
-        "Draw the bottom card of your deck.",
-        1
-      ],
-      [
         "If your opponent forces you to discard any number of cards from your hand, shuffle up to N cards from your discard pile into your deck.",
         1
       ],
@@ -7972,10 +7979,14 @@
       [
         "Bury up to N cards in any player's discard pile.",
         1
+      ],
+      [
+        "If this is a Ring of Fire or Lumberjack match, double these numbers.",
+        1
       ]
     ],
     "total": 217,
-    "unsupported": 44
+    "unsupported": 43
   },
   "coverage_records": [
     {

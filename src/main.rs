@@ -89,6 +89,13 @@ enum Command {
         #[arg(long)]
         cards: Option<PathBuf>,
     },
+    /// Refresh the curated parser regression sample in place (recompute each
+    /// case's `expected` IR + `coverage_golden` from the live parser).
+    ParserFixture {
+        /// The sample to refresh.
+        #[arg(long, default_value = "fixtures/parser/clauses.json")]
+        path: PathBuf,
+    },
     /// Print engine build info.
     Info,
 }
@@ -189,6 +196,7 @@ fn main() -> anyhow::Result<()> {
         ),
         Command::Replay { log, cards } => commands::replay(&cards_or_default(cards), &log),
         Command::CardsIr { out, cards } => commands::gen_cards_ir(&cards_or_default(cards), &out),
+        Command::ParserFixture { path } => commands::regen_parser_fixture(&path),
         Command::Session { action } => run_session(action),
         Command::Info => {
             println!(

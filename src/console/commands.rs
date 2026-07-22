@@ -153,6 +153,87 @@ pub fn coverage_report(cards: &Path, top96: bool) -> Result<()> {
     Ok(())
 }
 
+/// `parser-fixture` — refresh the curated parser regression sample
+/// (`fixtures/parser/clauses.json`) in place. The sample's INPUTS (each case's
+/// db_uuid/source/text and the coverage_records) are preserved verbatim; only the
+/// parsed OUTPUTS (each case's `expected` IR and the `coverage_golden` counts) are
+/// recomputed from the live Rust parser. Post-oracle-retirement this is a Rust
+/// regression golden (like `cards.ir.json`), regenerated on legitimate coverage
+/// gains — run it after a grammar/override change, then review the diff.
+pub fn regen_parser_fixture(path: &Path) -> Result<()> {
+    let ov = overrides()?;
+    let text = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    let mut doc: serde_json::Value =
+        serde_json::from_str(&text).with_context(|| format!("parse {}", path.display()))?;
+
+    // Recompute each case's `expected` from its preserved (source, text, db_uuid).
+    let cases = doc["cases"]
+        .as_array_mut()
+        .ok_or_else(|| anyhow!("clauses fixture missing `cases` array"))?;
+    for case in cases.iter_mut() {
+        let source = source_of(case["source"].as_str().unwrap_or("card"))?;
+        let clause = case["text"].as_str().unwrap_or("").to_owned();
+        let uuid = case["db_uuid"].as_str().map(str::to_owned);
+        let effects = parse_text(&clause, source, uuid.as_deref(), Some(&ov));
+        case["expected"] = serde_json::to_value(&effects)?;
+    }
+
+    // Recompute coverage_golden over the preserved coverage_records.
+    let records: Vec<(String, String)> = doc["coverage_records"]
+        .as_array()
+        .ok_or_else(|| anyhow!("clauses fixture missing `coverage_records`"))?
+        .iter()
+        .map(|r| {
+            (
+                r["db_uuid"].as_str().unwrap_or("").to_owned(),
+                r["rules_text"].as_str().unwrap_or("").to_owned(),
+            )
+        })
+        .collect();
+    let recs: Vec<CoverageRecord> = records
+        .iter()
+        .map(|(u, t)| CoverageRecord {
+            text: t,
+            db_uuid: if u.is_empty() { None } else { Some(u) },
+        })
+        .collect();
+    let report = coverage(&recs, Some(&ov));
+    let top: Vec<serde_json::Value> = report
+        .top_unparsed
+        .iter()
+        .map(|(s, c)| serde_json::json!([s, c]))
+        .collect();
+    doc["coverage_golden"] = serde_json::json!({
+        "total": report.total,
+        "grammar": report.grammar,
+        "override": report.override_,
+        "unsupported": report.unsupported,
+        "top_unparsed": top,
+    });
+
+    let out = format!("{}\n", serde_json::to_string_pretty(&doc)?);
+    std::fs::write(path, out).with_context(|| format!("write {}", path.display()))?;
+    println!(
+        "{}: refreshed {} cases; coverage total {} grammar {} override {} unsupported {}",
+        path.display(),
+        doc["cases"].as_array().map_or(0, Vec::len),
+        report.total,
+        report.grammar,
+        report.override_,
+        report.unsupported
+    );
+    Ok(())
+}
+
+fn source_of(tag: &str) -> Result<EffectSource> {
+    match tag {
+        "card" => Ok(EffectSource::Card),
+        "gimmick" => Ok(EffectSource::Gimmick),
+        "entrance" => Ok(EffectSource::Entrance),
+        other => bail!("unknown parser-fixture source {other:?}"),
+    }
+}
+
 /// `analyze A.yaml B.yaml --games N` — a batch win-rate summary (the full
 /// MatchupReport, with finish/turn odds, stays in Python; §7).
 pub fn analyze(

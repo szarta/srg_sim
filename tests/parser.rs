@@ -1,11 +1,14 @@
-//! rules_text -> IR parser parity (task #71).
+//! rules_text -> IR parser regression sample (originally task #71 oracle parity).
 //!
-//! `fixtures/parser/clauses.json` pairs every card / competitor / entrance's RAW
-//! text across the six reference decks with the Effect IR the Python
-//! `rules_parser.parse_text` produced (overrides + grammar + Unsupported). The
-//! Rust parser must reproduce each list value-identically — the grammar rules,
-//! their order, the clause splitter, frequency headers, metadata skipping, and
-//! the override table all matching.
+//! `fixtures/parser/clauses.json` is a curated 113-card sample pairing each case's
+//! RAW text with the Effect IR the parser produces (overrides + grammar +
+//! Unsupported), plus a `coverage_golden`. It was frozen from the Python
+//! `rules_parser.parse_text` during migration; post-oracle-retirement it is a Rust
+//! regression golden (like `cards.ir.json`) whose OUTPUTS are refreshed on
+//! legitimate coverage gains via `srg parser-fixture` (`invoke parser-fixture`),
+//! keeping the curated INPUTS. The parser must reproduce each list value-identically
+//! — the grammar rules, their order, the clause splitter, frequency headers,
+//! metadata skipping, and the override table all matching.
 
 use serde_json::Value;
 use srg_core::ir::EffectSource;
@@ -244,4 +247,64 @@ fn hand_bury_grammar() {
     assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
     assert_eq!(e["trigger"]["@type"], "OnPlay");
     assert_eq!(bury(&e["actions"][0]).0, "OPP");
+}
+
+/// Draw-rider grammar (task #49): deck-position, conditional, and compare draws.
+/// Absent from the six-deck sample except "Draw the bottom card", so asserted
+/// against the whole-DB grammar directly.
+#[test]
+fn draw_rider_grammar() {
+    fn parse1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Deck-position: bottom card, and top+bottom (two draws).
+    let e = parse1("Draw the bottom card of your deck.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["source"], "BOTTOM");
+    assert_eq!(e["actions"][0]["n"], 1);
+    let e = parse1("Draw the top and bottom card of your deck.");
+    assert_eq!(e["actions"].as_array().unwrap().len(), 2);
+    assert_eq!(e["actions"][0]["source"], "TOP");
+    assert_eq!(e["actions"][1]["source"], "BOTTOM");
+
+    // Conditional (HasInPlay gate, OnPlay): another <atk>/<order> in play.
+    let e = parse1("If you have another Strike in play, draw 2 cards.");
+    assert_eq!(e["trigger"]["@type"], "OnPlay");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["filter"]["atk_type"], "Strike");
+    assert_eq!(e["actions"][0]["n"], 2);
+    let e = parse1("If you have another Follow Up in play, draw 1 card.");
+    assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
+
+    // Skill compare: same-skill (vs_skill null) and cross-skill (vs_skill set).
+    let e =
+        parse1("If your Power skill is greater than your opponent's Power skill, draw 2 cards.");
+    assert_eq!(e["condition"]["@type"], "SkillCompare");
+    assert_eq!(e["condition"]["skill"], "Power");
+    assert_eq!(e["condition"]["vs"], "OPP_SAME");
+    assert_eq!(e["condition"]["vs_skill"], Value::Null);
+    let e =
+        parse1("If your Grapple skill is greater than your opponent's Power skill, draw 3 cards.");
+    assert_eq!(e["condition"]["skill"], "Grapple");
+    assert_eq!(e["condition"]["vs_skill"], "Power");
+
+    // "instead" replacement form must NOT parse (stays Unsupported).
+    let e = parse1(
+        "If your Power skill is greater than your opponent's Power skill, draw 2 cards instead.",
+    );
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+
+    // Hand-size: fewer in hand than opponent.
+    let e = parse1("If you have fewer cards in your hand than your opponent, draw 1 card.");
+    assert_eq!(e["condition"]["@type"], "HandSizeCompare");
+    assert_eq!(e["condition"]["cmp"], "<");
+    assert_eq!(e["condition"]["vs"], "OPP");
+
+    // Per-count draw for each X the OPPONENT has in play.
+    let e = parse1("Draw 1 card for each Lead your opponent has in play.");
+    assert_eq!(e["actions"][0]["per"]["play_order"], "Lead");
+    assert_eq!(e["actions"][0]["per_who"], "OPP");
 }

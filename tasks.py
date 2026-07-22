@@ -65,6 +65,18 @@ def cards_ir(c):
     c.run("cargo run --quiet --features cli -- cards-ir", pty=True)
 
 
+@task(name="parser-fixture")
+def parser_fixture(c):
+    """Refresh the curated parser regression sample `fixtures/parser/clauses.json`.
+
+    Recomputes each case's `expected` IR + the `coverage_golden` from the live Rust
+    parser, preserving the sample's inputs (db_uuid/source/text, coverage_records).
+    Run alongside `cards-ir` after a grammar/override change, then review the diff:
+    `tests/parser.rs` holds the parser to this sample. Requires a built binary.
+    """
+    c.run("cargo run --quiet --features cli -- parser-fixture", pty=True)
+
+
 @task
 def build(c, release=False):
     """Build the crate (debug by default; --release for optimized)."""
