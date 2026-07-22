@@ -6,7 +6,8 @@ use super::loader::{card_type, db_uuid, is_top96, overrides, rules_text, CardInd
 use anyhow::{anyhow, bail, Context, Result};
 use srg_core::engine::{Engine, GameResult, Yield};
 use srg_core::gamelog::{diff, GameLog};
-use srg_core::parser::{coverage, CoverageRecord, CoverageReport};
+use srg_core::ir::EffectSource;
+use srg_core::parser::{coverage, parse_text, CoverageRecord, CoverageReport};
 use srg_core::policy::{build_policy, Policies, Policy};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -59,6 +60,71 @@ pub fn play(
 }
 
 /// `coverage [--top96]` — the rules-parser coverage report over the card DB.
+/// The `EffectSource` each card_type's rules text parses as; `None` for the
+/// out-of-scope types (Spectacle, CrowdMeter) that carry no parsed match effects.
+fn record_source(card_type: &str) -> Option<EffectSource> {
+    match card_type {
+        "MainDeckCard" => Some(EffectSource::Card),
+        "SingleCompetitorCard" | "TornadoCompetitorCard" | "TrioCompetitorCard" => {
+            Some(EffectSource::Gimmick)
+        }
+        "EntranceCard" => Some(EffectSource::Entrance),
+        _ => None,
+    }
+}
+
+/// `cards-ir --out fixtures/parser/cards.ir.json` — emit the parser corpus: every
+/// parseable DB record's rules text alongside the Rust-parsed Effect IR. The Rust-
+/// native replacement for the retired `scripts/gen_cards_ir.py` (which drove the Python
+/// parser oracle). The committed corpus is a frozen regression golden that
+/// `tests/parser_parity.rs` holds the parser to — regenerate and review the diff after
+/// a deliberate parser change or a card-DB update.
+pub fn gen_cards_ir(cards: &Path, out: &Path) -> Result<()> {
+    let index = CardIndex::from_yaml(cards)?;
+    let ov = overrides()?;
+    let mut rows: Vec<serde_json::Value> = Vec::new();
+    for rec in index.records() {
+        let ct = card_type(rec).unwrap_or("");
+        let Some(source) = record_source(ct) else {
+            continue;
+        };
+        let text = rules_text(rec);
+        if text.trim().is_empty() {
+            continue;
+        }
+        let uuid = db_uuid(rec).unwrap_or("");
+        let effects = parse_text(text, source, Some(uuid), Some(&ov));
+        rows.push(serde_json::json!({
+            "db_uuid": uuid,
+            "card_type": ct,
+            "source": source,
+            "rules_text": text,
+            "effects": effects,
+        }));
+    }
+    rows.sort_by(|a, b| a["db_uuid"].as_str().cmp(&b["db_uuid"].as_str()));
+    // A JSON array with one compact, key-sorted record per line — small on disk, yet
+    // each record is its own git-diffable line (mirrors the retired Python emitter).
+    let lines: Vec<String> = rows
+        .iter()
+        .map(|r| serde_json::to_string(r).expect("serialize record"))
+        .collect();
+    std::fs::write(out, format!("[\n{}\n]\n", lines.join(",\n")))
+        .with_context(|| format!("write {}", out.display()))?;
+    let parsed = rows
+        .iter()
+        .filter(|r| !r["effects"].as_array().unwrap().is_empty())
+        .count();
+    println!(
+        "{}: {} records ({} with effects) from {}",
+        out.display(),
+        rows.len(),
+        parsed,
+        cards.display()
+    );
+    Ok(())
+}
+
 pub fn coverage_report(cards: &Path, top96: bool) -> Result<()> {
     let index = CardIndex::from_yaml(cards)?;
     let ov = overrides()?;

@@ -1,34 +1,29 @@
-//! Cross-language parser parity (task 75, `docs/design/substrate-split.md` §6).
+//! Parser regression golden (`docs/design/substrate-split.md` §6, Phase 2).
 //!
 //! The rules parser is the one part of the engine that is **RNG-independent** —
-//! pure `rules_text -> [Effect]` — so it is the piece that *can* be checked
-//! byte-for-byte against the Python oracle (the seeded engine cannot: the Rust
-//! canonical stream is splitmix64 while the `python` branch is Mersenne Twister,
-//! an accepted design split, so whole-log parity is owned by the frozen
-//! conformance corpus in `engine_conformance.rs`, not by re-running Python).
+//! pure `rules_text -> [Effect]` — so it is checked against a committed golden
+//! corpus, `fixtures/parser/cards.ir.json`: every parseable DB record's input text
+//! with the Effect IR it compiles to. This test re-parses each record with the Rust
+//! parser and asserts value-identical IR, so any unintended parser change surfaces
+//! here as a failing record.
 //!
-//! `scripts/gen_cards_ir.py` drives the **Python parity oracle** over the whole
-//! card DB and writes `cards.ir.json` — every parseable record's input text with
-//! the IR the oracle compiles it to. This test re-parses each record with the Rust
-//! parser and asserts value-identical IR. A grammar divergence between the two
-//! ports surfaces here as a failing record.
-//!
-//! The corpus is a *generated* artifact (its true source, `cards.yaml`, is not
-//! vendored), so it is not committed; `invoke conformance` regenerates it into
-//! `target/conformance/cards.ir.json` first. When it is absent — a bare
-//! `cargo test` / `invoke check`, which stay Python-free — this test **skips
-//! loudly** rather than failing. Override `$SRG_CARDS_IR` to point elsewhere.
+//! **Provenance.** The corpus was validated cross-language against the Python parser
+//! oracle at Phase-1 (`tests/parser_parity` over the whole DB, 6386/6386). At Phase 2
+//! (task #79) the Python engine was retired; the corpus is now regenerated from the
+//! authoritative Rust parser via `srg cards-ir` and committed. It is a **snapshot
+//! regression guard**: change the parser (or update the card DB) → regenerate with
+//! `srg cards-ir` and review the diff. `$SRG_CARDS_IR` overrides the path.
 
 use serde_json::Value;
 use srg_core::ir::EffectSource;
 use srg_core::parser::{load_overrides, parse_text, Overrides};
 use std::path::PathBuf;
 
-/// Where `invoke conformance` writes the generated corpus.
+/// The committed parser golden (`srg cards-ir` regenerates it).
 fn corpus_path() -> PathBuf {
     match std::env::var_os("SRG_CARDS_IR") {
         Some(p) => PathBuf::from(p),
-        None => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/conformance/cards.ir.json"),
+        None => PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/parser/cards.ir.json"),
     }
 }
 
@@ -60,19 +55,10 @@ fn load_corpus(path: &PathBuf) -> Vec<Record> {
         .collect()
 }
 
-/// Every record's Rust-parsed IR must equal the oracle's, value-for-value.
+/// Every record's Rust-parsed IR must equal the committed golden, value-for-value.
 #[test]
-fn rust_parser_matches_oracle_ir() {
+fn rust_parser_matches_golden() {
     let path = corpus_path();
-    if !path.exists() {
-        eprintln!(
-            "SKIP rust_parser_matches_oracle_ir: {} not found.\n\
-             Generate it with `invoke conformance` (needs the Python oracle at ~/data/srg_sim_python),\n\
-             or point $SRG_CARDS_IR at an existing cards.ir.json.",
-            path.display()
-        );
-        return;
-    }
     let overrides = overrides();
     let records = load_corpus(&path);
     assert!(!records.is_empty(), "cards.ir.json is empty");
@@ -90,7 +76,7 @@ fn rust_parser_matches_oracle_ir() {
             mismatches += 1;
             if mismatches <= 10 {
                 eprintln!(
-                    "MISMATCH {} (source {:?})\n  text: {:?}\n  rust: {}\n  py  : {}",
+                    "MISMATCH {} (source {:?})\n  text: {:?}\n  now : {}\n  gold: {}",
                     rec.db_uuid,
                     rec.source,
                     rec.rules_text,
@@ -103,8 +89,9 @@ fn rust_parser_matches_oracle_ir() {
     assert_eq!(
         mismatches,
         0,
-        "{mismatches}/{} records diverged from the Python oracle (first 10 shown above)",
+        "{mismatches}/{} records diverged from the parser golden — regenerate with \
+         `srg cards-ir` and review the diff (first 10 shown above)",
         records.len()
     );
-    eprintln!("parser parity: {} records match the oracle", records.len());
+    eprintln!("parser golden: {} records match", records.len());
 }

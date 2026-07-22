@@ -6,13 +6,18 @@ first, then [`DESIGN.md`](DESIGN.md) and
 migration plan). This crate (`srg-core`, lib `srg_core`, bin `srg`) is the
 authoritative rules core; consumers (console, MCP, WASM/web, mobile) sit on top.
 
-**Migration status.** `main` is being ported from the Python reference to Rust
-(the M-R1 tasks; see `todo-sqlite-cli`). The **Python engine is the parity
-oracle** and lives in a separate checkout of the `python` branch (cloned to
-`~/data/srg_sim_python`) — not on `main`. Rust is validated against two committed,
-language-neutral contracts frozen during M-R0: the JSON Schemas in
-[`schemas/v1/`](schemas/) and the golden conformance corpus in
-[`fixtures/conformance/`](fixtures/).
+**Migration status.** The port from the Python reference to Rust is **complete**:
+Rust (`srg-core`) is the sole authoritative engine. The Python engine — a
+**transitional parity oracle** during the migration — was **retired at Phase 2**
+(task #79) once Rust reached 100% top-96 rules coverage. Its old checkout
+(`~/data/srg_sim_python`, the `python` branch) is archival only; nothing in the
+build, CI, or authoring loop consults it. Rust is validated against two committed,
+language-neutral contracts frozen during M-R0 and cross-validated against the oracle
+before its retirement: the JSON Schemas in [`schemas/v1/`](schemas/) and the golden
+corpora — whole-engine logs in [`fixtures/conformance/`](fixtures/) (replayed byte-for-byte
+by `tests/engine_conformance.rs`) and the whole-DB parser golden
+[`fixtures/parser/cards.ir.json`](fixtures/) (`tests/parser_parity.rs`). Both run
+Python-free inside `cargo test`.
 
 ## Ground rules
 
@@ -35,8 +40,10 @@ language-neutral contracts frozen during M-R0: the JSON Schemas in
 - **`invoke` / `pre-commit`** run through the shared venv `~/data/stars/venv` — do
   **not** create another. (`tasks.py` is a thin Python wrapper over `cargo`.)
 - **Card data:** source of authority is the Postgres DB at
-  `~/data/srg_card_search_website/backend/app` (snapshot: `backend/app/cards.yaml`).
-  Consumed by the parser (→ `cards.ir.json`) and the Python oracle; not vendored.
+  `~/data/srg_card_search_website/backend/app` (snapshot: `backend/app/cards.yaml`),
+  built on get-diced.com and synced to consumers. The Rust parser consumes it directly
+  (`CardIndex::from_yaml`); `srg cards-ir` freezes the parsed corpus into the parser
+  golden. Not vendored.
 
 ## Commands
 
@@ -46,8 +53,8 @@ Development tasks run through `invoke` (`tasks.py`), wrapping `cargo`:
 invoke check          # pre-commit (fmt + clippy + knots) + cargo test  (the CI gate)
 invoke test           # cargo test
 invoke build          # cargo build (--release for optimized)
-invoke overrides      # regen overrides.ir.json from ./overrides.yaml (the single source, on main)
-invoke conformance    # cross-language harness vs the Python oracle (parser + snapshot parity)
+invoke overrides      # regen overrides.ir.json from ./overrides.yaml (single source; self-contained)
+invoke cards-ir       # regen the parser golden fixtures/parser/cards.ir.json (Rust parser)
 invoke bump-version   # bump the crate version in Cargo.toml (dry-run with no args)
 ```
 

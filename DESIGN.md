@@ -588,9 +588,10 @@ above divide into a **substrate** — the authoritative rules engine (`cards`, `
 MCP server / web / mobile). The boundary rule: **the substrate never imports a
 consumer** (guarded by `import-linter`, then by the Rust crate graph). The end-state
 moves the substrate + parser to a single **Rust `srg-core` crate** compiled to every
-target (native console/MCP, WASM web, native mobile lib); the Python engine serves as a
-**transitional parity oracle**, then is deprecated in favor of a frozen golden-log
-corpus. See §13.
+target (native console/MCP, WASM web, native mobile lib). The Python engine served as a
+**transitional parity oracle** and has been **retired** (Phase 2, task #79) in favor of
+frozen golden corpora — whole-engine logs plus the whole-DB parser golden — that Rust
+reproduces Python-free. See §13.
 
 ---
 
@@ -685,11 +686,13 @@ review artifact of the same class as this document). Summary of what it pins:
   the pausable **continuation state machine** driving the decision protocol, §7).
 - **The engine goes Rust**, one crate compiled to every target (native + WASM),
   resolving the language-split delta by compiling one implementation N ways rather than
-  trusting a second one. The Python engine is a **transitional parity oracle**, then
-  deprecated (frozen golden-log corpus).
-- **The conformance harness** is the migration's safety rail: same `(seed,
-  decisions[])` → Python and Rust must emit byte-identical `GameLog` (enabled by the
-  portable `splitmix64` RNG, §5), plus parser-parity on `cards.ir.json`.
+  trusting a second one. The Python engine was a **transitional parity oracle**, now
+  **retired** (Phase 2, task #79) in favor of frozen golden corpora.
+- **The conformance harness** was the migration's safety rail: same `(seed,
+  decisions[])` → Python and Rust emitted byte-identical `GameLog` (enabled by the
+  portable `splitmix64` RNG, §5), plus parser-parity on `cards.ir.json`. Post-retirement,
+  Rust regresses against the **frozen** golden logs (`engine_conformance.rs`) and the
+  **frozen** parser golden (`parser_parity.rs`), both in `cargo test` with no Python.
 - **§3 and §8 are unchanged** — re-homed as language-neutral JSON contracts. Every
   delta this migration needs is additive (RNG note §5, protocol + reserved timing
   points §7, module/boundary note §9, this section).

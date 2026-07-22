@@ -80,6 +80,15 @@ enum Command {
         #[command(subcommand)]
         action: SessionAction,
     },
+    /// Emit the parser corpus (rules text + Rust-parsed IR) for parser-parity regression.
+    CardsIr {
+        /// Where to write the corpus (the committed frozen golden).
+        #[arg(long, default_value = "fixtures/parser/cards.ir.json")]
+        out: PathBuf,
+        /// Path to the cards.yaml export (defaults to the DB snapshot).
+        #[arg(long)]
+        cards: Option<PathBuf>,
+    },
     /// Print engine build info.
     Info,
 }
@@ -179,6 +188,7 @@ fn main() -> anyhow::Result<()> {
             &policy_b,
         ),
         Command::Replay { log, cards } => commands::replay(&cards_or_default(cards), &log),
+        Command::CardsIr { out, cards } => commands::gen_cards_ir(&cards_or_default(cards), &out),
         Command::Session { action } => run_session(action),
         Command::Info => {
             println!(
