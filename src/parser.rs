@@ -236,6 +236,17 @@ fn has_in_play(who: Who, filter: CardFilter, count: i64) -> Condition {
     }
 }
 
+/// `who`'s hand size `cmp` a literal `value` — "you have N or more cards in your
+/// hand" (`Ge`, SELF) / "your opponent has N or fewer" (`Le`, OPP).
+fn hand_size(cmp: Comparator, who: Who, value: i64) -> Condition {
+    Condition::HandSizeCompare {
+        cmp,
+        vs: Vs::Value,
+        value: Some(value),
+        who,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Enum lookups
 // ---------------------------------------------------------------------------
@@ -364,6 +375,112 @@ fn strip_stop_override(t: &str) -> (&str, bool) {
         }
     }
     (t, false)
+}
+
+/// Parse the guard of a conditional "If/When `<cond>`, this card cannot be stopped"
+/// into a [`Condition`], covering the common gate shapes (Crowd Meter, skill-vs-opp,
+/// hand size, in-play count / name-count / none, turn-roll value/skill, same skill).
+/// `None` (the rule declines → stays `Unsupported`) for any shape not covered. The
+/// engine evaluates this from the CARD OWNER's side with their turn roll context.
+fn stop_condition(text: &str) -> Option<Condition> {
+    static CROWD: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^the [Cc]rowd [Mm]eter is (\d+) or (greater|less)$").unwrap()
+    });
+    static SKILL_GT: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(
+            r"^your {SK}(?: skill)? is greater than your opponent'?s {SK}(?: skill)?$"
+        ))
+        .unwrap()
+    });
+    static HAND_SELF: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^you have (\d+) or more cards in your hand$").unwrap());
+    static HAND_OPP: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^your opponent has (\d+) (?:or fewer cards|cards?) in their hand$").unwrap()
+    });
+    static PLAY_CNT: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(
+            r"^you have (\d+) other {ATK}s?(?: cards)? in play$"
+        ))
+        .unwrap()
+    });
+    static PLAY_NONE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^you have no (Lead|Follow Up|Finish|Strike|Grapple|Submission)s? in play$")
+            .unwrap()
+    });
+    static PLAY_NAME: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r#"^you have (\d+) cards? in play with "([^"]+)" in the name$"#).unwrap()
+    });
+    static ROLL_VAL: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^you rolled (\d+) for your turn roll$").unwrap());
+    static ROLL_SK: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(&format!(r"^you rolled {SK} for your turn roll$")).unwrap());
+
+    let t = text.trim();
+    if let Some(c) = CROWD.captures(t) {
+        let cmp = if &c[2] == "greater" {
+            Comparator::Ge
+        } else {
+            Comparator::Le
+        };
+        return Some(Condition::CrowdMeterCompare {
+            cmp,
+            value: c[1].parse().ok()?,
+        });
+    }
+    if let Some(c) = SKILL_GT.captures(t) {
+        let (s1, s2) = (skill(&c[1]), skill(&c[2]));
+        return Some(Condition::SkillCompare {
+            skill: s1,
+            cmp: Comparator::Gt,
+            who: Who::SelfSide,
+            vs: Vs::OppSame,
+            value: None,
+            vs_skill: (s1 != s2).then_some(s2),
+        });
+    }
+    if let Some(c) = HAND_SELF.captures(t) {
+        return Some(hand_size(Comparator::Ge, Who::SelfSide, c[1].parse().ok()?));
+    }
+    if let Some(c) = HAND_OPP.captures(t) {
+        return Some(hand_size(Comparator::Le, Who::Opp, c[1].parse().ok()?));
+    }
+    if let Some(c) = PLAY_CNT.captures(t) {
+        return Some(has_in_play(
+            Who::SelfSide,
+            cf_atk(atk(&c[2])),
+            c[1].parse().ok()?,
+        ));
+    }
+    if let Some(c) = PLAY_NONE.captures(t) {
+        return Some(Condition::HasInPlay {
+            who: Who::SelfSide,
+            filter: count_filter(&c[1])?,
+            count: 1,
+            cmp: Comparator::Lt,
+        });
+    }
+    if let Some(c) = PLAY_NAME.captures(t) {
+        return Some(has_in_play(
+            Who::SelfSide,
+            cf_name(vec![c[2].to_owned()]),
+            c[1].parse().ok()?,
+        ));
+    }
+    if let Some(c) = ROLL_VAL.captures(t) {
+        return Some(Condition::RollValue {
+            cmp: Comparator::Eq,
+            value: c[1].parse().ok()?,
+        });
+    }
+    if let Some(c) = ROLL_SK.captures(t) {
+        return Some(Condition::RollWasSkill {
+            skill: skill(&c[1]),
+        });
+    }
+    if t == "you and your opponent rolled the same skill for your turn roll" {
+        return Some(Condition::SameRolledSkill);
+    }
+    None
 }
 
 /// Parse a "stop any …" target into `Stop` actions, or `None` if any part is not
@@ -1216,6 +1333,17 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     by_order: Some(PlayOrder::Followup),
                 }],
                 Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
+        // "If/When <cond>, this card cannot be stopped": a condition-gated
+        // Unstoppable (by anything). The guard is parsed by `stop_condition`; the
+        // engine evaluates it from the card owner's side at stop time.
+        rule(r"(?:If|When) (.+?),? this card cannot be stopped", |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![Action::Unstoppable { by_order: None }],
+                stop_condition(&c[1])?,
                 Duration::WhileInPlay,
             ))
         }),

@@ -3470,7 +3470,8 @@ impl Engine {
         }
         // An `Unstoppable` attack is stopped only by a Stop that declares
         // `even_unstoppable` ("stop any Finish Strike that cannot be stopped").
-        let unstoppable = is_unstoppable_by(attack, stopper);
+        let attacker = self.state.opponent_of(defender);
+        let unstoppable = self.attack_is_unstoppable_by(&attacker, attack, stopper);
         stopper.effects.iter().any(|eff| {
             conditions::holds(&eff.condition, &self.state, defender, None)
                 && attacker_meets_tag_gates(eff, attack)
@@ -3483,6 +3484,23 @@ impl Engine {
                     }
                     _ => false,
                 })
+        })
+    }
+
+    /// Whether `attack` is `Unstoppable` against `stopper` from `attacker`'s view: an
+    /// `Unstoppable` action whose `by_order` matches the stopper's play order (or
+    /// `None` = anything) inside an effect whose condition currently holds for the
+    /// attacker. Gates a conditional "If/When … this card cannot be stopped" (the
+    /// condition is read from the CARD OWNER = attacker's side, with their turn roll
+    /// context so "if you rolled 7 / the same skill" resolve). `Condition::Always`
+    /// (the plain "Cannot be stopped by Follow Ups") always holds.
+    fn attack_is_unstoppable_by(&self, attacker: &str, attack: &Card, stopper: &Card) -> bool {
+        let roll = self.roll_ctx.get(attacker);
+        attack.effects.iter().any(|eff| {
+            eff.actions.iter().any(|a| {
+                matches!(a, Action::Unstoppable { by_order }
+                    if by_order.is_none() || *by_order == Some(stopper.play_order))
+            }) && conditions::holds(&eff.condition, &self.state, attacker, roll)
         })
     }
 
@@ -4814,18 +4832,6 @@ fn attacker_meets_tag_gates(eff: &Effect, attack: &Card) -> bool {
     eff.actions.iter().all(|a| match a {
         Action::StopRequiresTag { tag } => attack.tags.contains(tag),
         _ => true,
-    })
-}
-
-/// Whether `attack` declares itself `Unstoppable` against `stopper` — an
-/// `Unstoppable` whose `by_order` is the stopper's play order (or `None` = by
-/// anything). "Cannot be stopped by Follow Ups".
-fn is_unstoppable_by(attack: &Card, stopper: &Card) -> bool {
-    attack.effects.iter().any(|eff| {
-        eff.actions.iter().any(|a| {
-            matches!(a, Action::Unstoppable { by_order }
-                if by_order.is_none() || *by_order == Some(stopper.play_order))
-        })
     })
 }
 
@@ -7204,6 +7210,37 @@ mod even_unstoppable_stop_tests {
     fn even_unstoppable_stop_still_catches_a_normal_attack() {
         let engine = engine();
         assert!(engine.card_can_stop("A", &stopper("Finish", true), &attack(false)));
+    }
+
+    /// A Finish attack declaring "If the Crowd Meter is 5 or greater, this card
+    /// cannot be stopped" — a condition-gated `Unstoppable`.
+    fn crowd_gated_attack() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "CrowdMeterCompare", "cmp": ">=", "value": 5},
+                "actions": [{"@type": "Unstoppable", "by_order": null}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }]
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn conditional_unstoppable_honors_its_condition() {
+        let mut engine = engine();
+        // Condition false (Crowd Meter 0) -> the card is stoppable by a plain stop.
+        engine.state.crowd_meter = 0;
+        assert!(engine.card_can_stop("A", &stopper("Finish", false), &crowd_gated_attack()));
+        // Condition true (Crowd Meter 5) -> unstoppable; the plain stop can't catch it.
+        engine.state.crowd_meter = 5;
+        assert!(!engine.card_can_stop("A", &stopper("Finish", false), &crowd_gated_attack()));
+        // …but an even_unstoppable stop still catches it even when unstoppable.
+        assert!(engine.card_can_stop("A", &stopper("Finish", true), &crowd_gated_attack()));
     }
 }
 

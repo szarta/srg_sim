@@ -530,4 +530,32 @@ fn stop_eligibility_grammar() {
     // A plain stop leaves the flag false.
     let e = a1("Stop any Grapple.");
     assert_eq!(e["actions"][0]["even_unstoppable"], false);
+
+    // Conditional "this card cannot be stopped" -> Unstoppable{by_order:null} gated
+    // by the parsed condition (engine evaluates it from the card owner's side).
+    let e = a1("If the Crowd Meter is 5 or greater, this card cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["actions"][0]["by_order"], Value::Null);
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["condition"]["cmp"], ">=");
+    assert_eq!(e["condition"]["value"], 5);
+    let e = a1("When you have 12 or more cards in your hand, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "HandSizeCompare");
+    assert_eq!(e["condition"]["who"], "SELF");
+    assert_eq!(e["condition"]["cmp"], ">=");
+    let e = a1("If your Submission skill is greater than your opponent's Submission skill, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "SkillCompare");
+    assert_eq!(e["condition"]["vs_skill"], Value::Null);
+    let e = a1("When you have no Leads in play, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["cmp"], "<");
+    assert_eq!(e["condition"]["filter"]["play_order"], "Lead");
+    let e = a1("If you rolled 7 for your turn roll, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "RollValue");
+    assert_eq!(e["condition"]["value"], 7);
+    let e = a1("When you and your opponent rolled the same skill for your turn roll, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "SameRolledSkill");
+    // An uncovered condition shape declines -> stays Unsupported (honest).
+    let e = a1("If this is the first turn of the game, this card cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
