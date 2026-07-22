@@ -346,4 +346,20 @@ fn finish_rider_grammar() {
     assert_eq!(a["when_base_ge"], 8);
     assert_eq!(a["when_base_le"], Value::Null);
     assert_eq!(a["delta"], -3);
+
+    // "Your <S> skill is +N during Finish rolls" == rolled-skill FinishRollBonus.
+    let a = frb("Your Grapple skill is +2 during Finish rolls.");
+    assert_eq!(a["@type"], "FinishRollBonus");
+    assert_eq!(a["when_skill"], "Grapple");
+    assert_eq!(a["delta"], 2);
+
+    // Per-count in-play Finish bonus (order/atk filter).
+    let a = frb("Your Finish rolls are +1 for each Strike you have in play.");
+    assert_eq!(a["delta"], 1);
+    assert_eq!(a["per"]["atk_type"], "Strike");
+    assert_eq!(a["per_zone"], "IN_PLAY");
+    // Name-based / capped per-counts are declined (stay Unsupported).
+    let a =
+        frb("Your Finish roll is +1 for each card you have in play with \"Slammin\" in the name.");
+    assert_eq!(a["@type"], "Unsupported");
 }

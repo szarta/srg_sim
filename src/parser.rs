@@ -1239,6 +1239,43 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "Your <S> skill is +N during Finish rolls" — a +N to the Finish roll when
+        // that skill is rolled, i.e. the same rolled-skill-gated FinishRollBonus.
+        rule(
+            &format!(r"Your {SK} skill is ([+-]?\d+) during Finish [Rr]olls"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![finish_bonus(num(c, 2), Some(skill(&c[1])), false)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // "Your Finish roll is +N for each <order/atk> you have in play" — a per-count
+        // Finish bonus. `count_filter` declines name-based / capped forms (they stay
+        // Unsupported), so only the clean order/atk-in-play shapes match here.
+        rule(
+            r"Your Finish rolls? (?:is|are) ([+-]?\d+) for each (?:other )?(.+?) you have in play",
+            |c| {
+                let per = count_filter(&c[2])?;
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::FinishRollBonus {
+                        delta: num(c, 1),
+                        when_skill: None,
+                        either: false,
+                        when_base_le: None,
+                        when_base_ge: None,
+                        per: Some(per),
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::InPlay,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         // Base-roll-gated Finish bonus: "If your Finish roll is N or less/greater,
         // it is +M". The N-or-less/greater reads the BASE roll (skill stat pre-bonus);
         // +M is a signed additive bonus (engine `finish_roll_bonus`).
