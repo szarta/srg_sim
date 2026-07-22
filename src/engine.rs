@@ -3462,21 +3462,26 @@ impl Engine {
     /// condition holds from the defender's view. An attack `Unstoppable` by the
     /// stopper's play order cannot be stopped by it.
     fn card_can_stop(&self, defender: &str, stopper: &Card, attack: &Card) -> bool {
-        if is_unstoppable_by(attack, stopper) {
-            return false;
-        }
         if self.state.is_text_blanked(stopper, defender) {
             return false; // a text-blanked stop card cannot stop
         }
         if self.stop_suppressed(defender, stopper) {
             return false; // Jokerfish "your cards #N-N cannot stop cards"
         }
+        // An `Unstoppable` attack is stopped only by a Stop that declares
+        // `even_unstoppable` ("stop any Finish Strike that cannot be stopped").
+        let unstoppable = is_unstoppable_by(attack, stopper);
         stopper.effects.iter().any(|eff| {
             conditions::holds(&eff.condition, &self.state, defender, None)
                 && attacker_meets_tag_gates(eff, attack)
-                && eff.actions.iter().any(|action| {
-                    matches!(action, Action::Stop { .. })
-                        && self.stop_matches_for(defender, action, attack)
+                && eff.actions.iter().any(|action| match action {
+                    Action::Stop {
+                        even_unstoppable, ..
+                    } => {
+                        (!unstoppable || *even_unstoppable)
+                            && self.stop_matches_for(defender, action, attack)
+                    }
+                    _ => false,
                 })
         })
     }
@@ -7105,6 +7110,100 @@ mod jokerfish_stop_tests {
     fn suppress_stop_is_inert_without_the_declaration() {
         let engine = engine_with(json!([]));
         assert!(engine.card_can_stop("A", &stopper(20, "Lead"), &attack("Lead")));
+    }
+}
+
+#[cfg(test)]
+mod even_unstoppable_stop_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    /// A stop card carrying a `Stop{order, even_unstoppable}` (any atk_type).
+    fn stopper(order: &str, even_unstoppable: bool) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "stop", "name": "stop", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": order, "atk_type": null,
+                             "source_is_skillreq": false, "even_unstoppable": even_unstoppable}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stopper")
+    }
+
+    /// A Finish attack, optionally declaring itself `Unstoppable` by anything.
+    fn attack(unstoppable: bool) -> Card {
+        let effects: Value = if unstoppable {
+            json!([{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Unstoppable", "by_order": null}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }])
+        } else {
+            json!([])
+        };
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": effects
+        }))
+        .expect("attack")
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(&mut self, _: &str, _: &str, l: &[Value], _: &mut GameState) -> Option<Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    #[test]
+    fn plain_stop_cannot_catch_an_unstoppable_attack() {
+        let engine = engine();
+        assert!(!engine.card_can_stop("A", &stopper("Finish", false), &attack(true)));
+    }
+
+    #[test]
+    fn even_unstoppable_stop_catches_the_unstoppable_attack() {
+        // "Stop any Finish Strike that cannot be stopped."
+        let engine = engine();
+        assert!(engine.card_can_stop("A", &stopper("Finish", true), &attack(true)));
+    }
+
+    #[test]
+    fn even_unstoppable_stop_still_catches_a_normal_attack() {
+        let engine = engine();
+        assert!(engine.card_can_stop("A", &stopper("Finish", true), &attack(false)));
     }
 }
 

@@ -741,6 +741,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -1052,6 +1053,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -1604,6 +1606,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -1938,6 +1941,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -2533,6 +2537,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -2728,6 +2733,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Followup",
                         "source_is_skillreq": false
                       }
@@ -3205,6 +3211,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -3331,6 +3338,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Followup",
                         "source_is_skillreq": false
                       }
@@ -3804,6 +3812,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -4740,6 +4749,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Grapple",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -4815,6 +4825,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Submission",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -4899,6 +4910,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }
@@ -4983,6 +4995,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Grapple",
+                        "even_unstoppable": false,
                         "order": "Followup",
                         "source_is_skillreq": false
                       }
@@ -5445,6 +5458,7 @@
                       {
                         "@type": "Stop",
                         "atk_type": "Strike",
+                        "even_unstoppable": false,
                         "order": "Lead",
                         "source_is_skillreq": false
                       }

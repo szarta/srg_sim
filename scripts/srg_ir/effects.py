@@ -1234,6 +1234,9 @@ class Stop(IRNode):
     order: PlayOrder | None = None
     atk_type: AtkType | None = None
     source_is_skillreq: bool = False
+    #: "stop any … that/even-if cannot be stopped" — bypasses the attack's
+    #: Unstoppable declaration. schema v63
+    even_unstoppable: bool = False
 
 
 @dataclass(frozen=True)

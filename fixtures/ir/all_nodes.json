@@ -667,6 +667,7 @@
   {
     "@type": "Stop",
     "atk_type": null,
+    "even_unstoppable": false,
     "order": null,
     "source_is_skillreq": false
   },

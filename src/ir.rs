@@ -1033,6 +1033,12 @@ pub enum Action {
         order: Option<PlayOrder>,
         atk_type: Option<AtkType>,
         source_is_skillreq: bool,
+        /// "Stop any Finish Strike that cannot be stopped" / "… even if it cannot be
+        /// stopped" — this Stop bypasses the attack's own `Unstoppable` declaration,
+        /// answering an otherwise-unstoppable finisher. Read in `card_can_stop`.
+        /// schema v63
+        #[serde(default)]
+        even_unstoppable: bool,
     },
     StopRequiresTag {
         tag: String,
@@ -1834,6 +1840,12 @@ pub enum IrNode {
         order: Option<PlayOrder>,
         atk_type: Option<AtkType>,
         source_is_skillreq: bool,
+        /// "Stop any Finish Strike that cannot be stopped" / "… even if it cannot be
+        /// stopped" — this Stop bypasses the attack's own `Unstoppable` declaration,
+        /// answering an otherwise-unstoppable finisher. Read in `card_can_stop`.
+        /// schema v63
+        #[serde(default)]
+        even_unstoppable: bool,
     },
     StopRequiresTag {
         tag: String,

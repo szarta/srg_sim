@@ -350,17 +350,37 @@ fn norm_stop_part(part: &str) -> &str {
     p.trim()
 }
 
+/// Strip a trailing "even if it cannot be stopped" / "that cannot be stopped"
+/// override off a stop-any target, returning the bare target and whether the
+/// override was present (every produced Stop then bypasses `Unstoppable`).
+fn strip_stop_override(t: &str) -> (&str, bool) {
+    for suf in [
+        ", even if it cannot be stopped",
+        " even if it cannot be stopped",
+        " that cannot be stopped",
+    ] {
+        if let Some(head) = t.strip_suffix(suf) {
+            return (head.trim(), true);
+        }
+    }
+    (t, false)
+}
+
 /// Parse a "stop any …" target into `Stop` actions, or `None` if any part is not
-/// a plain `<type>` / `<order> <type>` (handles the "X or Y" two-target form).
+/// a plain `<type>` / `<order> <type>` (handles the "X or Y" two-target form). A
+/// trailing "(that / even if it) cannot be stopped" flags every Stop to bypass the
+/// attack's `Unstoppable`.
 fn stop_targets(text: &str) -> Option<Vec<Action>> {
     static OR_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+or\s+").unwrap());
+    let (target, even_unstoppable) = strip_stop_override(text.trim());
     let mut stops = Vec::new();
-    for part in OR_RE.split(text.trim()) {
+    for part in OR_RE.split(target) {
         let m = STOP_PART_RE.captures(norm_stop_part(part))?;
         stops.push(Action::Stop {
             order: m.get(1).map(|g| order(g.as_str())),
             atk_type: Some(atk(&m[2])),
             source_is_skillreq: false,
+            even_unstoppable,
         });
     }
     if stops.is_empty() {

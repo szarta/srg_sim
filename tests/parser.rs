@@ -514,4 +514,20 @@ fn stop_eligibility_grammar() {
     assert_eq!(e["condition"]["items"][0]["@type"], "CrowdMeterCompare");
     assert_eq!(e["condition"]["items"][1]["@type"], "HasInPlay");
     assert_eq!(e["condition"]["items"][1]["who"], "OPP");
+
+    // "that / even if it cannot be stopped" flags every Stop to bypass Unstoppable.
+    let e = a1("Stop any Finish Strike that cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+    assert_eq!(e["actions"][0]["even_unstoppable"], true);
+    let e = a1("Stop any Finish Submission, even if it cannot be stopped.");
+    assert_eq!(e["actions"][0]["even_unstoppable"], true);
+    // Applies across an OR target and composes with a skill gate.
+    let e = a1("If your Power skill is greater than your opponent's Power skill, stop any Follow Up Submission or Finish Submission even if it cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "SkillCompare");
+    assert_eq!(e["actions"].as_array().unwrap().len(), 2);
+    assert_eq!(e["actions"][0]["even_unstoppable"], true);
+    assert_eq!(e["actions"][1]["even_unstoppable"], true);
+    // A plain stop leaves the flag false.
+    let e = a1("Stop any Grapple.");
+    assert_eq!(e["actions"][0]["even_unstoppable"], false);
 }

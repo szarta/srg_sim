@@ -754,7 +754,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": "Lead",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -792,7 +793,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": "Lead",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -830,7 +832,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": "Lead",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -868,7 +871,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": "Followup",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -906,7 +910,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": "Followup",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -944,7 +949,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": "Followup",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1048,7 +1054,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1092,7 +1099,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1136,7 +1144,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1213,7 +1222,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1267,7 +1277,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1321,7 +1332,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1408,7 +1420,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1446,7 +1459,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1484,7 +1498,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1681,7 +1696,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": "Lead",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1719,7 +1735,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": "Lead",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1757,7 +1774,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": "Lead",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1795,7 +1813,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": "Followup",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1833,7 +1852,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": "Followup",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1871,7 +1891,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": "Followup",
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -1975,7 +1996,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -2019,7 +2041,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -2063,7 +2086,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -2140,7 +2164,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -2194,7 +2219,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -2248,7 +2274,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -2335,7 +2362,8 @@
                   "@type": "Stop",
                   "atk_type": "Grapple",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -2373,7 +2401,8 @@
                   "@type": "Stop",
                   "atk_type": "Submission",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {
@@ -2411,7 +2440,8 @@
                   "@type": "Stop",
                   "atk_type": "Strike",
                   "order": null,
-                  "source_is_skillreq": false
+                  "source_is_skillreq": false,
+                  "even_unstoppable": false
                 }
               ],
               "condition": {

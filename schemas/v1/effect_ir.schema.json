@@ -3848,13 +3848,17 @@
         },
         "source_is_skillreq": {
           "type": "boolean"
+        },
+        "even_unstoppable": {
+          "type": "boolean"
         }
       },
       "required": [
         "@type",
         "order",
         "atk_type",
-        "source_is_skillreq"
+        "source_is_skillreq",
+        "even_unstoppable"
       ],
       "type": "object"
     },
@@ -4072,5 +4076,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 62
+  "version": 63
 }
