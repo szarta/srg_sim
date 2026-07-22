@@ -361,6 +361,26 @@ fn norm_stop_part(part: &str) -> &str {
     p.trim()
 }
 
+fn unstoppable(by_order: Option<PlayOrder>, by_name: Option<String>) -> Action {
+    Action::Unstoppable { by_order, by_name }
+}
+
+/// Parse a stopper play-order word ("Follow Ups" / "Leads" / "Finishes", with an
+/// optional hyphen/plural) to a [`PlayOrder`].
+fn stopper_order(s: &str) -> PlayOrder {
+    let t = s.replace('-', " ").to_lowercase();
+    let t = t
+        .strip_suffix("es")
+        .or_else(|| t.strip_suffix('s'))
+        .unwrap_or(&t);
+    match t {
+        "lead" => PlayOrder::Lead,
+        "follow up" => PlayOrder::Followup,
+        "finish" => PlayOrder::Finish,
+        other => unreachable!("stopper order {other:?}"),
+    }
+}
+
 /// Strip a trailing "even if it cannot be stopped" / "that cannot be stopped"
 /// override off a stop-any target, returning the bare target and whether the
 /// override was present (every produced Stop then bypasses `Unstoppable`).
@@ -1326,27 +1346,45 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        rule(r"Cannot be stopped by Follow ?Ups?", |_| {
+        // "(This card) cannot be stopped by <order>" — unstoppable against a stopper
+        // of that play order (extends the original Follow-Ups-only rule to Leads and
+        // Finishes and the "This card " lead-in).
+        rule(
+            r"(?:This card )?[Cc]annot be stopped by (Follow[ -]?Ups?|Leads?|Finish(?:es)?)",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![unstoppable(Some(stopper_order(&c[1])), None)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // "(This card) cannot be stopped by \"X\"" — unstoppable against a stopper
+        // whose name is X.
+        rule(r#"(?:This card )?[Cc]annot be stopped by "([^"]+)""#, |c| {
             Some(eff(
                 Trigger::Static,
-                vec![Action::Unstoppable {
-                    by_order: Some(PlayOrder::Followup),
-                }],
+                vec![unstoppable(None, Some(c[1].to_owned()))],
                 Condition::Always,
                 Duration::WhileInPlay,
             ))
         }),
-        // "If/When <cond>, this card cannot be stopped": a condition-gated
-        // Unstoppable (by anything). The guard is parsed by `stop_condition`; the
-        // engine evaluates it from the card owner's side at stop time.
-        rule(r"(?:If|When) (.+?),? this card cannot be stopped", |c| {
-            Some(eff(
-                Trigger::Static,
-                vec![Action::Unstoppable { by_order: None }],
-                stop_condition(&c[1])?,
-                Duration::WhileInPlay,
-            ))
-        }),
+        // "If/When <cond>, this card cannot be stopped [by <order>]": a condition-gated
+        // Unstoppable. The guard is parsed by `stop_condition`; the engine evaluates it
+        // from the card owner's side at stop time.
+        rule(
+            r"(?:If|When) (.+?),? this card cannot be stopped(?: by (Follow[ -]?Ups?|Leads?|Finish(?:es)?))?",
+            |c| {
+                let by_order = c.get(2).map(|m| stopper_order(m.as_str()));
+                Some(eff(
+                    Trigger::Static,
+                    vec![unstoppable(by_order, None)],
+                    stop_condition(&c[1])?,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         rule(
             r"This card counts as (\d+) (Lead|Follow [Uu]p|Finish) (Strike|Grapple|Submission)s? in play",
             |c| {

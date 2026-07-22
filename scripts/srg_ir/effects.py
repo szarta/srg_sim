@@ -1257,6 +1257,9 @@ class Unstoppable(IRNode):
     any candidate stopper of that order. Executing it is a no-op (a Static marker)."""
 
     by_order: PlayOrder | None = None
+    #: "Cannot be stopped by \"X\"" — unstoppable against a stopper named X
+    #: (AND-ed with by_order). schema v64
+    by_name: str | None = None
 
 
 @dataclass(frozen=True)

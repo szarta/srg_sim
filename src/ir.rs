@@ -1185,6 +1185,11 @@ pub enum Action {
     },
     Unstoppable {
         by_order: Option<PlayOrder>,
+        /// "Cannot be stopped by \"X\"" — unstoppable specifically against a stopper
+        /// whose NAME equals this (AND-ed with `by_order`). `None` = no name gate.
+        /// schema v64
+        #[serde(default)]
+        by_name: Option<String>,
     },
     AlsoLead {
         condition: Condition,
@@ -1992,6 +1997,11 @@ pub enum IrNode {
     },
     Unstoppable {
         by_order: Option<PlayOrder>,
+        /// "Cannot be stopped by \"X\"" — unstoppable specifically against a stopper
+        /// whose NAME equals this (AND-ed with `by_order`). `None` = no name gate.
+        /// schema v64
+        #[serde(default)]
+        by_name: Option<String>,
     },
     AlsoLead {
         condition: Condition,

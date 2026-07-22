@@ -558,4 +558,19 @@ fn stop_eligibility_grammar() {
     // An uncovered condition shape declines -> stays Unsupported (honest).
     let e = a1("If this is the first turn of the game, this card cannot be stopped.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
+
+    // "Cannot be stopped by \"X\"" -> Unstoppable keyed on the stopper's name.
+    let e = a1("Cannot be stopped by \"Beg for Mercy\".");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["actions"][0]["by_name"], "Beg for Mercy");
+    assert_eq!(e["actions"][0]["by_order"], Value::Null);
+    // "(This card) cannot be stopped by <order>" for Lead/Follow Up/Finish.
+    let e = a1("This card cannot be stopped by Follow Ups.");
+    assert_eq!(e["actions"][0]["by_order"], "Followup");
+    assert_eq!(e["actions"][0]["by_name"], Value::Null);
+    // Conditional "… cannot be stopped by <order>".
+    let e = a1("When the Crowd Meter is 3 or greater, this card cannot be stopped by Leads.");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["actions"][0]["by_order"], "Lead");
 }

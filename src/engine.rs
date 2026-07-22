@@ -3497,9 +3497,13 @@ impl Engine {
     fn attack_is_unstoppable_by(&self, attacker: &str, attack: &Card, stopper: &Card) -> bool {
         let roll = self.roll_ctx.get(attacker);
         attack.effects.iter().any(|eff| {
-            eff.actions.iter().any(|a| {
-                matches!(a, Action::Unstoppable { by_order }
-                    if by_order.is_none() || *by_order == Some(stopper.play_order))
+            eff.actions.iter().any(|a| match a {
+                Action::Unstoppable { by_order, by_name } => {
+                    let order_ok = by_order.is_none() || *by_order == Some(stopper.play_order);
+                    let name_ok = by_name.as_ref().is_none_or(|n| *n == stopper.name);
+                    order_ok && name_ok
+                }
+                _ => false,
             }) && conditions::holds(&eff.condition, &self.state, attacker, roll)
         })
     }
@@ -7228,6 +7232,48 @@ mod even_unstoppable_stop_tests {
             }]
         }))
         .expect("attack")
+    }
+
+    /// A stop card of the given `name` carrying a plain `Stop{Finish}`.
+    fn named_stopper(name: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "s", "name": name, "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": "Finish", "atk_type": null,
+                             "source_is_skillreq": false, "even_unstoppable": false}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("named stopper")
+    }
+
+    /// A Finish attack declaring "Cannot be stopped by \"Beg for Mercy\"".
+    fn name_gated_attack() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Unstoppable", "by_order": null, "by_name": "Beg for Mercy"}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }]
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn name_gated_unstoppable_only_blocks_the_named_stopper() {
+        let engine = engine();
+        // The named stopper "Beg for Mercy" cannot stop it…
+        assert!(!engine.card_can_stop("A", &named_stopper("Beg for Mercy"), &name_gated_attack()));
+        // …but any other stopper still can.
+        assert!(engine.card_can_stop("A", &named_stopper("School Boy"), &name_gated_attack()));
     }
 
     #[test]

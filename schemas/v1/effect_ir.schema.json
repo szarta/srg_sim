@@ -4012,11 +4012,22 @@
               "type": "null"
             }
           ]
+        },
+        "by_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "@type",
-        "by_order"
+        "by_order",
+        "by_name"
       ],
       "type": "object"
     },
@@ -4076,5 +4087,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 63
+  "version": 64
 }
