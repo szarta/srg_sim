@@ -802,9 +802,11 @@ class Discard(IRNode):
     """Move ``count`` cards from a hand to its discard pile.
 
     ``who`` picks whose hand (SELF, or the opponent's for "your opponent discards
-    N"). The hand's **owner** always chooses which cards to drop — even on an
-    opponent-forced discard — unless ``random``, when the RNG picks. Mirrors
-    :class:`Bury`'s who/random split.
+    N"). The hand's **owner** normally chooses which cards to drop — even on an
+    opponent-forced discard — unless ``random``, when the RNG picks. ``choose``
+    flips that: the **effect owner** looks at the target's hand and picks ("Look at
+    your opponent's hand, choose 1 card and discard it"), only meaningful with
+    ``who == OPP``. Mirrors :class:`Bury`'s who/random/choose split.
     """
 
     selector: CardFilter = CardFilter()
@@ -815,6 +817,9 @@ class Discard(IRNode):
     per_who: Who = (
         Who.SELF
     )  # ...in `per_who`'s in-play board ("discard 1 for each Strike you have")
+    # The effect owner picks from the target's hand (Look at your opponent's hand …),
+    # rather than the hand owner shedding their own. Ignored when `random`.
+    choose: bool = False
 
 
 @dataclass(frozen=True)

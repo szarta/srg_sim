@@ -746,6 +746,12 @@ pub enum Action {
         random: bool,
         per: Option<CardFilter>,
         per_who: Who,
+        /// Like [`Action::Bury`]'s `choose`: the EFFECT OWNER looks at the target's
+        /// hand and picks which card(s) to discard ("Look at your opponent's hand,
+        /// choose 1 card and discard it"), rather than the hand owner shedding their
+        /// own. Only meaningful with `who == Opp`; ignored when `random`. schema v60
+        #[serde(default)]
+        choose: bool,
     },
     Search {
         filter: CardFilter,
@@ -1533,6 +1539,12 @@ pub enum IrNode {
         random: bool,
         per: Option<CardFilter>,
         per_who: Who,
+        /// Like [`Action::Bury`]'s `choose`: the EFFECT OWNER looks at the target's
+        /// hand and picks which card(s) to discard ("Look at your opponent's hand,
+        /// choose 1 card and discard it"), rather than the hand owner shedding their
+        /// own. Only meaningful with `who == Opp`; ignored when `random`. schema v60
+        #[serde(default)]
+        choose: bool,
     },
     Search {
         filter: CardFilter,

@@ -108,6 +108,21 @@ fn discard(count: i64, who: Who, random: bool, per: Option<CardFilter>, per_who:
         random,
         per,
         per_who,
+        choose: false,
+    }
+}
+
+/// "Look at your opponent's hand, choose N card(s) and discard it/them" — the
+/// effect owner picks from the opponent's hand. `selector` gates which cards.
+fn discard_choose(count: i64, selector: CardFilter) -> Action {
+    Action::Discard {
+        selector,
+        count,
+        who: Who::Opp,
+        random: false,
+        per: None,
+        per_who: Who::SelfSide,
+        choose: true,
     }
 }
 
@@ -810,6 +825,37 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Trigger::OnPlay,
                     vec![bury_hand(num(c, 2), Who::Opp, false, false)],
                     has_in_play(Who::SelfSide, filter, 1),
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Look-and-choose discard from the opponent's hand (effect owner picks).
+        // Filtered form ("... choose N Follow Up Strike and discard it") first.
+        rule(
+            &format!(
+                r"[Ll]ook at your opponent'?s hand, choose (\d+) (?:(Lead|Follow Up|Finish) )?{ATK}(?: cards?)? and discard (?:it|them)"
+            ),
+            |c| {
+                let filter = CardFilter {
+                    play_order: c.get(2).map(|m| order(m.as_str())),
+                    atk_type: Some(atk(&c[3])),
+                    ..Default::default()
+                };
+                Some(eff(
+                    on_hit(),
+                    vec![discard_choose(num(c, 1), filter)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"[Ll]ook at your opponent'?s hand, choose (\d+) cards? and discard (?:it|them)",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![discard_choose(num(c, 1), CardFilter::default())],
+                    Condition::Always,
                     Duration::Instant,
                 ))
             },

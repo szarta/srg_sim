@@ -1061,6 +1061,9 @@
         "@type": {
           "const": "Discard"
         },
+        "choose": {
+          "type": "boolean"
+        },
         "count": {
           "type": "integer"
         },
@@ -1094,7 +1097,8 @@
         "who",
         "random",
         "per",
-        "per_who"
+        "per_who",
+        "choose"
       ],
       "type": "object"
     },
@@ -4035,5 +4039,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": "59"
+  "version": 60
 }

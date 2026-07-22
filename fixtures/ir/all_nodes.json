@@ -157,6 +157,7 @@
   },
   {
     "@type": "Discard",
+    "choose": true,
     "count": 0,
     "per": null,
     "per_who": "SELF",

@@ -437,6 +437,7 @@
     "actions": [
       {
         "@type": "Discard",
+        "choose": false,
         "count": 2,
         "per": null,
         "per_who": "SELF",
@@ -900,6 +901,7 @@
     "actions": [
       {
         "@type": "Discard",
+        "choose": false,
         "count": 1,
         "per": null,
         "per_who": "SELF",
@@ -4100,6 +4102,7 @@
     "actions": [
       {
         "@type": "Discard",
+        "choose": false,
         "count": 2,
         "per": null,
         "per_who": "SELF",
@@ -4563,6 +4566,7 @@
     "actions": [
       {
         "@type": "Discard",
+        "choose": false,
         "count": 1,
         "per": null,
         "per_who": "SELF",
@@ -6891,6 +6895,7 @@
     "actions": [
       {
         "@type": "Discard",
+        "choose": false,
         "count": 1,
         "per": null,
         "per_who": "SELF",
@@ -8619,6 +8624,7 @@
     "actions": [
       {
         "@type": "Discard",
+        "choose": false,
         "count": 1,
         "per": {
           "@type": "CardFilter",
@@ -11397,6 +11403,7 @@
     "actions": [
       {
         "@type": "Discard",
+        "choose": false,
         "count": 1,
         "per": null,
         "per_who": "SELF",

@@ -185,6 +185,19 @@ fn hand_bury_grammar() {
         ("SELF".into(), 1, false, false, "HAND".into())
     );
 
+    // Look-and-choose discard from the opponent's hand (Discard{choose,who:OPP}).
+    let d = only_action("Look at your opponent's hand, choose 1 card and discard it.");
+    assert_eq!(d["@type"], "Discard");
+    assert_eq!(d["who"], "OPP");
+    assert_eq!(d["choose"], true);
+    assert_eq!(d["count"], 1);
+    // Filtered form carries the play-order + attack-type selector.
+    let d = only_action("Look at your opponent's hand, choose 1 Follow Up Strike and discard it.");
+    assert_eq!(d["@type"], "Discard");
+    assert_eq!(d["choose"], true);
+    assert_eq!(d["selector"]["play_order"], "Followup");
+    assert_eq!(d["selector"]["atk_type"], "Strike");
+
     // Each player: two Bury actions (SELF then OPP).
     let effs = parse_text(
         "Each player buries 1 card in their hand.",

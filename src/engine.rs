@@ -678,7 +678,7 @@ impl Engine {
         );
         let excess = self.state.players[key].hand.len() as i64 - cap;
         if excess > 0 {
-            self.discard_from_hand(key, excess as usize, false, None)?;
+            self.discard_from_hand(key, key, excess as usize, false, None)?;
         }
         Ok(())
     }
@@ -697,10 +697,18 @@ impl Engine {
     fn discard_from_hand(
         &mut self,
         key: &str,
+        chooser: &str,
         count: usize,
         random: bool,
         selector: Option<&crate::ir::CardFilter>,
     ) -> Eng<usize> {
+        // When the chooser is not the hand owner, the effect owner looks at the
+        // opponent's hand and picks the discard (mirrors `bury_from_hand`).
+        let point = if chooser == key {
+            "discard"
+        } else {
+            "discard_opp_hand"
+        };
         let filt = selector.cloned().unwrap_or_default();
         let mut dropped: Vec<Card> = Vec::new();
         for _ in 0..count {
@@ -716,7 +724,7 @@ impl Engine {
             let card = if random {
                 self.state.rng.reveal(&pool).cloned().unwrap()
             } else {
-                self.choose_discard(key, &pool)?
+                self.choose_discard(chooser, point, &pool)?
             };
             let hand = &mut self.state.players.get_mut(key).unwrap().hand;
             if let Some(pos) = hand.iter().position(|c| c.db_uuid == card.db_uuid) {
@@ -745,9 +753,9 @@ impl Engine {
         Ok(n)
     }
 
-    fn choose_discard(&mut self, key: &str, pool: &[Card]) -> Eng<Card> {
+    fn choose_discard(&mut self, chooser: &str, point: &str, pool: &[Card]) -> Eng<Card> {
         let legal = pool.iter().map(discard_option).collect();
-        let chosen = self.decide("discard", key, legal)?;
+        let chosen = self.decide(point, chooser, legal)?;
         Ok(find_by_uuid(pool, &chosen))
     }
 
@@ -971,7 +979,17 @@ impl Engine {
                 random,
                 per,
                 per_who,
-            } => self.act_discard(selector, *count, *who, *random, per.as_ref(), *per_who, key)?,
+                choose,
+            } => self.act_discard(
+                selector,
+                *count,
+                *who,
+                *random,
+                per.as_ref(),
+                *per_who,
+                *choose,
+                key,
+            )?,
             Action::Search {
                 filter,
                 dest,
@@ -1543,6 +1561,7 @@ impl Engine {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     fn act_discard(
         &mut self,
         selector: &CardFilter,
@@ -1551,6 +1570,7 @@ impl Engine {
         random: bool,
         per: Option<&CardFilter>,
         per_who: Who,
+        choose: bool,
         key: &str,
     ) -> Eng<()> {
         let target = self.target(who, key);
@@ -1568,8 +1588,16 @@ impl Engine {
                 );
                 return Ok(());
             }
-            let n =
-                self.discard_from_hand(&target, count.max(0) as usize, random, Some(selector))?;
+            // `choose` makes the effect owner pick from the target's hand (Look at
+            // your opponent's hand …); otherwise the hand owner sheds their own.
+            let chooser = if choose { key } else { target.as_str() };
+            let n = self.discard_from_hand(
+                &target,
+                chooser,
+                count.max(0) as usize,
+                random,
+                Some(selector),
+            )?;
             if n > 0 {
                 self.run_on_bury(&target, true, true)?; // effect-caused hand discard (Tommy)
             }
@@ -4083,7 +4111,7 @@ impl Engine {
     fn bump_draw(&mut self, key: &str) -> Eng<()> {
         let opp = self.state.opponent_of(key);
         if self.declares_static(&opp, |a| matches!(a, Action::BumpDrawReplace)) {
-            self.discard_from_hand(key, 1, false, None)?;
+            self.discard_from_hand(key, key, 1, false, None)?;
             Ok(())
         } else {
             self.draw(key, 1, DeckEnd::Top)
@@ -6464,6 +6492,7 @@ mod suppress_hand_loss_tests {
             random: true,
             per: None,
             per_who: Who::SelfSide,
+            choose: false,
         }
     }
 
@@ -6493,6 +6522,7 @@ mod suppress_hand_loss_tests {
             random: true,
             per: None,
             per_who: Who::SelfSide,
+            choose: false,
         };
         engine.apply_action(&opp_discard, "B", "").unwrap();
         assert_eq!(
