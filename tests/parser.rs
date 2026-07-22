@@ -398,3 +398,52 @@ fn in_play_removal_grammar() {
     assert_eq!(e["trigger"]["skill"], "Power");
     assert_eq!(e["actions"][0]["@type"], "RemoveFromPlay");
 }
+
+/// Recur-from-discard grammar (task #122): selector-filtered add/shuffle/put + gates.
+#[test]
+fn recur_from_discard_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // AddFromDiscard: any / order (plural) / atk / name-substring.
+    assert_eq!(
+        a1("Add 1 card from your discard pile to your hand.")["actions"][0]["@type"],
+        "AddFromDiscard"
+    );
+    let e = a1("Add 2 Finishes from your discard pile to your hand.");
+    assert_eq!(e["actions"][0]["filter"]["play_order"], "Finish");
+    let e = a1("Add 1 card with \"Steel Chain\" in the name from your discard pile to your hand.");
+    assert_eq!(e["actions"][0]["filter"]["name_contains"][0], "Steel Chain");
+    // "stop" has no CardFilter attribute -> Unsupported.
+    assert_eq!(
+        a1("Add 1 stop from your discard pile to your hand.")["actions"][0]["@type"],
+        "Unsupported"
+    );
+
+    // "Take N ... shuffle them into your deck" == ShuffleIntoDeck.
+    assert_eq!(
+        a1("Take 2 cards from your discard pile and shuffle them into your deck.")["actions"][0]
+            ["@type"],
+        "ShuffleIntoDeck"
+    );
+
+    // Filtered RecurToDeckTop.
+    let e = a1("Put 1 Submission from your discard pile on top of your deck.");
+    assert_eq!(e["actions"][0]["@type"], "RecurToDeckTop");
+    assert_eq!(e["actions"][0]["selector"]["atk_type"], "Submission");
+
+    // Conditional (HasInPlay gate, OnPlay).
+    let e = a1("If you have another Submission in play, shuffle 2 cards from your discard pile into your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnPlay");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["filter"]["atk_type"], "Submission");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
+    let e = a1(
+        "If you have another Follow Up in play, add 1 Finish from your discard pile to your hand.",
+    );
+    assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
+    assert_eq!(e["actions"][0]["filter"]["play_order"], "Finish");
+}

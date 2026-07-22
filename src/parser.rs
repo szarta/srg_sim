@@ -89,6 +89,43 @@ fn cf_order(o: PlayOrder) -> CardFilter {
     }
 }
 
+/// Quoted names from a `with "X" [or "Y"] in the name` phrase (case-insensitive
+/// OR-substring — same convention as the name-substring override family).
+fn quoted_names(text: &str) -> Vec<String> {
+    static Q: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#""([^"]+)""#).unwrap());
+    Q.captures_iter(text).map(|c| c[1].to_owned()).collect()
+}
+
+fn cf_name(names: Vec<String>) -> CardFilter {
+    CardFilter {
+        name_contains: names,
+        ..Default::default()
+    }
+}
+
+/// The card-selector inside a recur/discard clause ("N cards", "N Finish", "N cards
+/// with \"X\" in the name", "N Follow Up Strike"). `None` if the descriptor is one we
+/// don't model (e.g. "stop", which has no CardFilter attribute).
+fn recur_filter(desc: &str) -> Option<CardFilter> {
+    let d = desc.trim();
+    if d.eq_ignore_ascii_case("card") || d.eq_ignore_ascii_case("cards") {
+        return Some(CardFilter::default());
+    }
+    if d.contains("in the name") {
+        let names = quoted_names(d);
+        return (!names.is_empty()).then(|| cf_name(names));
+    }
+    // count_filter lowercases + strips a trailing 's' ("Strikes"->"strike"); the
+    // `es`-fallback covers sibilant plurals it misses ("Finishes"->"finish").
+    count_filter(d).or_else(|| d.strip_suffix("es").and_then(count_filter))
+}
+
+/// "If you have a(nother) `<desc>` in play, …" as a `HasInPlay(SELF, …, ≥1)` gate.
+/// `None` for descriptors with no CardFilter (e.g. "stop").
+fn has_in_play_desc(desc: &str) -> Option<Condition> {
+    Some(has_in_play(Who::SelfSide, count_filter(desc.trim())?, 1))
+}
+
 fn draw(n: i64, who: Who, source: DeckEnd, per: Option<CardFilter>, per_who: Who) -> Action {
     Action::Draw {
         cap: None,
@@ -968,26 +1005,18 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Recur from discard -> hand (task #122). Broadened from cards/atk-only to a
+        // selector: "card(s)" (any), order/atk (count_filter), or name-substring
+        // ("with \"X\" in the name"). `recur_filter` declines shapes we don't model
+        // (e.g. "stop"), which then fall through to Unsupported. AddFromDiscard adds
+        // ONE (count ignored, as the prior cards/atk rules did).
         rule(
-            r"Add (\d+) cards? from your discard pile to your hand",
-            |_| {
-                Some(eff(
-                    on_hit(),
-                    vec![Action::AddFromDiscard {
-                        filter: CardFilter::default(),
-                    }],
-                    Condition::Always,
-                    Duration::Instant,
-                ))
-            },
-        ),
-        rule(
-            &format!(r"Add (\d+) {ATK} from your discard pile to your hand"),
+            r"Add (\d+) (.+?) from your discard pile to your hand",
             |c| {
                 Some(eff(
                     on_hit(),
                     vec![Action::AddFromDiscard {
-                        filter: cf_atk(atk(&c[2])),
+                        filter: recur_filter(&c[2])?,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -1007,16 +1036,73 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "Take N cards from your discard pile and shuffle them into your deck" — an
+        // alias phrasing of the ShuffleIntoDeck recur.
         rule(
-            r"Put (?:up to )?(\d+) cards? from your discard pile on top of your deck",
+            r"Take (\d+) cards? from your discard pile and shuffle them into your deck",
+            |_| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::ShuffleIntoDeck {
+                        selector: CardFilter::default(),
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Recur from discard -> deck top, with the same selector as the hand recur.
+        rule(
+            r"Put (?:up to )?(\d+) (.+?) from your discard pile on top of your deck",
             |c| {
                 Some(eff(
                     on_hit(),
                     vec![Action::RecurToDeckTop {
-                        selector: CardFilter::default(),
+                        selector: recur_filter(&c[2])?,
                         count: num(c, 1),
                     }],
                     Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Conditional recur: "If you have a(nother) <X> in play, add/shuffle/put N …".
+        rule(
+            r"If you have a(?:nother)? (.+?) in play, add (\d+) (.+?) from your discard pile to your hand",
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![Action::AddFromDiscard {
+                        filter: recur_filter(&c[3])?,
+                    }],
+                    has_in_play_desc(&c[1])?,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"If you have a(?:nother)? (.+?) in play, shuffle (?:up to )?(\d+) (.+?) from your discard pile into your deck",
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![Action::ShuffleIntoDeck {
+                        selector: recur_filter(&c[3])?,
+                    }],
+                    has_in_play_desc(&c[1])?,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"If you have a(?:nother)? (.+?) in play, put (?:up to )?(\d+) (.+?) from your discard pile on top of your deck",
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![Action::RecurToDeckTop {
+                        selector: recur_filter(&c[3])?,
+                        count: num(c, 2),
+                    }],
+                    has_in_play_desc(&c[1])?,
                     Duration::Instant,
                 ))
             },

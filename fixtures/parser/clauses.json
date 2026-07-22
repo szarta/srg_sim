@@ -574,9 +574,19 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Add 2 Submissions from your discard pile to your hand.",
-              "reason": "no grammar match"
+              "@type": "AddFromDiscard",
+              "filter": {
+                "@type": "CardFilter",
+                "atk_type": "Submission",
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
@@ -592,7 +602,13 @@
           "raw_clause": "Add 2 Submissions from your discard pile to your hand.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
           }
         }
       ],
@@ -7911,7 +7927,7 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 117,
+    "grammar": 118,
     "override": 58,
     "top_unparsed": [
       [
@@ -7955,10 +7971,6 @@
         1
       ],
       [
-        "Add N <S>s from your discard pile to your hand.",
-        1
-      ],
-      [
         "If you have another Lead in play, shuffle N <S> from your discard pile into your deck and draw N card.",
         1
       ],
@@ -7993,10 +8005,14 @@
       [
         "Take N cards from your discard pile, shuffle them into your deck, then draw N cards.",
         1
+      ],
+      [
+        "Search your deck or discard pile for N <S>s:",
+        1
       ]
     ],
     "total": 217,
-    "unsupported": 42
+    "unsupported": 41
   },
   "coverage_records": [
     {
