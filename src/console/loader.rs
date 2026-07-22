@@ -8,7 +8,7 @@
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_yaml_ng::Value;
-use srg_core::cards::{Card, Competitor, Deck, EntranceCard};
+use srg_core::cards::{Card, Competitor, Deck, EntranceCard, SKILL_REQUIREMENT_TAG};
 use srg_core::ir::{AtkType, PlayOrder, Skill};
 use srg_core::parser::{enrich_deck, load_overrides, Overrides};
 use srg_core::skills::Skills;
@@ -218,6 +218,17 @@ fn card_tags(rec: &Value) -> Vec<String> {
     {
         tags.push("Spotlight".to_owned());
     }
+    // A card carrying a `requirements:` block is a "Skill Requirement card"; surface
+    // it as a synthetic tag so the stop-resolution `by_skillreq` gate can read it off
+    // the stopper without a new `Card` field (mirrors the `spotlight` fold above).
+    if rec
+        .get("requirements")
+        .and_then(Value::as_sequence)
+        .is_some_and(|r| !r.is_empty())
+        && !tags.iter().any(|t| t == SKILL_REQUIREMENT_TAG)
+    {
+        tags.push(SKILL_REQUIREMENT_TAG.to_owned());
+    }
     tags
 }
 
@@ -372,6 +383,8 @@ mod tests {
 - {card_type: MainDeckCard, db_uuid: M-2b, name: Dupe, deck_card_number: 2, atk_type: Grapple, play_order: Followup}
 - {card_type: MainDeckCard, db_uuid: M-3, name: Spot Lead, deck_card_number: 3,
    atk_type: Submission, play_order: Lead, spotlight: true}
+- {card_type: MainDeckCard, db_uuid: M-4, name: Req Lead, deck_card_number: 4,
+   atk_type: Strike, play_order: Lead, requirements: [{min_strike: 5}]}
 - {card_type: SpectacleCard, db_uuid: S-1, name: Ignore Me}
 "#;
 
@@ -410,6 +423,20 @@ mod tests {
         // A non-spotlight card gets no synthetic tag.
         let plain = idx.main_card(&Value::String("Lead Strike".into())).unwrap();
         assert!(!plain.tags.contains(&"Spotlight".to_owned()));
+    }
+
+    #[test]
+    fn requirements_block_folds_into_a_skill_requirement_tag() {
+        let idx = index();
+        let req = idx.main_card(&Value::String("Req Lead".into())).unwrap();
+        assert!(
+            req.tags.contains(&SKILL_REQUIREMENT_TAG.to_owned()),
+            "got {:?}",
+            req.tags
+        );
+        // A card with no requirements gets no synthetic tag.
+        let plain = idx.main_card(&Value::String("Lead Strike".into())).unwrap();
+        assert!(!plain.tags.contains(&SKILL_REQUIREMENT_TAG.to_owned()));
     }
 
     #[test]

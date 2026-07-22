@@ -582,4 +582,17 @@ fn stop_eligibility_grammar() {
     assert_eq!(e["condition"]["vs"], "OPP_SAME");
     assert_eq!(e["actions"][0]["@type"], "Stop");
     assert_eq!(e["actions"][0]["atk_type"], "Strike");
+
+    // "cannot be stopped by Skill Requirement cards" (bare / This card / Your cards)
+    // all parse to Unstoppable{by_skillreq}; the engine scopes by where it's authored.
+    for text in [
+        "Cannot be stopped by Skill Requirement cards.",
+        "Cannot be stopped by cards with Skill Requirements.",
+        "Your cards cannot be stopped by cards with Skill Requirements.",
+    ] {
+        let e = a1(text);
+        assert_eq!(e["actions"][0]["@type"], "Unstoppable", "{text:?}");
+        assert_eq!(e["actions"][0]["by_skillreq"], true, "{text:?}");
+        assert_eq!(e["actions"][0]["by_order"], Value::Null, "{text:?}");
+    }
 }

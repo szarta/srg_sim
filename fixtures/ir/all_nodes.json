@@ -674,7 +674,8 @@
   {
     "@type": "Unstoppable",
     "by_name": null,
-    "by_order": null
+    "by_order": null,
+    "by_skillreq": false
   },
   {
     "@type": "Unsupported",

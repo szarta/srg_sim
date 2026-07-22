@@ -15,6 +15,11 @@ use std::collections::BTreeMap;
 /// A legal main deck holds exactly one card of each number 1..=30.
 pub const DECK_SIZE: usize = 30;
 
+/// Synthetic tag marking a card that carries a `requirements:` block (a "Skill
+/// Requirement card"). Folded in at load time by the loader so the stop-resolution
+/// `Unstoppable { by_skillreq }` gate can read it off a stopper's tags.
+pub const SKILL_REQUIREMENT_TAG: &str = "SkillRequirement";
+
 /// Attack type implied by a main-deck card number (DESIGN.md §2).
 ///
 /// `n mod 3`: 1 → Strike, 2 → Grapple, 0 → Submission. Cards come in triples

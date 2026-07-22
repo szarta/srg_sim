@@ -5270,7 +5270,8 @@
             {
               "@type": "Unstoppable",
               "by_name": null,
-              "by_order": "Followup"
+              "by_order": "Followup",
+              "by_skillreq": false
             }
           ],
           "condition": {

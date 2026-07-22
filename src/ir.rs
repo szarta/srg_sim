@@ -1190,6 +1190,12 @@ pub enum Action {
         /// schema v64
         #[serde(default)]
         by_name: Option<String>,
+        /// "Cannot be stopped by Skill Requirement cards" — unstoppable against a
+        /// stopper that carries a skill requirement (AND-ed with the other gates).
+        /// Authored on a main-deck card = this card; on a gimmick/entrance = every
+        /// one of the owner's cards. schema v65
+        #[serde(default)]
+        by_skillreq: bool,
     },
     AlsoLead {
         condition: Condition,
@@ -2002,6 +2008,12 @@ pub enum IrNode {
         /// schema v64
         #[serde(default)]
         by_name: Option<String>,
+        /// "Cannot be stopped by Skill Requirement cards" — unstoppable against a
+        /// stopper that carries a skill requirement (AND-ed with the other gates).
+        /// Authored on a main-deck card = this card; on a gimmick/entrance = every
+        /// one of the owner's cards. schema v65
+        #[serde(default)]
+        by_skillreq: bool,
     },
     AlsoLead {
         condition: Condition,

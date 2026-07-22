@@ -4022,12 +4022,16 @@
               "type": "null"
             }
           ]
+        },
+        "by_skillreq": {
+          "type": "boolean"
         }
       },
       "required": [
         "@type",
         "by_order",
-        "by_name"
+        "by_name",
+        "by_skillreq"
       ],
       "type": "object"
     },
@@ -4087,5 +4091,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 64
+  "version": 65
 }

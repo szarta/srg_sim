@@ -1260,6 +1260,9 @@ class Unstoppable(IRNode):
     #: "Cannot be stopped by \"X\"" — unstoppable against a stopper named X
     #: (AND-ed with by_order). schema v64
     by_name: str | None = None
+    #: "Cannot be stopped by Skill Requirement cards" — unstoppable against a
+    #: stopper carrying a skill requirement. schema v65
+    by_skillreq: bool = False
 
 
 @dataclass(frozen=True)

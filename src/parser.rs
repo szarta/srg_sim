@@ -362,7 +362,21 @@ fn norm_stop_part(part: &str) -> &str {
 }
 
 fn unstoppable(by_order: Option<PlayOrder>, by_name: Option<String>) -> Action {
-    Action::Unstoppable { by_order, by_name }
+    Action::Unstoppable {
+        by_order,
+        by_name,
+        by_skillreq: false,
+    }
+}
+
+/// "Cannot be stopped by Skill Requirement cards" — an `Unstoppable` keyed on the
+/// stopper carrying a skill requirement.
+fn unstoppable_skillreq() -> Action {
+    Action::Unstoppable {
+        by_order: None,
+        by_name: None,
+        by_skillreq: true,
+    }
 }
 
 /// Parse a stopper play-order word ("Follow Ups" / "Leads" / "Finishes", with an
@@ -1387,6 +1401,21 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // "(This card / Your cards) cannot be stopped by Skill Requirement cards" —
+        // unstoppable against a stopper carrying a skill requirement. Authored on a
+        // main-deck card it shields that card; on a gimmick/entrance ("Your cards …")
+        // the engine's standing scan applies it to every one of the owner's cards.
+        rule(
+            r"(?:This card |Your cards )?[Cc]annot be stopped by (?:cards with [Ss]kill [Rr]equirements|[Ss]kill [Rr]equirement cards)",
+            |_| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![unstoppable_skillreq()],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         // "If/When <cond>, this card cannot be stopped [by <order>]": a condition-gated
         // Unstoppable. The guard is parsed by `stop_condition`; the engine evaluates it
         // from the card owner's side at stop time.

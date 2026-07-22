@@ -3487,25 +3487,25 @@ impl Engine {
         })
     }
 
-    /// Whether `attack` is `Unstoppable` against `stopper` from `attacker`'s view: an
-    /// `Unstoppable` action whose `by_order` matches the stopper's play order (or
-    /// `None` = anything) inside an effect whose condition currently holds for the
-    /// attacker. Gates a conditional "If/When … this card cannot be stopped" (the
-    /// condition is read from the CARD OWNER = attacker's side, with their turn roll
-    /// context so "if you rolled 7 / the same skill" resolve). `Condition::Always`
-    /// (the plain "Cannot be stopped by Follow Ups") always holds.
+    /// Whether `attack` is `Unstoppable` against `stopper` from `attacker`'s view: a
+    /// matching `Unstoppable` action (see [`unstoppable_gate`]) inside an effect whose
+    /// condition holds for the attacker. Two scopes: the attack's OWN effects ("this
+    /// card cannot be stopped", read with the attacker's turn roll context so "if you
+    /// rolled 7 / the same skill" resolve) OR the attacker's gimmick/entrance
+    /// declarations ("Your cards cannot be stopped by …" — every one of their cards).
+    /// A main-deck card's self-scoped `Unstoppable` never leaks to its owner's other
+    /// attacks because the gimmick scan excludes in-play cards.
     fn attack_is_unstoppable_by(&self, attacker: &str, attack: &Card, stopper: &Card) -> bool {
         let roll = self.roll_ctx.get(attacker);
-        attack.effects.iter().any(|eff| {
-            eff.actions.iter().any(|a| match a {
-                Action::Unstoppable { by_order, by_name } => {
-                    let order_ok = by_order.is_none() || *by_order == Some(stopper.play_order);
-                    let name_ok = by_name.as_ref().is_none_or(|n| *n == stopper.name);
-                    order_ok && name_ok
-                }
-                _ => false,
-            }) && conditions::holds(&eff.condition, &self.state, attacker, roll)
-        })
+        let holds_for = |eff: &Effect, roll: Option<&RollContext>| {
+            eff.actions.iter().any(|a| unstoppable_gate(a, stopper))
+                && conditions::holds(&eff.condition, &self.state, attacker, roll)
+        };
+        attack.effects.iter().any(|eff| holds_for(eff, roll))
+            || self
+                .gimmick_standing_effects(attacker)
+                .iter()
+                .any(|eff| matches!(eff.trigger, Trigger::Static) && holds_for(eff, None))
     }
 
     /// Whether `defender` declares that `stopper` (by its deck number) cannot act as a
@@ -4837,6 +4837,28 @@ fn attacker_meets_tag_gates(eff: &Effect, attack: &Card) -> bool {
         Action::StopRequiresTag { tag } => attack.tags.contains(tag),
         _ => true,
     })
+}
+
+/// Whether an `Unstoppable` action shields the attack against `stopper`: the
+/// stopper must satisfy every set gate (play order, name, skill-requirement).
+/// Non-`Unstoppable` actions never match.
+fn unstoppable_gate(a: &Action, stopper: &Card) -> bool {
+    let Action::Unstoppable {
+        by_order,
+        by_name,
+        by_skillreq,
+    } = a
+    else {
+        return false;
+    };
+    let order_ok = by_order.is_none() || *by_order == Some(stopper.play_order);
+    let name_ok = by_name.as_ref().is_none_or(|n| *n == stopper.name);
+    let skillreq_ok = !*by_skillreq
+        || stopper
+            .tags
+            .iter()
+            .any(|t| t == crate::cards::SKILL_REQUIREMENT_TAG);
+    order_ok && name_ok && skillreq_ok
 }
 
 /// Whether `card` is a legal play given the player's own persistent board (the
@@ -7287,6 +7309,72 @@ mod even_unstoppable_stop_tests {
         assert!(!engine.card_can_stop("A", &stopper("Finish", false), &crowd_gated_attack()));
         // …but an even_unstoppable stop still catches it even when unstoppable.
         assert!(engine.card_can_stop("A", &stopper("Finish", true), &crowd_gated_attack()));
+    }
+
+    /// A stop card carrying the synthetic SkillRequirement tag.
+    fn skillreq_stopper() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "sr", "name": "sr", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": ["SkillRequirement"], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": "Finish", "atk_type": null,
+                             "source_is_skillreq": false, "even_unstoppable": false}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("sr stopper")
+    }
+
+    /// An Unstoppable{by_skillreq} effect (as an authored gimmick/card clause).
+    fn skillreq_unstoppable(source: &str) -> Value {
+        json!({
+            "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+            "actions": [{"@type": "Unstoppable", "by_order": null, "by_name": null, "by_skillreq": true}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "u", "source": source, "optional": false
+        })
+    }
+
+    /// A Finish attack that itself declares "Cannot be stopped by Skill Requirement cards".
+    fn skillreq_attack() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [skillreq_unstoppable("card")]
+        }))
+        .expect("sr attack")
+    }
+
+    #[test]
+    fn skillreq_unstoppable_blocks_only_skill_requirement_stoppers() {
+        let engine = engine();
+        // A skill-requirement stopper cannot stop it…
+        assert!(!engine.card_can_stop("A", &skillreq_stopper(), &skillreq_attack()));
+        // …but a stopper without the requirement still can.
+        assert!(engine.card_can_stop("A", &named_stopper("School Boy"), &skillreq_attack()));
+    }
+
+    #[test]
+    fn player_scope_skillreq_from_gimmick_shields_every_attack() {
+        let mut engine = engine();
+        // B (the attacker, opposite defender A) declares "Your cards cannot be stopped
+        // by Skill Requirement cards" on their gimmick — a player-scope declaration.
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .competitor
+            .effects
+            .push(serde_json::from_value(skillreq_unstoppable("gimmick")).unwrap());
+        // A PLAIN attack (no own Unstoppable) is now unstoppable vs a skill-req stopper…
+        assert!(!engine.card_can_stop("A", &skillreq_stopper(), &attack(false)));
+        // …but an ordinary stopper still stops it (the shield is only vs skill-req).
+        assert!(engine.card_can_stop("A", &stopper("Finish", false), &attack(false)));
     }
 }
 
