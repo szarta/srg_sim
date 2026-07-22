@@ -472,3 +472,46 @@ fn stop_filter_grammar() {
     assert_eq!(e["condition"]["filter"]["is_stop"], true);
     assert_eq!(e["actions"][0]["@type"], "Draw");
 }
+
+/// Stop-eligibility grammar (task #120): "stop any" target robustness + gates.
+#[test]
+fn stop_eligibility_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Trailing "card" and a repeated leading "any" both normalize away.
+    let e = a1("Stop any Grapple card.");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+    assert_eq!(e["actions"][0]["atk_type"], "Grapple");
+    assert_eq!(e["actions"][0]["order"], Value::Null);
+    let e = a1("Stop any Lead Submission or any Finish Submission.");
+    assert_eq!(e["actions"].as_array().unwrap().len(), 2);
+    assert_eq!(e["actions"][0]["order"], "Lead");
+    assert_eq!(e["actions"][1]["order"], "Finish");
+
+    // "does not have … in play" -> opponent count < 1.
+    let e = a1("If your opponent does not have a Lead Grapple in play, stop any Lead Grapple.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["who"], "OPP");
+    assert_eq!(e["condition"]["cmp"], "<");
+    assert_eq!(e["condition"]["count"], 1);
+    assert_eq!(e["condition"]["filter"]["play_order"], "Lead");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+
+    // Crowd-Meter "N or less" gate.
+    let e = a1("If the Crowd Meter is 2 or less, stop any Lead Submission or Finish Submission.");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["condition"]["cmp"], "<=");
+    assert_eq!(e["condition"]["value"], 2);
+    assert_eq!(e["actions"].as_array().unwrap().len(), 2);
+
+    // Compound crowd-Ge AND opponent-has-another.
+    let e = a1("If the Crowd Meter is 1 or greater and your opponent has another Submission in play, stop any Submission.");
+    assert_eq!(e["condition"]["@type"], "And");
+    assert_eq!(e["condition"]["items"][0]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["condition"]["items"][1]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["items"][1]["who"], "OPP");
+}

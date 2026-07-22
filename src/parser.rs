@@ -337,13 +337,26 @@ fn count_filter(text: &str) -> Option<CardFilter> {
     })
 }
 
+/// Normalize one "stop any …" target part to a bare `<order?> <type>`: drop a
+/// leading "any " (repeated in "Lead Submission or any Finish Submission") and a
+/// trailing " card"/" cards" ("stop any Grapple card"), so STOP_PART_RE matches.
+fn norm_stop_part(part: &str) -> &str {
+    let p = part.trim();
+    let p = p.strip_prefix("any ").unwrap_or(p);
+    let p = p
+        .strip_suffix(" cards")
+        .or_else(|| p.strip_suffix(" card"))
+        .unwrap_or(p);
+    p.trim()
+}
+
 /// Parse a "stop any …" target into `Stop` actions, or `None` if any part is not
 /// a plain `<type>` / `<order> <type>` (handles the "X or Y" two-target form).
 fn stop_targets(text: &str) -> Option<Vec<Action>> {
     static OR_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+or\s+").unwrap());
     let mut stops = Vec::new();
     for part in OR_RE.split(text.trim()) {
-        let m = STOP_PART_RE.captures(part.trim())?;
+        let m = STOP_PART_RE.captures(norm_stop_part(part))?;
         stops.push(Action::Stop {
             order: m.get(1).map(|g| order(g.as_str())),
             atk_type: Some(atk(&m[2])),
@@ -1554,6 +1567,54 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Condition::CrowdMeterCompare {
                         cmp: Comparator::Ge,
                         value: num(c, 1),
+                    },
+                )
+            },
+        ),
+        rule(
+            r"If the [Cc]rowd [Mm]eter is (\d+) or less,? stop any (.+)",
+            |c| {
+                stop_eff(
+                    &c[2],
+                    Condition::CrowdMeterCompare {
+                        cmp: Comparator::Le,
+                        value: num(c, 1),
+                    },
+                )
+            },
+        ),
+        // "does not have a <order type> in play" → the opponent's count of that
+        // filter is 0 (`< 1`); the stop is live only when they hold none.
+        rule(
+            r"If your opponent does not have (?:an? )?(.+?) in play, stop any (.+)",
+            |c| {
+                let filter = count_filter(&c[1])?;
+                stop_eff(
+                    &c[2],
+                    Condition::HasInPlay {
+                        who: Who::Opp,
+                        filter,
+                        count: 1,
+                        cmp: Comparator::Lt,
+                    },
+                )
+            },
+        ),
+        rule(
+            &format!(
+                r"If the [Cc]rowd [Mm]eter is (\d+) or greater and your opponent has another {ATK} in play, stop any (.+)"
+            ),
+            |c| {
+                stop_eff(
+                    &c[3],
+                    Condition::And {
+                        items: vec![
+                            Condition::CrowdMeterCompare {
+                                cmp: Comparator::Ge,
+                                value: num(c, 1),
+                            },
+                            has_in_play(Who::Opp, cf_atk(atk(&c[2])), 1),
+                        ],
                     },
                 )
             },
