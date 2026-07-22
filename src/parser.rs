@@ -412,6 +412,12 @@ fn stop_condition(text: &str) -> Option<Condition> {
         ))
         .unwrap()
     });
+    static SKILL_GE_DELTA: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(
+            r"^your {SK}(?: skill)? is at least (\d+) greater than your opponent'?s {SK}(?: skill)?$"
+        ))
+        .unwrap()
+    });
     static HAND_SELF: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"^you have (\d+) or more cards in your hand$").unwrap());
     static HAND_OPP: LazyLock<Regex> = LazyLock::new(|| {
@@ -455,6 +461,17 @@ fn stop_condition(text: &str) -> Option<Condition> {
             who: Who::SelfSide,
             vs: Vs::OppSame,
             value: None,
+            vs_skill: (s1 != s2).then_some(s2),
+        });
+    }
+    if let Some(c) = SKILL_GE_DELTA.captures(t) {
+        let (s1, s2) = (skill(&c[1]), skill(&c[3]));
+        return Some(Condition::SkillCompare {
+            skill: s1,
+            cmp: Comparator::Ge,
+            who: Who::SelfSide,
+            vs: Vs::OppSame,
+            value: Some(c[2].parse().ok()?),
             vs_skill: (s1 != s2).then_some(s2),
         });
     }
@@ -1733,6 +1750,27 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         vs: Vs::OppSame,
                         value: None,
                         vs_skill: None,
+                    },
+                )
+            },
+        ),
+        // "at least N greater than your opponent's <S>" = `self >= opp + N` (Ge,
+        // value=N); the engine's SkillCompare vs-opponent branch adds the delta.
+        rule(
+            &format!(
+                r"If your {SK}(?: skill)? is at least (\d+) greater than your opponent'?s {SK}(?: skill)?, stop any (.+)"
+            ),
+            |c| {
+                let (s1, s2) = (skill(&c[1]), skill(&c[3]));
+                stop_eff(
+                    &c[4],
+                    Condition::SkillCompare {
+                        skill: s1,
+                        cmp: Comparator::Ge,
+                        who: Who::SelfSide,
+                        vs: Vs::OppSame,
+                        value: Some(num(c, 2)),
+                        vs_skill: (s1 != s2).then_some(s2),
                     },
                 )
             },

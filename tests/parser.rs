@@ -573,4 +573,13 @@ fn stop_eligibility_grammar() {
     assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
     assert_eq!(e["actions"][0]["@type"], "Unstoppable");
     assert_eq!(e["actions"][0]["by_order"], "Lead");
+
+    // "at least N greater than your opponent's <S>" -> SkillCompare Ge + value delta.
+    let e = a1("If your Submission skill is at least 3 greater than your opponent's Submission skill, stop any Strike.");
+    assert_eq!(e["condition"]["@type"], "SkillCompare");
+    assert_eq!(e["condition"]["cmp"], ">=");
+    assert_eq!(e["condition"]["value"], 3);
+    assert_eq!(e["condition"]["vs"], "OPP_SAME");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+    assert_eq!(e["actions"][0]["atk_type"], "Strike");
 }

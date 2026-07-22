@@ -258,8 +258,11 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             let right = if *vs == Vs::Value {
                 value.unwrap_or(0)
             } else {
+                // vs-opponent with a `value` delta: "at least N greater than your
+                // opponent's <S>" is `self >= opp + N` (Ge, value=N). `None` = +0,
+                // keeping the plain "greater than" form (Gt, value=None) unchanged.
                 let opp = state.opponent_of(&subject);
-                skill_value(state, &opp, vs_skill.unwrap_or(*skill))
+                skill_value(state, &opp, vs_skill.unwrap_or(*skill)) + value.unwrap_or(0)
             };
             cmp_apply(*cmp, left, right)
         }
