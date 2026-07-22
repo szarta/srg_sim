@@ -8465,6 +8465,305 @@
       }
     }
   ],
+  "c3a4f97f97024dc7aba6e6321cf47bd2": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [],
+              "label": "keep the standard Crowd Meter"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "SwapCrowdMeter",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "MaxHandSize",
+                          "delta": -4,
+                          "duration": "WHILE_IN_PLAY",
+                          "who": "SELF"
+                        },
+                        {
+                          "@type": "MaxHandSize",
+                          "delta": -4,
+                          "duration": "WHILE_IN_PLAY",
+                          "who": "OPP"
+                        },
+                        {
+                          "@type": "DisqualificationRule",
+                          "enabled": false,
+                          "scope": "MATCH"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Cards in the discard pile cannot be moved to any other location.",
+                          "reason": "no grammar match"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Special finish: a player escapes the cage when they have no playable cards in hand and no cards in their deck.",
+                          "reason": "no grammar match"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "WHILE_IN_PLAY",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "installed crowd meter match-type rule",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "Static"
+                      }
+                    }
+                  ],
+                  "name": "Steel Cage Match"
+                }
+              ],
+              "label": "Steel Cage Match"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "SwapCrowdMeter",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "DisqualificationRule",
+                          "enabled": false,
+                          "scope": "MATCH"
+                        },
+                        {
+                          "@type": "CountOutRule",
+                          "enabled": false,
+                          "scope": "MATCH"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "The Crowd Meter is considered +2 for your card effects (Psycho Circus levels 1-5).",
+                          "reason": "no grammar match"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Psycho Circus level 0 stipulation: at the start of the match, search your deck for 3 cards and put them on top of your deck.",
+                          "reason": "no grammar match"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "WHILE_IN_PLAY",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "installed crowd meter match-type rule",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "Static"
+                      }
+                    }
+                  ],
+                  "name": "Psycho Circus"
+                }
+              ],
+              "label": "Psycho Circus"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "SwapCrowdMeter",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "DisqualificationRule",
+                          "enabled": false,
+                          "scope": "MATCH"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Max Hand Size scales with the meter level: 10 at level 0 down to 5 at level 5.",
+                          "reason": "no grammar match"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Finish cards gain the added text \"Your opponent buries N cards in their hand\", where N equals the meter level.",
+                          "reason": "no grammar match"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Stipulation: when a card would be put in the discard pile it is instead randomly buried.",
+                          "reason": "no grammar match"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Special Finish: at the end of any turn if a player has 0 cards in their hand they lose the match via Count Out.",
+                          "reason": "no grammar match"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Starting hand size: 5.",
+                          "reason": "no grammar match"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "WHILE_IN_PLAY",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "installed crowd meter match-type rule",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "Static"
+                      }
+                    }
+                  ],
+                  "name": "Lumberjack Match"
+                }
+              ],
+              "label": "Lumberjack Match"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "SwapCrowdMeter",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "DisqualificationRule",
+                          "enabled": false,
+                          "scope": "MATCH"
+                        },
+                        {
+                          "@type": "CountOutRule",
+                          "enabled": false,
+                          "scope": "MATCH"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "WHILE_IN_PLAY",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "installed crowd meter match-type rule",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "Static"
+                      }
+                    }
+                  ],
+                  "name": "No DQ Match"
+                }
+              ],
+              "label": "No DQ Match"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "SwapCrowdMeter",
+                  "effects": [
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "CountOutRule",
+                          "enabled": false,
+                          "scope": "MATCH"
+                        },
+                        {
+                          "@type": "DisqualificationRule",
+                          "enabled": false,
+                          "scope": "MATCH"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "Non Submission Finishes do not cause a Finish roll.",
+                          "reason": "no grammar match"
+                        },
+                        {
+                          "@type": "Unsupported",
+                          "raw_text": "When you hit a Submission, shuffle 1 Submission from your discard pile into your deck.",
+                          "reason": "no grammar match"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "WHILE_IN_PLAY",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "installed crowd meter match-type rule",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "Static"
+                      }
+                    }
+                  ],
+                  "name": "Submission Match"
+                }
+              ],
+              "label": "Submission Match"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "at the start of a single or a tag team match: you may replace all crowd meter cards with either: steel cage, psycho circus, lumberjack, no dq, or submission match crowd meters",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "StartOfMatch"
+      }
+    }
+  ],
   "c4a11e2c1cc1428c82d6c46a4f1f3646": [
     {
       "@type": "Effect",

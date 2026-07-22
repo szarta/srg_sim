@@ -792,6 +792,12 @@
                 "$ref": "#/$defs/DisqualificationRule"
               },
               {
+                "$ref": "#/$defs/CountOutRule"
+              },
+              {
+                "$ref": "#/$defs/SwapCrowdMeter"
+              },
+              {
                 "$ref": "#/$defs/SwitchRolledSkill"
               },
               {
@@ -941,6 +947,26 @@
       "required": [
         "@type",
         "who"
+      ],
+      "type": "object"
+    },
+    "CountOutRule": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CountOutRule"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "scope": {
+          "$ref": "#/$defs/DqScope"
+        }
+      },
+      "required": [
+        "@type",
+        "enabled",
+        "scope"
       ],
       "type": "object"
     },
@@ -1379,6 +1405,12 @@
               },
               {
                 "$ref": "#/$defs/DisqualificationRule"
+              },
+              {
+                "$ref": "#/$defs/CountOutRule"
+              },
+              {
+                "$ref": "#/$defs/SwapCrowdMeter"
               },
               {
                 "$ref": "#/$defs/SwitchRolledSkill"
@@ -2209,6 +2241,12 @@
         },
         {
           "$ref": "#/$defs/DisqualificationRule"
+        },
+        {
+          "$ref": "#/$defs/CountOutRule"
+        },
+        {
+          "$ref": "#/$defs/SwapCrowdMeter"
         },
         {
           "$ref": "#/$defs/SwitchRolledSkill"
@@ -3863,6 +3901,29 @@
       ],
       "type": "object"
     },
+    "SwapCrowdMeter": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "SwapCrowdMeter"
+        },
+        "effects": {
+          "items": {
+            "$ref": "#/$defs/Effect"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "effects",
+        "name"
+      ],
+      "type": "object"
+    },
     "SwapHandDiscard": {
       "additionalProperties": false,
       "properties": {
@@ -3974,5 +4035,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 58
+  "version": "59"
 }

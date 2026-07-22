@@ -1067,6 +1067,28 @@ pub enum Action {
         enabled: bool,
         scope: DqScope,
     },
+    /// A Static match-rule toggle for count-out losses: `enabled=false` = "no count
+    /// outs" (a player emptying deck+hand no longer loses/wins by count-out), a
+    /// standing rule several Crowd Meter match types impose (No DQ / Submission /
+    /// Psycho Circus / Liger's Den). `scope` reuses [`DqScope`] (Match = every
+    /// player; SelfSide = only the owner). Read at the count-out point in
+    /// `draw_for_turn`, never executed as a mutation. schema v59
+    CountOutRule {
+        enabled: bool,
+        scope: DqScope,
+    },
+    /// Install a Crowd Meter match-type's standing rules (GM Calace V1: "replace all
+    /// Crowd Meter cards with … Steel Cage / Psycho Circus / Lumberjack / No DQ /
+    /// Submission"). Appends `effects` to the owner's **Entrance** effects so they are
+    /// always-active — a global match condition that survives the owner's gimmick
+    /// being blanked (unlike [`Action::AbsorbGimmick`], which installs into the
+    /// blankable competitor gimmick). `name` labels the swapped-in match type in the
+    /// log. Authored under a `StartOfMatch` `Choice`; clauses the engine cannot yet
+    /// model are carried as explicit `Unsupported` sub-effects. schema v59
+    SwapCrowdMeter {
+        name: String,
+        effects: Vec<Effect>,
+    },
     /// A Static meta-comparison override "for card effects": the declaring player's
     /// `domain` comparison vs the opponent always resolves as `order` regardless of
     /// the real values (RaRa Perre "skills considered higher"; Theo V2 "considered
@@ -1831,6 +1853,28 @@ pub enum IrNode {
     DisqualificationRule {
         enabled: bool,
         scope: DqScope,
+    },
+    /// A Static match-rule toggle for count-out losses: `enabled=false` = "no count
+    /// outs" (a player emptying deck+hand no longer loses/wins by count-out), a
+    /// standing rule several Crowd Meter match types impose (No DQ / Submission /
+    /// Psycho Circus / Liger's Den). `scope` reuses [`DqScope`] (Match = every
+    /// player; SelfSide = only the owner). Read at the count-out point in
+    /// `draw_for_turn`, never executed as a mutation. schema v59
+    CountOutRule {
+        enabled: bool,
+        scope: DqScope,
+    },
+    /// Install a Crowd Meter match-type's standing rules (GM Calace V1: "replace all
+    /// Crowd Meter cards with … Steel Cage / Psycho Circus / Lumberjack / No DQ /
+    /// Submission"). Appends `effects` to the owner's **Entrance** effects so they are
+    /// always-active — a global match condition that survives the owner's gimmick
+    /// being blanked (unlike [`Action::AbsorbGimmick`], which installs into the
+    /// blankable competitor gimmick). `name` labels the swapped-in match type in the
+    /// log. Authored under a `StartOfMatch` `Choice`; clauses the engine cannot yet
+    /// model are carried as explicit `Unsupported` sub-effects. schema v59
+    SwapCrowdMeter {
+        name: String,
+        effects: Vec<Effect>,
     },
     /// A Static meta-comparison override "for card effects": the declaring player's
     /// `domain` comparison vs the opponent always resolves as `order` regardless of

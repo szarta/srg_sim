@@ -1061,6 +1061,9 @@ impl Engine {
             Action::PlayExtraCard { .. } => self.act_play_extra_card(key),
             Action::Choice { options } => self.act_choice(options, key, source)?,
             Action::AbsorbGimmick { effects } => self.act_absorb_gimmick(effects, key),
+            Action::SwapCrowdMeter { name, effects } => {
+                self.act_swap_crowd_meter(name, effects, key)
+            }
             // Passive markers, read where they matter (roll-off, finish, hand-cap,
             // count_in_play), never executed as a mutation — a no-op, not Unsupported.
             Action::LowestRollWins
@@ -1071,6 +1074,7 @@ impl Engine {
             | Action::AlsoLead { .. }
             | Action::DoubleFinishIfBumped
             | Action::DisqualificationRule { .. }
+            | Action::CountOutRule { .. }
             | Action::ConsideredCompare { .. }
             | Action::SuppressOpponentDraw
             | Action::SuppressSelfHandLoss
@@ -2903,6 +2907,65 @@ impl Engine {
         disabled
     }
 
+    /// True iff `loser` is currently immune to a count-out loss: some active
+    /// `CountOutRule` disables count-outs for them and none re-enables it — the
+    /// count-out analogue of [`is_dq_immune`](Self::is_dq_immune), scanning the same
+    /// declaration sources (a `Match`-scoped rule from any owner reaches everyone; a
+    /// `SelfSide` rule reaches only its owner). A blanked gimmick declares nothing.
+    fn is_count_out_immune(&self, loser: &str) -> bool {
+        let mut disabled = false;
+        let owners: Vec<String> = self.state.players.keys().cloned().collect();
+        for owner in &owners {
+            for (effects, active) in self.state.declaration_sources(owner) {
+                if !active {
+                    continue;
+                }
+                for eff in effects {
+                    if !matches!(eff.trigger, Trigger::Static) {
+                        continue;
+                    }
+                    for action in &eff.actions {
+                        let Action::CountOutRule { enabled, scope } = action else {
+                            continue;
+                        };
+                        let applies = *scope == DqScope::Match || owner == loser;
+                        if !applies || !conditions::holds(&eff.condition, &self.state, owner, None)
+                        {
+                            continue;
+                        }
+                        if *enabled {
+                            return false;
+                        }
+                        disabled = true;
+                    }
+                }
+            }
+        }
+        disabled
+    }
+
+    /// Swap the Crowd Meter to a match type (GM Calace V1): append `effects` to the
+    /// owner's Entrance effects, where they become always-active standing rules (a
+    /// global match condition, unaffected by the owner's gimmick being blanked). The
+    /// `Unsupported` sub-effects among them stay inert but surface the unmodeled
+    /// clauses. Mirrors [`act_copy_entrance`](Self::act_copy_entrance)'s entrance-extend.
+    fn act_swap_crowd_meter(&mut self, name: &str, effects: &[Effect], key: &str) {
+        let installed = effects.len();
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .entrance
+            .effects
+            .extend(effects.iter().cloned());
+        self.log_effect(
+            key,
+            "SwapCrowdMeter",
+            None,
+            json!({"name": name, "effects": installed}),
+        );
+    }
+
     /// Grant one more turn action this turn ("you may play an additional card");
     /// consumed by the turn loop, reset each turn.
     fn act_play_extra_card(&mut self, key: &str) {
@@ -4584,6 +4647,13 @@ impl Engine {
     fn draw_for_turn(&mut self, key: &str) -> Eng<bool> {
         let player = &self.state.players[key];
         if player.deck.is_empty() && player.hand.is_empty() {
+            if self.is_count_out_immune(key) {
+                // "No Count Outs" (a Crowd Meter match type): emptying deck+hand no
+                // longer ends the match — there is simply nothing to draw. Play
+                // continues (the win must come from a Finish instead).
+                self.log_effect(key, "CountOutVoided", None, Value::Null);
+                return Ok(true);
+            }
             self.win(key, "count_out");
             return Ok(false);
         }
@@ -4824,6 +4894,8 @@ fn action_name(action: &Action) -> &'static str {
         Action::ChooseName { .. } => "ChooseName",
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
+        Action::CountOutRule { .. } => "CountOutRule",
+        Action::SwapCrowdMeter { .. } => "SwapCrowdMeter",
         Action::ConsideredCompare { .. } => "ConsideredCompare",
         Action::SuppressOpponentDraw => "SuppressOpponentDraw",
         Action::SuppressSelfHandLoss => "SuppressSelfHandLoss",
@@ -8350,5 +8422,126 @@ mod el_ganso_ruso_tests {
         engine.state.players.get_mut("A").unwrap().entrance.effects = vec![onroll_draw()];
         engine.act_copy_entrance(Who::SelfSide, "A"); // SELF -> no-op (no doubling)
         assert_eq!(engine.state.players["A"].entrance.effects.len(), 1);
+    }
+}
+
+#[cfg(test)]
+mod gm_calace_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::{json, Value};
+
+    fn heuristic_pair() -> Policies {
+        Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        )
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(heuristic_pair()),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// A Static match-rule declaration carrying `actions`, shaped like the effects a
+    /// `SwapCrowdMeter` installs into the Entrance.
+    fn static_rule(actions: Value) -> Effect {
+        serde_json::from_value(json!({
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": actions,
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "match rule", "source": "gimmick", "optional": false
+        }))
+        .unwrap()
+    }
+
+    /// The No DQ Match bundle: Match-scoped DQ and count-out rules both disabled.
+    fn no_dq_rules() -> Vec<Effect> {
+        vec![static_rule(json!([
+            {"@type": "DisqualificationRule", "enabled": false, "scope": "MATCH"},
+            {"@type": "CountOutRule", "enabled": false, "scope": "MATCH"}
+        ]))]
+    }
+
+    #[test]
+    fn swap_installs_rules_into_the_owners_entrance() {
+        let mut engine = engine();
+        let effects = no_dq_rules();
+        engine.act_swap_crowd_meter("No DQ Match", &effects, "A");
+        assert_eq!(
+            engine.state.players["A"].entrance.effects.len(),
+            1,
+            "installed into A's entrance"
+        );
+        assert!(
+            engine.state.players["B"].entrance.effects.is_empty(),
+            "opponent's entrance untouched"
+        );
+    }
+
+    #[test]
+    fn a_match_scoped_swap_reaches_both_players() {
+        let mut engine = engine();
+        let effects = no_dq_rules();
+        engine.act_swap_crowd_meter("No DQ Match", &effects, "A"); // installed on A only
+        for who in ["A", "B"] {
+            assert!(engine.is_dq_immune(who), "{who} DQ-immune");
+            assert!(engine.is_count_out_immune(who), "{who} count-out-immune");
+        }
+    }
+
+    #[test]
+    fn no_count_outs_survives_an_empty_deck_and_hand() {
+        // Baseline: emptying deck+hand on a won turn ends the match by count-out.
+        let mut base = engine();
+        base.state.players.get_mut("A").unwrap().deck.clear();
+        base.state.players.get_mut("A").unwrap().hand.clear();
+        assert!(
+            !base.draw_for_turn("A").unwrap(),
+            "no rule: count-out ends the game"
+        );
+
+        // With a No Count Outs match type installed, play continues instead.
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().deck.clear();
+        engine.state.players.get_mut("A").unwrap().hand.clear();
+        let effects = no_dq_rules();
+        engine.act_swap_crowd_meter("No DQ Match", &effects, "A");
+        assert!(
+            engine.draw_for_turn("A").unwrap(),
+            "No Count Outs: play continues with nothing to draw"
+        );
+    }
+
+    #[test]
+    fn steel_cage_caps_both_players_hands() {
+        let mut engine = engine();
+        // Steel Cage "Max Handsize: 6" = a -4 delta from the base 10 on BOTH players.
+        let effects = vec![static_rule(json!([
+            {"@type": "MaxHandSize", "delta": -4, "who": "SELF", "duration": "WHILE_IN_PLAY"},
+            {"@type": "MaxHandSize", "delta": -4, "who": "OPP", "duration": "WHILE_IN_PLAY"}
+        ]))];
+        engine.act_swap_crowd_meter("Steel Cage Match", &effects, "A");
+        assert_eq!(engine.state.effective_hand_cap("A", HAND_CAP, None), 6);
+        assert_eq!(engine.state.effective_hand_cap("B", HAND_CAP, None), 6);
     }
 }

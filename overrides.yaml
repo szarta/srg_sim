@@ -8114,3 +8114,211 @@ b70afdfa287e4ca6be73ee9f03c863ea:
   raw_clause: copy your target's entrance or your 1st turn roll is +6
   source: gimmick
   optional: false
+
+# General Manager John Calace (V1) (top-96) — Crowd Meter swap (schema v59:
+# SwapCrowdMeter + CountOutRule). "At the start of a Single or a Tag Team match:
+# You may replace all Crowd Meter cards with either: Steel Cage, Psycho Circus,
+# Lumberjack, No DQ, or Submission Match Crowd Meters." Modeled as a StartOfMatch
+# optional Choice: index 0 = keep the standard Crowd Meter (the parity-safe default
+# the HeuristicPolicy takes; GM Calace had no modeled effect before, so this holds
+# current behavior). Each swap branch installs that match type's standing rules via
+# SwapCrowdMeter into GM Calace's Entrance (always-active, survives a gimmick blank;
+# Match-scoped DQ/CountOut rules reach both players). Base max hand size is 10, so
+# "Max Hand Size: N" installs a MaxHandSize delta of N-10 on BOTH players (Who has no
+# BOTH, so one SELF + one OPP node). "All Finish rolls are +meter" is the standard
+# Crowd Meter behavior already, so no node. Clauses the engine cannot yet model are
+# carried as explicit Unsupported sub-effects (discard-immobility, the special
+# finishes, Lumberjack per-level scaling / bury-N, Psycho Circus 'considered +2' /
+# level-0 tutor, Submission finish-roll suppression / recur).
+c3a4f97f97024dc7aba6e6321cf47bd2:
+- '@type': Effect
+  trigger:
+    '@type': StartOfMatch
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: keep the standard Crowd Meter
+      actions: []
+    - '@type': ChoiceOption
+      label: Steel Cage Match
+      actions:
+      - '@type': SwapCrowdMeter
+        name: Steel Cage Match
+        effects:
+        - '@type': Effect
+          actions:
+          - '@type': MaxHandSize
+            delta: -4
+            who: SELF
+            duration: WHILE_IN_PLAY
+          - '@type': MaxHandSize
+            delta: -4
+            who: OPP
+            duration: WHILE_IN_PLAY
+          - '@type': DisqualificationRule
+            enabled: false
+            scope: MATCH
+          - '@type': Unsupported
+            raw_text: Cards in the discard pile cannot be moved to any other location.
+            reason: no grammar match
+          - '@type': Unsupported
+            raw_text: 'Special finish: a player escapes the cage when they have no playable cards in hand
+              and no cards in their deck.'
+            reason: no grammar match
+          condition:
+            '@type': Always
+          duration: WHILE_IN_PLAY
+          frequency:
+            '@type': FrequencyGuard
+            kind: UNLIMITED
+            n: null
+          optional: false
+          raw_clause: installed crowd meter match-type rule
+          source: gimmick
+          trigger:
+            '@type': Static
+    - '@type': ChoiceOption
+      label: Psycho Circus
+      actions:
+      - '@type': SwapCrowdMeter
+        name: Psycho Circus
+        effects:
+        - '@type': Effect
+          actions:
+          - '@type': DisqualificationRule
+            enabled: false
+            scope: MATCH
+          - '@type': CountOutRule
+            enabled: false
+            scope: MATCH
+          - '@type': Unsupported
+            raw_text: The Crowd Meter is considered +2 for your card effects (Psycho Circus levels 1-5).
+            reason: no grammar match
+          - '@type': Unsupported
+            raw_text: 'Psycho Circus level 0 stipulation: at the start of the match, search your deck
+              for 3 cards and put them on top of your deck.'
+            reason: no grammar match
+          condition:
+            '@type': Always
+          duration: WHILE_IN_PLAY
+          frequency:
+            '@type': FrequencyGuard
+            kind: UNLIMITED
+            n: null
+          optional: false
+          raw_clause: installed crowd meter match-type rule
+          source: gimmick
+          trigger:
+            '@type': Static
+    - '@type': ChoiceOption
+      label: Lumberjack Match
+      actions:
+      - '@type': SwapCrowdMeter
+        name: Lumberjack Match
+        effects:
+        - '@type': Effect
+          actions:
+          - '@type': DisqualificationRule
+            enabled: false
+            scope: MATCH
+          - '@type': Unsupported
+            raw_text: 'Max Hand Size scales with the meter level: 10 at level 0 down to 5 at level 5.'
+            reason: no grammar match
+          - '@type': Unsupported
+            raw_text: Finish cards gain the added text "Your opponent buries N cards in their hand", where
+              N equals the meter level.
+            reason: no grammar match
+          - '@type': Unsupported
+            raw_text: 'Stipulation: when a card would be put in the discard pile it is instead randomly
+              buried.'
+            reason: no grammar match
+          - '@type': Unsupported
+            raw_text: 'Special Finish: at the end of any turn if a player has 0 cards in their hand they
+              lose the match via Count Out.'
+            reason: no grammar match
+          - '@type': Unsupported
+            raw_text: 'Starting hand size: 5.'
+            reason: no grammar match
+          condition:
+            '@type': Always
+          duration: WHILE_IN_PLAY
+          frequency:
+            '@type': FrequencyGuard
+            kind: UNLIMITED
+            n: null
+          optional: false
+          raw_clause: installed crowd meter match-type rule
+          source: gimmick
+          trigger:
+            '@type': Static
+    - '@type': ChoiceOption
+      label: No DQ Match
+      actions:
+      - '@type': SwapCrowdMeter
+        name: No DQ Match
+        effects:
+        - '@type': Effect
+          actions:
+          - '@type': DisqualificationRule
+            enabled: false
+            scope: MATCH
+          - '@type': CountOutRule
+            enabled: false
+            scope: MATCH
+          condition:
+            '@type': Always
+          duration: WHILE_IN_PLAY
+          frequency:
+            '@type': FrequencyGuard
+            kind: UNLIMITED
+            n: null
+          optional: false
+          raw_clause: installed crowd meter match-type rule
+          source: gimmick
+          trigger:
+            '@type': Static
+    - '@type': ChoiceOption
+      label: Submission Match
+      actions:
+      - '@type': SwapCrowdMeter
+        name: Submission Match
+        effects:
+        - '@type': Effect
+          actions:
+          - '@type': CountOutRule
+            enabled: false
+            scope: MATCH
+          - '@type': DisqualificationRule
+            enabled: false
+            scope: MATCH
+          - '@type': Unsupported
+            raw_text: Non Submission Finishes do not cause a Finish roll.
+            reason: no grammar match
+          - '@type': Unsupported
+            raw_text: When you hit a Submission, shuffle 1 Submission from your discard pile into your
+              deck.
+            reason: no grammar match
+          condition:
+            '@type': Always
+          duration: WHILE_IN_PLAY
+          frequency:
+            '@type': FrequencyGuard
+            kind: UNLIMITED
+            n: null
+          optional: false
+          raw_clause: installed crowd meter match-type rule
+          source: gimmick
+          trigger:
+            '@type': Static
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'at the start of a single or a tag team match: you may replace all crowd meter cards with
+    either: steel cage, psycho circus, lumberjack, no dq, or submission match crowd meters'
+  source: gimmick
+  optional: false

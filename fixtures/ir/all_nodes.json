@@ -181,6 +181,16 @@
     "scope": "SELF"
   },
   {
+    "@type": "CountOutRule",
+    "enabled": false,
+    "scope": "MATCH"
+  },
+  {
+    "@type": "SwapCrowdMeter",
+    "effects": [],
+    "name": "Steel Cage Match"
+  },
+  {
     "@type": "DoubleFinishIfBumped"
   },
   {
