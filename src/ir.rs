@@ -411,6 +411,11 @@ pub struct CardFilter {
     /// with 'X' in the text". OR of substrings; empty = no constraint.
     #[serde(default)]
     pub text_contains: Vec<String>,
+    /// "a stop" / "N stops" / "for each stop …" — constrain to STOP cards (a card
+    /// whose effects declare a [`Action::Stop`]). `Some(true)` = must be a stop,
+    /// `Some(false)` = must NOT be a stop, `None` = unconstrained. schema v62
+    #[serde(default)]
+    pub is_stop: Option<bool>,
 }
 
 /// The frequency guard attached to every [`Effect`].

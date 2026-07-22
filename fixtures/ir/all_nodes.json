@@ -4,6 +4,7 @@
     "filter": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -22,13 +23,13 @@
   },
   {
     "@type": "StopCountsOrderAs",
-    "attack_order": "Finish",
-    "as_order": "Followup"
+    "as_order": "Followup",
+    "attack_order": "Finish"
   },
   {
     "@type": "SuppressStop",
-    "number_min": 19,
-    "number_max": 21
+    "number_max": 21,
+    "number_min": 19
   },
   {
     "@type": "Always"
@@ -47,6 +48,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -97,6 +99,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -112,6 +115,7 @@
   {
     "@type": "CardFilter",
     "atk_type": null,
+    "is_stop": null,
     "name": null,
     "name_contains": [],
     "number": null,
@@ -136,6 +140,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -165,6 +170,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -236,11 +242,11 @@
     "@type": "FinishRollBonus",
     "delta": 0,
     "either": false,
-    "when_base_le": null,
-    "when_base_ge": null,
     "per": null,
     "per_who": "SELF",
     "per_zone": "IN_PLAY",
+    "when_base_ge": null,
+    "when_base_le": null,
     "when_skill": null
   },
   {
@@ -277,6 +283,7 @@
     "filter": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -294,6 +301,7 @@
     "filter": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -312,6 +320,7 @@
     "filter": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -329,6 +338,7 @@
     "filter": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -521,6 +531,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -538,6 +549,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -593,6 +605,7 @@
     "filter": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -619,6 +632,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -707,6 +721,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": null,
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,
@@ -851,6 +866,7 @@
     "selector": {
       "@type": "CardFilter",
       "atk_type": "Grapple",
+      "is_stop": null,
       "name": null,
       "name_contains": [],
       "number": null,

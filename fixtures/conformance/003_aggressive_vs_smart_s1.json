@@ -617,7 +617,8 @@
                   "play_orders": [],
                   "raw": null,
                   "tag": null,
-                  "text_contains": []
+                  "text_contains": [],
+                  "is_stop": null
                 },
                 "who": "OPP"
               },
@@ -670,7 +671,8 @@
                   "play_orders": [],
                   "raw": null,
                   "tag": null,
-                  "text_contains": []
+                  "text_contains": [],
+                  "is_stop": null
                 },
                 "who": "OPP"
               },
@@ -723,7 +725,8 @@
                   "play_orders": [],
                   "raw": null,
                   "tag": null,
-                  "text_contains": []
+                  "text_contains": [],
+                  "is_stop": null
                 },
                 "who": "OPP"
               },
@@ -1541,7 +1544,8 @@
                   "play_orders": [],
                   "raw": null,
                   "tag": null,
-                  "text_contains": []
+                  "text_contains": [],
+                  "is_stop": null
                 },
                 "who": "OPP"
               },
@@ -1594,7 +1598,8 @@
                   "play_orders": [],
                   "raw": null,
                   "tag": null,
-                  "text_contains": []
+                  "text_contains": [],
+                  "is_stop": null
                 },
                 "who": "OPP"
               },
@@ -1647,7 +1652,8 @@
                   "play_orders": [],
                   "raw": null,
                   "tag": null,
-                  "text_contains": []
+                  "text_contains": [],
+                  "is_stop": null
                 },
                 "who": "OPP"
               },

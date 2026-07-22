@@ -524,6 +524,16 @@
             }
           ]
         },
+        "is_stop": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "name": {
           "anyOf": [
             {
@@ -603,7 +613,8 @@
         "name",
         "raw",
         "name_contains",
-        "text_contains"
+        "text_contains",
+        "is_stop"
       ],
       "type": "object"
     },
@@ -4061,5 +4072,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 61
+  "version": 62
 }

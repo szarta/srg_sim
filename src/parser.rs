@@ -317,6 +317,14 @@ fn count_filter(text: &str) -> Option<CardFilter> {
             ..Default::default()
         });
     }
+    // "stop" / "stops": a stop-card constraint (has no atk/order). This flows
+    // through every caller — per-count draws/discards, HasInPlay gates, recur adds.
+    if t == "stop" {
+        return Some(CardFilter {
+            is_stop: Some(true),
+            ..Default::default()
+        });
+    }
     let play_order = match t {
         "lead" => PlayOrder::Lead,
         "follow up" => PlayOrder::Followup,
@@ -844,6 +852,35 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     on_roll(skill(&c[1]), Who::SelfSide),
                     vec![remove_opp(num(c, 2), CardFilter::default())],
                     Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "If your opponent has a <X> in play, …" (X via count_filter, incl. "stop").
+        rule(
+            r"If your opponent has a (.+?) in play, draw (\d+) cards?",
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![draw(
+                        num(c, 2),
+                        Who::SelfSide,
+                        DeckEnd::Top,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    has_in_play(Who::Opp, count_filter(&c[1])?, 1),
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"If your opponent has a (.+?) in play, choose (\d+) cards? your opponent has in play and discard (?:it|them)",
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![remove_opp(num(c, 2), CardFilter::default())],
+                    has_in_play(Who::Opp, count_filter(&c[1])?, 1),
                     Duration::Instant,
                 ))
             },

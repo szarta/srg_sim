@@ -536,6 +536,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -578,6 +579,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": "Submission",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -812,6 +814,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -917,6 +920,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -998,6 +1002,7 @@
               "per": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -1086,6 +1091,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -1194,6 +1200,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Submission",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -2744,6 +2751,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -2764,6 +2772,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -2915,6 +2924,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": "Grapple",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -2980,6 +2990,7 @@
                       "selector": {
                         "@type": "CardFilter",
                         "atk_type": null,
+                        "is_stop": null,
                         "name": null,
                         "name_contains": [],
                         "number": null,
@@ -3046,6 +3057,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": null,
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -3087,6 +3099,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": "Grapple",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3105,6 +3118,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Grapple",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -3144,6 +3158,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": "Submission",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3330,6 +3345,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3350,6 +3366,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3418,6 +3435,7 @@
                 "filter": {
                   "@type": "CardFilter",
                   "atk_type": "Strike",
+                  "is_stop": null,
                   "name": null,
                   "name_contains": [],
                   "number": null,
@@ -3436,6 +3454,7 @@
                 "filter": {
                   "@type": "CardFilter",
                   "atk_type": "Strike",
+                  "is_stop": null,
                   "name": null,
                   "name_contains": [],
                   "number": null,
@@ -3478,6 +3497,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3496,6 +3516,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Grapple",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -3560,6 +3581,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": "Submission",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3588,6 +3610,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Submission",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -3636,6 +3659,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Grapple",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -3730,6 +3754,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Submission",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -3778,6 +3803,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Strike",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -3817,6 +3843,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3832,6 +3859,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3912,6 +3940,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3928,6 +3957,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -3943,6 +3973,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -4069,6 +4100,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -4154,6 +4186,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -4403,6 +4436,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -4996,6 +5030,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -5039,6 +5074,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -5151,6 +5187,7 @@
               "per": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -5247,6 +5284,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Grapple",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -5299,6 +5337,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": null,
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -5417,6 +5456,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": "Grapple",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -5568,6 +5608,7 @@
                 "filter": {
                   "@type": "CardFilter",
                   "atk_type": "Strike",
+                  "is_stop": null,
                   "name": null,
                   "name_contains": [],
                   "number": null,
@@ -5586,6 +5627,7 @@
                 "filter": {
                   "@type": "CardFilter",
                   "atk_type": "Strike",
+                  "is_stop": null,
                   "name": null,
                   "name_contains": [],
                   "number": null,
@@ -5645,6 +5687,7 @@
                 "filter": {
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
+                  "is_stop": null,
                   "name": null,
                   "name_contains": [],
                   "number": null,
@@ -5663,6 +5706,7 @@
                 "filter": {
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
+                  "is_stop": null,
                   "name": null,
                   "name_contains": [],
                   "number": null,
@@ -5705,6 +5749,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -5728,6 +5773,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Submission",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -5782,6 +5828,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Submission",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -5876,6 +5923,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Strike",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -5963,6 +6011,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -5979,6 +6028,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -5994,6 +6044,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -6051,6 +6102,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -6129,6 +6181,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -6179,6 +6232,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -6550,6 +6604,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -6817,6 +6872,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": "Enjoy Everything",
                 "name_contains": [],
                 "number": null,
@@ -6866,6 +6922,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": null,
+              "is_stop": null,
               "name": "Enjoy Everything",
               "name_contains": [],
               "number": null,
@@ -6923,6 +6980,7 @@
                 "filter": {
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
+                  "is_stop": null,
                   "name": null,
                   "name_contains": [],
                   "number": null,
@@ -6941,6 +6999,7 @@
                 "filter": {
                   "@type": "CardFilter",
                   "atk_type": "Grapple",
+                  "is_stop": null,
                   "name": null,
                   "name_contains": [],
                   "number": null,
@@ -7009,6 +7068,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": "Strike",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7078,6 +7138,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": "Strike",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7142,6 +7203,7 @@
                       "selector": {
                         "@type": "CardFilter",
                         "atk_type": null,
+                        "is_stop": null,
                         "name": null,
                         "name_contains": [],
                         "number": null,
@@ -7157,6 +7219,7 @@
                       "selector": {
                         "@type": "CardFilter",
                         "atk_type": null,
+                        "is_stop": null,
                         "name": null,
                         "name_contains": [],
                         "number": null,
@@ -7172,6 +7235,7 @@
                       "selector": {
                         "@type": "CardFilter",
                         "atk_type": null,
+                        "is_stop": null,
                         "name": null,
                         "name_contains": [],
                         "number": null,
@@ -7227,6 +7291,7 @@
               "per": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7274,6 +7339,7 @@
               "per": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7358,6 +7424,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": "Strike",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7433,6 +7500,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7483,6 +7551,7 @@
               "per": {
                 "@type": "CardFilter",
                 "atk_type": "Strike",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7497,6 +7566,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7534,6 +7604,7 @@
               "per": {
                 "@type": "CardFilter",
                 "atk_type": "Strike",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7581,6 +7652,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": "Ready to Rumble",
                 "name_contains": [],
                 "number": null,
@@ -7596,6 +7668,7 @@
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": null,
+                "is_stop": null,
                 "name": "Ready to Rumble",
                 "name_contains": [],
                 "number": null,
@@ -7675,6 +7748,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": null,
+              "is_stop": null,
               "name": "Ready to Rumble",
               "name_contains": [],
               "number": null,
@@ -7723,6 +7797,7 @@
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Grapple",
+              "is_stop": null,
               "name": null,
               "name_contains": [],
               "number": null,
@@ -7756,6 +7831,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": "Strike",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,
@@ -7894,6 +7970,7 @@
               "selector": {
                 "@type": "CardFilter",
                 "atk_type": "Strike",
+                "is_stop": null,
                 "name": null,
                 "name_contains": [],
                 "number": null,

@@ -128,7 +128,20 @@ pub fn card_matches(card: &Card, filt: &CardFilter) -> bool {
     if !filt.name_contains.is_empty() && !any_substr_ci(&filt.name_contains, &card.name) {
         return false;
     }
+    if let Some(want) = filt.is_stop {
+        if card_is_stop(card) != want {
+            return false;
+        }
+    }
     !(!filt.text_contains.is_empty() && !any_substr_ci(&filt.text_contains, &card.raw_text))
+}
+
+/// A "stop card": one whose compiled effects declare a [`Action::Stop`] (mirrors
+/// the engine's `is_stop_card`).
+fn card_is_stop(card: &Card) -> bool {
+    card.effects
+        .iter()
+        .any(|eff| eff.actions.iter().any(|a| matches!(a, Action::Stop { .. })))
 }
 
 /// True iff `haystack` contains any of `needles` as a case-insensitive substring
@@ -342,5 +355,61 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             state.players[&subject].gimmick_flipped
         }
         Condition::DuringTurn { who } => state.active == who_key(state, owner, *who),
+    }
+}
+
+#[cfg(test)]
+mod is_stop_tests {
+    use super::card_matches;
+    use crate::cards::Card;
+    use crate::ir::CardFilter;
+    use serde_json::json;
+
+    fn card(is_stop: bool) -> Card {
+        // A minimal card; a stop card carries an effect with a Stop action.
+        let effects = if is_stop {
+            json!([{
+                "@type": "Effect", "trigger": {"@type": "OnPlay"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": null, "atk_type": "Strike",
+                    "source_is_skillreq": false}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "", "source": "card", "optional": false
+            }])
+        } else {
+            json!([])
+        };
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "c", "name": "c", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": effects
+        }))
+        .expect("card")
+    }
+
+    #[test]
+    fn is_stop_filter_matches_only_stop_cards() {
+        let stop = card(true);
+        let plain = card(false);
+        let want_stop = CardFilter {
+            is_stop: Some(true),
+            ..Default::default()
+        };
+        assert!(card_matches(&stop, &want_stop));
+        assert!(!card_matches(&plain, &want_stop));
+
+        // Some(false) = must NOT be a stop.
+        let want_non_stop = CardFilter {
+            is_stop: Some(false),
+            ..Default::default()
+        };
+        assert!(!card_matches(&stop, &want_non_stop));
+        assert!(card_matches(&plain, &want_non_stop));
+
+        // None = unconstrained (both match).
+        let any = CardFilter::default();
+        assert!(card_matches(&stop, &any));
+        assert!(card_matches(&plain, &any));
     }
 }

@@ -417,11 +417,10 @@ fn recur_from_discard_grammar() {
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Finish");
     let e = a1("Add 1 card with \"Steel Chain\" in the name from your discard pile to your hand.");
     assert_eq!(e["actions"][0]["filter"]["name_contains"][0], "Steel Chain");
-    // "stop" has no CardFilter attribute -> Unsupported.
-    assert_eq!(
-        a1("Add 1 stop from your discard pile to your hand.")["actions"][0]["@type"],
-        "Unsupported"
-    );
+    // "stop" is now a CardFilter constraint (is_stop) via the stop-filter enabler.
+    let e = a1("Add 1 stop from your discard pile to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
+    assert_eq!(e["actions"][0]["filter"]["is_stop"], true);
 
     // "Take N ... shuffle them into your deck" == ShuffleIntoDeck.
     assert_eq!(
@@ -446,4 +445,30 @@ fn recur_from_discard_grammar() {
     );
     assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Finish");
+}
+
+/// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
+/// per-count, recur, and HasInPlay-gated grammar.
+#[test]
+fn stop_filter_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Per-count draw for each stop you / your opponent have in play.
+    let e = a1("Draw 1 card for each stop you have in play.");
+    assert_eq!(e["actions"][0]["per"]["is_stop"], true);
+    assert_eq!(e["actions"][0]["per_who"], "SELF");
+    let e = a1("Draw 1 card for each stop your opponent has in play.");
+    assert_eq!(e["actions"][0]["per"]["is_stop"], true);
+    assert_eq!(e["actions"][0]["per_who"], "OPP");
+
+    // "If your opponent has a stop in play, draw N" -> HasInPlay(OPP, is_stop).
+    let e = a1("If your opponent has a stop in play, draw 2 cards.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["who"], "OPP");
+    assert_eq!(e["condition"]["filter"]["is_stop"], true);
+    assert_eq!(e["actions"][0]["@type"], "Draw");
 }

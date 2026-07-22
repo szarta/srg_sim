@@ -328,6 +328,9 @@ class CardFilter(IRNode):
     # OR of substrings; empty = no constraint. Pure substring ("Table" ⊂ "Stable").
     name_contains: tuple[str, ...] = ()
     text_contains: tuple[str, ...] = ()
+    # "a stop" / "for each stop …": constrain to STOP cards (effects declare a
+    # Stop action). True = must be a stop, False = must not, None = unconstrained.
+    is_stop: bool | None = None
 
 
 # ---------------------------------------------------------------------------
