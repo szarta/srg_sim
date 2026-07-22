@@ -399,7 +399,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
-        rule(r"Your Finish rolls? (?:is|are) \+(\d+)", |c| {
+        rule(r"Your Finish rolls? (?:is|are) ([+-]\d+)", |c| {
             Some(eff(
                 Trigger::Static,
                 finish_roll_bonus(num(c, 1)),
@@ -1227,9 +1227,13 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         // "If you roll <S> for your Finish roll, it is +N" — a rolled-skill-gated
-        // Finish bonus (self only). Delta is signed (a Finish rider can be -N).
+        // Finish bonus (self only). The consequent phrasing varies (it is / your roll
+        // is / your Finish roll is); the delta must be SIGNED (+N add / -N reduce) —
+        // a bare "N" would be a SET (different mechanic), left Unsupported.
         rule(
-            &format!(r"If you roll {SK} for your Finish roll, it is ([+-]?\d+)"),
+            &format!(
+                r"If you roll {SK} for your Finish roll, (?:it is|your roll is|your Finish roll is) ([+-]\d+)"
+            ),
             |c| {
                 Some(eff(
                     Trigger::Static,
@@ -1242,7 +1246,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         // "Your <S> skill is +N during Finish rolls" — a +N to the Finish roll when
         // that skill is rolled, i.e. the same rolled-skill-gated FinishRollBonus.
         rule(
-            &format!(r"Your {SK} skill is ([+-]?\d+) during Finish [Rr]olls"),
+            &format!(r"Your {SK} skill is ([+-]\d+) during Finish [Rr]olls"),
             |c| {
                 Some(eff(
                     Trigger::Static,
@@ -1256,7 +1260,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         // Finish bonus. `count_filter` declines name-based / capped forms (they stay
         // Unsupported), so only the clean order/atk-in-play shapes match here.
         rule(
-            r"Your Finish rolls? (?:is|are) ([+-]?\d+) for each (?:other )?(.+?) you have in play",
+            r"Your Finish rolls? (?:is|are) ([+-]\d+) for each (?:other )?(.+?) you have in play",
             |c| {
                 let per = count_filter(&c[2])?;
                 Some(eff(
@@ -1278,9 +1282,9 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         ),
         // Base-roll-gated Finish bonus: "If your Finish roll is N or less/greater,
         // it is +M". The N-or-less/greater reads the BASE roll (skill stat pre-bonus);
-        // +M is a signed additive bonus (engine `finish_roll_bonus`).
+        // +M is a SIGNED additive bonus (a bare "M" is a SET, left Unsupported).
         rule(
-            r"If your Finish roll is (\d+) or less,? it is ([+-]?\d+)",
+            r"If your Finish roll is (\d+) or less,? (?:it is|your Finish roll is) ([+-]\d+)",
             |c| {
                 Some(eff(
                     Trigger::Static,
@@ -1300,7 +1304,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         rule(
-            r"If your Finish roll is (\d+) or greater,? it is ([+-]?\d+)",
+            r"If your Finish roll is (\d+) or greater,? (?:it is|your Finish roll is) ([+-]\d+)",
             |c| {
                 Some(eff(
                     Trigger::Static,
