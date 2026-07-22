@@ -363,3 +363,38 @@ fn finish_rider_grammar() {
         frb("Your Finish roll is +1 for each card you have in play with \"Slammin\" in the name.");
     assert_eq!(a["@type"], "Unsupported");
 }
+
+/// In-play-removal grammar (task #121): discard an opponent's in-play card.
+#[test]
+fn in_play_removal_grammar() {
+    fn parse1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "Discard N" and "Choose N ... and discard it/them" are the same RemoveFromPlay.
+    let e = parse1("Discard 1 card your opponent has in play.");
+    assert_eq!(e["actions"][0]["@type"], "RemoveFromPlay");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["count"], 1);
+    assert_eq!(e["actions"][0]["choose"], false);
+    let e = parse1("Choose 2 cards your opponent has in play and discard them.");
+    assert_eq!(e["actions"][0]["@type"], "RemoveFromPlay");
+    assert_eq!(e["actions"][0]["count"], 2);
+
+    // Order/atk-filtered form.
+    let e = parse1("Discard 1 Lead your opponent has in play.");
+    assert_eq!(e["actions"][0]["selector"]["play_order"], "Lead");
+
+    // Conditional (HasInPlay, OnPlay) and OnRoll-gated variants.
+    let e = parse1("If you have another Strike in play, choose 1 card your opponent has in play and discard it.");
+    assert_eq!(e["trigger"]["@type"], "OnPlay");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["filter"]["atk_type"], "Strike");
+    assert_eq!(e["actions"][0]["@type"], "RemoveFromPlay");
+    let e = parse1("When you roll Power for your turn roll, choose 1 card your opponent has in play and discard it.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Power");
+    assert_eq!(e["actions"][0]["@type"], "RemoveFromPlay");
+}

@@ -353,6 +353,28 @@ fn per_discard(n: i64, desc: &str) -> Option<Effect> {
     ))
 }
 
+/// Remove N `selector` card(s) from the opponent's board to their discard. The
+/// effect owner picks WHICH opponent card (`choose:false` + `who:Opp`), so "discard
+/// N" and "choose N … and discard it" are the same node.
+fn remove_opp(count: i64, selector: CardFilter) -> Action {
+    Action::RemoveFromPlay {
+        selector,
+        who: Who::Opp,
+        count,
+        choose: false,
+    }
+}
+
+/// The unconditional "Discard / choose N … your opponent has in play" (on-hit).
+fn remove_opp_play(count: i64, selector: CardFilter) -> Option<Effect> {
+    Some(eff(
+        on_hit(),
+        vec![remove_opp(count, selector)],
+        Condition::Always,
+        Duration::Instant,
+    ))
+}
+
 // ---------------------------------------------------------------------------
 // Grammar: (anchored regex, builder). Order is significant — first match wins.
 // ---------------------------------------------------------------------------
@@ -738,6 +760,57 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // --- In-play removal: discard an opponent's in-play card (task #121) ---
+        // "Discard N cards your opponent has in play" / "Choose N ... and discard
+        // it/them" are the same IR; the filtered form gates by order/atk.
+        rule(r"[Dd]iscard (\d+) cards? your opponent has in play", |c| {
+            remove_opp_play(num(c, 1), CardFilter::default())
+        }),
+        rule(
+            r"[Cc]hoose (\d+) cards? your opponent has in play and discard (?:it|them)",
+            |c| remove_opp_play(num(c, 1), CardFilter::default()),
+        ),
+        rule(r"[Dd]iscard (\d+) (.+?) your opponent has in play", |c| {
+            remove_opp_play(num(c, 1), count_filter(&c[2])?)
+        }),
+        // Conditional / OnRoll in-play removal.
+        rule(
+            &format!(
+                r"If you have another {ATK} in play, choose (\d+) cards? your opponent has in play and discard (?:it|them)"
+            ),
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![remove_opp(num(c, 2), CardFilter::default())],
+                    has_in_play(Who::SelfSide, cf_atk(atk(&c[1])), 1),
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"If you have another (Lead|Follow Up|Finish) in play, choose (\d+) cards? your opponent has in play and discard (?:it|them)",
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![remove_opp(num(c, 2), CardFilter::default())],
+                    has_in_play(Who::SelfSide, cf_order(order(&c[1])), 1),
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            &format!(
+                r"When you roll {SK} for your turn roll, choose (\d+) cards? your opponent has in play and discard (?:it|them)"
+            ),
+            |c| {
+                Some(eff(
+                    on_roll(skill(&c[1]), Who::SelfSide),
+                    vec![remove_opp(num(c, 2), CardFilter::default())],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // --- Hand disruption: bury from a player's HAND (task #39) ------------
         // Opponent-hand-bury. Random variants first (word-order both ways),
         // then the plain (hand owner sheds), then the look-and-choose form.
