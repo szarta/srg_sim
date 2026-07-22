@@ -1694,6 +1694,26 @@
         "per_zone": {
           "$ref": "#/$defs/CountZone"
         },
+        "when_base_ge": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "when_base_le": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "when_skill": {
           "anyOf": [
             {
@@ -1712,7 +1732,9 @@
         "either",
         "per",
         "per_who",
-        "per_zone"
+        "per_zone",
+        "when_base_le",
+        "when_base_ge"
       ],
       "type": "object"
     },
@@ -4039,5 +4061,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 60
+  "version": 61
 }

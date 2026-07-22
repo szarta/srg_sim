@@ -236,6 +236,8 @@
     "@type": "FinishRollBonus",
     "delta": 0,
     "either": false,
+    "when_base_le": null,
+    "when_base_ge": null,
     "per": null,
     "per_who": "SELF",
     "per_zone": "IN_PLAY",

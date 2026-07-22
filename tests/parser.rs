@@ -320,3 +320,30 @@ fn draw_rider_grammar() {
     assert_eq!(e["actions"][0]["n"], 2);
     assert_eq!(e["actions"][0]["who"], "SELF");
 }
+
+/// Finish-roll rider grammar (task #49): rolled-skill and base-roll-gated bonuses.
+#[test]
+fn finish_rider_grammar() {
+    fn frb(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()["actions"][0].clone()
+    }
+
+    // Self rolled-skill bonus (either=false, signed delta).
+    let a = frb("If you roll Grapple for your Finish roll, it is +1.");
+    assert_eq!(a["@type"], "FinishRollBonus");
+    assert_eq!(a["when_skill"], "Grapple");
+    assert_eq!(a["either"], false);
+    assert_eq!(a["delta"], 1);
+
+    // Base-roll gate: "N or less" -> when_base_le; "N or greater" -> when_base_ge.
+    let a = frb("If your Finish roll is 6 or less, it is +2.");
+    assert_eq!(a["when_base_le"], 6);
+    assert_eq!(a["when_base_ge"], Value::Null);
+    assert_eq!(a["delta"], 2);
+    let a = frb("If your Finish roll is 8 or greater, it is -3.");
+    assert_eq!(a["when_base_ge"], 8);
+    assert_eq!(a["when_base_le"], Value::Null);
+    assert_eq!(a["delta"], -3);
+}

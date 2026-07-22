@@ -1146,6 +1146,14 @@ pub enum Action {
         delta: i64,
         when_skill: Option<Skill>,
         either: bool,
+        /// Base-roll gate: the bonus applies only when the BASE Finish roll (the
+        /// rolled skill's stat, BEFORE combo/gimmick/Crowd-Meter bonuses) is
+        /// `<= when_base_le` and/or `>= when_base_ge` — "If your Finish roll is 6 or
+        /// less, it is +2". `None` = ungated. schema v61
+        #[serde(default)]
+        when_base_le: Option<i64>,
+        #[serde(default)]
+        when_base_ge: Option<i64>,
         /// When set, the bonus is `delta * (count of `per_who`'s cards in `per_zone`
         /// matching this filter)` — "your Finish roll is +1 for each Spotlight you
         /// have in play / in your opponent's discard pile". `None` = flat `delta`.
@@ -1939,6 +1947,14 @@ pub enum IrNode {
         delta: i64,
         when_skill: Option<Skill>,
         either: bool,
+        /// Base-roll gate: the bonus applies only when the BASE Finish roll (the
+        /// rolled skill's stat, BEFORE combo/gimmick/Crowd-Meter bonuses) is
+        /// `<= when_base_le` and/or `>= when_base_ge` — "If your Finish roll is 6 or
+        /// less, it is +2". `None` = ungated. schema v61
+        #[serde(default)]
+        when_base_le: Option<i64>,
+        #[serde(default)]
+        when_base_ge: Option<i64>,
         /// When set, the bonus is `delta * (count of `per_who`'s cards in `per_zone`
         /// matching this filter)` — "your Finish roll is +1 for each Spotlight you
         /// have in play / in your opponent's discard pile". `None` = flat `delta`.

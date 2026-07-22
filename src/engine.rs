@@ -263,6 +263,8 @@ fn negate_action(action: &Action) -> Action {
             delta,
             when_skill,
             either,
+            when_base_le,
+            when_base_ge,
             per,
             per_who,
             per_zone,
@@ -270,6 +272,8 @@ fn negate_action(action: &Action) -> Action {
             delta: -*delta,
             when_skill: *when_skill,
             either: *either,
+            when_base_le: *when_base_le,
+            when_base_ge: *when_base_ge,
             per: per.clone(),
             per_who: *per_who,
             per_zone: *per_zone,
@@ -3648,7 +3652,7 @@ impl Engine {
                 .map(|c| self.card_finish_bonus(c, skill))
                 .sum()
         };
-        let bonus = combo + self.finish_roll_bonus(finisher, skill);
+        let bonus = combo + self.finish_roll_bonus(finisher, skill, base);
         let cm = self.state.crowd_meter;
         let value = base + bonus + cm;
         let auto = crate::finish::is_auto_success(value, cm);
@@ -3686,7 +3690,7 @@ impl Engine {
 
     /// "+N to your Finish rolls" from the finisher's live effects (in-play combo,
     /// gimmick, entrance), each gated by its condition and by its `when_skill`.
-    fn finish_roll_bonus(&self, key: &str, skill: Skill) -> i64 {
+    fn finish_roll_bonus(&self, key: &str, skill: Skill, base: i64) -> i64 {
         let mut total = 0;
         for eff in self.standing_effects(key) {
             if !conditions::holds(&eff.condition, &self.state, key, None) {
@@ -3696,12 +3700,21 @@ impl Engine {
                 if let Action::FinishRollBonus {
                     delta,
                     when_skill,
+                    when_base_le,
+                    when_base_ge,
                     per,
                     per_who,
                     per_zone,
                     ..
                 } = a
                 {
+                    // Base-roll gate: "If your Finish roll is N or less/greater" reads
+                    // the base (the skill's stat, before any bonuses) — DESIGN §3.
+                    if when_base_le.is_some_and(|t| base > t)
+                        || when_base_ge.is_some_and(|t| base < t)
+                    {
+                        continue;
+                    }
                     if when_skill.is_none() || *when_skill == Some(skill) {
                         // Flat `delta`, or `delta * (count of `per_who`'s cards in
                         // `per_zone` matching the filter)` — "+1 per Spotlight in play".
@@ -7611,6 +7624,85 @@ mod on_roll_in_play_draw_tests {
             1,
             "A drew on opp Power roll"
         );
+    }
+}
+
+/// Base-roll-gated Finish bonus (task #49): "If your Finish roll is N or less/greater,
+/// it is +M" gates on the BASE roll (skill stat, pre-bonus). Exercises the protected
+/// `finish_roll_bonus` directly.
+#[cfg(test)]
+mod finish_base_gate_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    fn frb(delta: i64, le: Option<i64>, ge: Option<i64>) -> serde_json::Value {
+        json!([{
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "FinishRollBonus", "delta": delta, "when_skill": null,
+                "either": false, "when_base_le": le, "when_base_ge": ge, "per": null,
+                "per_who": "SELF", "per_zone": "IN_PLAY"}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "", "source": "card", "optional": false
+        }])
+    }
+
+    fn engine_with(effects: serde_json::Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let mk = |k: &str, eff: serde_json::Value| {
+            serde_json::from_value::<Deck>(json!({
+                "competitor": {"db_uuid": k, "name": k, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{k}-ent"), "name": "ent"},
+                "cards": [{"atk_type": "Strike", "db_uuid": "fc", "name": "fc", "number": 1,
+                    "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+                    "effects": eff}],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        let mut engine = Engine::new(
+            mk("A", effects),
+            mk("B", json!([])),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        );
+        // Move A's Finish card (carrying the bonus) into play.
+        let card = engine.state.players.get_mut("A").unwrap().deck.remove(0);
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(card);
+        engine
+    }
+
+    #[test]
+    fn or_less_applies_only_at_or_below_threshold() {
+        let engine = engine_with(frb(2, Some(6), None));
+        // base 5 (<= 6): +2; base 6: +2; base 7 (> 6): 0.
+        assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 5), 2);
+        assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 6), 2);
+        assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 7), 0);
+    }
+
+    #[test]
+    fn or_greater_applies_only_at_or_above_threshold_and_signed() {
+        // "If your Finish roll is 8 or greater, it is -3" (a negative rider).
+        let engine = engine_with(frb(-3, None, Some(8)));
+        assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 8), -3);
+        assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 9), -3);
+        assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 7), 0);
     }
 }
 

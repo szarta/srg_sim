@@ -370,14 +370,22 @@ fn rule(pattern: &str, builder: Builder) -> (Regex, Builder) {
 }
 
 fn finish_roll_bonus(delta: i64) -> Vec<Action> {
-    vec![Action::FinishRollBonus {
+    vec![finish_bonus(delta, None, false)]
+}
+
+/// A [`Action::FinishRollBonus`] with the base-roll gate and per-count fields at
+/// their defaults (the common case; base-gated riders build the node inline).
+fn finish_bonus(delta: i64, when_skill: Option<Skill>, either: bool) -> Action {
+    Action::FinishRollBonus {
         delta,
-        when_skill: None,
-        either: false,
+        when_skill,
+        either,
+        when_base_le: None,
+        when_base_ge: None,
         per: None,
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
-    }]
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -1212,10 +1220,59 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             |c| {
                 Some(eff(
                     Trigger::Static,
+                    vec![finish_bonus(num(c, 2), Some(skill(&c[1])), true)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // "If you roll <S> for your Finish roll, it is +N" — a rolled-skill-gated
+        // Finish bonus (self only). Delta is signed (a Finish rider can be -N).
+        rule(
+            &format!(r"If you roll {SK} for your Finish roll, it is ([+-]?\d+)"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![finish_bonus(num(c, 2), Some(skill(&c[1])), false)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Base-roll-gated Finish bonus: "If your Finish roll is N or less/greater,
+        // it is +M". The N-or-less/greater reads the BASE roll (skill stat pre-bonus);
+        // +M is a signed additive bonus (engine `finish_roll_bonus`).
+        rule(
+            r"If your Finish roll is (\d+) or less,? it is ([+-]?\d+)",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
                     vec![Action::FinishRollBonus {
                         delta: num(c, 2),
-                        when_skill: Some(skill(&c[1])),
-                        either: true,
+                        when_skill: None,
+                        either: false,
+                        when_base_le: Some(num(c, 1)),
+                        when_base_ge: None,
+                        per: None,
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::InPlay,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(
+            r"If your Finish roll is (\d+) or greater,? it is ([+-]?\d+)",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::FinishRollBonus {
+                        delta: num(c, 2),
+                        when_skill: None,
+                        either: false,
+                        when_base_le: None,
+                        when_base_ge: Some(num(c, 1)),
                         per: None,
                         per_who: Who::SelfSide,
                         per_zone: CountZone::InPlay,

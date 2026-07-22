@@ -1503,6 +1503,11 @@ class FinishRollBonus(IRNode):
     delta: int
     when_skill: Skill | None = None  # None = any skill; else only when this skill is rolled
     either: bool = False  # applies to whichever player makes the Finish roll (Spin Wheel Kick)
+    # Base-roll gate: the bonus applies only when the BASE Finish roll (the rolled
+    # skill's stat, BEFORE any bonuses) is <= when_base_le and/or >= when_base_ge
+    # ("If your Finish roll is 6 or less, it is +2"). None = ungated.
+    when_base_le: int | None = None
+    when_base_ge: int | None = None
     # When set, the bonus is ``delta * (count of per_who's cards in per_zone matching
     # this filter)`` — "your Finish roll is +1 for each Spotlight you have in play".
     per: CardFilter | None = None

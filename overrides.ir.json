@@ -2839,6 +2839,8 @@
           },
           "per_who": "OPP",
           "per_zone": "DISCARD",
+          "when_base_ge": null,
+          "when_base_le": null,
           "when_skill": null
         }
       ],
@@ -7174,6 +7176,8 @@
           "per": null,
           "per_who": "SELF",
           "per_zone": "IN_PLAY",
+          "when_base_ge": null,
+          "when_base_le": null,
           "when_skill": "Technique"
         }
       ],

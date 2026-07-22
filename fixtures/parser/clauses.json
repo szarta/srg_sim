@@ -107,15 +107,21 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If your Finish roll is 6 or less, it is +2.",
-              "reason": "no grammar match"
+              "@type": "FinishRollBonus",
+              "delta": 2,
+              "either": false,
+              "per": null,
+              "per_who": "SELF",
+              "per_zone": "IN_PLAY",
+              "when_base_ge": null,
+              "when_base_le": 6,
+              "when_skill": null
             }
           ],
           "condition": {
             "@type": "Always"
           },
-          "duration": "INSTANT",
+          "duration": "WHILE_IN_PLAY",
           "frequency": {
             "@type": "FrequencyGuard",
             "kind": "ONCE_PER_MATCH",
@@ -125,7 +131,7 @@
           "raw_clause": "If your Finish roll is 6 or less, it is +2.",
           "source": "entrance",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "Static"
           }
         }
       ],
@@ -4210,6 +4216,8 @@
               "per": null,
               "per_who": "SELF",
               "per_zone": "IN_PLAY",
+              "when_base_ge": null,
+              "when_base_le": null,
               "when_skill": null
             }
           ],
@@ -7807,6 +7815,8 @@
               "per": null,
               "per_who": "SELF",
               "per_zone": "IN_PLAY",
+              "when_base_ge": null,
+              "when_base_le": null,
               "when_skill": "Agility"
             }
           ],
@@ -7901,7 +7911,7 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 116,
+    "grammar": 117,
     "override": 58,
     "top_unparsed": [
       [
@@ -7911,10 +7921,6 @@
       [
         "If you have a card with \"Training With\" in the name revealed, you may draw N card and bury N card in your hand.",
         2
-      ],
-      [
-        "If your Finish roll is N or less, it is +N.",
-        1
       ],
       [
         "Each player adds the bottom card of their deck to their hand or stop any lead <S>.",
@@ -7983,10 +7989,14 @@
       [
         "If this is a Ring of Fire or Lumberjack match, double these numbers.",
         1
+      ],
+      [
+        "Take N cards from your discard pile, shuffle them into your deck, then draw N cards.",
+        1
       ]
     ],
     "total": 217,
-    "unsupported": 43
+    "unsupported": 42
   },
   "coverage_records": [
     {
