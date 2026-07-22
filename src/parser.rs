@@ -72,6 +72,16 @@ fn cf_atk(a: AtkType) -> CardFilter {
     }
 }
 
+/// "When `who` rolls `skill` for their turn roll" — a standing trigger fired on the
+/// turn roll-off (the effect owner's card must be in play). `who == SelfSide` = "when
+/// you roll"; `who == Opp` = "when your opponent rolls".
+fn on_roll(s: Skill, who: Who) -> Trigger {
+    Trigger::OnRoll {
+        skill: Some(s),
+        who,
+    }
+}
+
 fn cf_order(o: PlayOrder) -> CardFilter {
     CardFilter {
         play_order: Some(o),
@@ -1108,6 +1118,42 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         value: None,
                         who: Who::SelfSide,
                     },
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // OnRoll draws: a standing "when you / your opponent roll <S> for the turn
+        // roll, draw N" — fires while the card is in play (standing_effects scans it).
+        rule(
+            &format!(r"When you roll {SK} for your turn roll, draw (\d+) cards?"),
+            |c| {
+                Some(eff(
+                    on_roll(skill(&c[1]), Who::SelfSide),
+                    vec![draw(
+                        num(c, 2),
+                        Who::SelfSide,
+                        DeckEnd::Top,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            &format!(r"When your opponent rolls {SK} for their turn roll, draw (\d+) cards?"),
+            |c| {
+                Some(eff(
+                    on_roll(skill(&c[1]), Who::Opp),
+                    vec![draw(
+                        num(c, 2),
+                        Who::SelfSide,
+                        DeckEnd::Top,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    Condition::Always,
                     Duration::Instant,
                 ))
             },

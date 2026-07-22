@@ -7496,6 +7496,124 @@ mod on_rolled_all_tests {
     }
 }
 
+/// A grammar-produced `OnRoll -> Draw` on a main-deck card fires while that card is
+/// IN PLAY (task #49) — proving the parser may safely emit OnRoll for in-play cards,
+/// not just gimmick/entrance overrides.
+#[cfg(test)]
+mod on_roll_in_play_draw_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    fn draw_on_roll(skill: &str, who: &str) -> serde_json::Value {
+        json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "OnRoll", "skill": skill, "who": who},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF",
+                "cap": null, "per": null, "per_excludes_trigger": false, "per_who": "SELF"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "when roll -> draw", "source": "card", "optional": false
+        }])
+    }
+
+    fn card_with(uuid: &str, effects: serde_json::Value) -> serde_json::Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+               "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+               "effects": effects})
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let mk = |k: &str| {
+            serde_json::from_value::<Deck>(json!({
+                "competitor": {"db_uuid": k, "name": k, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{k}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            mk("A"),
+            mk("B"),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn set_roll(engine: &mut Engine, key: &str, skill: Skill) {
+        engine.roll_ctx.insert(
+            key.to_owned(),
+            RollContext {
+                skill: Some(skill),
+                gap: Some(0),
+                value: Some(5),
+                opp_skill: None,
+            },
+        );
+    }
+
+    #[test]
+    fn self_roll_in_play_card_draws() {
+        let mut engine = engine();
+        // A card in A's play zone with "when you roll Technique, draw 1".
+        let card = serde_json::from_value(card_with("t", draw_on_roll("Technique", "SELF")))
+            .expect("card");
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(card);
+        engine.state.players.get_mut("A").unwrap().deck = (0..3)
+            .map(|i| serde_json::from_value(card_with(&format!("d{i}"), json!([]))).unwrap())
+            .collect();
+        // Wrong skill: no draw.
+        set_roll(&mut engine, "A", Skill::Power);
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(engine.state.players["A"].hand.len(), 0, "no draw off Power");
+        // Matching skill: draw 1.
+        set_roll(&mut engine, "A", Skill::Technique);
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(engine.state.players["A"].hand.len(), 1, "drew on Technique");
+    }
+
+    #[test]
+    fn opponent_roll_triggers_owner_draw() {
+        let mut engine = engine();
+        // A's card: "when your OPPONENT rolls Power, draw 1" (who=OPP).
+        let card =
+            serde_json::from_value(card_with("p", draw_on_roll("Power", "OPP"))).expect("card");
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(card);
+        engine.state.players.get_mut("A").unwrap().deck = (0..2)
+            .map(|i| serde_json::from_value(card_with(&format!("d{i}"), json!([]))).unwrap())
+            .collect();
+        // B (A's opponent) rolls Power -> A draws. run_on_roll fires for each roller.
+        set_roll(&mut engine, "B", Skill::Power);
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            1,
+            "A drew on opp Power roll"
+        );
+    }
+}
+
 #[cfg(test)]
 mod mack_a_tack_tests {
     use super::*;

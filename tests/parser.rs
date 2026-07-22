@@ -307,4 +307,16 @@ fn draw_rider_grammar() {
     let e = parse1("Draw 1 card for each Lead your opponent has in play.");
     assert_eq!(e["actions"][0]["per"]["play_order"], "Lead");
     assert_eq!(e["actions"][0]["per_who"], "OPP");
+
+    // OnRoll draws: standing "when you / your opponent roll <S>, draw N".
+    let e = parse1("When you roll Technique for your turn roll, draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Technique");
+    assert_eq!(e["trigger"]["who"], "SELF");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    let e = parse1("When your opponent rolls Power for their turn roll, draw 2 cards.");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["trigger"]["skill"], "Power");
+    assert_eq!(e["actions"][0]["n"], 2);
+    assert_eq!(e["actions"][0]["who"], "SELF");
 }
