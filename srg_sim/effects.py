@@ -1385,6 +1385,33 @@ class DisqualificationRule(IRNode):
 
 
 @dataclass(frozen=True)
+class CountOutRule(IRNode):
+    """A Static match-rule toggle for count-out losses: ``enabled=False`` = "no count
+    outs" (emptying deck+hand no longer ends the match), a standing rule several Crowd
+    Meter match types impose (No DQ / Submission / Psycho Circus / Liger's Den).
+    ``scope`` reuses :class:`DqScope` (MATCH = every player; SELF = only the owner).
+    Read at the count-out point in ``_draw_for_turn``, never executed."""
+
+    enabled: bool = False
+    scope: DqScope = DqScope.SELF
+
+
+@dataclass(frozen=True)
+class SwapCrowdMeter(IRNode):
+    """Install a Crowd Meter match-type's standing rules (GM Calace V1: "replace all
+    Crowd Meter cards with … Steel Cage / Psycho Circus / Lumberjack / No DQ /
+    Submission"). Appends ``effects`` to the owner's Entrance effects, where they
+    become always-active standing rules — a global match condition that survives the
+    owner's gimmick being blanked (unlike :class:`AbsorbGimmick`, which installs into
+    the blankable competitor gimmick). ``name`` labels the swapped-in match type in the
+    log. Authored under a ``StartOfMatch`` ``Choice``; clauses the engine cannot yet
+    model are carried as explicit ``Unsupported`` sub-effects."""
+
+    name: str = ""
+    effects: tuple[Effect, ...] = ()
+
+
+@dataclass(frozen=True)
 class ConsideredCompare(IRNode):
     """A Static meta-comparison override "for card effects": the declaring player's
     ``domain`` comparison vs the opponent always resolves as ``order`` regardless of

@@ -786,6 +786,12 @@ class Engine:
         """Draw for the won turn; return False if the game ended by count-out."""
         player = self.state.players[key]
         if not player.deck and not player.hand:
+            if self._is_count_out_immune(key):
+                # "No Count Outs" (a Crowd Meter match type): emptying deck+hand no
+                # longer ends the match — there is simply nothing to draw. Play
+                # continues (the win must come from a Finish instead).
+                self._log_effect(key, "CountOutVoided", None, None)
+                return True
             self._win(key, "count_out")  # exhausting deck+hand on a won turn is a win
             return False
         self._draw(key, 1)
@@ -2514,6 +2520,45 @@ class Engine:
                         disabled = True
         return disabled
 
+    def _is_count_out_immune(self, loser: str) -> bool:
+        """True iff ``loser`` is immune to a count-out loss: some active
+        ``CountOutRule`` disables count-outs for them and none re-enables it — the
+        count-out analogue of :meth:`_is_dq_immune`, scanning the same declaration
+        sources (a ``MATCH``-scoped rule from any owner reaches everyone; a ``SELF``
+        rule reaches only its owner). A blanked gimmick declares nothing."""
+        disabled = False
+        for owner, player in self.state.players.items():
+            for effects, active in self.state._buff_sources(owner, player):
+                if not active:
+                    continue
+                for eff in effects:
+                    if not isinstance(eff.trigger, fx.Static):
+                        continue
+                    for action in eff.actions:
+                        if not isinstance(action, fx.CountOutRule):
+                            continue
+                        applies = action.scope is fx.DqScope.MATCH or owner == loser
+                        if not applies or not conditions.holds(eff.condition, self.state, owner):
+                            continue
+                        if action.enabled:
+                            return False
+                        disabled = True
+        return disabled
+
+    def _act_swap_crowd_meter(self, action: fx.SwapCrowdMeter, key: str) -> None:
+        # Swap the Crowd Meter to a match type (GM Calace V1): append the match type's
+        # standing rules to key's Entrance effects, where they become always-active (a
+        # global match condition, unaffected by key's gimmick being blanked). The
+        # Unsupported sub-effects stay inert but surface the unmodeled clauses. Mirrors
+        # _act_copy_entrance's entrance-extend (EntranceCard is frozen -> replace).
+        player = self.state.players[key]
+        player.entrance = replace(
+            player.entrance, effects=tuple(player.entrance.effects) + tuple(action.effects)
+        )
+        self._log_effect(
+            key, "SwapCrowdMeter", None, {"name": action.name, "effects": len(action.effects)}
+        )
+
     def _discard_from_hand(
         self, key: str, count: int, random: bool, selector: fx.CardFilter | None = None
     ) -> int:
@@ -2761,6 +2806,8 @@ _ACTIONS: dict[type, Callable[[Engine, Any, str], None]] = {
     fx.FlipGimmick: Engine._act_flip_gimmick,
     fx.LoseBy: Engine._act_lose_by,
     fx.DisqualificationRule: Engine._act_noop,  # Static, read via _is_dq_immune; never executed
+    fx.CountOutRule: Engine._act_noop,  # Static, read via _is_count_out_immune; never executed
+    fx.SwapCrowdMeter: Engine._act_swap_crowd_meter,
     fx.ConsideredCompare: Engine._act_noop,  # Static, read in conditions.holds; never executed
     fx.SuppressOpponentDraw: Engine._act_noop,  # Static, read in _act_draw; never executed
     fx.SuppressSelfHandLoss: Engine._act_noop,  # Static, read at the hand-loss points

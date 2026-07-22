@@ -60,7 +60,9 @@ from srg_sim.effects import (
     InPlayCompare,
     InRoll,
     IRNode,
+    CountOutRule,
     DisqualificationRule,
+    SwapCrowdMeter,
     DqScope,
     LoseBy,
     LoseKind,
@@ -272,6 +274,8 @@ SAMPLES: list[IRNode] = [
     ChosenNameIs(name="Kendo Stick", who=Who.SELF),
     LoseBy(LoseKind.PINFALL, Who.SELF),
     DisqualificationRule(enabled=False, scope=DqScope.MATCH),
+    CountOutRule(enabled=False, scope=DqScope.MATCH),  # No DQ / Submission / Psycho Circus
+    SwapCrowdMeter(name="Steel Cage Match", effects=()),  # GM Calace (V1)
     ConsideredCompare(domain=CompareDomain.SKILL, order=CompareOrder.GREATER),  # RaRa Perre
     SuppressOpponentDraw(),  # Sami "The Draw" Callihan
     SuppressSelfHandLoss(),  # Sami "Death Machine" (V2)

@@ -3106,6 +3106,51 @@ def test_blanked_gimmick_declares_no_dq_immunity() -> None:
     assert not eng._is_dq_immune("A")
 
 
+def _no_dq_match_rules() -> fx.Effect:
+    # The No DQ Match bundle GM Calace V1 can install: Match-scoped DQ and count-out
+    # rules both disabled.
+    return fx.Effect(
+        trigger=fx.Static(),
+        actions=(
+            fx.DisqualificationRule(enabled=False, scope=fx.DqScope.MATCH),
+            fx.CountOutRule(enabled=False, scope=fx.DqScope.MATCH),
+        ),
+        source=fx.EffectSource.GIMMICK,
+    )
+
+
+def test_swap_crowd_meter_installs_rules_into_entrance_and_reaches_both() -> None:
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng._act_swap_crowd_meter(
+        fx.SwapCrowdMeter(name="No DQ Match", effects=(_no_dq_match_rules(),)), "A"
+    )
+    # Installed on A's Entrance only; Match-scoped rules reach both players.
+    assert len(eng.state.players["A"].entrance.effects) >= 1
+    for who in ("A", "B"):
+        assert eng._is_dq_immune(who)
+        assert eng._is_count_out_immune(who)
+
+
+def test_no_count_outs_survives_an_empty_deck_and_hand() -> None:
+    # Baseline: emptying deck+hand on a won turn ends the match by count-out.
+    base = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    base.setup()
+    base.state.players["A"].deck.clear()
+    base.state.players["A"].hand.clear()
+    assert base._draw_for_turn("A") is False
+
+    # With a No Count Outs match type installed, play continues instead.
+    eng = Engine(*bull_vs_fae(), HeuristicPolicy(), HeuristicPolicy(), seed=1, created="x")
+    eng.setup()
+    eng.state.players["A"].deck.clear()
+    eng.state.players["A"].hand.clear()
+    eng._act_swap_crowd_meter(
+        fx.SwapCrowdMeter(name="No DQ Match", effects=(_no_dq_match_rules(),)), "A"
+    )
+    assert eng._draw_for_turn("A") is True
+
+
 def _on_hit_draw(who: fx.Who) -> fx.Effect:
     return fx.Effect(
         trigger=fx.OnHit(order=PlayOrder.FOLLOWUP, who=who),
