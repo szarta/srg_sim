@@ -763,6 +763,22 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Draw-then-bury-self rider ("Draw N cards, then bury M in your hand"):
+        // dig for a card, then shed the least useful. Two independent counts.
+        rule(
+            r"[Dd]raw (\d+) cards?,? then bury (\d+) cards? in your hand",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        draw(num(c, 1), Who::SelfSide, DeckEnd::Top, None, Who::SelfSide),
+                        bury_hand(num(c, 2), Who::SelfSide, false, false),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Self-hand-bury and both-players.
         rule(r"[Bb]ury (\d+) cards? in your hand", |c| {
             Some(eff(

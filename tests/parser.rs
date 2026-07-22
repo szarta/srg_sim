@@ -198,6 +198,25 @@ fn hand_bury_grammar() {
     assert_eq!(d["selector"]["play_order"], "Followup");
     assert_eq!(d["selector"]["atk_type"], "Strike");
 
+    // Draw-then-bury-self rider: Draw then Bury{SELF,HAND}, independent counts.
+    let effs = parse_text(
+        "Draw 2 cards, then bury 1 card in your hand.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let acts = serde_json::to_value(&effs[0]).unwrap()["actions"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["@type"], "Draw");
+    assert_eq!(acts[0]["n"], 2);
+    assert_eq!(
+        bury(&acts[1]),
+        ("SELF".into(), 1, false, false, "HAND".into())
+    );
+
     // Each player: two Bury actions (SELF then OPP).
     let effs = parse_text(
         "Each player buries 1 card in their hand.",
