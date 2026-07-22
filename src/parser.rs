@@ -122,6 +122,20 @@ fn bury(count: i64, who: Who) -> Action {
     }
 }
 
+/// Bury `count` card(s) from a player's HAND (SRG hand disruption). `random` = the
+/// hand owner loses a random card; `choose` = the EFFECT OWNER looks and picks (only
+/// meaningful with `who == Opp`). Routes to the engine's `bury_from_hand`.
+fn bury_hand(count: i64, who: Who, random: bool, choose: bool) -> Action {
+    Action::Bury {
+        choose,
+        selector: CardFilter::default(),
+        count,
+        who,
+        random,
+        source: BuryFrom::Hand,
+    }
+}
+
 fn buff(skill: Skill, delta: i64, who: Who) -> Action {
     Action::BuffSkill {
         skill,
@@ -690,6 +704,116 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // --- Hand disruption: bury from a player's HAND (task #39) ------------
+        // Opponent-hand-bury. Random variants first (word-order both ways),
+        // then the plain (hand owner sheds), then the look-and-choose form.
+        rule(
+            r"[Yy]our opponent randomly buries (\d+) cards? in their hand",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![bury_hand(num(c, 1), Who::Opp, true, false)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"[Yy]our opponent buries (\d+) random cards? in their hand",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![bury_hand(num(c, 1), Who::Opp, true, false)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(r"[Yy]our opponent buries (\d+) cards? in their hand", |c| {
+            Some(eff(
+                on_hit(),
+                vec![bury_hand(num(c, 1), Who::Opp, false, false)],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        rule(
+            r"[Ll]ook at your opponent'?s hand, choose (\d+) cards? and bury (?:it|them)",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![bury_hand(num(c, 1), Who::Opp, false, true)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Self-hand-bury and both-players.
+        rule(r"[Bb]ury (\d+) cards? in your hand", |c| {
+            Some(eff(
+                on_hit(),
+                vec![bury_hand(num(c, 1), Who::SelfSide, false, false)],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        rule(
+            r"[Ee]ach player randomly buries (\d+) cards? in their hand",
+            |c| {
+                let n = num(c, 1);
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        bury_hand(n, Who::SelfSide, true, false),
+                        bury_hand(n, Who::Opp, true, false),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(r"[Ee]ach player buries (\d+) cards? in their hand", |c| {
+            let n = num(c, 1);
+            Some(eff(
+                on_hit(),
+                vec![
+                    bury_hand(n, Who::SelfSide, false, false),
+                    bury_hand(n, Who::Opp, false, false),
+                ],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // Conditional prefix: "If you have another <play order/skill> in play, your
+        // opponent buries N card(s) in their hand."
+        rule(
+            &format!(
+                r"If you have another {ATK} in play, your opponent buries (\d+) cards? in their hand"
+            ),
+            |c| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![bury_hand(num(c, 2), Who::Opp, false, false)],
+                    has_in_play(Who::SelfSide, cf_atk(atk(&c[1])), 1),
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"If you have another (Lead|Follow Up|Finish) in play, your opponent buries (\d+) cards? in their hand",
+            |c| {
+                let filter = CardFilter {
+                    play_order: Some(order(&c[1])),
+                    ..Default::default()
+                };
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![bury_hand(num(c, 2), Who::Opp, false, false)],
+                    has_in_play(Who::SelfSide, filter, 1),
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"Add (\d+) cards? from your discard pile to your hand",
             |_| {

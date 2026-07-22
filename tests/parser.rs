@@ -134,3 +134,82 @@ fn coverage_report_matches_oracle() {
         "top_unparsed"
     );
 }
+
+/// Hand-disruption grammar (task #39): bury from a player's HAND. These clauses
+/// are absent from the six oracle reference decks, so they are asserted directly
+/// against the whole-DB grammar rather than the frozen oracle fixture.
+#[test]
+fn hand_bury_grammar() {
+    fn only_action(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        let v = serde_json::to_value(&effs[0]).unwrap();
+        v["actions"].as_array().unwrap()[0].clone()
+    }
+    fn bury(a: &Value) -> (String, i64, bool, bool, String) {
+        (
+            a["who"].as_str().unwrap().to_owned(),
+            a["count"].as_i64().unwrap(),
+            a["random"].as_bool().unwrap(),
+            a["choose"].as_bool().unwrap(),
+            a["source"].as_str().unwrap().to_owned(),
+        )
+    }
+
+    // Opponent hand-bury: plain / randomly / N-random / look-and-choose.
+    let a = only_action("Your opponent buries 2 cards in their hand.");
+    assert_eq!(a["@type"], "Bury");
+    assert_eq!(bury(&a), ("OPP".into(), 2, false, false, "HAND".into()));
+    assert_eq!(
+        bury(&only_action(
+            "Your opponent randomly buries 1 card in their hand."
+        )),
+        ("OPP".into(), 1, true, false, "HAND".into())
+    );
+    assert_eq!(
+        bury(&only_action(
+            "Your opponent buries 1 random card in their hand."
+        )),
+        ("OPP".into(), 1, true, false, "HAND".into())
+    );
+    assert_eq!(
+        bury(&only_action(
+            "Look at your opponent's hand, choose 1 card and bury it."
+        )),
+        ("OPP".into(), 1, false, true, "HAND".into())
+    );
+
+    // Self hand-bury.
+    assert_eq!(
+        bury(&only_action("Bury 1 card in your hand.")),
+        ("SELF".into(), 1, false, false, "HAND".into())
+    );
+
+    // Each player: two Bury actions (SELF then OPP).
+    let effs = parse_text(
+        "Each player buries 1 card in their hand.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let acts = serde_json::to_value(&effs[0]).unwrap()["actions"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(bury(&acts[0]).0, "SELF");
+    assert_eq!(bury(&acts[1]).0, "OPP");
+
+    // Conditional prefix carries a HasInPlay gate + OnPlay trigger.
+    let effs = parse_text(
+        "If you have another Follow Up in play, your opponent buries 1 card in their hand.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
+    assert_eq!(e["trigger"]["@type"], "OnPlay");
+    assert_eq!(bury(&e["actions"][0]).0, "OPP");
+}
