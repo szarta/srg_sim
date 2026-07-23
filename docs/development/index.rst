@@ -10,5 +10,6 @@ How to set up, work in, and contribute to |project|.
    workflow
    playing
    analysis
+   coverage-grind
    reports
    claude
