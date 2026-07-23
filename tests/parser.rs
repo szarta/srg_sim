@@ -557,6 +557,38 @@ fn scry_flip_grammar() {
     assert_eq!(a[0]["rest"], "FLIP");
 }
 
+/// Compound flip + recur-to-hand (task #119): "Flip N cards, then take/add M
+/// <filter> from your discard pile [and add it] to your hand" -> Flip then
+/// AddFromDiscard, reusing both existing nodes.
+#[test]
+fn flip_then_recur_grammar() {
+    fn acts(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()["actions"].clone()
+    }
+
+    // "take M card ... and add it to your hand" (any-card recur).
+    let a = acts("Flip 4 cards, then take 1 card from your discard pile and add it to your hand.");
+    assert_eq!(a.as_array().unwrap().len(), 2);
+    assert_eq!(a[0]["@type"], "Flip");
+    assert_eq!(a[0]["n"], 4);
+    assert_eq!(a[1]["@type"], "AddFromDiscard");
+    assert_eq!(a[1]["filter"]["atk_type"], Value::Null);
+    assert_eq!(a[1]["filter"]["play_order"], Value::Null);
+
+    // "add M <atk> ... to your hand" (typed recur).
+    let a = acts("Flip 2 cards, add 1 Grapple from your discard pile to your hand.");
+    assert_eq!(a[0]["n"], 2);
+    assert_eq!(a[1]["@type"], "AddFromDiscard");
+    assert_eq!(a[1]["filter"]["atk_type"], "Grapple");
+
+    // Name-quoted recur filter survives the compound.
+    let a = acts("Flip 4 cards, then add 2 cards with \"Lariat\" or \"Clothesline\" in the name from your discard pile to your hand.");
+    assert_eq!(a[0]["n"], 4);
+    assert_eq!(a[1]["filter"]["name_contains"][0], "Lariat");
+}
+
 /// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
 /// per-count, recur, and HasInPlay-gated grammar.
 #[test]

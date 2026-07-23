@@ -1044,6 +1044,25 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Compound flip + recur-to-hand: "Flip N cards, then take/add M <filter>
+        // from your discard pile [and add it] to your hand" -> Flip then
+        // AddFromDiscard (which pulls one, as the standalone recur rule does; the
+        // flipped cards land in discard first, so they are eligible to be recurred).
+        rule(
+            r"Flip (\d+) cards?,(?: and)?(?: then)? (?:take|add) \d+ (.+?) (?:from|in) your discard pile (?:and add (?:it|them) )?to your hand",
+            |c| {
+                let filter = recur_filter(&c[2])?;
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        flip(num(c, 1), Who::SelfSide),
+                        Action::AddFromDiscard { filter },
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"Flip (\d+) cards? for each (?:other )?(.+?) you have in play",
             |c| per_flip(num(c, 1), Who::SelfSide, &c[2], Who::SelfSide),
