@@ -376,10 +376,47 @@ fn describe_decision(req: &srg_core::engine::DecisionRequest, names: &Names) {
         os.get("active").and_then(Value::as_str).unwrap_or("?"),
         os.get("crowd_meter").and_then(Value::as_i64).unwrap_or(0),
     );
+    if let Some(ctx) = decision_context(&req.legal, names) {
+        println!("  → {ctx}");
+    }
     println!("  {}", decision_hint(req.point.as_str()));
     for (i, opt) in req.legal.iter().enumerate() {
         println!("    [{i}] {}", option_label(names, opt));
     }
+}
+
+/// What the decision is *about*, pulled from the option payloads so a yes/no or a
+/// stop is never opaque: the effect's rules text (`clause`), the attack being
+/// defended (`vs_order`/`vs_type`), or the same-skill-bump hint (`losing`).
+fn decision_context(legal: &[Value], names: &Names) -> Option<String> {
+    let first = legal.first()?;
+    if let Some(clause) = first.get("clause").and_then(Value::as_str) {
+        return Some(format!("\"{clause}\""));
+    }
+    if let Some(none) = legal
+        .iter()
+        .find(|o| o.get("kind").and_then(Value::as_str) == Some("none"))
+    {
+        if let (Some(o), Some(t)) = (
+            none.get("vs_order").and_then(Value::as_str),
+            none.get("vs_type").and_then(Value::as_str),
+        ) {
+            return Some(format!("defending a {o} {t}"));
+        }
+    }
+    if let Some(losing) = first.get("losing").and_then(Value::as_bool) {
+        return Some(format!(
+            "elect the same-skill bump (you are currently {})",
+            if losing { "behind" } else { "ahead" }
+        ));
+    }
+    // A card-target decision with a single owner's pool — name the cards involved.
+    let cards: Vec<String> = legal
+        .iter()
+        .filter_map(|o| o.get("card").and_then(Value::as_str))
+        .map(|u| label(names, u, None))
+        .collect();
+    (!cards.is_empty()).then(|| format!("choose among: {}", cards.join(", ")))
 }
 
 fn decision_hint(point: &str) -> &'static str {
