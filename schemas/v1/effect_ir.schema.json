@@ -3568,7 +3568,8 @@
     "ScryRest": {
       "enum": [
         "RETURN",
-        "CHOOSE"
+        "CHOOSE",
+        "FLIP"
       ],
       "type": "string"
     },
@@ -4132,5 +4133,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 68
+  "version": 69
 }

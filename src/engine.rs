@@ -2546,6 +2546,24 @@ impl Engine {
                 }
                 self.scry_to_top(owner, keep);
             }
+            ScryRest::Flip => {
+                // Mill the leftovers to the deck owner's discard pile.
+                let uuids: Vec<String> = cards.iter().map(|c| c.db_uuid.clone()).collect();
+                self.state
+                    .players
+                    .get_mut(owner)
+                    .unwrap()
+                    .discard
+                    .extend(cards);
+                let t = self.state.turn_no;
+                self.log(Event::Discard(CardMovement {
+                    t,
+                    player: owner.to_owned(),
+                    cards: uuids,
+                    source: Some("deck".to_owned()),
+                    hidden: false,
+                }));
+            }
         }
     }
 
@@ -7874,6 +7892,36 @@ mod flip_percount_tests {
         assert!(a.deck.is_empty(), "deck exhausted looking for a Submission");
         assert_eq!(a.discard.len(), 2, "both Strikes milled");
         assert!(a.hand.is_empty(), "no match -> nothing added");
+    }
+
+    /// "Look at the top 3 cards of your deck, add 1 to your hand and flip the
+    /// others": a Scry with rest=FLIP keeps the best card and mills the leftovers
+    /// to discard. The Finish (best) is the one kept.
+    #[test]
+    fn scry_flip_keeps_best_and_mills_the_rest() {
+        let mut engine = engine();
+        {
+            let a = engine.state.players.get_mut("A").unwrap();
+            a.deck = vec![
+                atk_card("s0", "Strike"),
+                card("fin", "Finish"),
+                atk_card("s1", "Strike"),
+                atk_card("keep-me", "Strike"),
+            ];
+            a.hand.clear();
+        }
+        let scry: Action = serde_json::from_value(json!({
+            "@type": "Scry", "deck": "SELF", "top": 3, "bottom": 0, "reveal": false,
+            "to_hand": 1, "bury": 0, "rest": "FLIP"
+        }))
+        .unwrap();
+        engine.apply_action(&scry, "A", "").unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(a.hand.len(), 1, "one card added to hand");
+        assert_eq!(a.hand[0].db_uuid, "fin", "the Finish (best) is kept");
+        assert_eq!(a.discard.len(), 2, "the two leftover Strikes milled");
+        assert_eq!(a.deck.len(), 1, "the untouched 4th card stays in deck");
+        assert_eq!(a.deck[0].db_uuid, "keep-me");
     }
 }
 

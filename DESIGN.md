@@ -198,10 +198,11 @@ SwapHandDiscard               # "switch 1 card in your hand with 1 in your disca
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
 RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
 RevealForDraw(who=OPP, count=1, draw=2, match_on=STOP|ROLLED_SKILL)  # reveal `count` random from hand; actor draws `draw` per revealed card matched by `match_on` — a Stop (Bartholomew) or one whose move type == the actor's just-rolled skill (The Winning Ticket, reads roll ctx). schema v24
-Scry(deck, top=0, bottom=0, reveal=False, to_hand=0, bury=0, rest=RETURN|CHOOSE)  # schema v11: look at/reveal
+Scry(deck, top=0, bottom=0, reveal=False, to_hand=0, bury=0, rest=RETURN|CHOOSE|FLIP)  # schema v11: look at/reveal
                               # `top`+`bottom` cards of `deck`'s deck; the effect owner (actor) takes `to_hand`
                               # best -> deck owner's hand, buries `bury` (worst on own deck, best on an opponent's
-                              # = sabotage), rest RETURN (reorder on top) or CHOOSE (keep good on top, bury junk).
+                              # = sabotage), rest RETURN (reorder on top) or CHOOSE (keep good on top, bury junk) or
+                              # FLIP (mill leftovers to discard — "add M to your hand and flip the others"; schema v69).
                               # reveal=public (logged) vs private "look at". Perfect Assistant/Split/Ricky Riot/Oracle
 RevealRoute(deck, match_atk, on_match, on_fail, fail_optional=False, reveal=False, reveal_from=TOP, match_parity=None)
                               # schema v12/v13: reveal 1 from `reveal_from` (TOP|BOTTOM|CHOOSE, blind->top); if the

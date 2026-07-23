@@ -257,13 +257,16 @@ pub enum RevealMatch {
 /// hand nor buried by the fixed `bury` count. `Return` puts them back on top of
 /// the deck (the actor reorders by value); `Choose` lets the actor decide, per
 /// card, between returning it on top and burying it to the deck bottom
-/// (Ricky Riot's "put the other back on top or bury it").
+/// (Ricky Riot's "put the other back on top or bury it"); `Flip` mills them to
+/// the discard pile ("look at the top N cards, add M to your hand and flip the
+/// others"). schema v69
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ScryRest {
     #[default]
     Return,
     Choose,
+    Flip,
 }
 
 /// Where a [`Action::RevealRoute`] sends the revealed card. `Hand` = the deck

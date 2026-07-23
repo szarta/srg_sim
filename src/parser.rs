@@ -18,7 +18,7 @@ use crate::cards::{Card, Competitor, Deck, EntranceCard};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, Comparator, Condition, CountZone, DeckEnd, Direction,
     Duration, Effect, EffectSource, EffectTag, Frequency, FrequencyGuard, FrequencyGuardTag,
-    LoseKind, PlayOrder, RollWhen, Skill, Trigger, Vs, Who,
+    LoseKind, PlayOrder, RollWhen, ScryRest, Skill, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -229,6 +229,22 @@ fn flip_until(desc: &str, to_hand: bool) -> Option<Effect> {
         Condition::Always,
         Duration::Instant,
     ))
+}
+
+/// "Look at / Reveal the top N cards of your deck, add M to your hand and flip
+/// the others" — a self-deck [`Action::Scry`] that mills its leftovers
+/// ([`ScryRest::Flip`]). "Look at" keeps the window private; "Reveal" makes the
+/// ids public.
+fn scry_flip(reveal: bool, top: i64, to_hand: i64) -> Action {
+    Action::Scry {
+        deck: Who::SelfSide,
+        top,
+        bottom: 0,
+        reveal,
+        to_hand,
+        bury: 0,
+        rest: ScryRest::Flip,
+    }
 }
 
 fn bury(count: i64, who: Who) -> Action {
@@ -1017,6 +1033,17 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(r"Flip cards? until you(?:r)? flip a (.+)", |c| {
             flip_until(&c[1], false)
         }),
+        rule(
+            r"(Look at|Reveal) the top (\d+) cards? of your deck[,;] ?(?:and )?(?:add|put) (\d+)(?: cards?)? (?:to|in) your hand,?(?: and)? flip the others?",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![scry_flip(&c[1] == "Reveal", num(c, 2), num(c, 3))],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"Flip (\d+) cards? for each (?:other )?(.+?) you have in play",
             |c| per_flip(num(c, 1), Who::SelfSide, &c[2], Who::SelfSide),

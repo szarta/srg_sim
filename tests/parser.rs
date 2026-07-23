@@ -528,6 +528,35 @@ fn flip_until_grammar() {
     assert_eq!(a[0]["until_to_hand"], true);
 }
 
+/// Scry-flip grammar (task #119): "Look at/Reveal the top N cards of your deck,
+/// add M to your hand and flip the others" -> Scry with rest=FLIP.
+#[test]
+fn scry_flip_grammar() {
+    fn acts(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()["actions"].clone()
+    }
+
+    // "Look at" keeps the window private (reveal=false); "and flip the others".
+    let a =
+        acts("Look at the top 4 cards of your deck, add 2 cards to your hand and flip the others.");
+    assert_eq!(a[0]["@type"], "Scry");
+    assert_eq!(a[0]["deck"], "SELF");
+    assert_eq!(a[0]["top"], 4);
+    assert_eq!(a[0]["to_hand"], 2);
+    assert_eq!(a[0]["reveal"], false);
+    assert_eq!(a[0]["rest"], "FLIP");
+
+    // "Reveal" makes the ids public; "put M in your hand, flip the other".
+    let a = acts("Reveal the top 2 cards of your deck, put 1 in your hand, flip the other.");
+    assert_eq!(a[0]["@type"], "Scry");
+    assert_eq!(a[0]["top"], 2);
+    assert_eq!(a[0]["to_hand"], 1);
+    assert_eq!(a[0]["reveal"], true);
+    assert_eq!(a[0]["rest"], "FLIP");
+}
+
 /// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
 /// per-count, recur, and HasInPlay-gated grammar.
 #[test]

@@ -267,10 +267,12 @@ class ScryRest(Enum):
     """What a :class:`Scry` does with revealed cards that are neither taken to hand
     nor buried by the fixed ``bury`` count. ``RETURN`` puts them back on top of the
     deck (the actor reorders by value); ``CHOOSE`` lets the actor decide, per card,
-    between returning it on top and burying it to the deck bottom."""
+    between returning it on top and burying it to the deck bottom; ``FLIP`` mills
+    them to the discard pile ("add M to your hand and flip the others")."""
 
     RETURN = "RETURN"
     CHOOSE = "CHOOSE"
+    FLIP = "FLIP"
 
 
 class RevealDest(Enum):
