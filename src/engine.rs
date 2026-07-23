@@ -3524,7 +3524,10 @@ impl Engine {
     /// Finishes are also Follow Ups for your Stop cards"). `None` order = any.
     fn stop_matches_for(&self, defender: &str, stop: &Action, attack: &Card) -> bool {
         let Action::Stop {
-            order, atk_type, ..
+            order,
+            atk_type,
+            target,
+            ..
         } = stop
         else {
             return false;
@@ -3539,7 +3542,10 @@ impl Engine {
                     })
             }
         };
-        order_ok && (atk_type.is_none() || *atk_type == Some(attack.atk_type))
+        let target_ok = target
+            .as_ref()
+            .is_none_or(|f| conditions::card_matches(attack, f));
+        order_ok && (atk_type.is_none() || *atk_type == Some(attack.atk_type)) && target_ok
     }
 
     /// Apply a stop: the stopped ATTACK goes to the attacker's discard; the stopping
@@ -7347,6 +7353,54 @@ mod even_unstoppable_stop_tests {
             "effects": [skillreq_unstoppable("card")]
         }))
         .expect("sr attack")
+    }
+
+    /// A stop card whose `Stop` targets `atk_type` AND carries a name/text filter.
+    fn target_stopper(named: bool, needle: &str) -> Card {
+        let target = if named {
+            json!({"name_contains": [needle], "text_contains": []})
+        } else {
+            json!({"name_contains": [], "text_contains": [needle]})
+        };
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "t", "name": "t", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": null, "atk_type": "Submission",
+                             "source_is_skillreq": false, "even_unstoppable": false, "target": target}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("target stopper")
+    }
+
+    /// A Submission attack with the given name and raw_text.
+    fn named_attack(name: &str, text: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Submission", "db_uuid": "a", "name": name, "number": 3,
+            "play_order": "Lead", "raw_text": text, "tags": [], "finish_bonuses": {}, "effects": []
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn target_filtered_stop_only_catches_a_matching_attack() {
+        let engine = engine();
+        // "Stop any Submission with \"Rope\" in the name."
+        let by_name = target_stopper(true, "Rope");
+        assert!(engine.card_can_stop("A", &by_name, &named_attack("Rope-a-Dope", "")));
+        assert!(!engine.card_can_stop("A", &by_name, &named_attack("Clothesline", "")));
+        // "Stop any Submission with \"Disqualification\" in the text."
+        let by_text = target_stopper(false, "Disqualification");
+        assert!(engine.card_can_stop(
+            "A",
+            &by_text,
+            &named_attack("X", "Win via Disqualification.")
+        ));
+        assert!(!engine.card_can_stop("A", &by_text, &named_attack("X", "Draw 1 card.")));
     }
 
     #[test]

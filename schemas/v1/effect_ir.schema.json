@@ -3851,6 +3851,16 @@
         },
         "even_unstoppable": {
           "type": "boolean"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -3858,7 +3868,8 @@
         "order",
         "atk_type",
         "source_is_skillreq",
-        "even_unstoppable"
+        "even_unstoppable",
+        "target"
       ],
       "type": "object"
     },
@@ -4091,5 +4102,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 65
+  "version": 66
 }

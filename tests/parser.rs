@@ -595,4 +595,21 @@ fn stop_eligibility_grammar() {
         assert_eq!(e["actions"][0]["by_skillreq"], true, "{text:?}");
         assert_eq!(e["actions"][0]["by_order"], Value::Null, "{text:?}");
     }
+
+    // "Stop any <T> with \"X\" in the name/text" -> Stop{target: name/text filter}.
+    let e = a1("Stop any Submission with \"Over the Top\" in the name.");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+    assert_eq!(e["actions"][0]["atk_type"], "Submission");
+    assert_eq!(
+        e["actions"][0]["target"]["name_contains"][0],
+        "Over the Top"
+    );
+    let e = a1("Stop any Grapple with \"Disqualification\" in the text.");
+    assert_eq!(
+        e["actions"][0]["target"]["text_contains"][0],
+        "Disqualification"
+    );
+    // A plain stop leaves target null.
+    let e = a1("Stop any Strike.");
+    assert_eq!(e["actions"][0]["target"], Value::Null);
 }

@@ -1039,6 +1039,13 @@ pub enum Action {
         /// schema v63
         #[serde(default)]
         even_unstoppable: bool,
+        /// Extra constraint on the stopped attack beyond `order`/`atk_type` — "Stop
+        /// any Submission with \"Over the Top\" in the name" / "… with \"X\" in the
+        /// text". Only `name_contains`/`text_contains` are set here (order/type stay
+        /// on the flat fields); matched via `card_matches` in `stop_matches_for`.
+        /// `None` = no extra filter. schema v66
+        #[serde(default)]
+        target: Option<CardFilter>,
     },
     StopRequiresTag {
         tag: String,
@@ -1857,6 +1864,13 @@ pub enum IrNode {
         /// schema v63
         #[serde(default)]
         even_unstoppable: bool,
+        /// Extra constraint on the stopped attack beyond `order`/`atk_type` — "Stop
+        /// any Submission with \"Over the Top\" in the name" / "… with \"X\" in the
+        /// text". Only `name_contains`/`text_contains` are set here (order/type stay
+        /// on the flat fields); matched via `card_matches` in `stop_matches_for`.
+        /// `None` = no extra filter. schema v66
+        #[serde(default)]
+        target: Option<CardFilter>,
     },
     StopRequiresTag {
         tag: String,

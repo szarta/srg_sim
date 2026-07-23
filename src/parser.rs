@@ -534,21 +534,48 @@ fn stop_condition(text: &str) -> Option<Condition> {
     None
 }
 
+/// Peel a trailing `with "X" in the (name|text)` qualifier off a stop-target part,
+/// returning the bare `<order?> <type>` head and the name/text `CardFilter` (or
+/// `None`) — "Submission with \"Over the Top\" in the name".
+fn strip_target_filter(part: &str) -> (&str, Option<CardFilter>) {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"^(.*?) with "([^"]+)" in the (name|text)$"#).unwrap());
+    let p = part.trim();
+    if let Some(c) = RE.captures(p) {
+        let names = vec![c[2].to_owned()];
+        let filter = if &c[3] == "name" {
+            CardFilter {
+                name_contains: names,
+                ..Default::default()
+            }
+        } else {
+            CardFilter {
+                text_contains: names,
+                ..Default::default()
+            }
+        };
+        return (c.get(1).unwrap().as_str(), Some(filter));
+    }
+    (p, None)
+}
+
 /// Parse a "stop any …" target into `Stop` actions, or `None` if any part is not
 /// a plain `<type>` / `<order> <type>` (handles the "X or Y" two-target form). A
 /// trailing "(that / even if it) cannot be stopped" flags every Stop to bypass the
-/// attack's `Unstoppable`.
+/// attack's `Unstoppable`; a `with "X" in the name/text` qualifier sets `target`.
 fn stop_targets(text: &str) -> Option<Vec<Action>> {
     static OR_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+or\s+").unwrap());
-    let (target, even_unstoppable) = strip_stop_override(text.trim());
+    let (body, even_unstoppable) = strip_stop_override(text.trim());
     let mut stops = Vec::new();
-    for part in OR_RE.split(target) {
-        let m = STOP_PART_RE.captures(norm_stop_part(part))?;
+    for part in OR_RE.split(body) {
+        let (head, target) = strip_target_filter(part);
+        let m = STOP_PART_RE.captures(norm_stop_part(head))?;
         stops.push(Action::Stop {
             order: m.get(1).map(|g| order(g.as_str())),
             atk_type: Some(atk(&m[2])),
             source_is_skillreq: false,
             even_unstoppable,
+            target,
         });
     }
     if stops.is_empty() {

@@ -1237,6 +1237,9 @@ class Stop(IRNode):
     #: "stop any … that/even-if cannot be stopped" — bypasses the attack's
     #: Unstoppable declaration. schema v63
     even_unstoppable: bool = False
+    #: extra name/text constraint on the stopped attack ("… with \"X\" in the
+    #: name/text"); order/type stay on the flat fields. schema v66
+    target: CardFilter | None = None
 
 
 @dataclass(frozen=True)
