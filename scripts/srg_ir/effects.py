@@ -798,6 +798,8 @@ class Flip(IRNode):
 
     n: int = 1
     who: Who = Who.SELF
+    per: CardFilter | None = None  # per-count: `n` scales by the count of matching cards...
+    per_who: Who = Who.SELF  # ...in `per_who`'s board ("flip N for each Follow Up you have")
 
 
 @dataclass(frozen=True)

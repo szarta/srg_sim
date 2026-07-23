@@ -743,6 +743,12 @@ pub enum Action {
     Flip {
         n: i64,
         who: Who,
+        /// Per-count: flip `n` times the number of `per_who`'s cards matching this
+        /// filter ("Flip N cards for each Follow Up you have in play").
+        #[serde(default)]
+        per: Option<CardFilter>,
+        #[serde(default)]
+        per_who: Who,
     },
     Discard {
         selector: CardFilter,
@@ -1568,6 +1574,12 @@ pub enum IrNode {
     Flip {
         n: i64,
         who: Who,
+        /// Per-count: flip `n` times the number of `per_who`'s cards matching this
+        /// filter ("Flip N cards for each Follow Up you have in play").
+        #[serde(default)]
+        per: Option<CardFilter>,
+        #[serde(default)]
+        per_who: Who,
     },
     Discard {
         selector: CardFilter,

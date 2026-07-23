@@ -975,7 +975,18 @@ impl Engine {
                 },
                 key,
             )?,
-            Action::Flip { n, who } => self.act_flip(*n, *who, key),
+            Action::Flip {
+                n,
+                who,
+                per,
+                per_who,
+            } => {
+                let mut count = *n;
+                if let Some(per) = per {
+                    count *= self.per_multiplier(per, *per_who, key, None);
+                }
+                self.act_flip(count, *who, key);
+            }
             Action::Discard {
                 selector,
                 count,
@@ -7603,6 +7614,97 @@ mod bury_opp_discard_tests {
         assert_eq!(b.deck.len(), 1, "one card reached B's deck bottom");
         // The Finish (most recyclable) is the one buried.
         assert!(b.deck.iter().any(|c| c.db_uuid == "b-fin"));
+    }
+}
+
+#[cfg(test)]
+mod flip_percount_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    fn card(uuid: &str, order: &str) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid,
+            "number": 1, "play_order": order, "raw_text": "", "tags": [],
+            "finish_bonuses": {}, "effects": []}))
+        .unwrap()
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn lead_filter() -> Value {
+        json!({"@type": "CardFilter", "number": null, "atk_type": null,
+            "play_order": "Lead", "play_orders": [], "tag": null, "name": null, "raw": null,
+            "name_contains": [], "text_contains": []})
+    }
+
+    /// "Flip 1 card for each Lead you have in play": milling scales by the count of
+    /// A's own Leads, and the flipped cards land in A's discard.
+    #[test]
+    fn per_count_flip_scales_the_mill_by_board_count() {
+        let mut engine = engine();
+        {
+            let a = engine.state.players.get_mut("A").unwrap();
+            a.deck = (0..10).map(|i| card(&format!("d{i}"), "Finish")).collect();
+            a.in_play = vec![
+                card("l0", "Lead"),
+                card("l1", "Lead"),
+                card("f0", "Followup"),
+            ];
+        }
+        let flip: Action = serde_json::from_value(json!({
+            "@type": "Flip", "n": 1, "who": "SELF", "per": lead_filter(), "per_who": "SELF"
+        }))
+        .unwrap();
+        engine.apply_action(&flip, "A", "").unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(a.discard.len(), 2, "two Leads -> two cards milled");
+        assert_eq!(a.deck.len(), 8, "deck shrank by the same two");
+    }
+
+    /// A zero board count flips nothing (0 * n = 0), leaving the deck intact.
+    #[test]
+    fn per_count_flip_with_no_matches_mills_nothing() {
+        let mut engine = engine();
+        {
+            let a = engine.state.players.get_mut("A").unwrap();
+            a.deck = (0..5).map(|i| card(&format!("d{i}"), "Finish")).collect();
+            a.in_play = vec![card("f0", "Followup")];
+        }
+        let flip: Action = serde_json::from_value(json!({
+            "@type": "Flip", "n": 2, "who": "SELF", "per": lead_filter(), "per_who": "SELF"
+        }))
+        .unwrap();
+        engine.apply_action(&flip, "A", "").unwrap();
+        assert_eq!(
+            engine.state.players["A"].deck.len(),
+            5,
+            "no Leads -> no mill"
+        );
+        assert!(engine.state.players["A"].discard.is_empty());
     }
 }
 

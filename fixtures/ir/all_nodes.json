@@ -252,6 +252,8 @@
   {
     "@type": "Flip",
     "n": 0,
+    "per": null,
+    "per_who": "SELF",
     "who": "SELF"
   },
   {

@@ -641,6 +641,8 @@
       {
         "@type": "Flip",
         "n": 1,
+        "per": null,
+        "per_who": "SELF",
         "who": "SELF"
       }
     ],
@@ -1105,6 +1107,8 @@
       {
         "@type": "Flip",
         "n": 1,
+        "per": null,
+        "per_who": "SELF",
         "who": "SELF"
       }
     ],
@@ -2256,6 +2260,8 @@
       {
         "@type": "Flip",
         "n": 1,
+        "per": null,
+        "per_who": "SELF",
         "who": "OPP"
       }
     ],
@@ -4393,6 +4399,8 @@
       {
         "@type": "Flip",
         "n": 1,
+        "per": null,
+        "per_who": "SELF",
         "who": "SELF"
       }
     ],
@@ -4857,6 +4865,8 @@
       {
         "@type": "Flip",
         "n": 1,
+        "per": null,
+        "per_who": "SELF",
         "who": "SELF"
       }
     ],

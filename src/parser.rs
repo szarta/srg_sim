@@ -181,7 +181,29 @@ fn discard_choose(count: i64, selector: CardFilter) -> Action {
 }
 
 fn flip(n: i64, who: Who) -> Action {
-    Action::Flip { n, who }
+    Action::Flip {
+        n,
+        who,
+        per: None,
+        per_who: Who::SelfSide,
+    }
+}
+
+/// "<flipper> flips N cards for each <desc> <per_who> ha(s|ve) in play" — the
+/// per-count flip family, mirroring [`per_draw`].
+fn per_flip(n: i64, who: Who, desc: &str, per_who: Who) -> Option<Effect> {
+    let per = count_filter(desc)?;
+    Some(eff(
+        on_hit(),
+        vec![Action::Flip {
+            n,
+            who,
+            per: Some(per),
+            per_who,
+        }],
+        Condition::Always,
+        Duration::Instant,
+    ))
 }
 
 fn bury(count: i64, who: Who) -> Action {
@@ -963,6 +985,14 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        rule(
+            r"Flip (\d+) cards? for each (?:other )?(.+?) you have in play",
+            |c| per_flip(num(c, 1), Who::SelfSide, &c[2], Who::SelfSide),
+        ),
+        rule(
+            r"Your opponent flips (\d+) cards? for each (?:other )?(.+?) you have in play",
+            |c| per_flip(num(c, 1), Who::Opp, &c[2], Who::SelfSide),
+        ),
         rule(
             r"Bury (?:up to )?(\d+) cards? in your opponent's discard pile",
             |c| {

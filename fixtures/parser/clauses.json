@@ -787,6 +787,8 @@
             {
               "@type": "Flip",
               "n": 1,
+              "per": null,
+              "per_who": "SELF",
               "who": "SELF"
             }
           ],
@@ -1059,9 +1061,23 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Flip 2 cards for each other Follow Up you have in play.",
-              "reason": "no grammar match"
+              "@type": "Flip",
+              "n": 2,
+              "per": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": "Followup",
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "per_who": "SELF",
+              "who": "SELF"
             }
           ],
           "condition": {
@@ -1077,7 +1093,13 @@
           "raw_clause": "Flip 2 cards for each other Follow Up you have in play.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
           }
         }
       ],
@@ -1307,6 +1329,8 @@
             {
               "@type": "Flip",
               "n": 1,
+              "per": null,
+              "per_who": "SELF",
               "who": "SELF"
             }
           ],
@@ -2878,6 +2902,8 @@
             {
               "@type": "Flip",
               "n": 1,
+              "per": null,
+              "per_who": "SELF",
               "who": "OPP"
             }
           ],
@@ -8097,7 +8123,7 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 119,
+    "grammar": 120,
     "override": 58,
     "top_unparsed": [
       [
@@ -8157,10 +8183,6 @@
         1
       ],
       [
-        "Flip N cards for each other Follow Up you have in play.",
-        1
-      ],
-      [
         "Bury up to N cards in any player's discard pile.",
         1
       ],
@@ -8179,10 +8201,14 @@
       [
         "Add N to your hand, put N on the top of your deck, and bury or put the other in your discard pile.",
         1
+      ],
+      [
+        "If this is a Ring of Fire match, your opponent flips N cards.",
+        1
       ]
     ],
     "total": 217,
-    "unsupported": 40
+    "unsupported": 39
   },
   "coverage_records": [
     {

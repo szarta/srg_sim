@@ -479,6 +479,20 @@ fn flip_grammar() {
     assert_eq!(a[1]["who"], "OPP");
     assert_eq!(a[0]["n"], 3);
     assert_eq!(a[1]["n"], 3);
+
+    // Per-count: "for each <order> you have in play" -> Flip.per / per_who=SELF.
+    let a = acts("Flip 1 card for each Follow Up you have in play.");
+    assert_eq!(a[0]["@type"], "Flip");
+    assert_eq!(a[0]["who"], "SELF");
+    assert_eq!(a[0]["per"]["play_order"], "Followup");
+    assert_eq!(a[0]["per_who"], "SELF");
+
+    // "for each other <S>" strips "other"; opponent flips, still counted vs SELF.
+    let a = acts("Your opponent flips 2 cards for each other Strike you have in play.");
+    assert_eq!(a[0]["who"], "OPP");
+    assert_eq!(a[0]["per"]["atk_type"], "Strike");
+    assert_eq!(a[0]["per_who"], "SELF");
+    assert_eq!(a[0]["n"], 2);
 }
 
 /// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
