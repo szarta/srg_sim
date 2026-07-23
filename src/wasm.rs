@@ -1,5 +1,5 @@
 //! WASM/JS bindings — the browser face of the resumable [`Session`] (M-R2,
-//! `docs/design/substrate-split.md` §7). Enabled by the `wasm` feature; the web
+//! `docs/design/substrate-split.rst` §7). Enabled by the `wasm` feature; the web
 //! presentation layer (`web/`) is *purely presentational* over what this exposes.
 //!
 //! The same crate that runs natively server-side (authoritative PvP) compiles to

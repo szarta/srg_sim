@@ -1,4 +1,4 @@
-//! Parser regression golden (`docs/design/substrate-split.md` §6, Phase 2).
+//! Parser regression golden (`docs/design/substrate-split.rst` §6, Phase 2).
 //!
 //! The rules parser is the one part of the engine that is **RNG-independent** —
 //! pure `rules_text -> [Effect]` — so it is checked against a committed golden

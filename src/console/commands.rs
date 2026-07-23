@@ -1,6 +1,6 @@
 //! The console subcommands — a port of `cli.py`'s `play` / `coverage` / `analyze`
 //! / `replay`, thin shells over `srg_core`. (`review` and the full matchup-report
-//! tooling stay in Python until M-R3; see `docs/design/substrate-split.md` §7.)
+//! tooling stay in Python until M-R3; see `docs/design/substrate-split.rst` §7.)
 
 use super::loader::{card_type, db_uuid, is_top96, overrides, rules_text, CardIndex};
 use anyhow::{anyhow, bail, Context, Result};

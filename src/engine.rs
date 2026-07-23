@@ -1,5 +1,5 @@
 //! Turn loop, effect executor, stop resolution, finish sequence (DESIGN.md §6),
-//! as a **resumable state machine** (`docs/design/substrate-split.md` §3.3/§4).
+//! as a **resumable state machine** (`docs/design/substrate-split.rst` §3.3/§4).
 //!
 //! The Python engine calls `policy.choose(...)` synchronously at each decision
 //! point (`engine.py::_decide`). Here that one call becomes a **yield point**:
@@ -48,7 +48,7 @@ pub struct GameResult {
 }
 
 /// Server → client: the engine has suspended awaiting one player's choice
-/// (`docs/design/substrate-split.md` §4). Its `point`/`legal`/`chosen` fields are
+/// (`docs/design/substrate-split.rst` §4). Its `point`/`legal`/`chosen` fields are
 /// the §8 `decision` event; `observable_state` is `GameState::observable(viewer)`.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DecisionRequest {

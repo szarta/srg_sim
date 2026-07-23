@@ -5,7 +5,7 @@
 //! The generator is **not** a language-specific PRNG but canonical splitmix64,
 //! so the exact draw stream is identical in the Python oracle and here — across
 //! native and `wasm32` targets alike. That is the prerequisite for byte-identical
-//! logs (`docs/design/substrate-split.md` §5).
+//! logs (`docs/design/substrate-split.rst` §5).
 //!
 //! The whole contract is small enough to restate, and is matched bit-for-bit by
 //! the Python reference (`fixtures/rng/splitmix64.json` pins it cross-language):

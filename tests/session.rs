@@ -137,7 +137,7 @@ fn local_seats_run_to_done() {
     }
 }
 
-/// Snapshot/replay state parity *at every decision boundary* (substrate-split.md §6,
+/// Snapshot/replay state parity *at every decision boundary* (substrate-split.rst §6,
 /// task 75): at each park, `restore(snapshot)` must reproduce the exact outstanding
 /// request the live session holds, and at `Done` the exact log — the session is a pure
 /// function of its snapshot, boundary for boundary, not just at the endpoints.

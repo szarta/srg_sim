@@ -340,7 +340,7 @@ pending_roll_mods{this,next}, freq_counters, gimmick_blanked:bool, flags`. `Game
 shuffles/searches go through the seeded RNG. **The seeded RNG is a portable
 `splitmix64`** (identical stream in Python and the Rust engine), not a `random.Random`
 wrapper, so cross-engine logs are byte-identical (see the substrate-split doc,
-`docs/design/substrate-split.md` §5); this reseeds existing golden logs and touches
+`docs/design/substrate-split.rst` §5); this reseeds existing golden logs and touches
 neither §3 nor §8. **Bury** = move a card from `discard` to the
 **bottom of `deck`**; **Flip** = move the top of `deck` to `discard` (there is no separate
 "buried" zone — a buried card lives in the deck).
@@ -488,7 +488,7 @@ five-region rule); the viewer's own `hand` is full. RNG, `flags`, `freq_counters
 pairs with the log's `hidden` flag (§8): the engine keeps ground-truth ids for deterministic
 replay, and `observable` is what decides what a given viewer is allowed to know.
 
-**Decision protocol / wire form** (substrate split — `docs/design/substrate-split.md`
+**Decision protocol / wire form** (substrate split — `docs/design/substrate-split.rst`
 §4). The synchronous `_decide(point, key, legal)` call has a transport form for
 remote/interactive play: server → `DecisionRequest{request_id, seq, viewer, point,
 legal, observable_state}`; client → `DecisionResponse{request_id, chosen}`. `point`,
@@ -580,7 +580,7 @@ tests/            # parity + regression (see §10)
 DESIGN.md README.md pyproject.toml
 ```
 
-**Substrate split & Rust end-state** (`docs/design/substrate-split.md`). The modules
+**Substrate split & Rust end-state** (`docs/design/substrate-split.rst`). The modules
 above divide into a **substrate** — the authoritative rules engine (`cards`, `loader`,
 `effects`/`conditions`, `rules_parser`+`overrides`, `state`, `engine`, `finish`,
 `stops`, `rng`, `gamelog`, `policy`, plus a new `session` for the wire protocol) — and
@@ -675,7 +675,7 @@ Regression against the validated `fae_comp` tools:
 
 ## 13. Substrate split & Rust migration
 
-Full detail: [`docs/design/substrate-split.md`](docs/design/substrate-split.md) (a
+Full detail: [`docs/design/substrate-split.rst`](docs/design/substrate-split.rst) (a
 review artifact of the same class as this document). Summary of what it pins:
 
 - **The boundary.** A **substrate** (authoritative rules engine + parser + a new

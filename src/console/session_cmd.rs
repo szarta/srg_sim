@@ -1,5 +1,5 @@
 //! `srg session open|submit|observe` — the stateless, snapshot-threaded face of the
-//! resumable [`Session`] (`docs/design/substrate-split.md` §3.3/§4), the substrate the
+//! resumable [`Session`] (`docs/design/substrate-split.rst` §3.3/§4), the substrate the
 //! MCP server (`mcp_server/`) drives.
 //!
 //! A [`Session`] is a pure function of its serializable [`SessionSnapshot`], so each

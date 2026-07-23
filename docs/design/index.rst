@@ -13,4 +13,5 @@ section supplements it, it does not replace it.
    :maxdepth: 1
 
    overview
+   substrate-split
    open_questions

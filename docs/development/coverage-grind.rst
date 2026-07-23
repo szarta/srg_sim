@@ -4,8 +4,9 @@ Coverage grind playbook
 The parser maps card ``rules_text`` to the Effect IR; anything it cannot map
 becomes an explicit ``Unsupported`` node that surfaces in the coverage report
 (never silently dropped — CLAUDE.md ground rule). *Grinding* that tail means
-picking a recurring mechanic family (see :file:`docs/coverage-tail-audit.md` for
-the ranked buckets) and either teaching the parser new grammar or modeling a
+picking a recurring mechanic family (see the :doc:`coverage-tail audit
+</coverage-tail-audit>` for the ranked buckets) and either teaching the parser
+new grammar or modeling a
 specific card in :file:`overrides.yaml`.
 
 This page is the accumulated procedure and the traps — the things that are not

@@ -1,4 +1,4 @@
-//! The wire-facing match driver (`docs/design/substrate-split.md` §3.3/§4).
+//! The wire-facing match driver (`docs/design/substrate-split.rst` §3.3/§4).
 //!
 //! [`Session`] externalizes the engine's one synchronous decision call into a
 //! resumable protocol: it advances the turn loop until a player must choose, then

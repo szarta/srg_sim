@@ -15,7 +15,7 @@ pub enum SrgError {
     Deck(String),
 
     /// A recorded log or fixture diverged from what the engine reproduced
-    /// (DESIGN.md §8 replay; the conformance harness, substrate-split.md §6).
+    /// (DESIGN.md §8 replay; the conformance harness, substrate-split.rst §6).
     #[error("conformance mismatch: {0}")]
     Conformance(String),
 

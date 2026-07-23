@@ -4,7 +4,7 @@
 //! DB, then `play` a seeded match, report parser `coverage`, `analyze` a batch of
 //! games, or `replay` a recorded sim log and verify it reproduces. The full
 //! matchup-report tooling and post-game `review` stay in Python until M-R3
-//! (`docs/design/substrate-split.md` §7). The lib/bin boundary — the substrate never
+//! (`docs/design/substrate-split.rst` §7). The lib/bin boundary — the substrate never
 //! importing a consumer — is enforced by the crate graph.
 
 mod console;

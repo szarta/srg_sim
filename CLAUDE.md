@@ -2,7 +2,7 @@
 
 Headless, deterministic **SRG Supershow** match engine, in **Rust**. Read this
 first, then [`DESIGN.md`](DESIGN.md) and
-[`docs/design/substrate-split.md`](docs/design/substrate-split.md) (the Rust
+[`docs/design/substrate-split.rst`](docs/design/substrate-split.rst) (the Rust
 migration plan). This crate (`srg-core`, lib `srg_core`, bin `srg`) is the
 authoritative rules core; consumers (console, MCP, WASM/web, mobile) sit on top.
 
