@@ -89,9 +89,14 @@ fn read_snapshot() -> Result<SessionSnapshot> {
 
 /// Print `{snapshot, step}` as one JSON line (the caller threads `snapshot` back in).
 fn emit(session: &Session, step: &Step) -> Result<()> {
+    // `log` is the play-by-play as of this step (canonical events) — the whole
+    // match replays each step, so it is the complete log up to here; a client
+    // shows the tail it hasn't seen. The web play screen wants this too.
+    let log = session.log().map(|l| l.canonical()).unwrap_or_default();
     let out = json!({
         "snapshot": session.snapshot(),
         "step": step.to_json(),
+        "log": log,
     });
     println!("{}", serde_json::to_string(&out)?);
     Ok(())

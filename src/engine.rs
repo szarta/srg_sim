@@ -1113,6 +1113,10 @@ impl Engine {
             | Action::CountsAsInPlay { .. }
             | Action::ElectBumpOnSameSkill { .. }
             | Action::Unstoppable { .. }
+            // A card's Stop declaration is read structurally at stop-time
+            // (`card_can_stop`), never executed here — so an OnPlay Stop is a no-op,
+            // not an "unsupported" event.
+            | Action::Stop { .. }
             | Action::AlsoLead { .. }
             | Action::DoubleFinishIfBumped
             | Action::DisqualificationRule { .. }
