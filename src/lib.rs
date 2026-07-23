@@ -33,6 +33,7 @@ pub mod gamelog;
 pub mod ir;
 pub mod parser;
 pub mod policy;
+pub mod record;
 pub mod rng;
 pub mod session;
 pub mod skills;
@@ -59,6 +60,7 @@ pub fn version_info() -> serde_json::Value {
             "effect_ir": ir::SCHEMA_VERSION,
             "game_log": gamelog::SCHEMA_VERSION,
             "observable_state": state::OBSERVABLE_SCHEMA_VERSION,
+            "match_record": record::RECORD_SCHEMA_VERSION,
         },
         "policies": policy::POLICIES,
     })

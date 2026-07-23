@@ -10,7 +10,7 @@
 mod console;
 
 use clap::{Parser, Subcommand};
-use console::{commands, default_cards_path, session_cmd};
+use console::{commands, default_cards_path, record_cmd, session_cmd};
 use std::path::PathBuf;
 
 /// SRG Supershow match engine — command-line interface.
@@ -115,6 +115,37 @@ enum Command {
         /// Bank the first decisive game as a conformance replay-golden at this path.
         #[arg(long)]
         capture: Option<PathBuf>,
+        #[arg(long)]
+        cards: Option<PathBuf>,
+    },
+    /// Play one seeded match and write it as a portable match record (frames +
+    /// replay seed) — the interchange format consumers store and replay.
+    Record {
+        deck_a: PathBuf,
+        deck_b: PathBuf,
+        /// Where to write the record JSON.
+        #[arg(long)]
+        out: PathBuf,
+        #[arg(long, default_value_t = 0)]
+        seed: u64,
+        #[arg(long, default_value = "heuristic")]
+        policy_a: String,
+        #[arg(long, default_value = "heuristic")]
+        policy_b: String,
+        /// Free-text provenance ("get-diced.com Run It Back", "locals 2026-07-19").
+        #[arg(long, default_value = "")]
+        source: String,
+        /// Header timestamp (kept out of the engine).
+        #[arg(long, default_value = "")]
+        created: String,
+        #[arg(long)]
+        cards: Option<PathBuf>,
+    },
+    /// Check a match record — including a hand-authored observer archive — for
+    /// structural problems; with `--cards`, also resolve every card uuid.
+    ValidateRecord {
+        record: PathBuf,
+        /// Cross-check every card uuid against this card DB export.
         #[arg(long)]
         cards: Option<PathBuf>,
     },
@@ -262,6 +293,33 @@ fn main() -> anyhow::Result<()> {
             capture.as_deref(),
         ),
         Command::Session { action } => run_session(action),
+        Command::Record {
+            deck_a,
+            deck_b,
+            out,
+            seed,
+            policy_a,
+            policy_b,
+            source,
+            created,
+            cards,
+        } => record_cmd::record(
+            &cards_or_default(cards),
+            (&deck_a, &deck_b),
+            seed,
+            (&policy_a, &policy_b),
+            srg_core::record::RecordMeta {
+                created,
+                source,
+                ..Default::default()
+            },
+            &out,
+        ),
+        Command::ValidateRecord { record, cards } => {
+            // `--cards` is opt-in here: an observer archive is often validated
+            // without a card DB to hand.
+            record_cmd::validate(&record, cards.as_deref())
+        }
         Command::Repl {
             deck_a,
             deck_b,

@@ -556,6 +556,46 @@ result      {winner, reason:"finish|count_out|disqualification|pinfall", turns}
 imitation-learning dataset. Replay = re-run the engine with the header seed and assert the
 event stream matches.
 
+### 8.1 Match record (`record.rs`) — the portable, publishable artifact
+
+The log above is the **engine's** stream: loss-less, seeded, and internal. It is not
+the thing a consumer ships. A `decision` event enumerates the deciding player's whole
+hand in `legal`, so a published log leaks hidden state; the header is deliberately
+free of an engine-version stamp (it would make the conformance goldens
+commit-dependent); and it cannot be authored by hand.
+
+A **match record** (`schemas/v1/match_record.schema.json`) is the interchange format
+consumers persist, publish, and replay. One schema, two kinds:
+
+```jsonc
+{"schema_version": 1, "kind": "full|observer",
+ "engine": {<version_info(): engine, commit, schemas, policies>},   // full only
+ "meta": {created, source, match_type, notes},
+ "players": {"A": {player, competitor, entrance, deck?}, "B": {...}},
+ "frames": [ {seq, turn_no, active, crowd_meter, action, players:{A,B}} ],
+ "result": {winner, reason, turns},
+ "replay": {<session snapshot: seed + decks + seats + decisions>}}   // full only
+```
+
+A **frame** is one replay step: the *observable* (spectator) public state — both
+boards, both discards, hand/deck **sizes** — plus the `action` that produced it, using
+the same type names as the log events above. Frames are the projection of the log:
+`decision` and `unsupported` events are dropped (not redacted), and a movement the log
+marks `hidden` becomes a count with no card ids. Nothing in a record, either kind,
+carries a hidden zone's contents — that is what makes it publishable.
+
+- **full** — engine-run. Carries `replay`, so the frames are *derivable*: a consumer
+  may store the seed alone and rehydrate (`Session::restore` → `frames()`).
+- **observer** — a real-life or other-platform match someone transcribed. Frames are
+  the record; there is no seed and it is not re-simulatable. Optional per-frame fields
+  (`hand_size`, `deck_size`, `gimmick_blanked`) and a `note` action exist so an
+  importer never has to invent or distort what they saw.
+
+A viewer walks `frames` and so plays both kinds identically. `MatchRecord::validate`
+(`srg validate-record`, WASM `validate_record`) is the import gate: structural
+consistency (dense `seq`, chronological turns, final frame agrees with `result`,
+observer records carry no seed) with card-uuid resolution when a card DB is supplied.
+
 ---
 
 ## 9. Module layout

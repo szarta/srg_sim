@@ -81,6 +81,19 @@ for a recurring shape (DB-wide), or a bespoke **override** in `overrides.yaml`
 references. See [`docs/development/coverage-grind.rst`](docs/development/coverage-grind.rst)
 for the modeling procedure and traps.
 
+## Records: storing, publishing, importing a match
+
+Consumers persist and replay matches as **match records**, not raw game logs (the log
+leaks hidden state and can't be hand-authored). One versioned schema serves engine-run
+games and matches transcribed from real life; a viewer replays both by walking the same
+observable-frame sequence. Format guide:
+[`schemas/v1/match_record.md`](schemas/v1/match_record.md), DESIGN.md §8.1.
+
+```bash
+srg record decks/<a>.yaml decks/<b>.yaml --out rec.json --seed 7   # frames + replay seed
+srg validate-record rec.json --cards <cards.yaml>                   # gate an imported archive
+```
+
 ## Tasks
 
 Tracked with `todo-sqlite-cli` (`.todo-sqlite-cli` marker → `todo-sqlite-cli.db`):

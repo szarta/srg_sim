@@ -14,6 +14,7 @@
 
 use crate::cards::Deck;
 use crate::engine::{DecisionResponse, Step};
+use crate::record::{MatchRecord, RecordMeta, Validation};
 use crate::session::{Seat, Session, SessionSnapshot};
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -94,6 +95,53 @@ impl WasmSession {
     /// to [`restore`](Self::restore) to reconstruct this exact match.
     pub fn snapshot(&self) -> String {
         json!(self.inner.snapshot()).to_string()
+    }
+
+    /// The observable [`Frame`](crate::record::Frame) sequence of the match so far, as
+    /// a JSON array string — the ordered public states a replay viewer steps through.
+    /// Append-only; prefer [`frames_from`](Self::frames_from) while a match is live.
+    pub fn frames(&self) -> String {
+        json!(self.inner.frames()).to_string()
+    }
+
+    /// The frames from ordinal `start` on (the incremental read).
+    pub fn frames_from(&self, start: usize) -> String {
+        json!(self.inner.frames_from(start)).to_string()
+    }
+
+    /// How many frames the match has produced so far.
+    pub fn frame_count(&self) -> usize {
+        self.inner.frames().len()
+    }
+
+    /// The finished match as a portable record JSON string (`schemas/v1/
+    /// match_record.schema.json`) — frames, participants, result, engine stamp, and
+    /// the replay seed. Errors while the match is still in progress.
+    pub fn record(&self, source: &str) -> Result<String, JsError> {
+        let meta = RecordMeta {
+            source: source.to_owned(),
+            ..RecordMeta::default()
+        };
+        let record = self
+            .inner
+            .record(meta)
+            .ok_or_else(|| JsError::new("match is not finished: no record yet"))?;
+        Ok(json!(record).to_string())
+    }
+}
+
+/// Validate a match record (either kind) without running the engine: returns
+/// `{"errors":[…],"warnings":[…]}` as a JSON string. Errors mean the archive is
+/// malformed; warnings are advisory. Unparseable JSON is itself one error.
+#[wasm_bindgen]
+pub fn validate_record(record: &str) -> String {
+    match MatchRecord::parse(record) {
+        Ok(record) => json!(record.validate()).to_string(),
+        Err(e) => json!(Validation {
+            errors: vec![format!("parse record: {e}")],
+            warnings: Vec::new(),
+        })
+        .to_string(),
     }
 }
 

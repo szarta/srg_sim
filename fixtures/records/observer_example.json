@@ -1,0 +1,1208 @@
+{
+  "schema_version": 1,
+  "kind": "observer",
+  "meta": {
+    "created": "2026-07-19T20:15:00Z",
+    "source": "in person \u2014 Saturday locals, 2026-07-19 (transcribed by hand)",
+    "match_type": "standard",
+    "notes": "Example observer archive: only what a spectator could see. No hidden zones, no seed; not re-simulatable."
+  },
+  "players": {
+    "A": {
+      "player": "Brandon",
+      "competitor": {
+        "card": "894c9965da684adb8ab5f532bafbff59",
+        "name": "The Bull"
+      },
+      "entrance": {
+        "card": "043060c38ea24c07a361760340332804",
+        "name": "Calling in Kanik"
+      }
+    },
+    "B": {
+      "player": "Sam",
+      "competitor": {
+        "card": "c37902890fa44033ad8ca1412ba9ae3d",
+        "name": "Fae Dragon"
+      },
+      "entrance": {
+        "card": "cc6fbc06c4ac4d8480f3a5367a0120a0",
+        "name": "2 for the Supershow"
+      }
+    }
+  },
+  "frames": [
+    {
+      "seq": 0,
+      "turn_no": 0,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "start"
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 1,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "roll",
+        "player": "A",
+        "skill": "Power",
+        "base": 10,
+        "value": 10
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 2,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "roll",
+        "player": "B",
+        "skill": "Agility",
+        "base": 7,
+        "value": 7
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 3,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "turn_result",
+        "winner": "A",
+        "tie_bumps": 0
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 4,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "play",
+        "player": "A",
+        "card": {
+          "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+          "name": "2 Handed Toss",
+          "number": 2
+        },
+        "order": "Lead",
+        "atk_type": "Grapple"
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 5,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "play",
+        "player": "A",
+        "card": {
+          "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+          "name": "A Powerful Hand Buster",
+          "number": 21
+        },
+        "order": "Followup",
+        "atk_type": "Submission"
+      },
+      "players": {
+        "A": {
+          "in_play": [
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            }
+          ],
+          "discard": [],
+          "hand_size": 2,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 6,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "play",
+        "player": "A",
+        "card": {
+          "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+          "name": "Pig Tail Swing",
+          "number": 29
+        },
+        "order": "Finish",
+        "atk_type": "Submission"
+      },
+      "players": {
+        "A": {
+          "in_play": [
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "discard": [],
+          "hand_size": 1,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 7,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "stop",
+        "player": "B",
+        "card": {
+          "card": "662a432d1fe84d3288ab055dff4f6021",
+          "name": "Alpaca Slam",
+          "number": 26
+        },
+        "stopped": {
+          "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+          "name": "Pig Tail Swing",
+          "number": 29
+        },
+        "reason": "skill"
+      },
+      "players": {
+        "A": {
+          "in_play": [
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "discard": [],
+          "hand_size": 0,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [],
+          "hand_size": 3,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 8,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "discard",
+        "player": "A",
+        "count": 1,
+        "cards": [
+          {
+            "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+            "name": "Pig Tail Swing",
+            "number": 29
+          }
+        ],
+        "from": "in_play"
+      },
+      "players": {
+        "A": {
+          "in_play": [
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            }
+          ],
+          "hand_size": 0,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 2,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 9,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "discard",
+        "player": "A",
+        "count": 2,
+        "cards": [
+          {
+            "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+            "name": "2 Handed Toss",
+            "number": 2
+          },
+          {
+            "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+            "name": "A Powerful Hand Buster",
+            "number": 21
+          }
+        ],
+        "from": "in_play"
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 0,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 2,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 10,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "draw",
+        "player": "A",
+        "count": 3
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 2,
+          "deck_size": 27,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 11,
+      "turn_no": 1,
+      "active": "A",
+      "crowd_meter": 0,
+      "action": {
+        "type": "draw",
+        "player": "B",
+        "count": 1
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 12,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 0,
+      "action": {
+        "type": "roll",
+        "player": "A",
+        "skill": "Technique",
+        "base": 6,
+        "value": 6
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 13,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 0,
+      "action": {
+        "type": "roll",
+        "player": "B",
+        "skill": "Agility",
+        "base": 7,
+        "value": 9,
+        "mods": [
+          {
+            "src": "entrance: 2 for the Supershow",
+            "delta": 2
+          }
+        ]
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 14,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 0,
+      "action": {
+        "type": "turn_result",
+        "winner": "B",
+        "tie_bumps": 0
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 15,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 0,
+      "action": {
+        "type": "play",
+        "player": "B",
+        "card": {
+          "card": "70770f5964b544a5bd324530ad563868",
+          "name": "2 Handed Slam",
+          "number": 11
+        },
+        "order": "Lead",
+        "atk_type": "Grapple"
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 16,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 0,
+      "action": {
+        "type": "play",
+        "player": "B",
+        "card": {
+          "card": "11e103e86aae4fcca8acfd598b210dfa",
+          "name": "All American Headlock (Grapple)",
+          "number": 15
+        },
+        "order": "Followup",
+        "atk_type": "None"
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [
+            {
+              "card": "70770f5964b544a5bd324530ad563868",
+              "name": "2 Handed Slam",
+              "number": 11
+            }
+          ],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 2,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 17,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 0,
+      "action": {
+        "type": "note",
+        "text": "Fae Dragon's gimmick fired; the crowd came alive."
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [
+            {
+              "card": "70770f5964b544a5bd324530ad563868",
+              "name": "2 Handed Slam",
+              "number": 11
+            },
+            {
+              "card": "11e103e86aae4fcca8acfd598b210dfa",
+              "name": "All American Headlock (Grapple)",
+              "number": 15
+            }
+          ],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 2,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 18,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 1,
+      "action": {
+        "type": "crowd_meter",
+        "delta": 1,
+        "value": 1
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [
+            {
+              "card": "70770f5964b544a5bd324530ad563868",
+              "name": "2 Handed Slam",
+              "number": 11
+            },
+            {
+              "card": "11e103e86aae4fcca8acfd598b210dfa",
+              "name": "All American Headlock (Grapple)",
+              "number": 15
+            }
+          ],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 2,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 19,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 1,
+      "action": {
+        "type": "play",
+        "player": "B",
+        "card": {
+          "card": "b01e49a0967d4506bb09fe6f559c8f40",
+          "name": "Curse To Sleep",
+          "number": 30
+        },
+        "order": "Finish",
+        "atk_type": "Submission"
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [
+            {
+              "card": "70770f5964b544a5bd324530ad563868",
+              "name": "2 Handed Slam",
+              "number": 11
+            },
+            {
+              "card": "11e103e86aae4fcca8acfd598b210dfa",
+              "name": "All American Headlock (Grapple)",
+              "number": 15
+            }
+          ],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 2,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 20,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 1,
+      "action": {
+        "type": "finish_attempt",
+        "player": "B",
+        "finish": {
+          "card": "b01e49a0967d4506bb09fe6f559c8f40",
+          "name": "Curse To Sleep",
+          "number": 30
+        },
+        "value": 12,
+        "crowd_meter": 1,
+        "auto_success": false
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [
+            {
+              "card": "70770f5964b544a5bd324530ad563868",
+              "name": "2 Handed Slam",
+              "number": 11
+            },
+            {
+              "card": "11e103e86aae4fcca8acfd598b210dfa",
+              "name": "All American Headlock (Grapple)",
+              "number": 15
+            },
+            {
+              "card": "b01e49a0967d4506bb09fe6f559c8f40",
+              "name": "Curse To Sleep",
+              "number": 30
+            }
+          ],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 0,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 21,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 1,
+      "action": {
+        "type": "breakout",
+        "defender": "A",
+        "broke_out": false,
+        "rolls": [
+          {
+            "skill": "Power",
+            "value": 4,
+            "penalty": 3,
+            "success": false
+          },
+          {
+            "skill": "Technique",
+            "value": 2,
+            "penalty": 3,
+            "success": false
+          }
+        ]
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [
+            {
+              "card": "70770f5964b544a5bd324530ad563868",
+              "name": "2 Handed Slam",
+              "number": 11
+            },
+            {
+              "card": "11e103e86aae4fcca8acfd598b210dfa",
+              "name": "All American Headlock (Grapple)",
+              "number": 15
+            },
+            {
+              "card": "b01e49a0967d4506bb09fe6f559c8f40",
+              "name": "Curse To Sleep",
+              "number": 30
+            }
+          ],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 0,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    },
+    {
+      "seq": 22,
+      "turn_no": 2,
+      "active": "B",
+      "crowd_meter": 1,
+      "action": {
+        "type": "result",
+        "winner": "B",
+        "reason": "finish",
+        "turns": 2
+      },
+      "players": {
+        "A": {
+          "in_play": [],
+          "discard": [
+            {
+              "card": "7c70b4f783274d70b2ad60bd6dbb5020",
+              "name": "Pig Tail Swing",
+              "number": 29
+            },
+            {
+              "card": "5fa232c20b704bd79d0a2f7ec2adedf5",
+              "name": "2 Handed Toss",
+              "number": 2
+            },
+            {
+              "card": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+              "name": "A Powerful Hand Buster",
+              "number": 21
+            }
+          ],
+          "hand_size": 3,
+          "deck_size": 24,
+          "gimmick_blanked": false
+        },
+        "B": {
+          "in_play": [
+            {
+              "card": "70770f5964b544a5bd324530ad563868",
+              "name": "2 Handed Slam",
+              "number": 11
+            },
+            {
+              "card": "11e103e86aae4fcca8acfd598b210dfa",
+              "name": "All American Headlock (Grapple)",
+              "number": 15
+            },
+            {
+              "card": "b01e49a0967d4506bb09fe6f559c8f40",
+              "name": "Curse To Sleep",
+              "number": 30
+            }
+          ],
+          "discard": [
+            {
+              "card": "662a432d1fe84d3288ab055dff4f6021",
+              "name": "Alpaca Slam",
+              "number": 26
+            }
+          ],
+          "hand_size": 0,
+          "deck_size": 26,
+          "gimmick_blanked": false
+        }
+      }
+    }
+  ],
+  "result": {
+    "winner": "B",
+    "reason": "finish",
+    "turns": 2
+  }
+}

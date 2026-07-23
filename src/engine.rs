@@ -384,6 +384,16 @@ pub struct Engine {
     decider: Box<dyn Decider>,
     /// Monotonic counter of decisions offered, for `request_id`/`seq`.
     decision_index: u64,
+    /// Ordered observable frames (the replay/interchange projection,
+    /// [`crate::record`]), captured alongside the log when
+    /// [`record_frames`](Engine::record_frames) is on. Off by default: batch drivers
+    /// (`analyze`, `audit`, the conformance corpus) play thousands of games and only
+    /// ever read the log.
+    frames: Vec<crate::record::Frame>,
+    /// uuid → name/number for every card in the match, so a frame can name a card in
+    /// transit. Built when recording is switched on.
+    card_names: crate::record::CardNames,
+    recording: bool,
 }
 
 impl Engine {
@@ -440,7 +450,29 @@ impl Engine {
             pending_roll_boost: 0,
             decider,
             decision_index: 0,
+            frames: Vec::new(),
+            card_names: Default::default(),
+            recording: false,
         }
+    }
+
+    /// Also capture the observable [`Frame`](crate::record::Frame) sequence as the
+    /// match plays — what a replay viewer walks (see [`crate::record`]). Call before
+    /// [`play`](Engine::play); off by default.
+    pub fn record_frames(&mut self) {
+        self.recording = true;
+        self.card_names = crate::record::CardNames::from_state(&self.state);
+    }
+
+    /// The frames captured so far (empty unless [`record_frames`](Engine::record_frames)
+    /// was called).
+    pub fn frames(&self) -> &[crate::record::Frame] {
+        &self.frames
+    }
+
+    /// Take ownership of the captured frames.
+    pub fn take_frames(&mut self) -> Vec<crate::record::Frame> {
+        std::mem::take(&mut self.frames)
     }
 
     fn build_header(
@@ -514,7 +546,20 @@ impl Engine {
     // -- logging -----------------------------------------------------------
 
     fn log(&mut self, event: Event) {
+        if self.recording {
+            self.capture(&event);
+        }
         self.log.append(event);
+    }
+
+    /// Project an event into an observable frame over the state as it stands *at*
+    /// the event (the engine logs each event after applying it). Events no observer
+    /// may see project to `None` and add no frame.
+    fn capture(&mut self, event: &Event) {
+        let seq = self.frames.len() as i64;
+        if let Some(frame) = crate::record::frame_for(seq, event, &self.state, &self.card_names) {
+            self.frames.push(frame);
+        }
     }
 
     fn log_effect(&mut self, src: &str, action: &str, target: Option<&str>, detail: Value) {
@@ -3205,6 +3250,9 @@ impl Engine {
     /// `Ok`; the [`Session`] driver shares the exact same body but resumes on each
     /// `Yield`. A match that hits [`TURN_CAP`] is a `turn_cap` draw.
     pub fn play(&mut self) -> Eng<GameResult> {
+        if self.recording && self.frames.is_empty() {
+            self.frames.push(crate::record::opening_frame(&self.state));
+        }
         self.setup()?;
         while self.result.is_none() && self.state.turn_no < TURN_CAP {
             self.turn()?;

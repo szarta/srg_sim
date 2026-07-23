@@ -25,6 +25,10 @@ use crate::cards::Deck;
 use crate::engine::{Decider, DecisionRequest, DecisionResponse, Engine, GameResult, Step, Yield};
 use crate::gamelog::GameLog;
 use crate::policy::{build_policy, Policy};
+use crate::record::{
+    CardRef, Frame, MatchRecord, MatchResult, Participant, RecordKind, RecordMeta,
+    RECORD_SCHEMA_VERSION,
+};
 use crate::state::GameState;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -168,12 +172,15 @@ pub struct Session {
     /// debugging / an attached observer. Unlike the per-viewer `observable_state`
     /// on a [`DecisionRequest`], this is loss-less (all hands, deck order, RNG).
     full_state: Option<Value>,
+    /// The observable-frame sequence as of the current step — the replay layer
+    /// ([`crate::record`]), refreshed on every [`advance`] like `log`.
+    frames: Vec<Frame>,
     result: Option<GameResult>,
 }
 
 /// A self-contained, serializable snapshot of a [`Session`] — everything needed to
 /// [`restore`](Session::restore) it to a byte-identical state.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SessionSnapshot {
     deck_a: Deck,
     deck_b: Deck,
@@ -212,6 +219,7 @@ impl Session {
             outstanding: None,
             log: None,
             full_state: None,
+            frames: Vec::new(),
             result: None,
         };
         let step = session.advance();
@@ -247,6 +255,86 @@ impl Session {
     /// `observable_state` on a [`DecisionRequest`].
     pub fn debug_state(&self) -> Option<&Value> {
         self.full_state.as_ref()
+    }
+
+    /// The ordered observable [`Frame`]s of the match so far — the replay layer
+    /// ([`crate::record`]). Complete up to the current step and append-only, so a
+    /// viewer can stream them incrementally (see [`frames_from`](Session::frames_from)).
+    pub fn frames(&self) -> &[Frame] {
+        &self.frames
+    }
+
+    /// The frames from ordinal `start` on — the incremental read a live client
+    /// wants (the full sequence is re-derived on every step and can get long).
+    pub fn frames_from(&self, start: usize) -> &[Frame] {
+        self.frames.get(start..).unwrap_or(&[])
+    }
+
+    /// The finished match as a portable [`MatchRecord`] (`kind: full`, carrying both
+    /// the frame sequence and the compact replay seed). `None` until the match ends —
+    /// use [`snapshot`](Session::snapshot) to persist a match in progress.
+    pub fn record(&self, meta: RecordMeta) -> Option<MatchRecord> {
+        let result = self.result.as_ref()?;
+        Some(MatchRecord {
+            schema_version: RECORD_SCHEMA_VERSION,
+            kind: RecordKind::Full,
+            engine: Some(crate::version_info()),
+            meta: self.record_meta(meta),
+            players: self.participants(),
+            frames: self.frames.clone(),
+            result: MatchResult {
+                winner: result.winner.clone(),
+                reason: result.reason.clone(),
+                turns: result.turns,
+            },
+            replay: Some(self.snapshot()),
+        })
+    }
+
+    /// Fill in what the session knows (creation time, match kind) without
+    /// overwriting what the caller supplied.
+    fn record_meta(&self, mut meta: RecordMeta) -> RecordMeta {
+        if meta.created.is_empty() {
+            meta.created = self.created.clone();
+        }
+        if meta.match_type.is_empty() {
+            meta.match_type = self.kind.clone();
+        }
+        meta
+    }
+
+    fn participants(&self) -> BTreeMap<String, Participant> {
+        SEATS
+            .iter()
+            .map(|&key| (key.to_owned(), self.participant(key)))
+            .collect()
+    }
+
+    fn participant(&self, key: &str) -> Participant {
+        let deck = if key == "A" {
+            &self.deck_a
+        } else {
+            &self.deck_b
+        };
+        Participant {
+            player: self
+                .seats
+                .get(key)
+                .map(Seat::label)
+                .unwrap_or("")
+                .to_owned(),
+            competitor: CardRef {
+                card: deck.competitor.db_uuid.clone(),
+                name: Some(deck.competitor.name.clone()),
+                number: None,
+            },
+            entrance: Some(CardRef {
+                card: deck.entrance.db_uuid.clone(),
+                name: Some(deck.entrance.name.clone()),
+                number: None,
+            }),
+            deck: deck.cards.iter().map(CardRef::from_card).collect(),
+        }
     }
 
     /// The outstanding request, if the session is parked awaiting a choice.
@@ -288,6 +376,7 @@ impl Session {
             outstanding: None,
             log: None,
             full_state: None,
+            frames: Vec::new(),
             result: None,
         };
         let step = session.advance();
@@ -306,11 +395,13 @@ impl Session {
             self.created.clone(),
             self.kind.clone(),
         );
+        engine.record_frames();
         let step = engine.play();
-        // Capture the loss-less state + log-so-far as of this step for an
-        // observer/debugger and a live play-by-play (the whole match replays each
-        // step, so both are complete up to this point).
+        // Capture the loss-less state + log-so-far + observable frames as of this
+        // step for an observer/debugger, a live play-by-play, and the replay layer
+        // (the whole match replays each step, so all three are complete up to here).
         self.full_state = Some(engine.state.to_dict());
+        self.frames = engine.take_frames();
         self.log = Some(engine.log);
         match step {
             Ok(result) => {

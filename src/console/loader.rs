@@ -66,6 +66,12 @@ impl CardIndex {
         &self.records
     }
 
+    /// Whether the DB holds a card with this `db_uuid` — the record validator's
+    /// cross-check that an archive names cards this database actually has.
+    pub fn has_uuid(&self, uuid: &str) -> bool {
+        self.by_uuid.contains_key(uuid)
+    }
+
     /// Resolve a decklist file into a playable, IR-enriched [`Deck`].
     pub fn load_playable(&self, path: &Path, overrides: &Overrides) -> Result<Deck> {
         let deck = self

@@ -26,6 +26,26 @@ fn effect_ir_schema_version_matches_constant() {
 }
 
 #[test]
+fn match_record_schema_version_matches_constant() {
+    let v = schema("match_record.schema.json")["version"].as_i64();
+    assert_eq!(
+        v,
+        Some(srg_core::record::RECORD_SCHEMA_VERSION),
+        "record::RECORD_SCHEMA_VERSION must equal schemas/v1/match_record.schema.json version"
+    );
+}
+
+#[test]
+fn observable_state_schema_version_matches_constant() {
+    let v = schema("observable_state.schema.json")["version"].as_i64();
+    assert_eq!(
+        v,
+        Some(srg_core::state::OBSERVABLE_SCHEMA_VERSION),
+        "state::OBSERVABLE_SCHEMA_VERSION must equal schemas/v1/observable_state.schema.json version"
+    );
+}
+
+#[test]
 fn version_info_exposes_engine_commit_and_schemas() {
     let info = srg_core::version_info();
     assert!(info["engine"].is_string(), "engine version present");
@@ -33,6 +53,10 @@ fn version_info_exposes_engine_commit_and_schemas() {
     assert_eq!(
         info["schemas"]["effect_ir"].as_i64(),
         Some(srg_core::ir::SCHEMA_VERSION)
+    );
+    assert_eq!(
+        info["schemas"]["match_record"].as_i64(),
+        Some(srg_core::record::RECORD_SCHEMA_VERSION)
     );
     // The policy roster is non-empty and includes the golden-path opponent.
     let policies = info["policies"].as_array().expect("policies array");

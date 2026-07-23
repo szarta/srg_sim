@@ -4,6 +4,7 @@
 
 pub mod commands;
 pub mod loader;
+pub mod record_cmd;
 pub mod repl;
 pub mod session_cmd;
 

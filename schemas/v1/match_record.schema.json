@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/szarta/srg_sim/schemas/v1/match_record.schema.json",
+  "title": "MatchRecord",
+  "description": "A portable, publishable record of one SRG Supershow match — the interchange format for replay (src/record.rs, DESIGN.md §8.1). A record is an ordered sequence of observable FRAMES (public state + the action that produced it) plus participants and a result. Engine-run ('full') records also carry a compact replay seed that re-simulates the match exactly; transcribed ('observer') records — a real-life or other-platform match a human archived — carry frames only and are playback-only. NO record of either kind contains a hidden zone: hands and decks appear as counts, and a card movement that was private end-to-end appears as a count with no card ids. schema_version mirrors src/record.rs RECORD_SCHEMA_VERSION.",
+  "version": 1,
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "players", "frames", "result"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "kind": {
+      "enum": ["full", "observer"],
+      "description": "'full' = produced by this engine, re-simulatable from `replay`. 'observer' = transcribed from a match the engine did not run; no seed, no hidden state, playback only."
+    },
+    "engine": {
+      "type": "object",
+      "description": "The producing engine's version stamp (srg_core::version_info() — the same object `srg info` and the WASM `version()` emit). Present on engine-produced records; replay fidelity is only guaranteed against a matching stamp. Absent on observer records.",
+      "properties": {
+        "engine": { "type": "string" },
+        "commit": { "type": "string" },
+        "schemas": { "type": "object" },
+        "policies": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "meta": { "$ref": "#/$defs/Meta" },
+    "players": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["A", "B"],
+      "properties": {
+        "A": { "$ref": "#/$defs/Participant" },
+        "B": { "$ref": "#/$defs/Participant" }
+      }
+    },
+    "frames": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Frame" },
+      "description": "The playback layer: chronological, dense, 0-based `seq`. The first frame is the opening position ('start'); the last is the 'result' action and must agree with the record's `result`."
+    },
+    "result": { "$ref": "#/$defs/Result" },
+    "replay": {
+      "type": "object",
+      "description": "The compact re-simulation seed (session snapshot: seed + both enriched decks + seats + the recorded remote decisions). 'full' records only — an observer record MUST NOT carry one, since an observed match cannot be re-derived. Feed it to Session::restore / WasmSession.restore.",
+      "required": ["deck_a", "deck_b", "seed", "seats"],
+      "properties": {
+        "deck_a": { "type": "object" },
+        "deck_b": { "type": "object" },
+        "seed": { "type": "integer" },
+        "created": { "type": "string" },
+        "kind": { "type": "string" },
+        "seats": { "type": "object" },
+        "decisions": { "type": "object" }
+      }
+    }
+  },
+  "$defs": {
+    "Meta": {
+      "type": "object",
+      "description": "Descriptive only; nothing here feeds the engine.",
+      "additionalProperties": false,
+      "properties": {
+        "created": { "type": "string", "description": "ISO-8601 timestamp." },
+        "source": { "type": "string", "description": "Provenance — 'get-diced.com Run It Back', 'in person — locals 2026-07-19'." },
+        "match_type": { "type": "string", "description": "Match type / stipulation ('standard', 'sim', 'ring_of_fire', …)." },
+        "notes": { "type": "string" }
+      }
+    },
+    "Participant": {
+      "type": "object",
+      "description": "One seat's identity. `deck` is optional — most transcribed matches do not know the opponent's full decklist.",
+      "additionalProperties": false,
+      "required": ["competitor"],
+      "properties": {
+        "player": { "type": "string", "description": "The human or AI behind the seat ('Brandon', 'heuristic')." },
+        "competitor": { "$ref": "#/$defs/CardRef" },
+        "entrance": { "$ref": "#/$defs/CardRef" },
+        "deck": { "type": "array", "items": { "$ref": "#/$defs/CardRef" } }
+      }
+    },
+    "CardRef": {
+      "type": "object",
+      "description": "A card's database identity plus optional display hints. `card` is the db_uuid — the join key against the card DB (get-diced.com); an importer that could not identify a card may leave it empty, which the validator reports as a warning. The engine always fills `name`/`number`.",
+      "additionalProperties": false,
+      "required": ["card"],
+      "properties": {
+        "card": { "type": "string", "description": "db_uuid, or \"\" for an unidentified card." },
+        "name": { "type": "string" },
+        "number": { "type": "integer", "description": "Main-deck card number 1–30." }
+      }
+    },
+    "Frame": {
+      "type": "object",
+      "description": "One replay step: the public state at the moment of an action. State is captured AS OF the action, not after everything it triggers has settled — a played card is still resolving through the stop window and reaches `in_play` in a later frame.",
+      "additionalProperties": false,
+      "required": ["seq", "turn_no", "active", "crowd_meter", "action", "players"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 0, "description": "0-based ordinal; dense and strictly increasing." },
+        "turn_no": { "type": "integer", "minimum": 0, "description": "Never decreases across frames." },
+        "active": { "enum": ["A", "B"], "description": "Seat whose turn it is." },
+        "crowd_meter": { "type": "integer" },
+        "action": { "$ref": "#/$defs/Action" },
+        "players": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["A", "B"],
+          "properties": {
+            "A": { "$ref": "#/$defs/PlayerFrame" },
+            "B": { "$ref": "#/$defs/PlayerFrame" }
+          }
+        }
+      }
+    },
+    "PlayerFrame": {
+      "type": "object",
+      "description": "One seat's public position. The closed zones appear only as sizes — there is no field that can carry hand or deck CONTENTS, which is what makes a record safe to publish. The size fields are optional because a spectator transcribing a live match may not have them; the engine always writes them.",
+      "additionalProperties": false,
+      "properties": {
+        "in_play": { "type": "array", "items": { "$ref": "#/$defs/CardRef" }, "description": "The open board, in play order." },
+        "discard": { "type": "array", "items": { "$ref": "#/$defs/CardRef" }, "description": "The public discard pile." },
+        "hand_size": { "type": "integer", "minimum": 0 },
+        "deck_size": { "type": "integer", "minimum": 0 },
+        "gimmick_blanked": { "type": "boolean" }
+      }
+    },
+    "Action": {
+      "description": "What happened, tag-dispatched by `type` under the same names the game log uses (schemas/v1/gamelog.schema.json). Log events an observer could not see have no action: `decision` (its legal list enumerates the deciding player's hand) and `unsupported` (an engine diagnostic) are dropped, not redacted.",
+      "type": "object",
+      "required": ["type"],
+      "properties": { "type": { "type": "string" } },
+      "oneOf": [
+        {
+          "title": "start",
+          "additionalProperties": false,
+          "properties": { "type": { "const": "start" } },
+          "description": "The opening position, before anything happened."
+        },
+        {
+          "title": "roll",
+          "additionalProperties": false,
+          "required": ["type", "player", "skill", "base", "value"],
+          "properties": {
+            "type": { "const": "roll" },
+            "player": { "$ref": "#/$defs/Seat" },
+            "skill": { "type": "string", "description": "Power | Agility | Technique | Submission | Grapple | Strike." },
+            "base": { "type": "integer", "description": "The skill value before modifiers." },
+            "value": { "type": "integer", "description": "The number actually rolled." },
+            "mods": { "type": "array", "items": { "$ref": "#/$defs/RollMod" } }
+          }
+        },
+        {
+          "title": "play",
+          "additionalProperties": false,
+          "required": ["type", "player", "card", "order", "atk_type"],
+          "properties": {
+            "type": { "const": "play" },
+            "player": { "$ref": "#/$defs/Seat" },
+            "card": { "$ref": "#/$defs/CardRef" },
+            "order": { "enum": ["Lead", "Followup", "Finish", "None"] },
+            "atk_type": { "enum": ["Strike", "Grapple", "Submission", "None"] }
+          }
+        },
+        {
+          "title": "stop",
+          "additionalProperties": false,
+          "required": ["type", "player", "card", "stopped"],
+          "properties": {
+            "type": { "const": "stop" },
+            "player": { "$ref": "#/$defs/Seat", "description": "The seat playing the stop card." },
+            "card": { "$ref": "#/$defs/CardRef" },
+            "stopped": { "$ref": "#/$defs/CardRef" },
+            "reason": { "type": "string" }
+          }
+        },
+        {
+          "title": "turn_result",
+          "additionalProperties": false,
+          "required": ["type", "winner", "tie_bumps"],
+          "properties": {
+            "type": { "const": "turn_result" },
+            "winner": { "$ref": "#/$defs/Seat" },
+            "tie_bumps": { "type": "integer", "minimum": 0, "description": "How many bumps the roll-off needed." }
+          }
+        },
+        {
+          "title": "draw",
+          "additionalProperties": false,
+          "required": ["type", "player", "count"],
+          "properties": {
+            "type": { "const": "draw" },
+            "player": { "$ref": "#/$defs/Seat" },
+            "count": { "type": "integer", "minimum": 0, "description": "Deck→hand is private on both ends: a count, never card ids." }
+          }
+        },
+        { "$ref": "#/$defs/Movement" },
+        {
+          "title": "finish_attempt",
+          "additionalProperties": false,
+          "required": ["type", "player", "finish", "value"],
+          "properties": {
+            "type": { "const": "finish_attempt" },
+            "player": { "$ref": "#/$defs/Seat" },
+            "finish": { "$ref": "#/$defs/CardRef" },
+            "value": { "type": "integer", "description": "The finish number produced." },
+            "crowd_meter": { "type": "integer" },
+            "auto_success": { "type": "boolean" }
+          }
+        },
+        {
+          "title": "breakout",
+          "additionalProperties": false,
+          "required": ["type", "defender", "broke_out"],
+          "properties": {
+            "type": { "const": "breakout" },
+            "defender": { "$ref": "#/$defs/Seat" },
+            "broke_out": { "type": "boolean" },
+            "rolls": { "type": "array", "items": { "$ref": "#/$defs/BreakoutRoll" } }
+          }
+        },
+        {
+          "title": "crowd_meter",
+          "additionalProperties": false,
+          "required": ["type", "delta", "value"],
+          "properties": {
+            "type": { "const": "crowd_meter" },
+            "delta": { "type": "integer" },
+            "value": { "type": "integer", "description": "The meter after the change." }
+          }
+        },
+        {
+          "title": "effect",
+          "additionalProperties": false,
+          "required": ["type", "src", "action"],
+          "properties": {
+            "type": { "const": "effect" },
+            "src": { "type": "string", "description": "The seat whose card fired the effect." },
+            "action": { "type": "string", "description": "The Effect IR action name (e.g. 'ModifyRoll', 'Peek', 'BlankGimmick')." },
+            "target": { "type": "string", "description": "The seat the effect landed on." }
+          },
+          "$comment": "The engine's `detail` payload is deliberately NOT carried: it is bookkeeping and can name cards in hidden zones. The frame's own zones show the consequence."
+        },
+        {
+          "title": "note",
+          "additionalProperties": false,
+          "required": ["type", "text"],
+          "properties": {
+            "type": { "const": "note" },
+            "text": { "type": "string" }
+          },
+          "description": "Free-text colour for something this vocabulary does not model. Never emitted by the engine — it exists so an importer never has to distort a real match."
+        },
+        {
+          "title": "result",
+          "additionalProperties": false,
+          "required": ["type", "winner", "reason", "turns"],
+          "properties": {
+            "type": { "const": "result" },
+            "winner": { "enum": ["A", "B", "draw"] },
+            "reason": { "type": "string" },
+            "turns": { "type": "integer" }
+          },
+          "description": "The final frame's action; must agree with the record's `result`."
+        }
+      ]
+    },
+    "Movement": {
+      "title": "discard | bury | search",
+      "description": "A card movement between zones. `cards` is present when the move was publicly visible and omitted (a bare `count`) when the game log marked it hidden — both endpoints private. `from` names the origin zone or deck end (e.g. 'hand', 'in_play', 'discard', 'deck', 'TOP', 'BOTTOM').",
+      "additionalProperties": false,
+      "required": ["type", "player", "count"],
+      "properties": {
+        "type": { "enum": ["discard", "bury", "search"] },
+        "player": { "$ref": "#/$defs/Seat" },
+        "count": { "type": "integer", "minimum": 0 },
+        "cards": { "type": "array", "items": { "$ref": "#/$defs/CardRef" } },
+        "from": { "type": "string" }
+      }
+    },
+    "RollMod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["src", "delta"],
+      "properties": {
+        "src": { "type": "string", "description": "What granted the modifier." },
+        "delta": { "type": "integer" }
+      }
+    },
+    "BreakoutRoll": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skill", "value", "penalty", "success"],
+      "properties": {
+        "skill": { "type": "string" },
+        "value": { "type": "integer" },
+        "penalty": { "type": "integer" },
+        "success": { "type": "boolean" }
+      }
+    },
+    "Result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["winner", "reason", "turns"],
+      "properties": {
+        "winner": { "enum": ["A", "B", "draw"] },
+        "reason": {
+          "type": "string",
+          "description": "How it ended. The engine produces finish | count_out | disqualification | pinfall | turn_cap; an imported record may use another string, which the validator reports as a warning."
+        },
+        "turns": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "Seat": { "enum": ["A", "B"] }
+  }
+}

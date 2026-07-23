@@ -7,11 +7,15 @@ every `Step`, decision `point` type, `legal[]` option shape, and the
 `src/state.rs` (`GameState::observable`). Pinned alongside
 [`observable_state.schema.json`](observable_state.schema.json).
 
+For **storing, publishing, and replaying** a match — including importing one the
+engine did not run — see [`match_record.md`](match_record.md), the record/frame
+interchange format.
+
 The engine version stamp is `srg info` (CLI) / `version()` (WASM), e.g.:
 
 ```json
 { "engine": "0.1.0", "commit": "5de3c23",
-  "schemas": { "effect_ir": 69, "game_log": 1, "observable_state": 1 },
+  "schemas": { "effect_ir": 70, "game_log": 1, "observable_state": 1, "match_record": 1 },
   "policies": ["random","heuristic","aggressive","smart","newbie"] }
 ```
 
