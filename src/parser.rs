@@ -180,6 +180,10 @@ fn discard_choose(count: i64, selector: CardFilter) -> Action {
     }
 }
 
+fn flip(n: i64, who: Who) -> Action {
+    Action::Flip { n, who }
+}
+
 fn bury(count: i64, who: Who) -> Action {
     Action::Bury {
         choose: false,
@@ -934,13 +938,27 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
-        rule(r"Flip (\d+) cards?", |c| {
+        rule(r"Flip (?:up to )?(\d+) cards?", |c| {
             Some(eff(
                 on_hit(),
-                vec![Action::Flip {
-                    n: num(c, 1),
-                    who: Who::SelfSide,
-                }],
+                vec![flip(num(c, 1), Who::SelfSide)],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        rule(r"Your opponent flips (\d+) cards?", |c| {
+            Some(eff(
+                on_hit(),
+                vec![flip(num(c, 1), Who::Opp)],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        rule(r"Each player flips (\d+) cards?", |c| {
+            let n = num(c, 1);
+            Some(eff(
+                on_hit(),
+                vec![flip(n, Who::SelfSide), flip(n, Who::Opp)],
                 Condition::Always,
                 Duration::Instant,
             ))

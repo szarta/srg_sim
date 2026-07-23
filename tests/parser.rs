@@ -447,6 +447,40 @@ fn recur_from_discard_grammar() {
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Finish");
 }
 
+/// Flip-cards grammar (task #119): "up to", opponent, and each-player variants
+/// all reuse the existing `Flip { n, who }` node.
+#[test]
+fn flip_grammar() {
+    fn acts(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()["actions"].clone()
+    }
+
+    // Bare and "up to" both flip N from your own deck.
+    for text in ["Flip 2 cards.", "Flip up to 2 cards."] {
+        let a = acts(text);
+        assert_eq!(a.as_array().unwrap().len(), 1, "one action for {text:?}");
+        assert_eq!(a[0]["@type"], "Flip");
+        assert_eq!(a[0]["n"], 2);
+        assert_eq!(a[0]["who"], "SELF");
+    }
+
+    // Opponent-targeted flip.
+    let a = acts("Your opponent flips 1 card.");
+    assert_eq!(a[0]["@type"], "Flip");
+    assert_eq!(a[0]["n"], 1);
+    assert_eq!(a[0]["who"], "OPP");
+
+    // "Each player" fans out to two Flips (self then opp), like each-player draw.
+    let a = acts("Each player flips 3 cards.");
+    assert_eq!(a.as_array().unwrap().len(), 2);
+    assert_eq!(a[0]["who"], "SELF");
+    assert_eq!(a[1]["who"], "OPP");
+    assert_eq!(a[0]["n"], 3);
+    assert_eq!(a[1]["n"], 3);
+}
+
 /// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
 /// per-count, recur, and HasInPlay-gated grammar.
 #[test]
