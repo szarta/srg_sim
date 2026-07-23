@@ -1172,6 +1172,14 @@ impl Engine {
                         .next_turn += 1;
                 }
             }
+            // The parser's sentinel for a clause it could not map: log its actual
+            // rules text + reason, so the game log / play-by-play reads the clause
+            // ("If you have … in play: …"), not the Debug of the node.
+            Action::Unsupported { raw_text, reason } => {
+                self.log_unsupported(key, raw_text, reason);
+            }
+            // Any *other* unmodeled action (a marker missing from the passive no-op
+            // list) falls back to its Debug form — a bug signal, not a normal clause.
             other => {
                 let raw = format!("{other:?}");
                 self.log_unsupported(
