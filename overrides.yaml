@@ -8911,3 +8911,1410 @@ c2d3731dec1f4242995caee8282bcc53:
   raw_clause: 'Once per match: When you would bump, draw 2 cards instead and each player re-rolls their turn roll. (modeled: +1 extra bump draw makes 2 total; the bump itself re-rolls both players)'
   source: entrance
   optional: false
+
+# --- The Bull deck (decks/bull.yaml, task #124): full coverage for a modeled head-to-head ---
+# Existing-node models; match-type clauses gated OFF; a few heavy clauses approximated (noted in raw_clause).
+d9f6e890e1c846e79d4c11b649aa3683:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: Each player adds their bottom card to hand
+      actions:
+      - '@type': Draw
+        cap: null
+        n: 1
+        per: null
+        per_excludes_trigger: false
+        per_who: SELF
+        source: BOTTOM
+        who: SELF
+      - '@type': Draw
+        cap: null
+        n: 1
+        per: null
+        per_excludes_trigger: false
+        per_who: SELF
+        source: BOTTOM
+        who: OPP
+    - '@type': ChoiceOption
+      label: Stop any Lead Grapple
+      actions:
+      - '@type': Stop
+        order: Lead
+        atk_type: Grapple
+        source_is_skillreq: false
+        even_unstoppable: false
+        target: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Each player adds the bottom card of their deck to their hand or stop any Lead Grapple.
+  source: card
+  optional: false
+dcfeb517699242ffbd803cccf167960f:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Strike
+    even_unstoppable: false
+    order: Lead
+    source_is_skillreq: false
+    target: null
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Stop any Lead Strike.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HandSizeCompare
+    cmp: <
+    vs: VALUE
+    value: 4
+    who: SELF
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 2
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If you have fewer than 4 cards in hand, draw 2 cards.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HandSizeCompare
+    cmp: <
+    vs: VALUE
+    value: 4
+    who: OPP
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 2
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If your opponent has fewer than 4 cards in hand, they draw 2 cards.
+  source: card
+  optional: false
+ce167537544645cfb8afd41b488824d0:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Stop
+    order: Followup
+    atk_type: Grapple
+    source_is_skillreq: false
+    even_unstoppable: false
+    target: null
+  - '@type': Stop
+    order: null
+    atk_type: null
+    source_is_skillreq: false
+    even_unstoppable: false
+    target:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains:
+      - Rejected
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Stop any Follow Up Grapple or "Rejected!".
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    deck: OPP
+    top: 1
+    bottom: 0
+    reveal: true
+    to_hand: 0
+    bury: 0
+    rest: FLIP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your opponent reveals the top card of their deck, they may flip it.
+  source: card
+  optional: true
+eb377f32850b46f5b6972f3186e94770:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: Each player adds their bottom card to hand
+      actions:
+      - '@type': Draw
+        cap: null
+        n: 1
+        per: null
+        per_excludes_trigger: false
+        per_who: SELF
+        source: BOTTOM
+        who: SELF
+      - '@type': Draw
+        cap: null
+        n: 1
+        per: null
+        per_excludes_trigger: false
+        per_who: SELF
+        source: BOTTOM
+        who: OPP
+    - '@type': ChoiceOption
+      label: Stop any Follow Up Submission
+      actions:
+      - '@type': Stop
+        order: Followup
+        atk_type: Submission
+        source_is_skillreq: false
+        even_unstoppable: false
+        target: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Each player adds the bottom card of their deck to their hand or stop any Follow Up Submission.
+  source: card
+  optional: false
+1b3e9ce9896645a6a0c35411a1295485:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Strike
+    even_unstoppable: false
+    order: Followup
+    source_is_skillreq: false
+    target: null
+  condition:
+    '@type': CrowdMeterCompare
+    cmp: '>='
+    value: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If the Crowd Meter is 1 or greater, stop any Follow Up Strike.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': DisqualificationRule
+    enabled: false
+    scope: MATCH
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: This match has no disqualifications.
+  source: card
+  optional: false
+b7083110c10d42898b9d6622d35da1b3:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: Add 1 card from your discard pile (best)
+      actions:
+      - '@type': AddFromDiscard
+        filter:
+          '@type': CardFilter
+          atk_type: null
+          is_stop: null
+          name: null
+          name_contains: []
+          number: null
+          play_order: null
+          play_orders: []
+          raw: null
+          tag: null
+          text_contains: []
+    - '@type': ChoiceOption
+      label: Each player draws 1 card
+      actions:
+      - '@type': Draw
+        cap: null
+        n: 1
+        per: null
+        per_excludes_trigger: false
+        per_who: SELF
+        source: TOP
+        who: SELF
+      - '@type': Draw
+        cap: null
+        n: 1
+        per: null
+        per_excludes_trigger: false
+        per_who: SELF
+        source: TOP
+        who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Randomly add 1 card from your discard pile to your hand or each player draws 1 card. (randomly->best)
+  source: card
+  optional: false
+919dc33ae4504d8fa183aab0e2797a0f:
+- '@type': Effect
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 1
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: BOTTOM
+    who: SELF
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Draw the bottom card of your deck.
+  source: card
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    on_any: false
+    order: null
+    text_contains: []
+    who: SELF
+- '@type': Effect
+  trigger:
+    '@type': OnDiscardMove
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If your opponent forces you to discard from your hand, shuffle up to 3 cards from your discard pile into your deck.
+  source: card
+  optional: false
+c925bfe817994286ae9b47e650483840:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: Lead
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: SELF
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      atk_type: Strike
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  - '@type': Draw
+    cap: null
+    n: 1
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If you have another Lead in play, shuffle 1 Strike from your discard pile into your deck and draw 1 card.
+  source: card
+  optional: false
+70770f5964b544a5bd324530ad563868:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains:
+      - 2 Handed Toss
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: SELF
+  actions:
+  - '@type': BuffSkill
+    cap: null
+    delta: 1
+    duration: WHILE_IN_PLAY
+    per: null
+    per_crowd: false
+    per_zone: IN_PLAY
+    skill: Grapple
+    target_highest: false
+    who: SELF
+  - '@type': AlsoLead
+    condition:
+      '@type': HasInPlay
+      cmp: '>='
+      count: 1
+      filter:
+        '@type': CardFilter
+        atk_type: null
+        is_stop: null
+        name: null
+        name_contains:
+        - 2 Handed Toss
+        number: null
+        play_order: null
+        play_orders: []
+        raw: null
+        tag: null
+        text_contains: []
+      who: SELF
+    order: Followup
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: ''
+  source: card
+  optional: false
+d6781e7652ab42209c37c72b5d781040:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains:
+      - 3/4 Wrist Lock
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: SELF
+  actions:
+  - '@type': BuffSkill
+    cap: null
+    delta: 1
+    duration: WHILE_IN_PLAY
+    per: null
+    per_crowd: false
+    per_zone: IN_PLAY
+    skill: Submission
+    target_highest: false
+    who: SELF
+  - '@type': AlsoLead
+    condition:
+      '@type': HasInPlay
+      cmp: '>='
+      count: 1
+      filter:
+        '@type': CardFilter
+        atk_type: null
+        is_stop: null
+        name: null
+        name_contains:
+        - 3/4 Wrist Lock
+        number: null
+        play_order: null
+        play_orders: []
+        raw: null
+        tag: null
+        text_contains: []
+      who: SELF
+    order: Followup
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: ''
+  source: card
+  optional: false
+05687a041eaf4b3db4de14143aea198f:
+- '@type': Effect
+  actions:
+  - '@type': Flip
+    n: 1
+    per: null
+    per_who: SELF
+    until: null
+    until_to_hand: false
+    who: SELF
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Flip 1 card.
+  source: card
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    on_any: false
+    order: null
+    text_contains: []
+    who: SELF
+- '@type': Effect
+  actions:
+  - '@type': RecurToDeckTop
+    count: 1
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Put 1 card from your discard pile on top of your deck.
+  source: card
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    on_any: false
+    order: null
+    text_contains: []
+    who: SELF
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains:
+      - Training With
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: SELF
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 1
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  - '@type': Bury
+    choose: false
+    count: 1
+    random: false
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    source: HAND
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'If you have a card with "Training With" in the name revealed, you may draw 1 card and bury 1 card in your hand. (approx: revealed -> in play)'
+  source: card
+  optional: true
+3c780413b401482b9d37561688079fcb:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: Strike
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: SELF
+  actions:
+  - '@type': Discard
+    choose: false
+    count: 2
+    per: null
+    per_who: SELF
+    random: false
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: SELF
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If you have another Strike in play, discard 2 cards from your hand and add 1 card from your discard pile to your hand.
+  source: card
+  optional: false
+8c735afc21ea420f8b41543267be7950:
+- '@type': Effect
+  actions:
+  - '@type': Discard
+    choose: false
+    count: 1
+    per: null
+    per_who: SELF
+    random: true
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: OPP
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Your opponent randomly discards 1 card from their hand.
+  source: card
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    on_any: false
+    order: null
+    text_contains: []
+    who: SELF
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Bury
+    choose: true
+    count: 2
+    random: false
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    source: DISCARD
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Bury up to 2 cards in any player's discard pile. (targets opponent's)
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Not
+    item:
+      '@type': Always
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 0
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'If this is a Ring of Fire or Lumberjack match, double these numbers. (inert in a standard match; needs match-type state #97)'
+  source: card
+  optional: false
+8679328f1b434a419e77ecf0124db535:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Submission
+    even_unstoppable: false
+    order: null
+    source_is_skillreq: false
+    target: null
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: Submission
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: If your opponent has another Submission in play, stop any Submission.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInPlay
+    cmp: '>='
+    count: 1
+    filter:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains:
+      - Training With
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    who: SELF
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 1
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  - '@type': Bury
+    choose: false
+    count: 1
+    random: false
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+    source: HAND
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'If you have a card with "Training With" in the name revealed, you may draw 1 card and bury 1 card in your hand. (approx: revealed -> in play)'
+  source: card
+  optional: true
+a811ce990f59487da29a7de21f7b389c:
+- '@type': Effect
+  actions:
+  - '@type': Flip
+    n: 1
+    per: null
+    per_who: SELF
+    until: null
+    until_to_hand: false
+    who: SELF
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Flip 1 card.
+  source: card
+  trigger:
+    '@type': OnHit
+    atk_type: null
+    name_contains: []
+    on_any: false
+    order: null
+    text_contains: []
+    who: SELF
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      atk_type: null
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  - '@type': Draw
+    cap: null
+    n: 2
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Take 2 cards from your discard pile, shuffle them into your deck, then draw 2 cards.
+  source: card
+  optional: false
+baf307a1efc84f9aba8400c7a71494f8:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    count: 1
+    dest: HAND
+    filter:
+      '@type': CardFilter
+      atk_type: Grapple
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Search your deck or discard pile for 3 Grapples: add 1 to hand. (search+distribute simplified to 1-to-hand)'
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    count: 1
+    dest: DECK_TOP
+    filter:
+      '@type': CardFilter
+      atk_type: Grapple
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: '...put 1 on the top of your deck. (distribution of the other 2 simplified)'
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Not
+    item:
+      '@type': Always
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 0
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'If this is a Ring of Fire match, your opponent flips 3 cards. (inert in a standard match; needs match-type state #97)'
+  source: card
+  optional: false
+61812eabf05d4dd9849f0b0f56965dbf:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': CrowdMeter
+    delta: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: The Crowd Meter is +1.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 1
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Draw cards equal to the Crowd Meter. (approx: fixed 1 pending crowd-scaled draw / #97)'
+  source: card
+  optional: false
+662a432d1fe84d3288ab055dff4f6021:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Submission
+    even_unstoppable: false
+    order: Finish
+    source_is_skillreq: false
+    target: null
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Stop any Finish Submission.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Search
+    count: 1
+    dest: DECK_TOP
+    filter:
+      '@type': CardFilter
+      atk_type: Grapple
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Search your deck for 1 Grapple and put it on top of your shuffled deck.
+  source: card
+  optional: false
+b235c776b425411e9d3e355d84718782:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Strike
+    even_unstoppable: false
+    order: Lead
+    source_is_skillreq: false
+    target: null
+  - '@type': Stop
+    atk_type: Strike
+    even_unstoppable: false
+    order: Finish
+    source_is_skillreq: false
+    target: null
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Stop any Lead Strike or Finish Strike.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      atk_type: Submission
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  - '@type': ShuffleIntoDeck
+    selector:
+      '@type': CardFilter
+      atk_type: Submission
+      is_stop: null
+      name: null
+      name_contains: []
+      number: null
+      play_order: null
+      play_orders: []
+      raw: null
+      tag: null
+      text_contains: []
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Shuffle 2 Submissions from your discard pile into your deck.
+  source: card
+  optional: false
+0f5e169b51db48cf98379560f921d891:
+- '@type': Effect
+  actions:
+  - '@type': FinishBonus
+    delta: 3
+    skill: Agility
+  condition:
+    '@type': Always
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: +3 to Agility
+  source: card
+  trigger:
+    '@type': Static
+- '@type': Effect
+  actions:
+  - '@type': FinishBonus
+    delta: 2
+    skill: Strike
+  condition:
+    '@type': Always
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: +2 to Strike
+  source: card
+  trigger:
+    '@type': Static
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    deck: SELF
+    top: 7
+    bottom: 0
+    reveal: true
+    to_hand: 3
+    bury: 0
+    rest: FLIP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Reveal the top 7 cards of your deck; randomly add 3 to your hand, and flip the others. (randomly->best 3)
+  source: card
+  optional: false
+7c70b4f783274d70b2ad60bd6dbb5020:
+- '@type': Effect
+  actions:
+  - '@type': FinishBonus
+    delta: 3
+    skill: Technique
+  condition:
+    '@type': Always
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: +3 to Technique
+  source: card
+  trigger:
+    '@type': Static
+- '@type': Effect
+  actions:
+  - '@type': FinishBonus
+    delta: 2
+    skill: Agility
+  condition:
+    '@type': Always
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: +2 to Agility
+  source: card
+  trigger:
+    '@type': Static
+- '@type': Effect
+  actions:
+  - '@type': FinishBonus
+    delta: 1
+    skill: Submission
+  condition:
+    '@type': Always
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: +1 to Submission
+  source: card
+  trigger:
+    '@type': Static
+- '@type': Effect
+  actions:
+  - '@type': FinishBonus
+    delta: 1
+    skill: Grapple
+  condition:
+    '@type': Always
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: +1 to Grapple
+  source: card
+  trigger:
+    '@type': Static
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: YOURS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: -3
+    when: NEXT
+    per: null
+    per_who: SELF
+    per_zone: IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If stopped, your next turn roll is -3.
+  source: card
+  optional: false

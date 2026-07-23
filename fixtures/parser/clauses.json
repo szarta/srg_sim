@@ -148,9 +148,49 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Each player adds the bottom card of their deck to their hand or stop any lead Grapple.",
-              "reason": "no grammar match"
+              "@type": "Choice",
+              "options": [
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "BOTTOM",
+                      "who": "SELF"
+                    },
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "BOTTOM",
+                      "who": "OPP"
+                    }
+                  ],
+                  "label": "Each player adds their bottom card to hand"
+                },
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Stop",
+                      "atk_type": "Grapple",
+                      "even_unstoppable": false,
+                      "order": "Lead",
+                      "source_is_skillreq": false,
+                      "target": null
+                    }
+                  ],
+                  "label": "Stop any Lead Grapple"
+                }
+              ]
             }
           ],
           "condition": {
@@ -163,7 +203,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "Each player adds the bottom card of their deck to their hand or stop any lead Grapple.",
+          "raw_clause": "Each player adds the bottom card of their deck to their hand or stop any Lead Grapple.",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -251,13 +291,22 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If either player has fewer than 4 cards in their hand, they draw 2 cards.",
-              "reason": "no grammar match"
+              "@type": "Draw",
+              "cap": null,
+              "n": 2,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "HandSizeCompare",
+            "cmp": "<",
+            "value": 4,
+            "vs": "VALUE",
+            "who": "SELF"
           },
           "duration": "INSTANT",
           "frequency": {
@@ -266,7 +315,41 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If either player has fewer than 4 cards in their hand, they draw 2 cards.",
+          "raw_clause": "If you have fewer than 4 cards in hand, draw 2 cards.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Draw",
+              "cap": null,
+              "n": 2,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "OPP"
+            }
+          ],
+          "condition": {
+            "@type": "HandSizeCompare",
+            "cmp": "<",
+            "value": 4,
+            "vs": "VALUE",
+            "who": "OPP"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If your opponent has fewer than 4 cards in hand, they draw 2 cards.",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -283,9 +366,34 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Stop any Follow Up Grapple or \"Rejected!\".",
-              "reason": "no grammar match"
+              "@type": "Stop",
+              "atk_type": "Grapple",
+              "even_unstoppable": false,
+              "order": "Followup",
+              "source_is_skillreq": false,
+              "target": null
+            },
+            {
+              "@type": "Stop",
+              "atk_type": null,
+              "even_unstoppable": false,
+              "order": null,
+              "source_is_skillreq": false,
+              "target": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [
+                  "Rejected"
+                ],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
@@ -308,9 +416,14 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Your opponent reveals the top card of their deck, they may flip it.",
-              "reason": "no grammar match"
+              "@type": "Scry",
+              "bottom": 0,
+              "bury": 0,
+              "deck": "OPP",
+              "rest": "FLIP",
+              "reveal": true,
+              "to_hand": 0,
+              "top": 1
             }
           ],
           "condition": {
@@ -322,7 +435,7 @@
             "kind": "UNLIMITED",
             "n": null
           },
-          "optional": false,
+          "optional": true,
           "raw_clause": "Your opponent reveals the top card of their deck, they may flip it.",
           "source": "card",
           "trigger": {
@@ -340,9 +453,49 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Each player adds the bottom card of their deck to their hand or stop any Follow Up Submission.",
-              "reason": "no grammar match"
+              "@type": "Choice",
+              "options": [
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "BOTTOM",
+                      "who": "SELF"
+                    },
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "BOTTOM",
+                      "who": "OPP"
+                    }
+                  ],
+                  "label": "Each player adds their bottom card to hand"
+                },
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Stop",
+                      "atk_type": "Submission",
+                      "even_unstoppable": false,
+                      "order": "Followup",
+                      "source_is_skillreq": false,
+                      "target": null
+                    }
+                  ],
+                  "label": "Stop any Follow Up Submission"
+                }
+              ]
             }
           ],
           "condition": {
@@ -402,15 +555,15 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "This match has no disqualifications.",
-              "reason": "no grammar match"
+              "@type": "DisqualificationRule",
+              "enabled": false,
+              "scope": "MATCH"
             }
           ],
           "condition": {
             "@type": "Always"
           },
-          "duration": "INSTANT",
+          "duration": "WHILE_IN_PLAY",
           "frequency": {
             "@type": "FrequencyGuard",
             "kind": "UNLIMITED",
@@ -420,7 +573,7 @@
           "raw_clause": "This match has no disqualifications.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "Static"
           }
         }
       ],
@@ -434,9 +587,57 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Randomly add 1 card from your discard pile to your hand or each player draws 1 card.",
-              "reason": "no grammar match"
+              "@type": "Choice",
+              "options": [
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "AddFromDiscard",
+                      "filter": {
+                        "@type": "CardFilter",
+                        "atk_type": null,
+                        "is_stop": null,
+                        "name": null,
+                        "name_contains": [],
+                        "number": null,
+                        "play_order": null,
+                        "play_orders": [],
+                        "raw": null,
+                        "tag": null,
+                        "text_contains": []
+                      }
+                    }
+                  ],
+                  "label": "Add 1 card from your discard pile (best)"
+                },
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "TOP",
+                      "who": "SELF"
+                    },
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "TOP",
+                      "who": "OPP"
+                    }
+                  ],
+                  "label": "Each player draws 1 card"
+                }
+              ]
             }
           ],
           "condition": {
@@ -449,7 +650,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "Randomly add 1 card from your discard pile to your hand or each player draws 1 card.",
+          "raw_clause": "Randomly add 1 card from your discard pile to your hand or each player draws 1 card. (randomly->best)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -502,9 +703,52 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If your opponent forces you to discard any number of cards from your hand, shuffle up to 3 cards from your discard pile into your deck.",
-              "reason": "no grammar match"
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            },
+            {
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            },
+            {
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
@@ -517,10 +761,11 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If your opponent forces you to discard any number of cards from your hand, shuffle up to 3 cards from your discard pile into your deck.",
+          "raw_clause": "If your opponent forces you to discard from your hand, shuffle up to 3 cards from your discard pile into your deck.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnDiscardMove",
+            "who": "SELF"
           }
         }
       ],
@@ -631,13 +876,50 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If you have another Lead in play, shuffle 1 Strike from your discard pile into your deck and draw 1 card.",
-              "reason": "no grammar match"
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": "Strike",
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            },
+            {
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": null,
+              "is_stop": null,
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": "Lead",
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "SELF"
           },
           "duration": "INSTANT",
           "frequency": {
@@ -663,25 +945,75 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If you have \"2 Handed Toss\" in play: your Grapple skill is +1 and this card is also a Follow Up.",
-              "reason": "no grammar match"
+              "@type": "BuffSkill",
+              "cap": null,
+              "delta": 1,
+              "duration": "WHILE_IN_PLAY",
+              "per": null,
+              "per_crowd": false,
+              "per_zone": "IN_PLAY",
+              "skill": "Grapple",
+              "target_highest": false,
+              "who": "SELF"
+            },
+            {
+              "@type": "AlsoLead",
+              "condition": {
+                "@type": "HasInPlay",
+                "cmp": ">=",
+                "count": 1,
+                "filter": {
+                  "@type": "CardFilter",
+                  "atk_type": null,
+                  "is_stop": null,
+                  "name": null,
+                  "name_contains": [
+                    "2 Handed Toss"
+                  ],
+                  "number": null,
+                  "play_order": null,
+                  "play_orders": [],
+                  "raw": null,
+                  "tag": null,
+                  "text_contains": []
+                },
+                "who": "SELF"
+              },
+              "order": "Followup"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": null,
+              "is_stop": null,
+              "name": null,
+              "name_contains": [
+                "2 Handed Toss"
+              ],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "SELF"
           },
-          "duration": "INSTANT",
+          "duration": "WHILE_IN_PLAY",
           "frequency": {
             "@type": "FrequencyGuard",
             "kind": "UNLIMITED",
             "n": null
           },
           "optional": false,
-          "raw_clause": "If you have \"2 Handed Toss\" in play: your Grapple skill is +1 and this card is also a Follow Up.",
+          "raw_clause": "",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "Static"
           }
         }
       ],
@@ -695,25 +1027,75 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If you have \"3/4 Wrist Lock\" in play: Your Submission skill is +1 and this card is also a Follow Up.",
-              "reason": "no grammar match"
+              "@type": "BuffSkill",
+              "cap": null,
+              "delta": 1,
+              "duration": "WHILE_IN_PLAY",
+              "per": null,
+              "per_crowd": false,
+              "per_zone": "IN_PLAY",
+              "skill": "Submission",
+              "target_highest": false,
+              "who": "SELF"
+            },
+            {
+              "@type": "AlsoLead",
+              "condition": {
+                "@type": "HasInPlay",
+                "cmp": ">=",
+                "count": 1,
+                "filter": {
+                  "@type": "CardFilter",
+                  "atk_type": null,
+                  "is_stop": null,
+                  "name": null,
+                  "name_contains": [
+                    "3/4 Wrist Lock"
+                  ],
+                  "number": null,
+                  "play_order": null,
+                  "play_orders": [],
+                  "raw": null,
+                  "tag": null,
+                  "text_contains": []
+                },
+                "who": "SELF"
+              },
+              "order": "Followup"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": null,
+              "is_stop": null,
+              "name": null,
+              "name_contains": [
+                "3/4 Wrist Lock"
+              ],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "SELF"
           },
-          "duration": "INSTANT",
+          "duration": "WHILE_IN_PLAY",
           "frequency": {
             "@type": "FrequencyGuard",
             "kind": "UNLIMITED",
             "n": null
           },
           "optional": false,
-          "raw_clause": "If you have \"3/4 Wrist Lock\" in play: Your Submission skill is +1 and this card is also a Follow Up.",
+          "raw_clause": "",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "Static"
           }
         }
       ],
@@ -866,13 +1248,57 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
-              "reason": "no grammar match"
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
+            },
+            {
+              "@type": "Bury",
+              "choose": false,
+              "count": 1,
+              "random": false,
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "source": "HAND",
+              "who": "SELF"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": null,
+              "is_stop": null,
+              "name": null,
+              "name_contains": [
+                "Training With"
+              ],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "SELF"
           },
           "duration": "INSTANT",
           "frequency": {
@@ -880,8 +1306,8 @@
             "kind": "UNLIMITED",
             "n": null
           },
-          "optional": false,
-          "raw_clause": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
+          "optional": true,
+          "raw_clause": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand. (approx: revealed -> in play)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -981,13 +1407,62 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If you have another Strike in play, discard 2 cards from your hand and add 1 card from your discard pile to your hand.",
-              "reason": "no grammar match"
+              "@type": "Discard",
+              "choose": false,
+              "count": 2,
+              "per": null,
+              "per_who": "SELF",
+              "random": false,
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "who": "SELF"
+            },
+            {
+              "@type": "AddFromDiscard",
+              "filter": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Strike",
+              "is_stop": null,
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "SELF"
           },
           "duration": "INSTANT",
           "frequency": {
@@ -1169,9 +1644,25 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Bury up to 2 cards in any player's discard pile.",
-              "reason": "no grammar match"
+              "@type": "Bury",
+              "choose": true,
+              "count": 2,
+              "random": false,
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "source": "DISCARD",
+              "who": "OPP"
             }
           ],
           "condition": {
@@ -1184,7 +1675,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "Bury up to 2 cards in any player's discard pile.",
+          "raw_clause": "Bury up to 2 cards in any player's discard pile. (targets opponent's)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -1194,13 +1685,21 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If this is a Ring of Fire or Lumberjack match, double these numbers.",
-              "reason": "no grammar match"
+              "@type": "Draw",
+              "cap": null,
+              "n": 0,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "Not",
+            "item": {
+              "@type": "Always"
+            }
           },
           "duration": "INSTANT",
           "frequency": {
@@ -1209,7 +1708,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If this is a Ring of Fire or Lumberjack match, double these numbers.",
+          "raw_clause": "If this is a Ring of Fire or Lumberjack match, double these numbers. (inert in a standard match; needs match-type state #97)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -1270,13 +1769,57 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
-              "reason": "no grammar match"
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
+            },
+            {
+              "@type": "Bury",
+              "choose": false,
+              "count": 1,
+              "random": false,
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "source": "HAND",
+              "who": "SELF"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": null,
+              "is_stop": null,
+              "name": null,
+              "name_contains": [
+                "Training With"
+              ],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "SELF"
           },
           "duration": "INSTANT",
           "frequency": {
@@ -1284,8 +1827,8 @@
             "kind": "UNLIMITED",
             "n": null
           },
-          "optional": false,
-          "raw_clause": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
+          "optional": true,
+          "raw_clause": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand. (approx: revealed -> in play)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -1370,9 +1913,46 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Take 2 cards from your discard pile, shuffle them into your deck, then draw 2 cards.",
-              "reason": "no grammar match"
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            },
+            {
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            },
+            {
+              "@type": "Draw",
+              "cap": null,
+              "n": 2,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
             }
           ],
           "condition": {
@@ -1402,9 +1982,22 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Search your deck or discard pile for 3 Grapples:",
-              "reason": "no grammar match"
+              "@type": "Search",
+              "count": 1,
+              "dest": "HAND",
+              "filter": {
+                "@type": "CardFilter",
+                "atk_type": "Grapple",
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
@@ -1417,7 +2010,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "Search your deck or discard pile for 3 Grapples:",
+          "raw_clause": "Search your deck or discard pile for 3 Grapples: add 1 to hand. (search+distribute simplified to 1-to-hand)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -1427,9 +2020,22 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Add 1 to your hand, put 1 on the top of your deck, and bury or put the other in your discard pile.",
-              "reason": "no grammar match"
+              "@type": "Search",
+              "count": 1,
+              "dest": "DECK_TOP",
+              "filter": {
+                "@type": "CardFilter",
+                "atk_type": "Grapple",
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
@@ -1442,7 +2048,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "Add 1 to your hand, put 1 on the top of your deck, and bury or put the other in your discard pile.",
+          "raw_clause": "...put 1 on the top of your deck. (distribution of the other 2 simplified)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -1452,13 +2058,21 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If this is a Ring of Fire match, your opponent flips 3 cards.",
-              "reason": "no grammar match"
+              "@type": "Draw",
+              "cap": null,
+              "n": 0,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "Not",
+            "item": {
+              "@type": "Always"
+            }
           },
           "duration": "INSTANT",
           "frequency": {
@@ -1467,7 +2081,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If this is a Ring of Fire match, your opponent flips 3 cards.",
+          "raw_clause": "If this is a Ring of Fire match, your opponent flips 3 cards. (inert in a standard match; needs match-type state #97)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -1484,9 +2098,8 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "The Crowd Meter is +1.",
-              "reason": "no grammar match"
+              "@type": "CrowdMeter",
+              "delta": 1
             }
           ],
           "condition": {
@@ -1509,9 +2122,14 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Draw cards equal to the Crowd Meter.",
-              "reason": "no grammar match"
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
             }
           ],
           "condition": {
@@ -1524,7 +2142,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "Draw cards equal to the Crowd Meter.",
+          "raw_clause": "Draw cards equal to the Crowd Meter. (approx: fixed 1 pending crowd-scaled draw / #97)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -1682,9 +2300,22 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Search your deck for 1 Grapple and put it on top of your shuffled deck.",
-              "reason": "no grammar match"
+              "@type": "Search",
+              "count": 1,
+              "dest": "DECK_TOP",
+              "filter": {
+                "@type": "CardFilter",
+                "atk_type": "Grapple",
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
@@ -1750,9 +2381,36 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Shuffle 2 Submissions from your discard pile into your deck.",
-              "reason": "no grammar match"
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": "Submission",
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            },
+            {
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": "Submission",
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
@@ -1832,9 +2490,14 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Reveal the top 7 cards of your deck; randomly add 3 to your hand, and flip the others.",
-              "reason": "no grammar match"
+              "@type": "Scry",
+              "bottom": 0,
+              "bury": 0,
+              "deck": "SELF",
+              "rest": "FLIP",
+              "reveal": true,
+              "to_hand": 3,
+              "top": 7
             }
           ],
           "condition": {
@@ -1847,7 +2510,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "Reveal the top 7 cards of your deck; randomly add 3 to your hand, and flip the others.",
+          "raw_clause": "Reveal the top 7 cards of your deck; randomly add 3 to your hand, and flip the others. (randomly->best 3)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -1964,9 +2627,13 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If stopped, your next turn roll is -3.",
-              "reason": "no grammar match"
+              "@type": "ModifyRoll",
+              "delta": -3,
+              "per": null,
+              "per_who": "SELF",
+              "per_zone": "IN_PLAY",
+              "when": "NEXT",
+              "who": "SELF"
             }
           ],
           "condition": {
@@ -1982,7 +2649,9 @@
           "raw_clause": "If stopped, your next turn roll is -3.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnStop",
+            "dir": "YOURS",
+            "order": null
           }
         }
       ],
@@ -8161,92 +8830,52 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 117,
-    "override": 63,
+    "grammar": 101,
+    "override": 105,
     "top_unparsed": [
-      [
-        "If you have a card with \"Training With\" in the name revealed, you may draw N card and bury N card in your hand.",
-        2
-      ],
       [
         "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
         2
       ],
       [
-        "Each player adds the bottom card of their deck to their hand or stop any lead <S>.",
+        "If this is a match with a stipulation: Before the start of the match, search your deck for card #N and add it to your hand.",
         1
       ],
       [
-        "If either player has fewer than N cards in their hand, they draw N cards.",
+        "Look at the top N cards of your opponent's deck; discard N, bury N, and put the last N on top.",
         1
       ],
       [
-        "Stop any Follow Up <S> or \"Rejected!\".",
+        "If stopped, draw N card for each stop your opponent has in play (Max N).",
         1
       ],
       [
-        "Your opponent reveals the top card of their deck, they may flip it.",
+        "If either player rolled <S> for their turn roll, this card is also a Lead.",
         1
       ],
       [
-        "Each player adds the bottom card of their deck to their hand or stop any Follow Up <S>.",
+        "Your next turn roll is -N.",
         1
       ],
       [
-        "This match has no disqualifications.",
+        "Finishes with \"Cannot Breakout\" in the text instead have blank text.",
         1
       ],
       [
-        "Randomly add N card from your discard pile to your hand or each player draws N card.",
+        "Your <S> skill is +N for each card you have in play with \"Hammer\", \"Smash\", \"High\", or \"<S>\" in the name.",
         1
       ],
       [
-        "If your opponent forces you to discard any number of cards from your hand, shuffle up to N cards from your discard pile into your deck.",
+        "When this card is in your discard pile: Your <S> skill is greater than your opponent's <S> skill for card effects.",
         1
       ],
       [
-        "If you have another Lead in play, shuffle N <S> from your discard pile into your deck and draw N card.",
-        1
-      ],
-      [
-        "If you have \"N Handed Toss\" in play: your <S> skill is +N and this card is also a Follow Up.",
-        1
-      ],
-      [
-        "If you have \"N/N Wrist Lock\" in play: Your <S> skill is +N and this card is also a Follow Up.",
-        1
-      ],
-      [
-        "If you have another <S> in play, discard N cards from your hand and add N card from your discard pile to your hand.",
-        1
-      ],
-      [
-        "Bury up to N cards in any player's discard pile.",
-        1
-      ],
-      [
-        "If this is a Ring of Fire or Lumberjack match, double these numbers.",
-        1
-      ],
-      [
-        "Take N cards from your discard pile, shuffle them into your deck, then draw N cards.",
-        1
-      ],
-      [
-        "Search your deck or discard pile for N <S>s:",
-        1
-      ],
-      [
-        "Add N to your hand, put N on the top of your deck, and bury or put the other in your discard pile.",
-        1
-      ],
-      [
-        "If this is a Ring of Fire match, your opponent flips N cards.",
+        "When this card is in your discard pile, it copies the text of your opponent's Spotlight in their discard pile and then blanks them.",
         1
       ]
     ],
     "total": 217,
-    "unsupported": 37
+    "unsupported": 11
   },
   "coverage_records": [
     {
