@@ -495,6 +495,39 @@ fn flip_grammar() {
     assert_eq!(a[0]["n"], 2);
 }
 
+/// Flip-until grammar (task #119): "Flip cards until you flip a <X>[, add it to
+/// your hand]" reuses `Flip` with the `until` filter + `until_to_hand`.
+#[test]
+fn flip_until_grammar() {
+    fn acts(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()["actions"].clone()
+    }
+
+    // "add that <X> to your hand" -> until_to_hand.
+    let a = acts("Flip cards until you flip a Submission, add that Submission to your hand.");
+    assert_eq!(a[0]["@type"], "Flip");
+    assert_eq!(a[0]["until"]["atk_type"], "Submission");
+    assert_eq!(a[0]["until_to_hand"], true);
+    assert_eq!(a[0]["who"], "SELF");
+
+    // A play-order filter, "add that card" phrasing, and the "your flip" typo.
+    let a = acts("Flip cards until your flip a Follow Up, add that card to your hand.");
+    assert_eq!(a[0]["until"]["play_order"], "Followup");
+    assert_eq!(a[0]["until_to_hand"], true);
+
+    // Bare "until you flip a <X>" (no add) -> until_to_hand=false.
+    let a = acts("Flip cards until you flip a Follow Up.");
+    assert_eq!(a[0]["until"]["play_order"], "Followup");
+    assert_eq!(a[0]["until_to_hand"], false);
+
+    // Stop-card filter flows through the flip-until path too.
+    let a = acts("Flip cards until you flip a Stop, add it to your hand.");
+    assert_eq!(a[0]["until"]["is_stop"], true);
+    assert_eq!(a[0]["until_to_hand"], true);
+}
+
 /// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
 /// per-count, recur, and HasInPlay-gated grammar.
 #[test]

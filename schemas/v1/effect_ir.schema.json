@@ -1771,6 +1771,19 @@
         "per_who": {
           "$ref": "#/$defs/Who"
         },
+        "until": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "until_to_hand": {
+          "type": "boolean"
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
@@ -1780,6 +1793,8 @@
         "n",
         "per",
         "per_who",
+        "until",
+        "until_to_hand",
         "who"
       ],
       "type": "object"
@@ -3851,6 +3866,9 @@
             }
           ]
         },
+        "even_unstoppable": {
+          "type": "boolean"
+        },
         "order": {
           "anyOf": [
             {
@@ -3862,9 +3880,6 @@
           ]
         },
         "source_is_skillreq": {
-          "type": "boolean"
-        },
-        "even_unstoppable": {
           "type": "boolean"
         },
         "target": {
@@ -4029,20 +4044,20 @@
         "@type": {
           "const": "Unstoppable"
         },
-        "by_order": {
+        "by_name": {
           "anyOf": [
             {
-              "$ref": "#/$defs/PlayOrder"
+              "type": "string"
             },
             {
               "type": "null"
             }
           ]
         },
-        "by_name": {
+        "by_order": {
           "anyOf": [
             {
-              "type": "string"
+              "$ref": "#/$defs/PlayOrder"
             },
             {
               "type": "null"
@@ -4117,5 +4132,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 67
+  "version": 68
 }

@@ -800,6 +800,8 @@ class Flip(IRNode):
     who: Who = Who.SELF
     per: CardFilter | None = None  # per-count: `n` scales by the count of matching cards...
     per_who: Who = Who.SELF  # ...in `per_who`'s board ("flip N for each Follow Up you have")
+    until: CardFilter | None = None  # flip-until: ignore `n`, mill until a card matches this...
+    until_to_hand: bool = False  # ...that card -> hand (True) or discard (False) with the rest
 
 
 @dataclass(frozen=True)

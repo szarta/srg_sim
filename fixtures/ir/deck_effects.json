@@ -643,6 +643,8 @@
         "n": 1,
         "per": null,
         "per_who": "SELF",
+        "until": null,
+        "until_to_hand": false,
         "who": "SELF"
       }
     ],
@@ -1109,6 +1111,8 @@
         "n": 1,
         "per": null,
         "per_who": "SELF",
+        "until": null,
+        "until_to_hand": false,
         "who": "SELF"
       }
     ],
@@ -2262,6 +2266,8 @@
         "n": 1,
         "per": null,
         "per_who": "SELF",
+        "until": null,
+        "until_to_hand": false,
         "who": "OPP"
       }
     ],
@@ -4401,6 +4407,8 @@
         "n": 1,
         "per": null,
         "per_who": "SELF",
+        "until": null,
+        "until_to_hand": false,
         "who": "SELF"
       }
     ],
@@ -4867,6 +4875,8 @@
         "n": 1,
         "per": null,
         "per_who": "SELF",
+        "until": null,
+        "until_to_hand": false,
         "who": "SELF"
       }
     ],

@@ -789,6 +789,8 @@
               "n": 1,
               "per": null,
               "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
               "who": "SELF"
             }
           ],
@@ -1077,6 +1079,8 @@
                 "text_contains": []
               },
               "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
               "who": "SELF"
             }
           ],
@@ -1331,6 +1335,8 @@
               "n": 1,
               "per": null,
               "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
               "who": "SELF"
             }
           ],
@@ -2904,6 +2910,8 @@
               "n": 1,
               "per": null,
               "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
               "who": "OPP"
             }
           ],

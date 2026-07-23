@@ -980,12 +980,18 @@ impl Engine {
                 who,
                 per,
                 per_who,
+                until,
+                until_to_hand,
             } => {
-                let mut count = *n;
-                if let Some(per) = per {
-                    count *= self.per_multiplier(per, *per_who, key, None);
+                if let Some(until) = until {
+                    self.act_flip_until(until, *who, *until_to_hand, key)?;
+                } else {
+                    let mut count = *n;
+                    if let Some(per) = per {
+                        count *= self.per_multiplier(per, *per_who, key, None);
+                    }
+                    self.act_flip(count, *who, key);
                 }
-                self.act_flip(count, *who, key);
             }
             Action::Discard {
                 selector,
@@ -1573,6 +1579,72 @@ impl Engine {
             source: Some("deck".to_owned()),
             hidden: false,
         }));
+    }
+
+    /// Flip-until: mill the target's deck one card at a time until a flipped card
+    /// matches `filter` (or the deck empties). Every non-matching card goes to the
+    /// discard; the matching card goes to the hand when `to_hand`, else to the
+    /// discard with the rest ("Flip cards until you flip a Submission[, add that
+    /// Submission to your hand]").
+    fn act_flip_until(
+        &mut self,
+        filter: &CardFilter,
+        who: Who,
+        to_hand: bool,
+        key: &str,
+    ) -> Eng<()> {
+        let target = self.target(who, key);
+        let mut milled: Vec<Card> = Vec::new();
+        let mut matched: Option<Card> = None;
+        loop {
+            let card = {
+                let deck = &mut self.state.players.get_mut(&target).unwrap().deck;
+                if deck.is_empty() {
+                    break;
+                }
+                deck.remove(0)
+            };
+            if conditions::card_matches(&card, filter) {
+                matched = Some(card);
+                break;
+            }
+            milled.push(card);
+        }
+        let t = self.state.turn_no;
+        let mut to_discard = milled;
+        let mut added_to_hand = false;
+        if let Some(card) = matched {
+            if to_hand {
+                let uuid = card.db_uuid.clone();
+                self.state.players.get_mut(&target).unwrap().hand.push(card);
+                self.log(Event::Search(CardMovement {
+                    t,
+                    player: target.clone(),
+                    cards: vec![uuid],
+                    source: Some("deck".to_owned()),
+                    hidden: false, // publicly flipped -> its identity is known in hand
+                }));
+                added_to_hand = true;
+            } else {
+                to_discard.push(card);
+            }
+        }
+        if !to_discard.is_empty() {
+            let uuids = to_discard.iter().map(|c| c.db_uuid.clone()).collect();
+            let player = self.state.players.get_mut(&target).unwrap();
+            player.discard.extend(to_discard);
+            self.log(Event::Discard(CardMovement {
+                t,
+                player: target.clone(),
+                cards: uuids,
+                source: Some("deck".to_owned()),
+                hidden: false,
+            }));
+        }
+        if added_to_hand {
+            self.hand_cap(&target)?;
+        }
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -7705,6 +7777,103 @@ mod flip_percount_tests {
             "no Leads -> no mill"
         );
         assert!(engine.state.players["A"].discard.is_empty());
+    }
+
+    fn atk_card(uuid: &str, atk: &str) -> Card {
+        serde_json::from_value(json!({"atk_type": atk, "db_uuid": uuid, "name": uuid,
+            "number": 1, "play_order": "Lead", "raw_text": "", "tags": [],
+            "finish_bonuses": {}, "effects": []}))
+        .unwrap()
+    }
+
+    fn sub_filter() -> Value {
+        json!({"@type": "CardFilter", "number": null, "atk_type": "Submission",
+            "play_order": null, "play_orders": [], "tag": null, "name": null, "raw": null,
+            "name_contains": [], "text_contains": []})
+    }
+
+    /// "Flip cards until you flip a Submission, add that Submission to your hand":
+    /// mills the non-matching prefix to discard and tutors the matching card to hand.
+    #[test]
+    fn flip_until_adds_the_matching_card_to_hand() {
+        let mut engine = engine();
+        {
+            let a = engine.state.players.get_mut("A").unwrap();
+            a.deck = vec![
+                atk_card("s0", "Strike"),
+                atk_card("s1", "Strike"),
+                atk_card("sub", "Submission"),
+                atk_card("s2", "Strike"),
+            ];
+            a.hand.clear();
+        }
+        let flip: Action = serde_json::from_value(json!({
+            "@type": "Flip", "n": 0, "who": "SELF", "per": null, "per_who": "SELF",
+            "until": sub_filter(), "until_to_hand": true
+        }))
+        .unwrap();
+        engine.apply_action(&flip, "A", "").unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(a.deck.len(), 1, "stops at the Submission; s2 stays in deck");
+        assert_eq!(a.deck[0].db_uuid, "s2");
+        assert_eq!(a.discard.len(), 2, "the two Strikes milled");
+        assert_eq!(a.hand.len(), 1, "the Submission tutored to hand");
+        assert_eq!(a.hand[0].db_uuid, "sub");
+    }
+
+    /// Without `until_to_hand`, the matching card mills to discard with the rest.
+    #[test]
+    fn flip_until_without_add_mills_the_match_too() {
+        let mut engine = engine();
+        {
+            let a = engine.state.players.get_mut("A").unwrap();
+            a.deck = vec![
+                atk_card("s0", "Strike"),
+                atk_card("sub", "Submission"),
+                atk_card("s1", "Strike"),
+            ];
+            a.hand.clear();
+        }
+        let flip: Action = serde_json::from_value(json!({
+            "@type": "Flip", "n": 0, "who": "SELF", "per": null, "per_who": "SELF",
+            "until": sub_filter(), "until_to_hand": false
+        }))
+        .unwrap();
+        engine.apply_action(&flip, "A", "").unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(
+            a.deck.len(),
+            1,
+            "s1 stays after the Submission stops the mill"
+        );
+        assert_eq!(
+            a.discard.len(),
+            2,
+            "the Strike and the Submission both milled"
+        );
+        assert!(a.hand.is_empty(), "nothing tutored");
+    }
+
+    /// No match: the whole deck flips to discard, and nothing is tutored even with
+    /// `until_to_hand`.
+    #[test]
+    fn flip_until_no_match_mills_the_whole_deck() {
+        let mut engine = engine();
+        {
+            let a = engine.state.players.get_mut("A").unwrap();
+            a.deck = vec![atk_card("s0", "Strike"), atk_card("s1", "Strike")];
+            a.hand.clear();
+        }
+        let flip: Action = serde_json::from_value(json!({
+            "@type": "Flip", "n": 0, "who": "SELF", "per": null, "per_who": "SELF",
+            "until": sub_filter(), "until_to_hand": true
+        }))
+        .unwrap();
+        engine.apply_action(&flip, "A", "").unwrap();
+        let a = &engine.state.players["A"];
+        assert!(a.deck.is_empty(), "deck exhausted looking for a Submission");
+        assert_eq!(a.discard.len(), 2, "both Strikes milled");
+        assert!(a.hand.is_empty(), "no match -> nothing added");
     }
 }
 

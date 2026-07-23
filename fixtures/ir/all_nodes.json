@@ -254,6 +254,8 @@
     "n": 0,
     "per": null,
     "per_who": "SELF",
+    "until": null,
+    "until_to_hand": false,
     "who": "SELF"
   },
   {

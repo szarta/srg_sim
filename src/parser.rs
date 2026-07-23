@@ -186,6 +186,8 @@ fn flip(n: i64, who: Who) -> Action {
         who,
         per: None,
         per_who: Who::SelfSide,
+        until: None,
+        until_to_hand: false,
     }
 }
 
@@ -200,6 +202,29 @@ fn per_flip(n: i64, who: Who, desc: &str, per_who: Who) -> Option<Effect> {
             who,
             per: Some(per),
             per_who,
+            until: None,
+            until_to_hand: false,
+        }],
+        Condition::Always,
+        Duration::Instant,
+    ))
+}
+
+/// "Flip cards until you flip a <desc>[, add that <desc> to your hand]" — the
+/// flip-until family. Mills the deck one card at a time until a card matching
+/// `desc` surfaces; that card goes to the hand when `to_hand`, else to the
+/// discard with the rest. Returns `None` when `desc` is not a recognized filter.
+fn flip_until(desc: &str, to_hand: bool) -> Option<Effect> {
+    let until = count_filter(desc)?;
+    Some(eff(
+        on_hit(),
+        vec![Action::Flip {
+            n: 0,
+            who: Who::SelfSide,
+            per: None,
+            per_who: Who::SelfSide,
+            until: Some(until),
+            until_to_hand: to_hand,
         }],
         Condition::Always,
         Duration::Instant,
@@ -984,6 +1009,13 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Condition::Always,
                 Duration::Instant,
             ))
+        }),
+        rule(
+            r"Flip cards? until you(?:r)? flip a (.+?), add (?:that .+?|it) to your hand",
+            |c| flip_until(&c[1], true),
+        ),
+        rule(r"Flip cards? until you(?:r)? flip a (.+)", |c| {
+            flip_until(&c[1], false)
         }),
         rule(
             r"Flip (\d+) cards? for each (?:other )?(.+?) you have in play",

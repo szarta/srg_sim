@@ -749,6 +749,15 @@ pub enum Action {
         per: Option<CardFilter>,
         #[serde(default)]
         per_who: Who,
+        /// Flip-until (variable count): when set, ignore `n` and mill the target's
+        /// deck one card at a time until a flipped card matches this filter (or the
+        /// deck empties). "Flip cards until you flip a Submission[, add it to your
+        /// hand]." The matching card goes to the hand when `until_to_hand`, else to
+        /// the discard with the rest. schema v68
+        #[serde(default)]
+        until: Option<CardFilter>,
+        #[serde(default)]
+        until_to_hand: bool,
     },
     Discard {
         selector: CardFilter,
@@ -1580,6 +1589,15 @@ pub enum IrNode {
         per: Option<CardFilter>,
         #[serde(default)]
         per_who: Who,
+        /// Flip-until (variable count): when set, ignore `n` and mill the target's
+        /// deck one card at a time until a flipped card matches this filter (or the
+        /// deck empties). "Flip cards until you flip a Submission[, add it to your
+        /// hand]." The matching card goes to the hand when `until_to_hand`, else to
+        /// the discard with the rest. schema v68
+        #[serde(default)]
+        until: Option<CardFilter>,
+        #[serde(default)]
+        until_to_hand: bool,
     },
     Discard {
         selector: CardFilter,

@@ -181,7 +181,9 @@ Always
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
 Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF)  Bury(selector, count)   Discard(selector, count, who, per?, per_who=SELF)
-Flip(n, who=SELF)             Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1)  ShuffleIntoDeck(selector)
+Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1)  ShuffleIntoDeck(selector)
+                              # until (schema v68): flip-until — ignore n, mill one card at a time until a flipped card
+                              # matches `until`; that card -> hand if until_to_hand, else discard ("Flip cards until you flip a Submission[, add it to your hand]")
                               # dest=DECK_TOP (schema v22): search, shuffle the deck, put the card on TOP (Heartache Kid)
                               # dest=DISCARD: "search your deck for up to `count` cards, put them in
                               # discard" — owner chooses which/how many (a `search` decision), then shuffles
