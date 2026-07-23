@@ -62,6 +62,25 @@ Install hooks once: `~/data/stars/venv/bin/pre-commit install`.
 The **knots** hook gates code complexity — keep functions small. `cargo fmt` and
 `cargo clippy -D warnings` run as pre-commit hooks (part of `invoke check`).
 
+## Decks: authoring, testing, playing
+
+A deck is `decks/<name>.yaml` (competitor + entrance + 30 numbered cards). The
+loop when adding or modeling one (full guide: [`decks/README.md`](decks/README.md)):
+
+```bash
+srg audit decks/<a>.yaml decks/<b>.yaml --games 30   # coverage gaps + crash/anomaly playtest
+srg repl  decks/<a>.yaml decks/<b>.yaml --human A     # interactive play (frontend's decision protocol);
+                                                      #   --transcript FILE for a Claude-observable feed
+srg audit ... --capture fixtures/conformance/NN_x.json  # bank a byte-for-byte regression golden
+```
+
+**Model an unmodeled clause** two ways (a card modeled either way is covered in
+*every* deck that uses it, keyed by `db_uuid`): add **grammar** in `src/parser.rs`
+for a recurring shape (DB-wide), or a bespoke **override** in `overrides.yaml`
+(then `invoke overrides`). `bull.yaml` / `warehouse.yaml` are fully modeled
+references. See [`docs/development/coverage-grind.rst`](docs/development/coverage-grind.rst)
+for the modeling procedure and traps.
+
 ## Tasks
 
 Tracked with `todo-sqlite-cli` (`.todo-sqlite-cli` marker → `todo-sqlite-cli.db`):
