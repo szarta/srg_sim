@@ -1,0 +1,33 @@
+competitor: "Warehouse"
+entrance: 'Pretty Paul Says, "Let It Rip!"'
+cards:
+  - {number: 1, name: "Punch"}
+  - {number: 2, name: "Lock Up"}
+  - {number: 3, name: "Headlock"}
+  - {number: 4, name: "Kick"}
+  - {number: 5, name: "Hip Toss"}
+  - {number: 6, name: "Armbar"}
+  - {number: 7, name: "Elbow Shot"}
+  - {number: 8, name: "Reverse Scoop Slam"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Back Kick (V2)"}
+  - {number: 11, name: "All American Takedown"}
+  - {number: 12, name: "Arm Lock"}
+  - {number: 13, name: "Stick It To You"}
+  - {number: 14, name: "Cosmic Big Business"}
+  - {number: 15, name: "The 4 Horsemen of the Apocalypse"}
+  - {number: 16, name: "Next Level Uppercut"}
+  - {number: 17, name: "American Dragon Drop"}
+  - {number: 18, name: "Choke Hold"}
+  - {number: 19, name: "Blindside Smash"}
+  - {number: 20, name: "Neckbreaker"}
+  - {number: 21, name: "Beatdown in the Corner"}
+  - {number: 22, name: "Muay Thai Strikes"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Any Last Words?"}
+  - {number: 25, name: "A Rabbit Out of a Hat"}
+  - {number: 26, name: "Atomic Slam (Grapple)"}
+  - {number: 27, name: "Bankrolling a Championship"}
+  - {number: 28, name: "Overnight Express"}
+  - {number: 29, name: "The Pallet Jack"}
+  - {number: 30, name: "The Fork Lift"}
