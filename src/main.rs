@@ -98,6 +98,26 @@ enum Command {
     },
     /// Print engine build info.
     Info,
+    /// Deck-testing harness: report each deck's unmodeled clauses, then play N
+    /// seeded games scanning for crashes, runtime Unsupported no-ops, and
+    /// non-decisive endings. The go-to check when adding a new deck.
+    Audit {
+        deck_a: PathBuf,
+        deck_b: PathBuf,
+        #[arg(long, default_value_t = 20)]
+        games: u64,
+        #[arg(long, default_value_t = 0)]
+        seed_start: u64,
+        #[arg(long, default_value = "heuristic")]
+        policy_a: String,
+        #[arg(long, default_value = "heuristic")]
+        policy_b: String,
+        /// Bank the first decisive game as a conformance replay-golden at this path.
+        #[arg(long)]
+        capture: Option<PathBuf>,
+        #[arg(long)]
+        cards: Option<PathBuf>,
+    },
     /// Play an interactive terminal match against a local AI (the same decision
     /// protocol the web frontend drives), with a live play-by-play and an optional
     /// JSONL observer transcript.
@@ -222,6 +242,25 @@ fn main() -> anyhow::Result<()> {
         Command::Replay { log, cards } => commands::replay(&cards_or_default(cards), &log),
         Command::CardsIr { out, cards } => commands::gen_cards_ir(&cards_or_default(cards), &out),
         Command::ParserFixture { path } => commands::regen_parser_fixture(&path),
+        Command::Audit {
+            deck_a,
+            deck_b,
+            games,
+            seed_start,
+            policy_a,
+            policy_b,
+            capture,
+            cards,
+        } => commands::audit(
+            &cards_or_default(cards),
+            &deck_a,
+            &deck_b,
+            games,
+            seed_start,
+            &policy_a,
+            &policy_b,
+            capture.as_deref(),
+        ),
         Command::Session { action } => run_session(action),
         Command::Repl {
             deck_a,

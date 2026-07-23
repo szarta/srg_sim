@@ -320,6 +320,220 @@ pub fn replay(cards: &Path, log_path: &Path) -> Result<()> {
 // helpers
 // ---------------------------------------------------------------------------
 
+/// `audit A.yaml B.yaml` — the deck-testing harness. Reports each deck's static
+/// coverage gaps (unmodeled clauses), then plays `games` seeded matches scanning
+/// each for crashes, runtime `Unsupported` no-ops, and non-decisive endings — the
+/// go-to check when a new deck is added. With `capture`, banks the first decisive
+/// game as a conformance replay-golden.
+#[allow(clippy::too_many_arguments)]
+pub fn audit(
+    cards: &Path,
+    deck_a: &Path,
+    deck_b: &Path,
+    games: u64,
+    seed_start: u64,
+    policy_a: &str,
+    policy_b: &str,
+    capture: Option<&Path>,
+) -> Result<()> {
+    let index = CardIndex::from_yaml(cards)?;
+    let ov = overrides()?;
+    let da = index.load_playable(deck_a, &ov)?;
+    let db = index.load_playable(deck_b, &ov)?;
+
+    // 1. Static coverage: the clauses each deck's own cards leave Unsupported.
+    println!("=== deck coverage (unmodeled clauses) ===");
+    for (path, deck) in [(deck_a, &da), (deck_b, &db)] {
+        let gaps = deck_unsupported(deck);
+        println!(
+            "{} [{}]: {} unmodeled clause(s)",
+            deck.competitor.name,
+            path.display(),
+            gaps.len()
+        );
+        for g in &gaps {
+            println!("    · {g}");
+        }
+    }
+
+    // 2. Playtest: seeded games, catching per-seed panics and scanning logs.
+    println!(
+        "\n=== playtest: {} vs {} — {games} games (seeds {seed_start}..{}), {policy_a} vs {policy_b} ===",
+        da.competitor.name,
+        db.competitor.name,
+        seed_start + games
+    );
+    let mut decisive = 0u64;
+    let mut turn_cap = 0u64;
+    let mut crashed: Vec<u64> = Vec::new();
+    let mut runtime: BTreeMap<String, u64> = BTreeMap::new();
+    let mut captured = false;
+    for i in 0..games {
+        let seed = seed_start + i;
+        match play_one(&da, &db, policy_a, policy_b, seed) {
+            Err(_) => crashed.push(seed),
+            Ok((result, log)) => {
+                if result.reason == "turn_cap" {
+                    turn_cap += 1;
+                } else {
+                    decisive += 1;
+                }
+                for ev in &log.events {
+                    if let srg_core::gamelog::Event::Unsupported { raw, .. } = ev {
+                        *runtime.entry(raw.clone()).or_default() += 1;
+                    }
+                }
+                if let Some(path) = capture {
+                    if !captured && result.reason != "turn_cap" {
+                        write_fixture(path, &da, &db, policy_a, policy_b, seed, &log)?;
+                        println!(
+                            "captured conformance fixture (seed {seed}) -> {}",
+                            path.display()
+                        );
+                        captured = true;
+                    }
+                }
+            }
+        }
+    }
+    println!(
+        "  decisive: {decisive}   turn-cap: {turn_cap}   crashed: {}",
+        crashed.len()
+    );
+    if !crashed.is_empty() {
+        println!("  CRASHED seeds: {crashed:?}");
+    }
+    if runtime.is_empty() {
+        println!("  runtime Unsupported no-ops: none");
+    } else {
+        println!("  runtime Unsupported no-ops (clause × times fired):");
+        let mut rows: Vec<_> = runtime.iter().collect();
+        rows.sort_by(|a, b| b.1.cmp(a.1));
+        for (raw, n) in rows {
+            println!("    {n:5} × {raw}");
+        }
+    }
+    Ok(())
+}
+
+/// One seeded local game, isolated so a panic reports the offending seed instead of
+/// aborting the whole audit. Returns the result and its log.
+fn play_one(
+    da: &srg_core::cards::Deck,
+    db: &srg_core::cards::Deck,
+    policy_a: &str,
+    policy_b: &str,
+    seed: u64,
+) -> Result<(GameResult, GameLog)> {
+    let (da, db) = (da.clone(), db.clone());
+    let (pa, pb) = (policy_a.to_owned(), policy_b.to_owned());
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<_> {
+        let policies = make_policies(&pa, &pb)?;
+        let mut engine = Engine::new(
+            da,
+            db,
+            Box::new(policies),
+            seed,
+            String::new(),
+            "sim".into(),
+        );
+        let result = run(&mut engine)?;
+        Ok((result, engine.log))
+    }));
+    match outcome {
+        Ok(res) => res,
+        Err(_) => bail!("panic on seed {seed}"),
+    }
+}
+
+/// The raw text of every `Unsupported` node in a deck's compiled IR (gimmick,
+/// entrance, and each card) — the deck's modeling gaps.
+fn deck_unsupported(deck: &srg_core::cards::Deck) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut scan = |effects: &[srg_core::ir::Effect]| {
+        let v = serde_json::to_value(effects).unwrap_or(serde_json::Value::Null);
+        collect_unsupported(&v, &mut out);
+    };
+    scan(&deck.competitor.effects);
+    scan(&deck.entrance.effects);
+    for c in &deck.cards {
+        scan(&c.effects);
+    }
+    out
+}
+
+fn collect_unsupported(v: &serde_json::Value, out: &mut Vec<String>) {
+    match v {
+        serde_json::Value::Object(m) => {
+            if m.get("@type").and_then(|t| t.as_str()) == Some("Unsupported") {
+                if let Some(raw) = m.get("raw_text").and_then(|r| r.as_str()) {
+                    out.push(raw.to_owned());
+                }
+            }
+            for val in m.values() {
+                collect_unsupported(val, out);
+            }
+        }
+        serde_json::Value::Array(a) => a.iter().for_each(|x| collect_unsupported(x, out)),
+        _ => {}
+    }
+}
+
+/// Write a conformance replay-golden from a completed sim game: decks + the
+/// per-player decisions (extracted from the log's `decision` events) + the log.
+fn write_fixture(
+    path: &Path,
+    da: &srg_core::cards::Deck,
+    db: &srg_core::cards::Deck,
+    policy_a: &str,
+    policy_b: &str,
+    seed: u64,
+    log: &GameLog,
+) -> Result<()> {
+    let mut decisions: BTreeMap<String, Vec<serde_json::Value>> = BTreeMap::new();
+    for ev in &log.events {
+        if let srg_core::gamelog::Event::Decision { player, chosen, .. } = ev {
+            decisions
+                .entry(player.clone())
+                .or_default()
+                .push(chosen.clone());
+        }
+    }
+    let label = format!(
+        "{}_{}_{}_s{seed}",
+        policy_a,
+        slug(&da.competitor.name),
+        slug(&db.competitor.name)
+    );
+    let fixture = serde_json::json!({
+        "fixture_schema": 1,
+        "label": label,
+        "seed": seed,
+        "kind": "sim",
+        "policies": {"A": policy_a, "B": policy_b},
+        "decks": {"A": da, "B": db},
+        "decisions": {"A": decisions.get("A").cloned().unwrap_or_default(),
+                      "B": decisions.get("B").cloned().unwrap_or_default()},
+        "log": log.canonical(),
+    });
+    let text = serde_json::to_string_pretty(&fixture)? + "\n";
+    std::fs::write(path, text).with_context(|| format!("write {}", path.display()))?;
+    Ok(())
+}
+
+/// A filename-safe lowercase slug (letters/digits → keep, else `_`).
+fn slug(s: &str) -> String {
+    s.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
 /// Run a fully-local match to completion; a suspension means a policy declined to
 /// choose (a bug for local policies — remote seats belong to the Session/MCP path).
 fn run(engine: &mut Engine) -> Result<GameResult> {
