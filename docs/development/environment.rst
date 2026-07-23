@@ -1,22 +1,28 @@
 Environment
 ===========
 
-Virtualenv
-----------
+Rust toolchain
+--------------
 
-|project| uses the **shared virtualenv** at ``~/data/stars/venv``. Do **not**
-create a new one — it wastes disk. All tooling (``ruff``, ``pre-commit``,
-``sphinx-build``) is expected to be available there.
+|project| is a Rust crate. The toolchain is pinned by
+:file:`rust-toolchain.toml` (``stable`` + ``clippy`` and ``rustfmt``); ``cargo``
+picks it up automatically, so a plain ``cargo build`` / ``cargo test`` is all
+that is required to compile and run the engine.
 
-Install |project| and its dev dependencies (``pytest``, ``mypy``, ``ruff``,
-``invoke``, ``build``, ``pre-commit``, ``sphinx``) into that venv in editable
-mode::
+Shared virtualenv (tooling only)
+--------------------------------
 
-    ~/data/stars/venv/bin/pip install -e ".[dev]"
+The developer *tooling* — ``invoke`` (the :file:`tasks.py` wrapper over
+``cargo``) and ``pre-commit`` (which also builds these docs with
+``sphinx-build``) — runs through the **shared virtualenv** at
+``~/data/stars/venv``. Do **not** create a new one — it wastes disk. Invoke it
+by path::
 
-Development tasks then run through ``invoke`` (see :doc:`workflow`); each task
-shells out to the interpreter running invoke, so the shared venv is used
-automatically.
+    ~/data/stars/venv/bin/invoke check
+
+The crate itself is **not** a Python package — there is nothing to
+``pip install``. The venv exists only so ``invoke`` / ``pre-commit`` are
+available; every task they run shells out to ``cargo``. See :doc:`workflow`.
 
 Card database
 -------------

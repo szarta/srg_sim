@@ -5,11 +5,12 @@ Everyday commands
 -----------------
 
 Development tasks are driven by `invoke <https://www.pyinvoke.org/>`_
-(:file:`tasks.py`). Each task shells out to the interpreter running invoke — the
-shared venv — so it works whether or not that venv is on ``PATH``. First install
-the package::
+(:file:`tasks.py`), a thin wrapper over ``cargo``. Each task shells out to
+``cargo``, so the wrapper adds convenience (and the fixture-regen steps), not a
+second build system. Run them by path so the shared venv's ``invoke`` is used
+(see :doc:`environment`)::
 
-    ~/data/stars/venv/bin/pip install -e ".[dev]"
+    ~/data/stars/venv/bin/invoke check
 
 .. list-table::
    :header-rows: 1
@@ -18,20 +19,32 @@ the package::
    * - Command
      - What it does
    * - ``invoke check``
-     - pre-commit hooks (ruff + knots + hygiene) + ``mypy`` + ``pytest`` — the
-       same gate CI runs.
+     - The full CI gate: pre-commit hooks (``cargo fmt`` + ``cargo clippy`` +
+       knots) followed by ``cargo test``.
    * - ``invoke test``
-     - Run the test suite (``pytest``).
+     - Run the test suite (``cargo test``).
    * - ``invoke build``
-     - Build the sdist and wheel into ``dist/``.
-   * - ``invoke docs``
-     - Build these docs to ``docs/_build/html`` (``--open-browser`` to view).
+     - ``cargo build`` (debug by default; ``--release`` for optimized).
+   * - ``invoke overrides``
+     - Regenerate the embedded :file:`overrides.ir.json` from
+       :file:`overrides.yaml` (the single authoring source).
+   * - ``invoke cards-ir``
+     - Regenerate the whole-DB parser golden
+       :file:`fixtures/parser/cards.ir.json` from the Rust parser.
+   * - ``invoke parser-fixture``
+     - Refresh the curated parser regression sample
+       :file:`fixtures/parser/clauses.json`.
+   * - ``invoke wasm``
+     - Build the web WASM package (``srg-core`` ``wasm`` feature →
+       ``web/src/pkg`` via wasm-bindgen).
    * - ``invoke bump-version``
-     - Bump the version across all files; dry-runs with no ``--new-version``.
-   * - ``invoke clean``
-     - Remove build and test artifacts.
+     - Bump the crate version in :file:`Cargo.toml`; prints the current version
+       with no ``--new-version``.
 
-Run ``invoke --list`` to see every task.
+Run ``~/data/stars/venv/bin/invoke --list`` to see every task. When a parser or
+IR change lands, the usual sequence is ``invoke overrides`` → ``invoke
+cards-ir`` → ``invoke parser-fixture`` → ``invoke check`` (see
+:doc:`coverage-grind`).
 
 Pre-commit
 ----------
@@ -42,15 +55,18 @@ Install the git hooks once per clone::
 
 The configured hooks (see :file:`.pre-commit-config.yaml`):
 
-* standard hygiene — trailing whitespace, EOF fixer, large-file / YAML / TOML /
-  merge-conflict checks;
-* **ruff** — lint (with ``--fix``) and format;
-* **knots** — code-complexity gate (Python only), prebuilt PyPI wheel so the
-  first run is fast. The knots source of truth lives at ``~/data/knots``.
+* standard hygiene — trailing whitespace, end-of-file fixer, large-file /
+  YAML / TOML / merge-conflict / line-ending checks;
+* **cargo fmt** — ``cargo fmt --all -- --check`` (formatting gate);
+* **cargo clippy** — ``cargo clippy --all-targets --all-features -- -D
+  warnings`` (lints are errors);
+* **knots** — the code-complexity gate; keep functions small. The knots source
+  of truth lives at ``~/data/knots``.
 
 Continuous integration
 ----------------------
 
-``.github/workflows/ci.yml`` runs the same checks ``invoke check`` runs (ruff
-lint + format check, mypy, pytest) on Python 3.11 and 3.12, and builds the docs
-with warnings treated as errors.
+:file:`.github/workflows/ci.yml` installs the pinned Rust toolchain (with
+``clippy`` and ``rustfmt``) and runs the same checks the gate runs — ``cargo fmt
+--all -- --check``, ``cargo clippy --all-targets --all-features -- -D
+warnings``, ``cargo build --all-targets --locked``, and ``cargo test --locked``.

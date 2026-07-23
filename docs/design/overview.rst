@@ -13,30 +13,32 @@ The shape of the system
 
    * - Module
      - Responsibility
-   * - ``cards.py``
+   * - ``cards``
      - Domain model — ``Card``, ``Competitor``, ``EntranceCard``, ``Deck``, enums.
-   * - ``loader.py``
-     - Card DB → index; resolve a decklist file into a ``Deck``.
-   * - ``effects.py``
+   * - ``ir``
      - **Effect IR** — ``Trigger``, ``Condition``, ``Action``, ``Effect``, ``Unsupported``.
-   * - ``rules_parser.py``
+   * - ``conditions``
+     - Condition evaluation against ``GameState`` (``holds``, card/filter matching).
+   * - ``parser``
      - ``rules_text`` → ``[Effect]``: grammar + ``overrides.yaml`` + coverage report.
-   * - ``state.py``
-     - ``GameState`` / ``PlayerState`` with serializable snapshots.
-   * - ``engine.py``
+   * - ``state``
+     - ``GameState`` / ``PlayerState`` with serializable snapshots + ``observable``.
+   * - ``engine``
      - Turn loop, effect executor, stop resolution, finish sequence.
-   * - ``finish.py``
-     - **Ported** from ``fae_comp/supershow.py`` — finish/breakout math.
-   * - ``stops.py``
-     - **Ported** from ``fae_comp/skill_stops.py`` — skill-stop online logic.
-   * - ``rng.py``
-     - Seeded RNG wrapper: ``roll()``, ``shuffle()``, ``reveal()``.
-   * - ``policy.py``
-     - ``Policy`` ABC + ``RandomPolicy``, ``HeuristicPolicy`` — where player skill lives.
-   * - ``gamelog.py``
+   * - ``session``
+     - Resumable state machine over ``engine`` — ``open`` / ``submit`` / ``snapshot``.
+   * - ``finish``
+     - **Ported** from ``fae_comp`` — finish/breakout math.
+   * - ``stops``
+     - **Ported** from ``fae_comp`` — skill-stop online logic.
+   * - ``rng``
+     - Seeded portable PRNG (splitmix64): ``roll()``, ``shuffle()``, ``reveal()``.
+   * - ``policy``
+     - ``Policy`` trait + ``RandomPolicy``, ``HeuristicPolicy`` — where player skill lives.
+   * - ``gamelog``
      - Game-log event schema, JSONL read/write, replay/verify.
-   * - ``cli.py``
-     - ``srg-sim play | coverage | replay``.
+   * - ``console`` (bin ``srg``)
+     - CLI over ``srg-core``: ``srg play | coverage | analyze | replay | session | cards-ir``.
 
 Two decisions everything hinges on
 ----------------------------------
@@ -53,6 +55,6 @@ dataset.
 
 .. todo::
 
-   Fold the relevant parts of the root ``DESIGN.md`` into this section as the
-   engine lands, so the docs become the living reference and ``DESIGN.md``
-   settles into a historical review record.
+   Fold the relevant parts of the root ``DESIGN.md`` into this section now that
+   the engine has landed, so the docs become the living reference and
+   ``DESIGN.md`` settles into a historical review record.
