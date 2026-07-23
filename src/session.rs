@@ -160,7 +160,14 @@ pub struct Session {
     /// state; local-policy choices re-derive from the seed.
     decisions: BTreeMap<String, Vec<Value>>,
     outstanding: Option<DecisionRequest>,
+    /// The game log **as of the current step** — refreshed on every [`advance`]
+    /// (not just at `Done`), so a consumer can render a live play-by-play between
+    /// decisions. The whole match replays each step, so this grows monotonically.
     log: Option<GameLog>,
+    /// The full internal [`GameState`] as of the current step (`to_dict`), for
+    /// debugging / an attached observer. Unlike the per-viewer `observable_state`
+    /// on a [`DecisionRequest`], this is loss-less (all hands, deck order, RNG).
+    full_state: Option<Value>,
     result: Option<GameResult>,
 }
 
@@ -204,6 +211,7 @@ impl Session {
             decisions: BTreeMap::new(),
             outstanding: None,
             log: None,
+            full_state: None,
             result: None,
         };
         let step = session.advance();
@@ -227,9 +235,18 @@ impl Session {
         self.advance()
     }
 
-    /// The completed log, once the session has reached `Done` (else `None`).
+    /// The game log as of the current step — available after every step (not only
+    /// at `Done`), so a client can render a live play-by-play. See [`Session::log`]'s
+    /// field docs.
     pub fn log(&self) -> Option<&GameLog> {
         self.log.as_ref()
+    }
+
+    /// The full internal [`GameState`] (`to_dict`) as of the current step, for
+    /// debugging / an attached observer — loss-less, unlike the per-viewer
+    /// `observable_state` on a [`DecisionRequest`].
+    pub fn debug_state(&self) -> Option<&Value> {
+        self.full_state.as_ref()
     }
 
     /// The outstanding request, if the session is parked awaiting a choice.
@@ -270,6 +287,7 @@ impl Session {
             decisions: snap.decisions,
             outstanding: None,
             log: None,
+            full_state: None,
             result: None,
         };
         let step = session.advance();
@@ -288,10 +306,15 @@ impl Session {
             self.created.clone(),
             self.kind.clone(),
         );
-        match engine.play() {
+        let step = engine.play();
+        // Capture the loss-less state + log-so-far as of this step for an
+        // observer/debugger and a live play-by-play (the whole match replays each
+        // step, so both are complete up to this point).
+        self.full_state = Some(engine.state.to_dict());
+        self.log = Some(engine.log);
+        match step {
             Ok(result) => {
                 self.outstanding = None;
-                self.log = Some(engine.log);
                 self.result = Some(result.clone());
                 Step::Done(result)
             }

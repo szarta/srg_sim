@@ -98,6 +98,31 @@ enum Command {
     },
     /// Print engine build info.
     Info,
+    /// Play an interactive terminal match against a local AI (the same decision
+    /// protocol the web frontend drives), with a live play-by-play and an optional
+    /// JSONL observer transcript.
+    Repl {
+        /// Decklist YAML for side A.
+        deck_a: PathBuf,
+        /// Decklist YAML for side B.
+        deck_b: PathBuf,
+        #[arg(long, default_value_t = 0)]
+        seed: u64,
+        /// Which seat the human plays ("A" or "B").
+        #[arg(long, default_value = "A")]
+        human: String,
+        /// The local AI policy for the other seat.
+        #[arg(long, default_value = "heuristic")]
+        opponent: String,
+        /// Write a JSONL observer transcript here (raw wire traffic + named cards).
+        #[arg(long)]
+        transcript: Option<PathBuf>,
+        /// Echo the loss-less full state on each decision (and into the transcript).
+        #[arg(long)]
+        debug: bool,
+        #[arg(long)]
+        cards: Option<PathBuf>,
+    },
 }
 
 /// Stateless, snapshot-threaded steps of a [`Session`] (see `src/console/session_cmd.rs`).
@@ -198,6 +223,24 @@ fn main() -> anyhow::Result<()> {
         Command::CardsIr { out, cards } => commands::gen_cards_ir(&cards_or_default(cards), &out),
         Command::ParserFixture { path } => commands::regen_parser_fixture(&path),
         Command::Session { action } => run_session(action),
+        Command::Repl {
+            deck_a,
+            deck_b,
+            seed,
+            human,
+            opponent,
+            transcript,
+            debug,
+            cards,
+        } => console::repl::run(
+            &cards_or_default(cards),
+            (&deck_a, &deck_b),
+            seed,
+            &human,
+            &opponent,
+            transcript.as_deref(),
+            debug,
+        ),
         Command::Info => {
             // Machine-readable version stamp: the frontend parses this from the
             // backend `srg` binary and asserts it matches the vendored WASM

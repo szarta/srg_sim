@@ -4,6 +4,7 @@
 
 pub mod commands;
 pub mod loader;
+pub mod repl;
 pub mod session_cmd;
 
 use std::path::PathBuf;

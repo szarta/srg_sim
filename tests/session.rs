@@ -93,6 +93,40 @@ fn drive(session: &mut Session, mut step: Step, recorded: &BTreeMap<String, Vec<
     }
 }
 
+/// The log and loss-less full state are available at *every* step, not only at
+/// `Done` — the observability the REPL / web play-by-play and an attached observer
+/// rely on. At the first decision the log already holds the opening events, and the
+/// full state round-trips as a GameState dict.
+#[test]
+fn log_and_state_available_mid_match() {
+    let fx = fixtures().into_iter().next().expect("a fixture");
+    let (session, step) = Session::open(
+        fx.deck_a,
+        fx.deck_b,
+        seats(&fx.policies, true),
+        fx.seed,
+        String::new(),
+        fx.kind,
+    )
+    .expect("open");
+    assert!(
+        matches!(step, Step::Decision(_)),
+        "a remote seat suspends at the first decision"
+    );
+    let log = session.log().expect("log available mid-match");
+    assert!(
+        !log.events.is_empty(),
+        "opening events recorded before the first decision"
+    );
+    let state = session
+        .debug_state()
+        .expect("full state available mid-match");
+    assert!(
+        state.get("players").is_some(),
+        "full state is a GameState dict"
+    );
+}
+
 /// Remote seats fed the recorded answers reproduce the fixture log byte-for-byte —
 /// the wire path lands on the same log as the batch driver.
 #[test]
