@@ -97,6 +97,21 @@ impl WasmSession {
     }
 }
 
+/// The engine + contract version stamp as a JSON string — the WASM mirror of
+/// `srg info`. The frontend reads this at load and asserts it equals what the
+/// backend `srg` binary reports (same `commit` ⇒ matching enriched-deck schema).
+#[wasm_bindgen]
+pub fn version() -> String {
+    crate::version_info().to_string()
+}
+
+/// The AI opponent policy names this engine offers, as a JSON array string — so the
+/// opponent picker is driven by the engine, not hardcoded in the UI.
+#[wasm_bindgen]
+pub fn policies() -> String {
+    json!(crate::policy::POLICIES).to_string()
+}
+
 fn parse<T: serde::de::DeserializeOwned>(json: &str, what: &str) -> Result<T, JsError> {
     serde_json::from_str(json).map_err(|e| JsError::new(&format!("parse {what}: {e}")))
 }

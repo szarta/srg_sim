@@ -45,3 +45,21 @@ pub use error::{Result, SrgError};
 pub use rng::SeededRNG;
 pub use skills::Skills;
 pub use state::{GameState, PlayerState};
+
+/// The engine + contract version stamp, shared by the CLI (`srg info`) and the WASM
+/// build (`WasmSession.version()`). The frontend reads this from both the backend
+/// `srg` binary and the vendored `web/src/pkg` and asserts they match — `commit`
+/// (the exact source revision, from `build.rs`) is the definitive no-skew signal;
+/// the schema versions localize *what* drifted. See `FRONTEND_INTEGRATION_BRIEF.md`.
+pub fn version_info() -> serde_json::Value {
+    serde_json::json!({
+        "engine": env!("CARGO_PKG_VERSION"),
+        "commit": env!("SRG_GIT_COMMIT"),
+        "schemas": {
+            "effect_ir": ir::SCHEMA_VERSION,
+            "game_log": gamelog::SCHEMA_VERSION,
+            "observable_state": state::OBSERVABLE_SCHEMA_VERSION,
+        },
+        "policies": policy::POLICIES,
+    })
+}

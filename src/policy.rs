@@ -99,6 +99,10 @@ impl Decider for Policies {
 
 /// Build a named policy (`random` | `heuristic` | `aggressive` | `smart` |
 /// `newbie`), or `None` for an unknown name.
+/// Every AI policy name [`build_policy`] accepts — the opponent roster the console
+/// (`srg`) and web client offer. Keep in lockstep with the `build_policy` match.
+pub const POLICIES: &[&str] = &["random", "heuristic", "aggressive", "smart", "newbie"];
+
 pub fn build_policy(name: &str) -> Option<Box<dyn Policy>> {
     match name {
         "random" => Some(Box::new(RandomPolicy::new())),

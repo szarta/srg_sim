@@ -1,915 +1,2250 @@
 {
- "cards": [
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-01",
-   "effects": [
+  "cards": [
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Grapple",
-       "order": "Lead",
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 1",
-   "number": 1,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-02",
-   "effects": [
+      "atk_type": "Strike",
+      "db_uuid": "d9f6e890e1c846e79d4c11b649aa3683",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Each player adds the bottom card of their deck to their hand or stop any lead Grapple.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Each player adds the bottom card of their deck to their hand or stop any lead Grapple.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "American Double Punch",
+      "number": 1,
+      "play_order": "Lead",
+      "raw_text": "Each player adds the bottom card of their deck to their hand or stop any lead Grapple.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Submission",
-       "order": "Lead",
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 2",
-   "number": 2,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-03",
-   "effects": [
+      "atk_type": "Grapple",
+      "db_uuid": "5fa232c20b704bd79d0a2f7ec2adedf5",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Draw 1 card.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "2 Handed Toss",
+      "number": 2,
+      "play_order": "Lead",
+      "raw_text": "Draw 1 card.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Strike",
-       "order": "Lead",
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 3",
-   "number": 3,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-04",
-   "effects": [
+      "atk_type": "Submission",
+      "db_uuid": "dcfeb517699242ffbd803cccf167960f",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Stop",
+              "atk_type": "Strike",
+              "even_unstoppable": false,
+              "order": "Lead",
+              "source_is_skillreq": false,
+              "target": null
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Stop any Lead Strike.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If either player has fewer than 4 cards in their hand, they draw 2 cards.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If either player has fewer than 4 cards in their hand, they draw 2 cards.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "$tretch Money",
+      "number": 3,
+      "play_order": "Lead",
+      "raw_text": "Stop any Lead Strike.\nIf either player has fewer than 4 cards in their hand, they draw 2 cards.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Grapple",
-       "order": "Followup",
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 4",
-   "number": 4,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-05",
-   "effects": [
+      "atk_type": "Strike",
+      "db_uuid": "ce167537544645cfb8afd41b488824d0",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Stop any Follow Up Grapple or \"Rejected!\".",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Stop any Follow Up Grapple or \"Rejected!\".",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Your opponent reveals the top card of their deck, they may flip it.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Your opponent reveals the top card of their deck, they may flip it.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Boss Photobomb",
+      "number": 4,
+      "play_order": "Lead",
+      "raw_text": "Stop any Follow Up Grapple or \"Rejected!\".\nYour opponent reveals the top card of their deck, they may flip it.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Submission",
-       "order": "Followup",
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 5",
-   "number": 5,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-06",
-   "effects": [
+      "atk_type": "Grapple",
+      "db_uuid": "eb377f32850b46f5b6972f3186e94770",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Each player adds the bottom card of their deck to their hand or stop any Follow Up Submission.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Each player adds the bottom card of their deck to their hand or stop any Follow Up Submission.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "American Triple Skull Slam",
+      "number": 5,
+      "play_order": "Lead",
+      "raw_text": "Each player adds the bottom card of their deck to their hand or stop any Follow Up Submission.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Strike",
-       "order": "Followup",
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 6",
-   "number": 6,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-07",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 7",
-   "number": 7,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-08",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 8",
-   "number": 8,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-09",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 9",
-   "number": 9,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-10",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 10",
-   "number": 10,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-11",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 11",
-   "number": 11,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-12",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 12",
-   "number": 12,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-13",
-   "effects": [
+      "atk_type": "Submission",
+      "db_uuid": "1b3e9ce9896645a6a0c35411a1295485",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Stop",
+              "atk_type": "Strike",
+              "even_unstoppable": false,
+              "order": "Followup",
+              "source_is_skillreq": false,
+              "target": null
+            }
+          ],
+          "condition": {
+            "@type": "CrowdMeterCompare",
+            "cmp": ">=",
+            "value": 1
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If the Crowd Meter is 1 or greater, stop any Follow Up Strike.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "This match has no disqualifications.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "This match has no disqualifications.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Welcomed Distraction",
+      "number": 6,
+      "play_order": "Lead",
+      "raw_text": "If the Crowd Meter is 1 or greater, stop any Follow Up Strike.\nThis match has no disqualifications.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Grapple",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "SkillCompare",
-      "cmp": ">",
-      "skill": "Strike",
-      "value": null,
-      "vs": "OPP_SAME",
-      "vs_skill": null,
-      "who": "SELF"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 13",
-   "number": 13,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-14",
-   "effects": [
+      "atk_type": "Strike",
+      "db_uuid": "b7083110c10d42898b9d6622d35da1b3",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Randomly add 1 card from your discard pile to your hand or each player draws 1 card.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Randomly add 1 card from your discard pile to your hand or each player draws 1 card.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "Back Elbow",
+      "number": 7,
+      "play_order": "Lead",
+      "raw_text": "Randomly add 1 card from your discard pile to your hand or each player draws 1 card.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Submission",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "SkillCompare",
-      "cmp": ">",
-      "skill": "Grapple",
-      "value": null,
-      "vs": "OPP_SAME",
-      "vs_skill": null,
-      "who": "SELF"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 14",
-   "number": 14,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-15",
-   "effects": [
+      "atk_type": "Grapple",
+      "db_uuid": "919dc33ae4504d8fa183aab0e2797a0f",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "BOTTOM",
+              "who": "SELF"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Draw the bottom card of your deck.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If your opponent forces you to discard any number of cards from your hand, shuffle up to 3 cards from your discard pile into your deck.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If your opponent forces you to discard any number of cards from your hand, shuffle up to 3 cards from your discard pile into your deck.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Head of Steam",
+      "number": 8,
+      "play_order": "Lead",
+      "raw_text": "Draw the bottom card of your deck.\nIf your opponent forces you to discard any number of cards from your hand, shuffle up to 3 cards from your discard pile into your deck.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Strike",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "SkillCompare",
-      "cmp": ">",
-      "skill": "Submission",
-      "value": null,
-      "vs": "OPP_SAME",
-      "vs_skill": null,
-      "who": "SELF"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 15",
-   "number": 15,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-16",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 16",
-   "number": 16,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-17",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 17",
-   "number": 17,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-18",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 18",
-   "number": 18,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-19",
-   "effects": [
+      "atk_type": "Submission",
+      "db_uuid": "6e278d01a7cc4b8f8ff155be9e747cff",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Discard",
+              "choose": false,
+              "count": 2,
+              "per": null,
+              "per_who": "SELF",
+              "random": false,
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "who": "SELF"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Discard 2 cards from your hand.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "AddFromDiscard",
+              "filter": {
+                "@type": "CardFilter",
+                "atk_type": "Submission",
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Add 2 Submissions from your discard pile to your hand.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "2 Handed Grab",
+      "number": 9,
+      "play_order": "Lead",
+      "raw_text": "Discard 2 cards from your hand.  Add 2 Submissions from your discard pile to your hand.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Grapple",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "HasInPlay",
-      "cmp": ">=",
-      "count": 1,
-      "filter": {
-       "@type": "CardFilter",
-       "atk_type": "Grapple",
-       "name": null,
-       "number": null,
-       "play_order": null,
-       "raw": null,
-       "tag": null
+      "atk_type": "Strike",
+      "db_uuid": "c925bfe817994286ae9b47e650483840",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If you have another Lead in play, shuffle 1 Strike from your discard pile into your deck and draw 1 card.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If you have another Lead in play, shuffle 1 Strike from your discard pile into your deck and draw 1 card.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "Air Drop",
+      "number": 10,
+      "play_order": "Lead",
+      "raw_text": "If you have another Lead in play, shuffle 1 Strike from your discard pile into your deck and draw 1 card.",
+      "tags": []
+    },
+    {
+      "atk_type": "Grapple",
+      "db_uuid": "70770f5964b544a5bd324530ad563868",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If you have \"2 Handed Toss\" in play: your Grapple skill is +1 and this card is also a Follow Up.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If you have \"2 Handed Toss\" in play: your Grapple skill is +1 and this card is also a Follow Up.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "2 Handed Slam",
+      "number": 11,
+      "play_order": "Lead",
+      "raw_text": "If you have \"2 Handed Toss\" in play: your Grapple skill is +1 and this card is also a Follow Up.",
+      "tags": []
+    },
+    {
+      "atk_type": "Submission",
+      "db_uuid": "d6781e7652ab42209c37c72b5d781040",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If you have \"3/4 Wrist Lock\" in play: Your Submission skill is +1 and this card is also a Follow Up.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If you have \"3/4 Wrist Lock\" in play: Your Submission skill is +1 and this card is also a Follow Up.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "1/4 Twist",
+      "number": 12,
+      "play_order": "Lead",
+      "raw_text": "If you have \"3/4 Wrist Lock\" in play: Your Submission skill is +1 and this card is also a Follow Up.",
+      "tags": []
+    },
+    {
+      "atk_type": "Strike",
+      "db_uuid": "2ba96c4023104e3c937e37156fae66a4",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Stop",
+              "atk_type": "Grapple",
+              "even_unstoppable": true,
+              "order": "Finish",
+              "source_is_skillreq": false,
+              "target": null
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Stop any Finish Grapple that cannot be stopped.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "MaxHandSize",
+              "delta": -1,
+              "duration": "WHILE_IN_PLAY",
+              "who": "OPP"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Your opponent's maximum hand size is -1.",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "Ain't That a Kick in the Head",
+      "number": 13,
+      "play_order": "Followup",
+      "raw_text": "Stop any Finish Grapple that cannot be stopped. Your opponent's maximum hand size is -1.",
+      "tags": []
+    },
+    {
+      "atk_type": "Grapple",
+      "db_uuid": "05687a041eaf4b3db4de14143aea198f",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Flip",
+              "n": 1,
+              "per": null,
+              "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
+              "who": "SELF"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Flip 1 card.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "RecurToDeckTop",
+              "count": 1,
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Put 1 card from your discard pile on top of your deck.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Forceful Display",
+      "number": 14,
+      "play_order": "Followup",
+      "raw_text": "Flip 1 card.\nPut 1 card from your discard pile on top of your deck.\nIf you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
+      "tags": [
+        "Saber of Light"
+      ]
+    },
+    {
+      "atk_type": "Submission",
+      "db_uuid": "11e103e86aae4fcca8acfd598b210dfa",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Stop",
+              "atk_type": "Strike",
+              "even_unstoppable": false,
+              "order": null,
+              "source_is_skillreq": false,
+              "target": null
+            }
+          ],
+          "condition": {
+            "@type": "SkillCompare",
+            "cmp": ">",
+            "skill": "Submission",
+            "value": null,
+            "vs": "OPP_SAME",
+            "vs_skill": null,
+            "who": "SELF"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If your Submission skill is greater than your opponent's Submission skill, stop any Strike.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "ShuffleIntoDeck",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Shuffle 2 cards from your discard pile into your deck.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "All American Headlock (Grapple)",
+      "number": 15,
+      "play_order": "Followup",
+      "raw_text": "If your Submission skill is greater than your opponent's Submission skill, stop any Strike.\nShuffle 2 cards from your discard pile into your deck.",
+      "tags": [
+        "SkillRequirement"
+      ]
+    },
+    {
+      "atk_type": "Strike",
+      "db_uuid": "3c780413b401482b9d37561688079fcb",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If you have another Strike in play, discard 2 cards from your hand and add 1 card from your discard pile to your hand.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If you have another Strike in play, discard 2 cards from your hand and add 1 card from your discard pile to your hand.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Diminished Flock",
+      "number": 16,
+      "play_order": "Followup",
+      "raw_text": "If you have another Strike in play, discard 2 cards from your hand and add 1 card from your discard pile to your hand.",
+      "tags": []
+    },
+    {
+      "atk_type": "Grapple",
+      "db_uuid": "2be14346daca4d02a8739620e43a6872",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "ModifyRoll",
+              "delta": 1,
+              "per": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": "Lead",
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "per_who": "OPP",
+              "when": "NEXT",
+              "who": "SELF"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Your next turn roll is +1 for each Lead your opponent has in play.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "All American Suplex",
+      "number": 17,
+      "play_order": "Followup",
+      "raw_text": "Your next turn roll is +1 for each Lead your opponent has in play.",
+      "tags": []
+    },
+    {
+      "atk_type": "Submission",
+      "db_uuid": "731363a81ad9432ebcdd36cc63cde50c",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Flip",
+              "n": 2,
+              "per": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": "Followup",
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
+              "who": "SELF"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Flip 2 cards for each other Follow Up you have in play.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "Abdominal Stretch (V1)",
+      "number": 18,
+      "play_order": "Followup",
+      "raw_text": "Flip 2 cards for each other Follow Up you have in play.",
+      "tags": []
+    },
+    {
+      "atk_type": "Strike",
+      "db_uuid": "8c735afc21ea420f8b41543267be7950",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Discard",
+              "choose": false,
+              "count": 1,
+              "per": null,
+              "per_who": "SELF",
+              "random": true,
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "who": "OPP"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Your opponent randomly discards 1 card from their hand.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Bury up to 2 cards in any player's discard pile.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Bury up to 2 cards in any player's discard pile.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If this is a Ring of Fire or Lumberjack match, double these numbers.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If this is a Ring of Fire or Lumberjack match, double these numbers.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "All American Baattering Ram",
+      "number": 19,
+      "play_order": "Followup",
+      "raw_text": "Your opponent randomly discards 1 card from their hand.\nBury up to 2 cards in any player's discard pile.\nIf this is a Ring of Fire or Lumberjack match, double these numbers.",
+      "tags": []
+    },
+    {
+      "atk_type": "Grapple",
+      "db_uuid": "8679328f1b434a419e77ecf0124db535",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Stop",
+              "atk_type": "Submission",
+              "even_unstoppable": false,
+              "order": null,
+              "source_is_skillreq": false,
+              "target": null
+            }
+          ],
+          "condition": {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 1,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Submission",
+              "is_stop": null,
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "OPP"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If your opponent has another Submission in play, stop any Submission.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Beacon of Hope",
+      "number": 20,
+      "play_order": "Followup",
+      "raw_text": "If your opponent has another Submission in play, stop any Submission.\nIf you have a card with \"Training With\" in the name revealed, you may draw 1 card and bury 1 card in your hand.",
+      "tags": [
+        "Saber of Light"
+      ]
+    },
+    {
+      "atk_type": "Submission",
+      "db_uuid": "fc5de0a5e2b84c16b13e3cf24c0fb490",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "MaxHandSize",
+              "delta": -4,
+              "duration": "WHILE_IN_PLAY",
+              "who": "OPP"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Your opponent's maximum handsize is -4.",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Powerful Hand Buster",
+      "number": 21,
+      "play_order": "Followup",
+      "raw_text": "Your opponent's maximum handsize is -4.",
+      "tags": []
+    },
+    {
+      "atk_type": "Strike",
+      "db_uuid": "a811ce990f59487da29a7de21f7b389c",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Flip",
+              "n": 1,
+              "per": null,
+              "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
+              "who": "SELF"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Flip 1 card.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Take 2 cards from your discard pile, shuffle them into your deck, then draw 2 cards.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Take 2 cards from your discard pile, shuffle them into your deck, then draw 2 cards.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "360 Lariat",
+      "number": 22,
+      "play_order": "Followup",
+      "raw_text": "Flip 1 card.\nTake 2 cards from your discard pile, shuffle them into your deck, then draw 2 cards.",
+      "tags": []
+    },
+    {
+      "atk_type": "Grapple",
+      "db_uuid": "baf307a1efc84f9aba8400c7a71494f8",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Search your deck or discard pile for 3 Grapples:",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Search your deck or discard pile for 3 Grapples:",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Add 1 to your hand, put 1 on the top of your deck, and bury or put the other in your discard pile.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Add 1 to your hand, put 1 on the top of your deck, and bury or put the other in your discard pile.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If this is a Ring of Fire match, your opponent flips 3 cards.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If this is a Ring of Fire match, your opponent flips 3 cards.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "2 Birds, 1 Stone (Power)",
+      "number": 23,
+      "play_order": "Followup",
+      "raw_text": "Search your deck or discard pile for 3 Grapples:\nAdd 1 to your hand, put 1 on the top of your deck, and bury or put the other in your discard pile.\nIf this is a Ring of Fire match, your opponent flips 3 cards.",
+      "tags": [
+        "SkillRequirement"
+      ]
+    },
+    {
+      "atk_type": "Submission",
+      "db_uuid": "61812eabf05d4dd9849f0b0f56965dbf",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "The Crowd Meter is +1.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "The Crowd Meter is +1.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Draw cards equal to the Crowd Meter.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Draw cards equal to the Crowd Meter.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "$1,000,000 Dreamer",
+      "number": 24,
+      "play_order": "Followup",
+      "raw_text": "The Crowd Meter is +1.\nDraw cards equal to the Crowd Meter.",
+      "tags": [
+        "Old School Wave 3"
+      ]
+    },
+    {
+      "atk_type": "Strike",
+      "db_uuid": "56c451a5edc74d2caec72363e28fe1df",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Stop",
+              "atk_type": "Grapple",
+              "even_unstoppable": false,
+              "order": null,
+              "source_is_skillreq": false,
+              "target": null
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Stop any Grapple.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "SELF"
+            },
+            {
+              "@type": "Draw",
+              "cap": null,
+              "n": 1,
+              "per": null,
+              "per_excludes_trigger": false,
+              "per_who": "SELF",
+              "source": "TOP",
+              "who": "OPP"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Each player reveals the top card of their deck and adds it to their hand.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Rabbit Out of a Hat",
+      "number": 25,
+      "play_order": "Lead",
+      "raw_text": "Stop any Grapple.\nEach player reveals the top card of their deck and adds it to their hand.\nIf this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
+      "tags": []
+    },
+    {
+      "atk_type": "Grapple",
+      "db_uuid": "662a432d1fe84d3288ab055dff4f6021",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Stop",
+              "atk_type": "Submission",
+              "even_unstoppable": false,
+              "order": "Finish",
+              "source_is_skillreq": false,
+              "target": null
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Stop any Finish Submission.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Search your deck for 1 Grapple and put it on top of your shuffled deck.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Search your deck for 1 Grapple and put it on top of your shuffled deck.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "Alpaca Slam",
+      "number": 26,
+      "play_order": "Lead",
+      "raw_text": "Stop any Finish Submission.\nSearch your deck for 1 Grapple and put it on top of your shuffled deck.",
+      "tags": []
+    },
+    {
+      "atk_type": "Submission",
+      "db_uuid": "b235c776b425411e9d3e355d84718782",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Stop",
+              "atk_type": "Strike",
+              "even_unstoppable": false,
+              "order": "Lead",
+              "source_is_skillreq": false,
+              "target": null
+            },
+            {
+              "@type": "Stop",
+              "atk_type": "Strike",
+              "even_unstoppable": false,
+              "order": "Finish",
+              "source_is_skillreq": false,
+              "target": null
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Stop any Lead Strike or Finish Strike.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Shuffle 2 Submissions from your discard pile into your deck.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Shuffle 2 Submissions from your discard pile into your deck.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {},
+      "name": "A Small Fortune",
+      "number": 27,
+      "play_order": "Lead",
+      "raw_text": "Stop any Lead Strike or Finish Strike.\nShuffle 2 Submissions from your discard pile into your deck.",
+      "tags": []
+    },
+    {
+      "atk_type": "Strike",
+      "db_uuid": "0f5e169b51db48cf98379560f921d891",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 3,
+              "skill": "Agility"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+3 to Agility",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 2,
+              "skill": "Strike"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+2 to Strike",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "Reveal the top 7 cards of your deck; randomly add 3 to your hand, and flip the others.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Reveal the top 7 cards of your deck; randomly add 3 to your hand, and flip the others.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {
+        "Agility": 3,
+        "Strike": 2
       },
-      "who": "OPP"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 19",
-   "number": 19,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-20",
-   "effects": [
+      "name": "Cake Smash",
+      "number": 28,
+      "play_order": "Finish",
+      "raw_text": "+3 to Agility\n+2 to Strike\nReveal the top 7 cards of your deck; randomly add 3 to your hand, and flip the others.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Submission",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "HasInPlay",
-      "cmp": ">=",
-      "count": 1,
-      "filter": {
-       "@type": "CardFilter",
-       "atk_type": "Submission",
-       "name": null,
-       "number": null,
-       "play_order": null,
-       "raw": null,
-       "tag": null
+      "atk_type": "Grapple",
+      "db_uuid": "7c70b4f783274d70b2ad60bd6dbb5020",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 3,
+              "skill": "Technique"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+3 to Technique",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 2,
+              "skill": "Agility"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+2 to Agility",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 1,
+              "skill": "Submission"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+1 to Submission",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 1,
+              "skill": "Grapple"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+1 to Grapple",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "Unsupported",
+              "raw_text": "If stopped, your next turn roll is -3.",
+              "reason": "no grammar match"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "If stopped, your next turn roll is -3.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnPlay"
+          }
+        }
+      ],
+      "finish_bonuses": {
+        "Agility": 2,
+        "Grapple": 1,
+        "Submission": 1,
+        "Technique": 3
       },
-      "who": "OPP"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 20",
-   "number": 20,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-21",
-   "effects": [
+      "name": "Pig Tail Swing",
+      "number": 29,
+      "play_order": "Finish",
+      "raw_text": "+3 to Technique\n+2 to Agility\n+1 to Submission\n+1 to Grapple\nIf stopped, your next turn roll is -3.",
+      "tags": []
+    },
     {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Strike",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "HasInPlay",
-      "cmp": ">=",
-      "count": 1,
-      "filter": {
-       "@type": "CardFilter",
-       "atk_type": "Strike",
-       "name": null,
-       "number": null,
-       "play_order": null,
-       "raw": null,
-       "tag": null
+      "atk_type": "Submission",
+      "db_uuid": "e10bbd58b40543a69da4253b5bfa33c5",
+      "effects": [
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 1,
+              "skill": "Power"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+1 to Power",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 1,
+              "skill": "Agility"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+1 to Agility",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "FinishBonus",
+              "delta": 2,
+              "skill": "Submission"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "WHILE_IN_PLAY",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "+2 to Submission",
+          "source": "card",
+          "trigger": {
+            "@type": "Static"
+          }
+        }
+      ],
+      "finish_bonuses": {
+        "Agility": 1,
+        "Power": 1,
+        "Submission": 2
       },
-      "who": "OPP"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
+      "name": "The Iron Maiden",
+      "number": 30,
+      "play_order": "Finish",
+      "raw_text": "+1 to Power\n+1 to Agility\n+2 to Submission",
+      "tags": []
     }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 21",
-   "number": 21,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-22",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 22",
-   "number": 22,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-23",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 23",
-   "number": 23,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-24",
-   "effects": [],
-   "finish_bonuses": {},
-   "name": "A Card 24",
-   "number": 24,
-   "play_order": "Followup",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-25",
-   "effects": [
-    {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Grapple",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 25",
-   "number": 25,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-26",
-   "effects": [
-    {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Submission",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 26",
-   "number": 26,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-27",
-   "effects": [
-    {
-     "@type": "Effect",
-     "actions": [
-      {
-       "@type": "Stop",
-       "atk_type": "Strike",
-       "order": null,
-       "source_is_skillreq": false
-      }
-     ],
-     "condition": {
-      "@type": "Always"
-     },
-     "duration": "INSTANT",
-     "frequency": {
-      "@type": "FrequencyGuard",
-      "kind": "UNLIMITED",
-      "n": null
-     },
-     "optional": false,
-     "raw_clause": "",
-     "source": "card",
-     "trigger": {
-      "@type": "Static"
-     }
-    }
-   ],
-   "finish_bonuses": {},
-   "name": "A Card 27",
-   "number": 27,
-   "play_order": "Lead",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Strike",
-   "db_uuid": "A-28",
-   "effects": [],
-   "finish_bonuses": {
-    "Strike": 2
-   },
-   "name": "A Card 28",
-   "number": 28,
-   "play_order": "Finish",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Grapple",
-   "db_uuid": "A-29",
-   "effects": [],
-   "finish_bonuses": {
-    "Grapple": 2
-   },
-   "name": "A Card 29",
-   "number": 29,
-   "play_order": "Finish",
-   "raw_text": "",
-   "tags": []
-  },
-  {
-   "atk_type": "Submission",
-   "db_uuid": "A-30",
-   "effects": [],
-   "finish_bonuses": {
-    "Submission": 2
-   },
-   "name": "A Card 30",
-   "number": 30,
-   "play_order": "Finish",
-   "raw_text": "",
-   "tags": []
-  }
- ],
- "competitor": {
-  "db_uuid": "c-bull",
-  "division": "Worlds",
-  "effects": [
-   {
-    "@type": "Effect",
-    "actions": [
-     {
-      "@type": "ModifyRoll",
-      "delta": 1,
-      "per": null,
-      "per_who": "OPP",
-      "when": "NEXT",
-      "who": "SELF"
-     }
-    ],
-    "condition": {
-     "@type": "RollGapExactly",
-     "k": 3
-    },
-    "duration": "INSTANT",
-    "frequency": {
-     "@type": "FrequencyGuard",
-     "kind": "UNLIMITED",
-     "n": null
-    },
-    "optional": false,
-    "raw_clause": "",
-    "source": "gimmick",
-    "trigger": {
-     "@type": "OnRoll",
-     "skill": null,
-     "who": "SELF"
-    }
-   },
-   {
-    "@type": "Effect",
-    "actions": [
-     {
-      "@type": "ModifyRoll",
-      "delta": 2,
-      "per": null,
-      "per_who": "OPP",
-      "when": "NEXT",
-      "who": "SELF"
-     }
-    ],
-    "condition": {
-     "@type": "RollGapExactly",
-     "k": 4
-    },
-    "duration": "INSTANT",
-    "frequency": {
-     "@type": "FrequencyGuard",
-     "kind": "UNLIMITED",
-     "n": null
-    },
-    "optional": false,
-    "raw_clause": "",
-    "source": "gimmick",
-    "trigger": {
-     "@type": "OnRoll",
-     "skill": null,
-     "who": "SELF"
-    }
-   },
-   {
-    "@type": "Effect",
-    "actions": [
-     {
-      "@type": "ModifyRoll",
-      "delta": 3,
-      "per": null,
-      "per_who": "OPP",
-      "when": "NEXT",
-      "who": "SELF"
-     }
-    ],
-    "condition": {
-     "@type": "RollGapAtLeast",
-     "k": 5
-    },
-    "duration": "INSTANT",
-    "frequency": {
-     "@type": "FrequencyGuard",
-     "kind": "UNLIMITED",
-     "n": null
-    },
-    "optional": false,
-    "raw_clause": "",
-    "source": "gimmick",
-    "trigger": {
-     "@type": "OnRoll",
-     "skill": null,
-     "who": "SELF"
-    }
-   }
   ],
-  "gimmick_text": "",
-  "name": "The Bull",
-  "related_finishes": [],
-  "stats": {
-   "Agility": 5,
-   "Grapple": 9,
-   "Power": 10,
-   "Strike": 7,
-   "Submission": 8,
-   "Technique": 6
+  "competitor": {
+    "db_uuid": "894c9965da684adb8ab5f532bafbff59",
+    "division": "",
+    "effects": [
+      {
+        "@type": "Effect",
+        "actions": [
+          {
+            "@type": "ModifyRoll",
+            "delta": 1,
+            "per": null,
+            "per_who": "OPP",
+            "when": "NEXT",
+            "who": "SELF"
+          }
+        ],
+        "condition": {
+          "@type": "RollGapExactly",
+          "k": 3
+        },
+        "duration": "INSTANT",
+        "frequency": {
+          "@type": "FrequencyGuard",
+          "kind": "UNLIMITED",
+          "n": null
+        },
+        "optional": false,
+        "raw_clause": "turn roll exactly 3 less than target -> next roll +1",
+        "source": "gimmick",
+        "trigger": {
+          "@type": "OnRoll",
+          "skill": null,
+          "who": "SELF"
+        }
+      },
+      {
+        "@type": "Effect",
+        "actions": [
+          {
+            "@type": "ModifyRoll",
+            "delta": 2,
+            "per": null,
+            "per_who": "OPP",
+            "when": "NEXT",
+            "who": "SELF"
+          }
+        ],
+        "condition": {
+          "@type": "RollGapExactly",
+          "k": 4
+        },
+        "duration": "INSTANT",
+        "frequency": {
+          "@type": "FrequencyGuard",
+          "kind": "UNLIMITED",
+          "n": null
+        },
+        "optional": false,
+        "raw_clause": "turn roll exactly 4 less than target -> next roll +2",
+        "source": "gimmick",
+        "trigger": {
+          "@type": "OnRoll",
+          "skill": null,
+          "who": "SELF"
+        }
+      },
+      {
+        "@type": "Effect",
+        "actions": [
+          {
+            "@type": "ModifyRoll",
+            "delta": 3,
+            "per": null,
+            "per_who": "OPP",
+            "when": "NEXT",
+            "who": "SELF"
+          }
+        ],
+        "condition": {
+          "@type": "RollGapAtLeast",
+          "k": 5
+        },
+        "duration": "INSTANT",
+        "frequency": {
+          "@type": "FrequencyGuard",
+          "kind": "UNLIMITED",
+          "n": null
+        },
+        "optional": false,
+        "raw_clause": "turn roll at least 5 less than target -> next roll +3",
+        "source": "gimmick",
+        "trigger": {
+          "@type": "OnRoll",
+          "skill": null,
+          "who": "SELF"
+        }
+      }
+    ],
+    "gimmick_text": "When your turn roll is exactly 3 less than your target's turn roll:\nYour next turn roll is +1;\nIf it is exactly 4 less, it is +2,\nIf it is at least 5 less, it is +3.",
+    "name": "The Bull",
+    "related_finishes": [
+      "0f5e169b51db48cf98379560f921d891",
+      "7c70b4f783274d70b2ad60bd6dbb5020",
+      "e10bbd58b40543a69da4253b5bfa33c5"
+    ],
+    "stats": {
+      "Agility": 5,
+      "Grapple": 9,
+      "Power": 10,
+      "Strike": 7,
+      "Submission": 8,
+      "Technique": 6
+    }
+  },
+  "entrance": {
+    "db_uuid": "043060c38ea24c07a361760340332804",
+    "effects": [
+      {
+        "@type": "Effect",
+        "actions": [
+          {
+            "@type": "FinishRollBonus",
+            "delta": 2,
+            "either": false,
+            "per": null,
+            "per_who": "SELF",
+            "per_zone": "IN_PLAY",
+            "when_base_ge": null,
+            "when_base_le": 6,
+            "when_skill": null
+          }
+        ],
+        "condition": {
+          "@type": "Always"
+        },
+        "duration": "WHILE_IN_PLAY",
+        "frequency": {
+          "@type": "FrequencyGuard",
+          "kind": "ONCE_PER_MATCH",
+          "n": null
+        },
+        "optional": false,
+        "raw_clause": "If your Finish roll is 6 or less, it is +2.",
+        "source": "entrance",
+        "trigger": {
+          "@type": "Static"
+        }
+      }
+    ],
+    "name": "Calling in Kanik",
+    "raw_text": "Once per match:\nIf your Finish roll is 6 or less, it is +2."
   }
- },
- "entrance": {
-  "db_uuid": "A-ent",
-  "effects": [],
-  "name": "A Entrance",
-  "raw_text": ""
- }
 }

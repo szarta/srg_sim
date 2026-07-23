@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/szarta/srg_sim/schemas/v1/observable_state.schema.json",
+  "title": "ObservableState",
+  "description": "The per-viewer projection of GameState carried on every DecisionRequest.observable_state (src/state.rs GameState::observable). Lossy and viewer-scoped: the seed, RNG, flags, and every hidden zone are excluded; an opponent's hand is a count unless a Peek reveals it this turn. schema_version mirrors src/state.rs OBSERVABLE_SCHEMA_VERSION.",
+  "version": 1,
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "viewer", "crowd_meter", "active", "turn_no", "players"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "viewer": { "type": "string", "description": "Seat key ('A'|'B') this projection is scoped to." },
+    "crowd_meter": { "type": "integer" },
+    "active": { "type": "string", "description": "Seat key whose turn it is." },
+    "turn_no": { "type": "integer" },
+    "players": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["A", "B"],
+      "properties": {
+        "A": { "$ref": "#/$defs/PlayerView" },
+        "B": { "$ref": "#/$defs/PlayerView" }
+      }
+    }
+  },
+  "$defs": {
+    "PlayerView": {
+      "type": "object",
+      "description": "One seat as seen by the viewer. Exactly one of 'hand' (own seat, or a Peek-revealed opponent) or 'hand_size' (hidden opponent hand) is present.",
+      "additionalProperties": false,
+      "required": ["competitor", "entrance", "in_play", "discard", "gimmick_blanked", "deck_size"],
+      "properties": {
+        "competitor": { "$ref": "#/$defs/Competitor" },
+        "entrance": { "$ref": "#/$defs/EntranceCard" },
+        "in_play": { "type": "array", "items": { "$ref": "#/$defs/Card" }, "description": "Public board." },
+        "discard": { "type": "array", "items": { "$ref": "#/$defs/Card" }, "description": "Public discard pile." },
+        "gimmick_blanked": { "type": "boolean" },
+        "deck_size": { "type": "integer", "description": "Count only; deck order is hidden from everyone." },
+        "hand": { "type": "array", "items": { "$ref": "#/$defs/Card" }, "description": "Full hand — present only for the viewer's own seat or a Peek-revealed opponent." },
+        "hand_size": { "type": "integer", "description": "Count only — present for a hidden opponent hand." }
+      }
+    },
+    "Card": {
+      "type": "object",
+      "description": "A card as serialized by src/cards.rs Card. 'name' is the human-readable title (card-target decision options carry only number+uuid, so join against these).",
+      "required": ["db_uuid", "name", "number", "atk_type", "play_order"],
+      "properties": {
+        "db_uuid": { "type": "string" },
+        "name": { "type": "string" },
+        "number": { "type": "integer" },
+        "atk_type": { "type": "string", "enum": ["Strike", "Grapple", "Submission", "None"] },
+        "play_order": { "type": "string", "enum": ["Lead", "Followup", "Finish", "None"] },
+        "finish_bonuses": { "type": "object", "description": "Skill -> integer bonus." },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "raw_text": { "type": "string" },
+        "effects": { "type": "array", "description": "Compiled Effect IR (see effect_ir.schema.json)." }
+      }
+    },
+    "Competitor": {
+      "type": "object",
+      "required": ["db_uuid", "name", "division", "stats"],
+      "properties": {
+        "db_uuid": { "type": "string" },
+        "name": { "type": "string" },
+        "division": { "type": "string" },
+        "stats": {
+          "type": "object",
+          "required": ["Power", "Agility", "Technique", "Submission", "Grapple", "Strike"],
+          "properties": {
+            "Power": { "type": "integer" },
+            "Agility": { "type": "integer" },
+            "Technique": { "type": "integer" },
+            "Submission": { "type": "integer" },
+            "Grapple": { "type": "integer" },
+            "Strike": { "type": "integer" }
+          }
+        },
+        "gimmick_text": { "type": "string" },
+        "effects": { "type": "array" },
+        "related_finishes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "EntranceCard": {
+      "type": "object",
+      "required": ["db_uuid", "name"],
+      "properties": {
+        "db_uuid": { "type": "string" },
+        "name": { "type": "string" },
+        "raw_text": { "type": "string" },
+        "effects": { "type": "array" }
+      }
+    }
+  }
+}

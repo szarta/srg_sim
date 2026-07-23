@@ -13,7 +13,15 @@ fn info_subcommand_runs() {
         .expect("failed to run the srg binary");
     assert!(output.status.success(), "`srg info` exited non-zero");
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("srg-core"), "unexpected output: {stdout}");
+    // `srg info` emits the machine-readable version stamp the frontend asserts against.
+    let info: serde_json::Value =
+        serde_json::from_str(&stdout).unwrap_or_else(|e| panic!("info is not JSON: {e}\n{stdout}"));
+    assert!(info["engine"].is_string(), "info.engine missing: {stdout}");
+    assert!(info["commit"].is_string(), "info.commit missing: {stdout}");
+    assert!(
+        info["schemas"]["effect_ir"].is_i64(),
+        "info.schemas.effect_ir missing: {stdout}"
+    );
 }
 
 #[test]

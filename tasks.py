@@ -89,8 +89,9 @@ def wasm(c):
 
     Needs the wasm32 target (`rustup target add wasm32-unknown-unknown`) and a
     `wasm-bindgen` CLI matching the wasm-bindgen crate version
-    (`cargo install wasm-bindgen-cli --version <v>`). The output (`web/src/pkg`) is a
-    generated artifact — git-ignored, rebuilt from the crate, never vendored.
+    (`cargo install wasm-bindgen-cli --version <v>`). The output (`web/src/pkg`) is
+    committed so the frontend can vendor a known-good artifact without a local Rust
+    toolchain; refresh it with `invoke release-web` and commit the result.
     """
     c.run(
         "cargo build --lib --release --no-default-features --features wasm "
@@ -101,6 +102,25 @@ def wasm(c):
         "wasm-bindgen --target web --no-typescript --out-dir web/src/pkg "
         "target/wasm32-unknown-unknown/release/srg_core.wasm",
         pty=True,
+    )
+
+
+@task(name="release-web")
+def release_web(c):
+    """Build the `srg` release binary AND the WASM pkg from the *same* commit.
+
+    The backend shells the `srg` binary to enrich decks; the frontend vendors
+    `web/src/pkg` to play them. Both must come from one tree so the enriched-deck
+    schema matches (FRONTEND_INTEGRATION_BRIEF.md). Run this, commit the refreshed
+    `web/src/pkg`, and ship the `srg` binary from the same commit — `srg info` and
+    the WASM `version()` will then report the same `commit` stamp (no skew).
+    """
+    c.run("cargo build --release --bin srg", pty=True)
+    wasm(c)
+    print("\nBuilt from commit:")
+    c.run("./target/release/srg info", pty=True)
+    print(
+        "\nCommit `web/src/pkg` and ship ./target/release/srg from the same commit."
     )
 
 

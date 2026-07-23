@@ -199,9 +199,13 @@ fn main() -> anyhow::Result<()> {
         Command::ParserFixture { path } => commands::regen_parser_fixture(&path),
         Command::Session { action } => run_session(action),
         Command::Info => {
+            // Machine-readable version stamp: the frontend parses this from the
+            // backend `srg` binary and asserts it matches the vendored WASM
+            // (`WasmSession.version()`) so there is no enriched-deck schema skew.
             println!(
-                "srg-core {} — console CLI over srg-core (M-R1)",
-                env!("CARGO_PKG_VERSION")
+                "{}",
+                serde_json::to_string_pretty(&srg_core::version_info())
+                    .expect("version_info serializes")
             );
             Ok(())
         }

@@ -28,6 +28,12 @@ use std::collections::{BTreeMap, HashSet};
 /// a player's cap below this. `MinHandSize` mods shift it. See [`GameState::effective_hand_cap`].
 pub const MIN_HAND_SIZE: i64 = 3;
 
+/// Version of the [`observable`](GameState::observable) projection — the lossy,
+/// per-viewer state carried on every [`DecisionRequest`](crate::engine::DecisionRequest)
+/// and pinned in `schemas/v1/observable_state.schema.json`. Bump on any shape change
+/// so the web client can assert it against the engine it vendors.
+pub const OBSERVABLE_SCHEMA_VERSION: i64 = 1;
+
 /// A condition evaluator the engine can supply so conditional `Static` buffs
 /// resolve against live state; without one, only unconditional (`Always`) buffs
 /// apply.
@@ -623,6 +629,7 @@ impl GameState {
             .map(|k| (k.clone(), self.observe_player(k, viewer)))
             .collect();
         json!({
+            "schema_version": OBSERVABLE_SCHEMA_VERSION,
             "viewer": viewer,
             "crowd_meter": self.crowd_meter,
             "active": self.active,
