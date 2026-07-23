@@ -280,6 +280,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -1087,6 +1088,7 @@
           "delta": -2,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "THIS",
           "who": "OPP"
         }
@@ -1128,6 +1130,7 @@
                   "delta": -2,
                   "per": null,
                   "per_who": "OPP",
+                  "per_zone": "IN_PLAY",
                   "when": "NEXT",
                   "who": "OPP"
                 }
@@ -1826,6 +1829,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -1856,6 +1860,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -2314,6 +2319,7 @@
           "delta": -2,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "OPP"
         }
@@ -2356,6 +2362,7 @@
             "text_contains": []
           },
           "per_who": "SELF",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -2712,6 +2719,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -2742,6 +2750,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -3373,6 +3382,38 @@
         "order": null,
         "text_contains": [],
         "who": "SELF"
+      }
+    }
+  ],
+  "5224820cfea446b6938f65d7154bd2f0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 1,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_MATCH",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Once per match: When you would bump, draw 2 cards instead and each player re-rolls their turn roll. (modeled: +1 extra bump draw makes 2 total; the bump itself re-rolls both players)",
+      "source": "entrance",
+      "trigger": {
+        "@type": "OnBump"
       }
     }
   ],
@@ -4255,6 +4296,7 @@
           "delta": 2,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -5052,6 +5094,7 @@
           "delta": 2,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "THIS",
           "who": "SELF"
         }
@@ -5187,6 +5230,7 @@
           "delta": -1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "OPP"
         }
@@ -5245,6 +5289,104 @@
       "source": "gimmick",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "7df436fad0ef45949c1e61fde3bc1761": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Strike",
+          "even_unstoppable": false,
+          "order": null,
+          "source_is_skillreq": false,
+          "target": null
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Stop any Strike.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 1,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HandSizeCompare",
+        "cmp": "<",
+        "value": null,
+        "vs": "OPP",
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "The player with fewest cards in hand draws 1 card. (you have fewer)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 1,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "HandSizeCompare",
+        "cmp": "<",
+        "value": null,
+        "vs": "OPP",
+        "who": "OPP"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "The player with fewest cards in hand draws 1 card. (opponent has fewer)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
       }
     }
   ],
@@ -5843,6 +5985,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -5874,6 +6017,7 @@
           "delta": 2,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -5905,6 +6049,7 @@
           "delta": 3,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -6141,6 +6286,7 @@
                   "delta": 6,
                   "per": null,
                   "per_who": "SELF",
+                  "per_zone": "IN_PLAY",
                   "when": "NEXT",
                   "who": "SELF"
                 }
@@ -6272,6 +6418,7 @@
                           "delta": 1,
                           "per": null,
                           "per_who": "OPP",
+                          "per_zone": "IN_PLAY",
                           "when": "NEXT",
                           "who": "SELF"
                         }
@@ -6302,6 +6449,7 @@
                           "delta": 1,
                           "per": null,
                           "per_who": "OPP",
+                          "per_zone": "IN_PLAY",
                           "when": "NEXT",
                           "who": "SELF"
                         }
@@ -7099,6 +7247,7 @@
           "delta": -1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "THIS",
           "who": "OPP"
         }
@@ -8174,6 +8323,7 @@
             "text_contains": []
           },
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -8275,6 +8425,7 @@
           "delta": 1,
           "per": null,
           "per_who": "SELF",
+          "per_zone": "IN_PLAY",
           "when": "THIS",
           "who": "SELF"
         }
@@ -8423,6 +8574,7 @@
                   "delta": -1,
                   "per": null,
                   "per_who": "OPP",
+                  "per_zone": "IN_PLAY",
                   "when": "NEXT",
                   "who": "OPP"
                 }
@@ -8462,6 +8614,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -8492,6 +8645,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -9745,6 +9899,7 @@
           "delta": 1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -10705,6 +10860,7 @@
                   "delta": 1,
                   "per": null,
                   "per_who": "OPP",
+                  "per_zone": "IN_PLAY",
                   "when": "NEXT",
                   "who": "SELF"
                 }
@@ -11254,6 +11410,7 @@
           "delta": 2,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -11430,6 +11587,7 @@
           "delta": -1,
           "per": null,
           "per_who": "OPP",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "OPP"
         }
@@ -11567,6 +11725,7 @@
           "delta": 2,
           "per": null,
           "per_who": "SELF",
+          "per_zone": "IN_PLAY",
           "when": "NEXT",
           "who": "SELF"
         }
@@ -11925,6 +12084,7 @@
                   "delta": -1,
                   "per": null,
                   "per_who": "OPP",
+                  "per_zone": "IN_PLAY",
                   "when": "NEXT",
                   "who": "OPP"
                 }

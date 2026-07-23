@@ -589,6 +589,53 @@ fn flip_then_recur_grammar() {
     assert_eq!(a[1]["filter"]["name_contains"][0], "Lariat");
 }
 
+/// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
+/// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
+/// "also a Follow Up" conditional (AlsoLead order=Followup gated on RollWasSkill).
+#[test]
+fn next_roll_percount_and_also_followup_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // In-play per-count next roll.
+    let e = a1("Your next turn roll is +1 for each other Lead you have in play.");
+    let m = &e["actions"][0];
+    assert_eq!(m["@type"], "ModifyRoll");
+    assert_eq!(m["when"], "NEXT");
+    assert_eq!(m["delta"], 1);
+    assert_eq!(m["per"]["play_order"], "Lead");
+    assert_eq!(m["per_who"], "SELF");
+    assert_eq!(m["per_zone"], "IN_PLAY");
+
+    // Discard-zone per-count next roll.
+    let m =
+        a1("Your next turn roll is +2 for each Finish in your discard pile.")["actions"][0].clone();
+    assert_eq!(m["per"]["play_order"], "Finish");
+    assert_eq!(m["per_zone"], "DISCARD");
+    assert_eq!(m["delta"], 2);
+
+    // The plain "+N" rule still yields no per (regression guard for rule ordering).
+    let m = a1("Your next turn roll is +3.")["actions"][0].clone();
+    assert_eq!(m["per"], Value::Null);
+    assert_eq!(m["per_zone"], "IN_PLAY");
+
+    // "If you rolled <skill> … also a Follow Up" -> AlsoLead{order:Followup, RollWasSkill}.
+    let e = a1("If you rolled Agility for your turn roll this card is also a Follow Up.");
+    let al = &e["actions"][0];
+    assert_eq!(al["@type"], "AlsoLead");
+    assert_eq!(al["order"], "Followup");
+    assert_eq!(al["condition"]["@type"], "RollWasSkill");
+    assert_eq!(al["condition"]["skill"], "Agility");
+    // With the optional comma too.
+    let al = a1("If you rolled Power for your turn roll, this card is also a Follow Up.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(al["condition"]["skill"], "Power");
+}
+
 /// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
 /// per-count, recur, and HasInPlay-gated grammar.
 #[test]

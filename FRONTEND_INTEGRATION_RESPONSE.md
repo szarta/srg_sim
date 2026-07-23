@@ -91,7 +91,7 @@ for p in ['web/src/sample/deckA.json','web/src/sample/deckB.json']:
             if n.get('@type')=='Unsupported': acc.append(n['raw_text'])
             [w(v) for v in n.values()]
         elif isinstance(n,list): [w(v) for v in n]
-    for c in d['cards']: 
+    for c in d['cards']:
         acc=[]; w(c.get('effects',[]))
         for cl in acc: print(f"#{c['number']:>2} {c['name']}: {cl}")
 PY

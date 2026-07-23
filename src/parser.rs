@@ -151,6 +151,7 @@ fn modify_roll(
         when,
         per,
         per_who,
+        per_zone: CountZone::InPlay,
     }
 }
 
@@ -878,6 +879,43 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        rule(
+            r"Your next turn roll is \+(\d+) for each (?:other )?(.+?) you have in play",
+            |c| {
+                let per = count_filter(&c[2])?;
+                Some(eff(
+                    on_hit(),
+                    vec![modify_roll(
+                        Who::SelfSide,
+                        num(c, 1),
+                        RollWhen::Next,
+                        Some(per),
+                        Who::SelfSide,
+                    )],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"Your next turn roll is \+(\d+) for each (.+?) in your discard pile",
+            |c| {
+                let per = count_filter(&c[2])?;
+                Some(eff(
+                    on_hit(),
+                    vec![Action::ModifyRoll {
+                        who: Who::SelfSide,
+                        delta: num(c, 1),
+                        when: RollWhen::Next,
+                        per: Some(per),
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::Discard,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"Your next turn roll is \+(\d+)", |c| {
             Some(eff(
                 on_hit(),
@@ -1790,6 +1828,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                             value: Some(1),
                             who: Who::SelfSide,
                         },
+                        order: PlayOrder::Lead,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(
+            &format!(r"If you rolled {SK} for your turn roll,? this card is also a Follow Up"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::AlsoLead {
+                        condition: Condition::RollWasSkill {
+                            skill: skill(&c[1]),
+                        },
+                        order: PlayOrder::Followup,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,

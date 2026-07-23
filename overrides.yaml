@@ -8813,3 +8813,101 @@ c2d3731dec1f4242995caee8282bcc53:
   raw_clause: Flip 2 cards, discard 2 cards, add 2 cards from your discard pile to your hand.
   source: card
   optional: false
+
+# --- Warehouse deck: bespoke clauses grammar cannot cover (fewest-hand, on-bump entrance) ---
+7df436fad0ef45949c1e61fde3bc1761:
+- '@type': Effect
+  actions:
+  - '@type': Stop
+    atk_type: Strike
+    even_unstoppable: false
+    order: null
+    source_is_skillreq: false
+    target: null
+  condition:
+    '@type': Always
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  optional: false
+  raw_clause: Stop any Strike.
+  source: card
+  trigger:
+    '@type': OnPlay
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HandSizeCompare
+    cmp: <
+    vs: OPP
+    value: null
+    who: SELF
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 1
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: The player with fewest cards in hand draws 1 card. (you have fewer)
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HandSizeCompare
+    cmp: <
+    vs: OPP
+    value: null
+    who: OPP
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 1
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: OPP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: The player with fewest cards in hand draws 1 card. (opponent has fewer)
+  source: card
+  optional: false
+5224820cfea446b6938f65d7154bd2f0:
+- '@type': Effect
+  trigger:
+    '@type': OnBump
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    cap: null
+    n: 1
+    per: null
+    per_excludes_trigger: false
+    per_who: SELF
+    source: TOP
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_MATCH
+    n: null
+  raw_clause: 'Once per match: When you would bump, draw 2 cards instead and each player re-rolls their turn roll. (modeled: +1 extra bump draw makes 2 total; the bump itself re-rolls both players)'
+  source: entrance
+  optional: false

@@ -11,6 +11,7 @@
               "delta": 1,
               "per": null,
               "per_who": "OPP",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "SELF"
             }
@@ -42,6 +43,7 @@
               "delta": 2,
               "per": null,
               "per_who": "OPP",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "SELF"
             }
@@ -73,6 +75,7 @@
               "delta": 3,
               "per": null,
               "per_who": "OPP",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "SELF"
             }
@@ -1026,6 +1029,7 @@
                 "text_contains": []
               },
               "per_who": "OPP",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "SELF"
             }
@@ -4672,6 +4676,7 @@
               "delta": -2,
               "per": null,
               "per_who": "OPP",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "OPP"
             }
@@ -5311,6 +5316,7 @@
                 "text_contains": []
               },
               "per_who": "OPP",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "SELF"
             }
@@ -5388,6 +5394,7 @@
               "delta": 1,
               "per": null,
               "per_who": "OPP",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "SELF"
             }
@@ -6778,7 +6785,8 @@
                 "value": 1,
                 "vs": "VALUE",
                 "who": "SELF"
-              }
+              },
+              "order": "Lead"
             }
           ],
           "condition": {
@@ -7483,6 +7491,7 @@
                 "text_contains": []
               },
               "per_who": "OPP",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "SELF"
             }
@@ -7752,6 +7761,7 @@
                 "text_contains": []
               },
               "per_who": "SELF",
+              "per_zone": "IN_PLAY",
               "when": "NEXT",
               "who": "SELF"
             }
@@ -7769,7 +7779,13 @@
           "raw_clause": "Your next turn roll is +1 for each Strike you have in play.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
           }
         }
       ],

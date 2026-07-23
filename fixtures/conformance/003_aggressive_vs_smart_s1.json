@@ -981,7 +981,8 @@
                 "per": null,
                 "per_who": "OPP",
                 "when": "NEXT",
-                "who": "SELF"
+                "who": "SELF",
+                "per_zone": "IN_PLAY"
               }
             ],
             "condition": {
@@ -1012,7 +1013,8 @@
                 "per": null,
                 "per_who": "OPP",
                 "when": "NEXT",
-                "who": "SELF"
+                "who": "SELF",
+                "per_zone": "IN_PLAY"
               }
             ],
             "condition": {
@@ -1043,7 +1045,8 @@
                 "per": null,
                 "per_who": "OPP",
                 "when": "NEXT",
-                "who": "SELF"
+                "who": "SELF",
+                "per_zone": "IN_PLAY"
               }
             ],
             "condition": {

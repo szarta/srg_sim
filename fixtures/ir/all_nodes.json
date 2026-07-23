@@ -19,7 +19,8 @@
     "@type": "AlsoLead",
     "condition": {
       "@type": "Always"
-    }
+    },
+    "order": "Lead"
   },
   {
     "@type": "StopCountsOrderAs",
@@ -394,6 +395,7 @@
     "delta": 0,
     "per": null,
     "per_who": "SELF",
+    "per_zone": "IN_PLAY",
     "when": "THIS",
     "who": "SELF"
   },

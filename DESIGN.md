@@ -214,7 +214,8 @@ RevealRoute(deck, match_atk, on_match, on_fail, fail_optional=False, reveal=Fals
 ShuffleHandDraw(who, count, choose=False)  # schema v13: shuffle a player's hand into their deck, shuffle, draw
                               # `count`; choose=actor picks the player ("either player"). Cyclone V2, on a bump
 CountsAsInPlay(selector, count=2)  # Static self-decl: this card counts as `count` cards matching `selector`
-ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP)  # delta scales by count of `per` cards in play
+ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP, per_zone=IN_PLAY)  # delta scales by count of `per` cards
+                              # in `per_zone` (IN_PLAY, or DISCARD for "+2 for each Finish in your discard pile"; schema v70)
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?, cap?, per?, per_zone=IN_PLAY)
                                                  # per=CardFilter -> bonus = delta * (count of the target's cards
                                                  # in per_zone {IN_PLAY|DISCARD} matching per), clamped to cap
@@ -233,7 +234,8 @@ ElectBumpOnSameSkill(uses=2)  # Static roll-off grant: owner MAY bump on a same-
 Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
 StopRequiresTag(tag)          # marker paired with a sibling Stop in the same effect: the stop is legal only vs an attacker carrying `tag` — "Stop any Grapple with a Spotlight" (read by card_can_stop). schema v26
 Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)
-AlsoLead(condition)           # Static self-decl: also playable as a Lead while `condition` holds
+AlsoLead(condition, order=Lead)  # Static self-decl: also playable in `order`'s slot while `condition` holds
+                              # (order=Followup -> "also a Follow Up", playable when a Lead is in play; schema v70)
 BlankText(selector, who)                       LoseBy(kind=DISQUALIFICATION|PINFALL, who)
   # Static decl: `who`'s cards matching `selector` fire no text & cannot stop while the source is in play ("your opponent's Spotlights are blank" — is_text_blanked). schema v27
 BlankStoppedText             # "the stopped card has blank text until the end of the turn" (21 cards). Blanks ONE card by IDENTITY into

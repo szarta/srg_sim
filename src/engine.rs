@@ -18,9 +18,9 @@ use crate::cards::{Card, Deck};
 use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
-    Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, DeckEnd, Dest, Direction,
-    DqScope, Duration, Effect, LoseKind, PlayOrder, RevealDest, RevealFrom, RevealMatch, RollWhen,
-    ScryRest, Skill, Trigger, Who,
+    Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, CountZone, DeckEnd, Dest,
+    Direction, DqScope, Duration, Effect, LoseKind, PlayOrder, RevealDest, RevealFrom, RevealMatch,
+    RollWhen, ScryRest, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -208,12 +208,14 @@ fn negate_action(action: &Action) -> Action {
             when,
             per,
             per_who,
+            per_zone,
         } => Action::ModifyRoll {
             who: *who,
             delta: -*delta,
             when: *when,
             per: per.clone(),
             per_who: *per_who,
+            per_zone: *per_zone,
         },
         Action::BuffSkill {
             skill,
@@ -1090,7 +1092,8 @@ impl Engine {
                 when,
                 per,
                 per_who,
-            } => self.act_modify_roll(*who, *delta, *when, per.as_ref(), *per_who, key),
+                per_zone,
+            } => self.act_modify_roll(*who, *delta, *when, per.as_ref(), *per_who, *per_zone, key),
             Action::CrowdMeter { delta } => self.act_crowd(*delta, key),
             Action::RollBoost { delta } => self.pending_roll_boost += *delta,
             Action::WinTie { who } => self.act_win_tie(*who, key),
@@ -2232,6 +2235,7 @@ impl Engine {
         self.log(Event::CrowdMeter { t, delta, value });
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn act_modify_roll(
         &mut self,
         who: Who,
@@ -2239,12 +2243,14 @@ impl Engine {
         when: RollWhen,
         per: Option<&CardFilter>,
         per_who: Who,
+        per_zone: CountZone,
         key: &str,
     ) {
         let target = self.target(who, key);
         let mut delta = delta;
         if let Some(per) = per {
-            delta *= self.per_multiplier(per, per_who, key, None);
+            let counter = self.target(per_who, key);
+            delta *= self.state.count_in_zone(per, per_zone, &counter);
         }
         {
             let mods = &mut self
@@ -3372,13 +3378,19 @@ impl Engine {
             .collect()
     }
 
-    /// Whether `card` may be played as a Lead this instant via an `AlsoLead`
-    /// self-declaration whose condition currently holds.
+    /// Whether `card` may be played this instant via an `AlsoLead` self-declaration
+    /// whose condition currently holds — granting it an extra play-order slot
+    /// (`order`: also a Lead / Follow Up / Finish). The condition sees `key`'s
+    /// current turn roll (so "if you rolled Agility, this card is also a Follow Up"
+    /// resolves), and the target slot must itself be legal against the board.
     fn also_lead_now(&self, key: &str, card: &Card) -> bool {
+        let board = &self.state.players[key].in_play;
+        let roll = self.roll_ctx.get(key);
         card.effects.iter().any(|eff| {
             eff.actions.iter().any(|a| {
-                matches!(a, Action::AlsoLead { condition }
-                    if conditions::holds(condition, &self.state, key, None))
+                matches!(a, Action::AlsoLead { condition, order }
+                    if playable_as(*order, board)
+                        && conditions::holds(condition, &self.state, key, roll))
             })
         })
     }
@@ -4972,7 +4984,15 @@ fn unstoppable_gate(a: &Action, stopper: &Card) -> bool {
 /// order-only chain, DESIGN.md §6): a Lead always; a Follow Up needs a Lead; a
 /// Finish needs a Follow Up. Type is irrelevant to the chain.
 fn playable(board: &[Card], card: &Card) -> bool {
-    match card.play_order {
+    playable_as(card.play_order, board)
+}
+
+/// Whether a card in play-order slot `order` is legal against `board`: a Lead is
+/// always playable, a Follow Up needs a Lead in play, a Finish needs a Follow Up.
+/// Shared by `playable` (a card's printed order) and `also_lead_now` (an `AlsoLead`
+/// grant's alternate order).
+fn playable_as(order: PlayOrder, board: &[Card]) -> bool {
+    match order {
         PlayOrder::Lead => true,
         PlayOrder::Followup => board.iter().any(|c| c.play_order == PlayOrder::Lead),
         PlayOrder::Finish => board.iter().any(|c| c.play_order == PlayOrder::Followup),
@@ -7922,6 +7942,90 @@ mod flip_percount_tests {
         assert_eq!(a.discard.len(), 2, "the two leftover Strikes milled");
         assert_eq!(a.deck.len(), 1, "the untouched 4th card stays in deck");
         assert_eq!(a.deck[0].db_uuid, "keep-me");
+    }
+
+    /// ModifyRoll `per_zone=DISCARD` scales the next-roll bonus by the count of
+    /// matching cards in the DISCARD pile, not the board (Any Last Words?: "+2 for
+    /// each Finish in your discard pile"). schema v70
+    #[test]
+    fn modify_roll_per_zone_discard_counts_the_discard_pile() {
+        let mut engine = engine();
+        {
+            let a = engine.state.players.get_mut("A").unwrap();
+            a.discard = vec![
+                atk_card("f0", "Strike"), // atk_card play_order is Lead — not a Finish
+                card("fin0", "Finish"),
+                card("fin1", "Finish"),
+            ];
+            a.in_play = vec![card("board-fin", "Finish")]; // a board Finish must NOT be counted
+        }
+        let mr: Action = serde_json::from_value(json!({
+            "@type":"ModifyRoll","who":"SELF","delta":2,"when":"NEXT",
+            "per": {"@type":"CardFilter","play_order":"Finish","atk_type":null,"is_stop":null,
+                "name":null,"name_contains":[],"number":null,"play_orders":[],"raw":null,"tag":null,
+                "text_contains":[]},
+            "per_who":"SELF","per_zone":"DISCARD"
+        }))
+        .unwrap();
+        engine.apply_action(&mr, "A", "").unwrap();
+        assert_eq!(
+            engine.state.players["A"].pending_roll_mods.next_turn, 4,
+            "2 Finishes in discard * +2 (the board Finish is not counted)"
+        );
+    }
+
+    /// `AlsoLead { order: Followup, .. }` makes a card playable as a Follow Up — only
+    /// while a Lead is in play AND its condition (here, having rolled Agility this
+    /// turn) holds against the current roll context. schema v70
+    #[test]
+    fn also_lead_followup_needs_a_lead_and_a_matching_roll() {
+        let card_with: Card = serde_json::from_value(json!({
+            "atk_type":"Strike","db_uuid":"ovx","name":"Overnight Express","number":16,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"AlsoLead","order":"Followup",
+                    "condition":{"@type":"RollWasSkill","skill":"Agility"}}],
+                "duration":"WHILE_IN_PLAY","optional":false,"raw_clause":"",
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},"source":"card"}]
+        }))
+        .unwrap();
+        let mut engine = engine();
+        engine.roll_ctx.insert(
+            "A".into(),
+            crate::conditions::RollContext {
+                skill: Some(Skill::Agility),
+                gap: None,
+                value: None,
+                opp_skill: None,
+            },
+        );
+
+        // No Lead in play yet: a Follow Up slot is illegal even with the roll match.
+        assert!(
+            !engine.also_lead_now("A", &card_with),
+            "no Lead in play → not playable"
+        );
+
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card("lead", "Lead")];
+        assert!(
+            engine.also_lead_now("A", &card_with),
+            "Lead in play + rolled Agility → playable as a Follow Up"
+        );
+
+        // Wrong rolled skill: the condition fails, so the grant does not apply.
+        engine.roll_ctx.insert(
+            "A".into(),
+            crate::conditions::RollContext {
+                skill: Some(Skill::Strike),
+                gap: None,
+                value: None,
+                opp_skill: None,
+            },
+        );
+        assert!(
+            !engine.also_lead_now("A", &card_with),
+            "rolled Strike, not Agility → grant does not apply"
+        );
     }
 }
 

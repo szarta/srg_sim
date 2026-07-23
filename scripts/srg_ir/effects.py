@@ -1053,6 +1053,7 @@ class ModifyRoll(IRNode):
     when: RollWhen = RollWhen.THIS
     per: CardFilter | None = None  # if set, delta scales by the count of matching cards...
     per_who: Who = Who.OPP  # ...in `per_who`'s in-play board ("+1 for each Lead your opp has")
+    per_zone: CountZone = CountZone.IN_PLAY  # ...counted in this zone (IN_PLAY or DISCARD)
 
 
 @dataclass(frozen=True)
@@ -1279,9 +1280,12 @@ class AlsoLead(IRNode):
     """Static self-declaration that the source card may also be played as a Lead —
     starting a play chain without the normal order prerequisite — while ``condition``
     holds ("If you have no other cards in your hand, this card is also a Lead" —
-    Broken Butterfly). Read by the engine's playability check; a no-op to execute."""
+    Broken Butterfly). Read by the engine's playability check; a no-op to execute.
+    ``order`` picks the alternate slot: LEAD (default), FOLLOWUP ("… also a Follow
+    Up"), or FINISH — the slot must itself be legal against the board."""
 
     condition: Condition = Always()
+    order: PlayOrder = PlayOrder.LEAD
 
 
 @dataclass(frozen=True)

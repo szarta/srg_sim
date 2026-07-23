@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 69;
+pub const SCHEMA_VERSION: i64 = 70;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -138,8 +138,9 @@ impl AtkType {
 }
 
 /// Where a card sits in a play sequence.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum PlayOrder {
+    #[default]
     Lead,
     Followup,
     Finish,
@@ -935,6 +936,11 @@ pub enum Action {
         when: RollWhen,
         per: Option<CardFilter>,
         per_who: Who,
+        /// Which zone the `per` count reads — `InPlay` (the default, "for each Lead
+        /// you have in play") or `Discard` ("+2 for each Finish in your discard
+        /// pile"). Only meaningful when `per` is set. schema v70
+        #[serde(default)]
+        per_zone: CountZone,
     },
     /// Add `delta` to the owner's CURRENT roll value, mid-roll-off. Unlike
     /// `ModifyRoll{when=This}` (a pending mod consumed at roll start), this applies to a
@@ -1230,6 +1236,12 @@ pub enum Action {
     },
     AlsoLead {
         condition: Condition,
+        /// Which play-order slot this card may ALSO be played in while `condition`
+        /// holds. `Lead` (the default) = "this card is also a Lead"; `Followup` =
+        /// "… also a Follow Up" (playable when a Lead is in play); `Finish` = "…
+        /// also a Finish". Read in `also_playable_now`. schema v70
+        #[serde(default)]
+        order: PlayOrder,
     },
     /// Static stop-reframe (Jokerfish V2: "your opponent's Finishes are also Follow
     /// Ups for your Stop cards"). For the DECLARER-as-defender, an attack whose order
@@ -1775,6 +1787,11 @@ pub enum IrNode {
         when: RollWhen,
         per: Option<CardFilter>,
         per_who: Who,
+        /// Which zone the `per` count reads — `InPlay` (the default, "for each Lead
+        /// you have in play") or `Discard` ("+2 for each Finish in your discard
+        /// pile"). Only meaningful when `per` is set. schema v70
+        #[serde(default)]
+        per_zone: CountZone,
     },
     /// Add `delta` to the owner's CURRENT roll value, mid-roll-off. Unlike
     /// `ModifyRoll{when=This}` (a pending mod consumed at roll start), this applies to a
@@ -2070,6 +2087,12 @@ pub enum IrNode {
     },
     AlsoLead {
         condition: Condition,
+        /// Which play-order slot this card may ALSO be played in while `condition`
+        /// holds. `Lead` (the default) = "this card is also a Lead"; `Followup` =
+        /// "… also a Follow Up" (playable when a Lead is in play); `Finish` = "…
+        /// also a Finish". Read in `also_playable_now`. schema v70
+        #[serde(default)]
+        order: PlayOrder,
     },
     /// Static stop-reframe (Jokerfish V2: "your opponent's Finishes are also Follow
     /// Ups for your Stop cards"). For the DECLARER-as-defender, an attack whose order

@@ -7,6 +7,7 @@
         "delta": 1,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -38,6 +39,7 @@
         "delta": 2,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -69,6 +71,7 @@
         "delta": 3,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -859,6 +862,7 @@
           "text_contains": []
         },
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -4623,6 +4627,7 @@
           "text_contains": []
         },
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -5498,6 +5503,7 @@
         "delta": -2,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "OPP"
       }
@@ -6141,6 +6147,7 @@
           "text_contains": []
         },
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -6211,6 +6218,7 @@
         "delta": 1,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -7592,7 +7600,8 @@
           "value": 1,
           "vs": "VALUE",
           "who": "SELF"
-        }
+        },
+        "order": "Lead"
       }
     ],
     "condition": {
@@ -7792,6 +7801,7 @@
         "delta": -2,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "OPP"
       }
@@ -8521,6 +8531,7 @@
         "delta": 1,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -8577,6 +8588,7 @@
           "text_contains": []
         },
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -8905,6 +8917,7 @@
           "text_contains": []
         },
         "per_who": "SELF",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -9934,7 +9947,8 @@
           "value": 1,
           "vs": "VALUE",
           "who": "SELF"
-        }
+        },
+        "order": "Lead"
       }
     ],
     "condition": {
@@ -10134,6 +10148,7 @@
         "delta": -2,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "OPP"
       }
@@ -10777,6 +10792,7 @@
           "text_contains": []
         },
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -10847,6 +10863,7 @@
         "delta": 1,
         "per": null,
         "per_who": "OPP",
+        "per_zone": "IN_PLAY",
         "when": "NEXT",
         "who": "SELF"
       }
@@ -12215,7 +12232,8 @@
           "value": 1,
           "vs": "VALUE",
           "who": "SELF"
-        }
+        },
+        "order": "Lead"
       }
     ],
     "condition": {

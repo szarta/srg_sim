@@ -166,11 +166,15 @@
               "$ref": "#/$defs/DuringTurn"
             }
           ]
+        },
+        "order": {
+          "$ref": "#/$defs/PlayOrder"
         }
       },
       "required": [
         "@type",
-        "condition"
+        "condition",
+        "order"
       ],
       "type": "object"
     },
@@ -2548,6 +2552,9 @@
         "per_who": {
           "$ref": "#/$defs/Who"
         },
+        "per_zone": {
+          "$ref": "#/$defs/CountZone"
+        },
         "when": {
           "$ref": "#/$defs/RollWhen"
         },
@@ -2557,11 +2564,12 @@
       },
       "required": [
         "@type",
-        "who",
         "delta",
-        "when",
         "per",
-        "per_who"
+        "per_who",
+        "per_zone",
+        "when",
+        "who"
       ],
       "type": "object"
     },
@@ -4133,5 +4141,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 69
+  "version": 70
 }
