@@ -1611,13 +1611,20 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
-              "reason": "no grammar match"
+              "@type": "Flip",
+              "n": 2,
+              "per": null,
+              "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
+              "who": "SELF"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "Not",
+            "item": {
+              "@type": "Always"
+            }
           },
           "duration": "INSTANT",
           "frequency": {
@@ -1626,7 +1633,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
+          "raw_clause": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead. (inert in a standard match; needs match-type state #97)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -3618,13 +3625,20 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If this is a Steel Cage match, flip 3 cards.",
-              "reason": "no grammar match"
+              "@type": "Flip",
+              "n": 3,
+              "per": null,
+              "per_who": "SELF",
+              "until": null,
+              "until_to_hand": false,
+              "who": "SELF"
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "Not",
+            "item": {
+              "@type": "Always"
+            }
           },
           "duration": "INSTANT",
           "frequency": {
@@ -3633,7 +3647,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If this is a Steel Cage match, flip 3 cards.",
+          "raw_clause": "If this is a Steel Cage match, flip 3 cards. (inert in a standard match; needs match-type state #97)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -8131,15 +8145,15 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 120,
-    "override": 58,
+    "grammar": 117,
+    "override": 63,
     "top_unparsed": [
       [
-        "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
-        3
+        "If you have a card with \"Training With\" in the name revealed, you may draw N card and bury N card in your hand.",
+        2
       ],
       [
-        "If you have a card with \"Training With\" in the name revealed, you may draw N card and bury N card in your hand.",
+        "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
         2
       ],
       [
@@ -8216,7 +8230,7 @@
       ]
     ],
     "total": 217,
-    "unsupported": 39
+    "unsupported": 37
   },
   "coverage_records": [
     {
