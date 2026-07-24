@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 70;
+pub const SCHEMA_VERSION: i64 = 71;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1091,6 +1091,23 @@ pub enum Action {
         selector: CardFilter,
         who: Who,
     },
+    /// "This card copies the text of …" — the Spotlight text-copy family (#2 "A Trip
+    /// to the Upside Down", #9 "The D-Roll", #16 "Your Worst Nightmare!"). A passive
+    /// marker read (never executed) by [`GameState::copied_effects`](crate::state::GameState):
+    /// the effects of every card matching `selector` in `who`'s `zone` are re-homed
+    /// onto the copier and fire for as long as this clause's own duration is active
+    /// (a `WhileInDiscard` copy projects them from the copier's discard pile),
+    /// regardless of the source effect's original duration — the copier becomes the
+    /// new `self`. `copy_tags` also grafts the source's tags (its "Spotlight-ness")
+    /// onto the copier (#16 only; #2/#9 set `false`). "…then blanks them" (#2) is a
+    /// *separate* [`Action::BlankText`] clause against the same selector, not a flag
+    /// here. Bounded against copy→copy recursion by `copy_guard`. schema v71
+    CopyText {
+        selector: CardFilter,
+        who: Who,
+        zone: CountZone,
+        copy_tags: bool,
+    },
     /// "The stopped card has blank text until the end of the turn" — blank the text of
     /// the specific card instance that was JUST stopped, for the rest of the turn (21
     /// cards; the Jurassic / "If Stopped" stop-card family). Unlike [`Action::BlankText`],
@@ -1941,6 +1958,23 @@ pub enum IrNode {
     BlankText {
         selector: CardFilter,
         who: Who,
+    },
+    /// "This card copies the text of …" — the Spotlight text-copy family (#2 "A Trip
+    /// to the Upside Down", #9 "The D-Roll", #16 "Your Worst Nightmare!"). A passive
+    /// marker read (never executed) by [`GameState::copied_effects`](crate::state::GameState):
+    /// the effects of every card matching `selector` in `who`'s `zone` are re-homed
+    /// onto the copier and fire for as long as this clause's own duration is active
+    /// (a `WhileInDiscard` copy projects them from the copier's discard pile),
+    /// regardless of the source effect's original duration — the copier becomes the
+    /// new `self`. `copy_tags` also grafts the source's tags (its "Spotlight-ness")
+    /// onto the copier (#16 only; #2/#9 set `false`). "…then blanks them" (#2) is a
+    /// *separate* [`Action::BlankText`] clause against the same selector, not a flag
+    /// here. Bounded against copy→copy recursion by `copy_guard`. schema v71
+    CopyText {
+        selector: CardFilter,
+        who: Who,
+        zone: CountZone,
+        copy_tags: bool,
     },
     /// "The stopped card has blank text until the end of the turn" — blank the text of
     /// the specific card instance that was JUST stopped, for the rest of the turn (21

@@ -238,6 +238,12 @@ AlsoLead(condition, order=Lead)  # Static self-decl: also playable in `order`'s 
                               # (order=Followup -> "also a Follow Up", playable when a Lead is in play; schema v70)
 BlankText(selector, who)                       LoseBy(kind=DISQUALIFICATION|PINFALL, who)
   # Static decl: `who`'s cards matching `selector` fire no text & cannot stop while the source is in play ("your opponent's Spotlights are blank" — is_text_blanked). schema v27
+CopyText(selector, who, zone=IN_PLAY|DISCARD, copy_tags)  # "this card copies the text of …" (Spotlight text-copy family: #2/#9/#16). Static decl read
+                             # (never executed) by GameState.copied_effects, folded into standing_effects: the effects of every card matching
+                             # `selector` in `who`'s `zone` are RE-HOMED onto the copier and fire for as long as this clause's own duration holds (a
+                             # WHILE_IN_DISCARD copy projects them from the copier's discard), regardless of the source effect's original duration — the
+                             # copier becomes the new `self`. Bounded against copy→copy recursion by copy_guard. "…then blanks them" (#2) is a paired
+                             # BlankText, not a flag. copy_tags grafts the source's tags (its "Spotlight-ness"; #16, latched — designed, not yet modeled). schema v71
 BlankStoppedText             # "the stopped card has blank text until the end of the turn" (21 cards). Blanks ONE card by IDENTITY into
                              # GameState.blanked_text (a selector scan cannot: the blanking stop card stays in play, so it would never end);
                              # cleared by the end-of-turn sweep. Resolved BEFORE the stopped card's own OnStop, so it suppresses that card's

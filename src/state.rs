@@ -183,6 +183,11 @@ pub struct GameState {
     /// engine bookkeeping — never serialized.
     #[serde(skip)]
     blank_guard: RefCell<HashSet<String>>,
+    /// Re-entrancy guard for the text-copy scan (`copied_effects`): a copier that
+    /// copies text which itself copies text would recurse without it. Transient —
+    /// never serialized.
+    #[serde(skip)]
+    copy_guard: RefCell<HashSet<String>>,
 }
 
 fn default_active() -> String {
@@ -203,6 +208,7 @@ impl GameState {
             last_turn_bumped: false,
             blanked_text: Default::default(),
             blank_guard: RefCell::new(HashSet::new()),
+            copy_guard: RefCell::new(HashSet::new()),
         }
     }
 
@@ -339,6 +345,94 @@ impl GameState {
             Who::SelfSide => owner.to_owned(),
             Who::Opp => self.opponent_of(owner),
         }
+    }
+
+    /// Extra effects `owner` gains by COPYING another card's text — the Spotlight
+    /// text-copy family ([`Action::CopyText`]; #2 "A Trip to the Upside Down", #9
+    /// "The D-Roll"). A `CopyText` clause on one of `owner`'s own cards, active from
+    /// that card's zone (a `WhileInDiscard` copy fires only while the copier sits in
+    /// `owner`'s discard, every other duration only while it is in play), pulls the
+    /// *current* effects of every source card matching its selector in `who`'s `zone`
+    /// and RE-HOMES them onto `owner`: they fire for as long as the copy clause is
+    /// active, regardless of the source effect's original duration (the source,
+    /// sitting in a discard/other zone, would otherwise contribute nothing). Folded
+    /// into [`crate::engine`]'s `standing_effects`, so a copied Static finish/roll
+    /// bonus flows to every reader unchanged.
+    ///
+    /// A blanked source contributes nothing (you cannot copy blank text), and a
+    /// source card's own `CopyText` clauses are never re-copied — together with the
+    /// `copy_guard` re-entrancy guard this bounds copy→copy recursion.
+    pub fn copied_effects(&self, owner: &str) -> Vec<Effect> {
+        if !self.copy_guard.borrow_mut().insert(owner.to_owned()) {
+            return Vec::new(); // re-entrant copy scan: contribute nothing further
+        }
+        let out = self.copy_scan(owner);
+        self.copy_guard.borrow_mut().remove(owner);
+        out
+    }
+
+    fn copy_scan(&self, owner: &str) -> Vec<Effect> {
+        let player = &self.players[owner];
+        // The copier's own cards, gated by the copy clause's zone exactly as
+        // `is_text_blanked` gates a blank: a `WhileInDiscard` copy is live only from
+        // the discard pile; every other duration only from in play.
+        let live = player.in_play.iter().map(|c| (c, false));
+        let dead = player.discard.iter().map(|c| (c, true));
+        let mut out = Vec::new();
+        for (card, is_discard) in live.chain(dead) {
+            for eff in &card.effects {
+                if (eff.duration == Duration::WhileInDiscard) != is_discard {
+                    continue; // copy clause not active from this zone
+                }
+                if !conditions::holds(&eff.condition, self, owner, None) {
+                    continue;
+                }
+                for a in &eff.actions {
+                    if let Action::CopyText {
+                        selector,
+                        who,
+                        zone,
+                        ..
+                    } = a
+                    {
+                        let src_owner = self.who_key(owner, *who);
+                        out.extend(self.copy_sources(&src_owner, selector, *zone));
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// The re-homed effects of every card matching `selector` in `src_owner`'s
+    /// `zone` — every effect except the source's own `CopyText` clauses (which are
+    /// never re-copied). "Copies the *text*" reads the source's PRINTED effects, so a
+    /// continuous blank is deliberately *not* applied here: #2 "copies … and **then**
+    /// blanks them" captures the text before its own paired `BlankText` neutralises
+    /// the opponent's copy (copy precedes blank, per the card's wording).
+    fn copy_sources(&self, src_owner: &str, selector: &CardFilter, zone: CountZone) -> Vec<Effect> {
+        let player = &self.players[src_owner];
+        let cards = match zone {
+            CountZone::InPlay => &player.in_play,
+            CountZone::Discard => &player.discard,
+        };
+        let mut out = Vec::new();
+        for c in cards {
+            if !conditions::card_matches(c, selector) {
+                continue;
+            }
+            out.extend(
+                c.effects
+                    .iter()
+                    .filter(|e| {
+                        !e.actions
+                            .iter()
+                            .any(|a| matches!(a, Action::CopyText { .. }))
+                    })
+                    .cloned(),
+            );
+        }
+        out
     }
 
     // --- derived stats ------------------------------------------------------

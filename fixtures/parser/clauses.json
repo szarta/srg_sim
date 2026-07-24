@@ -7582,15 +7582,46 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "When this card is in your discard pile, it copies the text of your opponent's Spotlight in their discard pile and then blanks them.",
-              "reason": "no grammar match"
+              "@type": "CopyText",
+              "copy_tags": false,
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": "Spotlight",
+                "text_contains": []
+              },
+              "who": "OPP",
+              "zone": "DISCARD"
+            },
+            {
+              "@type": "BlankText",
+              "selector": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": "Spotlight",
+                "text_contains": []
+              },
+              "who": "OPP"
             }
           ],
           "condition": {
             "@type": "Always"
           },
-          "duration": "INSTANT",
+          "duration": "WHILE_IN_DISCARD",
           "frequency": {
             "@type": "FrequencyGuard",
             "kind": "UNLIMITED",
@@ -7600,7 +7631,7 @@
           "raw_clause": "When this card is in your discard pile, it copies the text of your opponent's Spotlight in their discard pile and then blanks them.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "Static"
           }
         }
       ],
@@ -8877,8 +8908,8 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 96,
-    "override": 115,
+    "grammar": 94,
+    "override": 118,
     "top_unparsed": [
       [
         "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
@@ -8895,14 +8926,10 @@
       [
         "When this card is in your discard pile: Your <S> skill is greater than your opponent's <S> skill for card effects.",
         1
-      ],
-      [
-        "When this card is in your discard pile, it copies the text of your opponent's Spotlight in their discard pile and then blanks them.",
-        1
       ]
     ],
     "total": 217,
-    "unsupported": 6
+    "unsupported": 5
   },
   "coverage_records": [
     {

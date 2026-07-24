@@ -5998,6 +5998,159 @@ bd11579fd13144f1bcf07c38a347edcd:
   source: card
   optional: false
 
+# Spotlight text-copy family (schema v71, task #110): a CopyText clause with
+# duration WHILE_IN_DISCARD re-homes the effects of every matching source card
+# onto this card while it sits in the discard pile (GameState::copied_effects,
+# folded into standing_effects). The copied Static finish bonuses then stack on
+# top of the source's own. "then blanks them" (#2) is a paired BlankText clause,
+# not a flag. #16 "Your Worst Nightmare!" (latched/activated copy) is designed but
+# not yet modeled — it needs stored snapshot state + a hand-peek choice.
+#
+# #9 "The D-Roll": copies the text of each Spotlight you have in play.
+829558750e004882b6edd66ee7024f64:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Technique
+    delta: 3
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +3 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Agility
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': CopyText
+    who: SELF
+    zone: IN_PLAY
+    copy_tags: false
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: WHILE_IN_DISCARD
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When this card is in your discard pile, it copies the text of each Spotlight
+    you have in play.
+  source: card
+  optional: false
+
+# #2 "A Trip to the Upside Down": copies the opponent's Spotlight in their discard,
+# then blanks them (a paired BlankText). Not itself a Spotlight.
+76698f39f7a84d1ba5b19911c5326590:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Power
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Grapple
+    delta: 3
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +3 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': CopyText
+    who: OPP
+    zone: DISCARD
+    copy_tags: false
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  - '@type': BlankText
+    who: OPP
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: WHILE_IN_DISCARD
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: When this card is in your discard pile, it copies the text of your opponent's
+    Spotlight in their discard pile and then blanks them.
+  source: card
+  optional: false
+
 
 # --- Snake Pitt (V3), World Championship (top-96 grind, task #79) ---
 # "When your target has more X in play, +1 to Y." Three continuous gimmick buffs,

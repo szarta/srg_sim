@@ -667,6 +667,10 @@ impl Engine {
         for card in &self.state.players[key].in_play {
             out.extend(card.effects.iter().cloned());
         }
+        // Text-copy family (#2/#9): effects re-homed onto `key` from a card it copies
+        // (its `CopyText` clause), so a copied Static finish/roll bonus is read here
+        // like any other standing effect (DESIGN.md §3, `Action::CopyText`).
+        out.extend(self.state.copied_effects(key));
         out
     }
 
@@ -1173,6 +1177,9 @@ impl Engine {
             | Action::AddText { .. }
             | Action::StopRequiresTag { .. }
             | Action::BlankText { .. }
+            // A `CopyText` clause is read by `copied_effects` (folded into
+            // `standing_effects`), not executed as a mutation — a no-op here.
+            | Action::CopyText { .. }
             | Action::MaxHandSize { .. }
             | Action::MinHandSize { .. }
             | Action::MirrorOpponentIncrease
@@ -5155,6 +5162,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BlankGimmick { .. } => "BlankGimmick",
         Action::FlipGimmick { .. } => "FlipGimmick",
         Action::BlankText { .. } => "BlankText",
+        Action::CopyText { .. } => "CopyText",
         Action::BlankStoppedText => "BlankStoppedText",
         Action::ChooseName { .. } => "ChooseName",
         Action::LoseBy { .. } => "LoseBy",

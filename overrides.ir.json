@@ -5872,6 +5872,114 @@
       }
     }
   ],
+  "76698f39f7a84d1ba5b19911c5326590": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Power",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "CopyText",
+          "copy_tags": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          },
+          "who": "OPP",
+          "zone": "DISCARD"
+        },
+        {
+          "@type": "BlankText",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_DISCARD",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When this card is in your discard pile, it copies the text of your opponent's Spotlight in their discard pile and then blanks them.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "7b1af704863e498b8b473e44c8d42ed4": [
     {
       "@type": "Effect",
@@ -6478,6 +6586,97 @@
         "@type": "OnStop",
         "dir": "YOURS",
         "order": "Finish"
+      }
+    }
+  ],
+  "829558750e004882b6edd66ee7024f64": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Agility"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Agility",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "CopyText",
+          "copy_tags": false,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          },
+          "who": "SELF",
+          "zone": "IN_PLAY"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_DISCARD",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When this card is in your discard pile, it copies the text of each Spotlight you have in play.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],

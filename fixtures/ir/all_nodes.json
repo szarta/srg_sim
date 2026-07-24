@@ -62,6 +62,25 @@
     "who": "OPP"
   },
   {
+    "@type": "CopyText",
+    "copy_tags": false,
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "is_stop": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "play_orders": [],
+      "raw": null,
+      "tag": "Spotlight",
+      "text_contains": []
+    },
+    "who": "SELF",
+    "zone": "IN_PLAY"
+  },
+  {
     "@type": "BlankStoppedText"
   },
   {

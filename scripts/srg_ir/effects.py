@@ -1377,6 +1377,24 @@ class BlankText(IRNode):
 
 
 @dataclass(frozen=True)
+class CopyText(IRNode):
+    """"This card copies the text of …" — the Spotlight text-copy family (#2 "A Trip
+    to the Upside Down", #9 "The D-Roll", #16 "Your Worst Nightmare!"). A passive
+    marker read (never executed) by ``GameState.copied_effects``: the effects of every
+    card matching ``selector`` in ``who``'s ``zone`` are re-homed onto the copier and
+    fire for as long as this clause's own duration is active (a ``WHILE_IN_DISCARD``
+    copy projects them from the copier's discard pile), regardless of the source
+    effect's original duration. ``copy_tags`` also grafts the source's tags (its
+    "Spotlight-ness") onto the copier (#16 only). "…then blanks them" (#2) is a
+    separate :class:`BlankText` clause, not a flag here."""
+
+    selector: CardFilter = CardFilter()
+    who: Who = Who.SELF
+    zone: CountZone = CountZone.IN_PLAY
+    copy_tags: bool = False
+
+
+@dataclass(frozen=True)
 class BlankStoppedText(IRNode):
     """"The stopped card has blank text until the end of the turn" — blank the text of
     the specific card instance JUST stopped, for the rest of the turn (21 cards; the

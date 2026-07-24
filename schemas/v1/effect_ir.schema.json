@@ -340,6 +340,34 @@
       ],
       "type": "object"
     },
+    "CopyText": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CopyText"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "zone": {
+          "$ref": "#/$defs/CountZone"
+        },
+        "copy_tags": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "who",
+        "zone",
+        "copy_tags"
+      ],
+      "type": "object"
+    },
     "BreakoutModifier": {
       "additionalProperties": false,
       "properties": {
@@ -751,6 +779,9 @@
               },
               {
                 "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/CopyText"
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
@@ -1367,6 +1398,9 @@
               },
               {
                 "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/CopyText"
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
@@ -2051,6 +2085,9 @@
         },
         {
           "$ref": "#/$defs/BlankText"
+        },
+        {
+          "$ref": "#/$defs/CopyText"
         },
         {
           "$ref": "#/$defs/BlankStoppedText"
@@ -4141,5 +4178,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 70
+  "version": 71
 }
