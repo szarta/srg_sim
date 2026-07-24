@@ -249,6 +249,75 @@ fn hand_bury_grammar() {
     assert_eq!(bury(&e["actions"][0]).0, "OPP");
 }
 
+/// DQ-CAUSE family grammar (task #94): the "if stopped, you lose via
+/// disqualification" self-loss and its casing / conditional-escape / pay-or-lose
+/// variants. Asserted against the whole-DB grammar directly.
+#[test]
+fn dq_cause_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    fn is_dq_loss(a: &Value) -> bool {
+        a["@type"] == "LoseBy" && a["kind"] == "DISQUALIFICATION" && a["who"] == "SELF"
+    }
+
+    // Plain self-loss, tolerant of casing / punctuation / "this card is" / plural.
+    for text in [
+        "If stopped, you lose the match via disqualification.",
+        "If stopped, you lose the match via Disqualification.",
+        "If stopped you lose the match via disqualification.",
+        "If this card is stopped, you lose the match via disqualification.",
+        "If stopped, you lose the match via Disqualifications.",
+    ] {
+        let e = one(text);
+        assert_eq!(e["trigger"]["@type"], "OnStop", "{text:?}");
+        assert_eq!(e["trigger"]["dir"], "YOURS", "{text:?}");
+        assert_eq!(e["condition"]["@type"], "Always", "{text:?}");
+        assert!(is_dq_loss(&e["actions"][0]), "{text:?}");
+    }
+
+    // "unless <cond>" — the loss is gated by Not(cond); the escape delegates to the
+    // shared condition parser (hand size, crowd meter).
+    let e = one("If stopped, unless you have 10 or more cards in hand, you lose the match via disqualification.");
+    assert_eq!(e["condition"]["@type"], "Not");
+    assert_eq!(e["condition"]["item"]["@type"], "HandSizeCompare");
+    assert!(is_dq_loss(&e["actions"][0]));
+
+    let e =
+        one("If stopped, unless the Crowd Meter is 2 or greater, you lose the match via disqualification.");
+    assert_eq!(e["condition"]["item"]["@type"], "CrowdMeterCompare");
+
+    // An escape the condition parser cannot map stays Unsupported (not silently dropped).
+    let effs = parse_text(
+        "If stopped, unless you hit another card this turn, you lose the match via disqualification.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+
+    // Pay-or-lose: a Choice between discarding and taking the loss.
+    let e = one(
+        "If stopped, discard 1 card from your hand or you lose the match via disqualification.",
+    );
+    assert_eq!(e["actions"][0]["@type"], "Choice");
+    let opts = e["actions"][0]["options"].as_array().unwrap();
+    assert_eq!(opts.len(), 2);
+    assert_eq!(opts[0]["actions"][0]["@type"], "Discard");
+    assert!(is_dq_loss(&opts[1]["actions"][0]));
+
+    // Pay-AND-lose: both the discard and the loss happen (an AND rider).
+    let e = one(
+        "If stopped, discard 1 card from your hand and you lose the match via disqualification.",
+    );
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts[0]["@type"], "Discard");
+    assert!(is_dq_loss(&acts[1]));
+}
+
 /// Draw-rider grammar (task #49): deck-position, conditional, and compare draws.
 /// Absent from the six-deck sample except "Draw the bottom card", so asserted
 /// against the whole-DB grammar directly.

@@ -16,9 +16,10 @@
 
 use crate::cards::{Card, Competitor, Deck, EntranceCard};
 use crate::ir::{
-    Action, AtkType, BuryFrom, CardFilter, Comparator, Condition, CountZone, DeckEnd, Direction,
-    Duration, Effect, EffectSource, EffectTag, Frequency, FrequencyGuard, FrequencyGuardTag,
-    LoseKind, PlayOrder, RollWhen, ScryRest, Skill, Trigger, Vs, Who,
+    Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
+    CountZone, DeckEnd, Direction, Duration, Effect, EffectSource, EffectTag, Frequency,
+    FrequencyGuard, FrequencyGuardTag, LoseKind, PlayOrder, RollWhen, ScryRest, Skill, Trigger, Vs,
+    Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -295,6 +296,59 @@ fn max_hand(delta: i64, who: Who) -> Action {
     }
 }
 
+/// The DQ-CAUSE trigger: "if [this card is] stopped" (the stopped card's own
+/// side), shared by the whole family (task #94).
+fn on_your_stop() -> Trigger {
+    Trigger::OnStop {
+        dir: Direction::Yours,
+        order: None,
+    }
+}
+
+/// "If stopped, you lose the match via `kind`" — an OnStop(Yours) self-loss gated on
+/// `cond`: the loss fires only while `cond` holds. Pass `Always` for the plain form,
+/// or `Not(escape)` for an "... unless <escape>" variant (the loss is voided when the
+/// escape holds).
+fn lose_via(kind: LoseKind, cond: Condition) -> Effect {
+    eff(
+        on_your_stop(),
+        vec![Action::LoseBy {
+            kind,
+            who: Who::SelfSide,
+        }],
+        cond,
+        Duration::Instant,
+    )
+}
+
+/// "If stopped, discard N card(s) from your hand OR you lose the match via
+/// disqualification" — the stopped player may pay the discard cost instead of taking
+/// the DQ loss (task #94). Offered cost-first; a player who cannot pay is still
+/// offered the discard (a minor fidelity gap on an empty hand). Existing nodes only.
+fn discard_or_lose(count: i64) -> Effect {
+    let pay = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: format!("Discard {count} from your hand"),
+        actions: vec![discard(count, Who::SelfSide, false, None, Who::SelfSide)],
+    };
+    let lose = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: "Lose the match via disqualification".to_owned(),
+        actions: vec![Action::LoseBy {
+            kind: LoseKind::Disqualification,
+            who: Who::SelfSide,
+        }],
+    };
+    eff(
+        on_your_stop(),
+        vec![Action::Choice {
+            options: vec![pay, lose],
+        }],
+        Condition::Always,
+        Duration::Instant,
+    )
+}
+
 fn has_in_play(who: Who, filter: CardFilter, count: i64) -> Condition {
     Condition::HasInPlay {
         who,
@@ -501,7 +555,7 @@ fn stop_condition(text: &str) -> Option<Condition> {
         .unwrap()
     });
     static HAND_SELF: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"^you have (\d+) or more cards in your hand$").unwrap());
+        LazyLock::new(|| Regex::new(r"^you have (\d+) or more cards in (?:your )?hand$").unwrap());
     static HAND_OPP: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"^your opponent has (\d+) (?:or fewer cards|cards?) in their hand$").unwrap()
     });
@@ -1008,18 +1062,60 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // DQ-CAUSE family (task #94). The plain "If [this card is] stopped[,] you lose
+        // the match via disqualification[s]" self-loss — case/punctuation/plural
+        // insensitive, so the many DB spellings collapse to one rule.
         rule(
-            r"If stopped, you lose the match via disqualification",
-            |_| {
-                Some(eff(
-                    Trigger::OnStop {
-                        dir: Direction::Yours,
-                        order: None,
+            r"(?i)If (?:this card is )?stopped,? you lose the match via disqualifications?",
+            |_| Some(lose_via(LoseKind::Disqualification, Condition::Always)),
+        ),
+        // "If stopped, unless <cond>, you lose ..." / "... you lose ... unless <cond>":
+        // the loss is voided when the escape condition holds. The condition delegates
+        // to `stop_condition`; an unparsed escape declines (stays Unsupported) rather
+        // than silently dropping the guard.
+        rule(
+            r"(?i)If stopped, unless (.+?),? you lose the match via disqualifications?",
+            |c| {
+                let cond = stop_condition(&c[1])?;
+                Some(lose_via(
+                    LoseKind::Disqualification,
+                    Condition::Not {
+                        item: Box::new(cond),
                     },
-                    vec![Action::LoseBy {
-                        kind: LoseKind::Disqualification,
-                        who: Who::SelfSide,
-                    }],
+                ))
+            },
+        ),
+        rule(
+            r"(?i)If stopped, you lose the match via disqualifications? unless (.+)",
+            |c| {
+                let cond = stop_condition(&c[1])?;
+                Some(lose_via(
+                    LoseKind::Disqualification,
+                    Condition::Not {
+                        item: Box::new(cond),
+                    },
+                ))
+            },
+        ),
+        // "If stopped, discard N card(s) from your hand or you lose ..." — pay-or-lose.
+        rule(
+            r"(?i)If stopped, discard (\d+) cards? from your hand or you lose the match via disqualifications?",
+            |c| Some(discard_or_lose(num(c, 1))),
+        ),
+        // "If stopped, discard N card(s) from your hand and you lose ..." — both the
+        // discard and the loss happen (an AND rider, not a choice).
+        rule(
+            r"(?i)If stopped, discard (\d+) cards? from your hand and you lose the match via disqualifications?",
+            |c| {
+                Some(eff(
+                    on_your_stop(),
+                    vec![
+                        discard(num(c, 1), Who::SelfSide, false, None, Who::SelfSide),
+                        Action::LoseBy {
+                            kind: LoseKind::Disqualification,
+                            who: Who::SelfSide,
+                        },
+                    ],
                     Condition::Always,
                     Duration::Instant,
                 ))
