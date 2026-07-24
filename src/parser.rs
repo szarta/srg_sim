@@ -2133,6 +2133,20 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         rule(
+            r"If you bumped on the (?:previous|last) turn roll, this card is also a Follow Up",
+            |_| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::AlsoLead {
+                        condition: Condition::BumpedLastTurnRoll,
+                        order: PlayOrder::Followup,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(
             r"If you bumped on the last turn roll, double these bonuses",
             |_| {
                 Some(eff(

@@ -784,6 +784,18 @@ fn next_roll_percount_and_also_followup_grammar() {
         ["actions"][0]
         .clone();
     assert_eq!(al["condition"]["skill"], "Power");
+
+    // Bump-conditional Follow Up (Kill Shot): "If you bumped on the previous/last
+    // turn roll, this card is also a Follow Up." -> AlsoLead{Followup, BumpedLastTurnRoll}.
+    for text in [
+        "If you bumped on the previous turn roll, this card is also a Follow Up.",
+        "If you bumped on the last turn roll, this card is also a Follow Up.",
+    ] {
+        let al = a1(text)["actions"][0].clone();
+        assert_eq!(al["@type"], "AlsoLead", "{text:?}");
+        assert_eq!(al["order"], "Followup", "{text:?}");
+        assert_eq!(al["condition"]["@type"], "BumpedLastTurnRoll", "{text:?}");
+    }
 }
 
 /// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
