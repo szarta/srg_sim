@@ -179,6 +179,15 @@ pub struct GameState {
     /// blank would never end. Consulted by [`GameState::is_text_blanked`].
     #[serde(default)]
     pub blanked_text: std::collections::BTreeSet<String>,
+    /// Monotonic play-sequence counter: bumped each time a card is played onto the
+    /// board and stamped onto that card's `played_seq`. Gives a GLOBAL, cross-player
+    /// order over played cards — the infrastructure the last-played match-rule
+    /// resolution (task #93) needs but per-player `in_play` Vecs cannot provide.
+    /// Setup declarations (gimmick / entrance) predate every played card, so they
+    /// resolve at the baseline sequence 0. Transient bookkeeping paired with
+    /// [`Card::played_seq`]; never serialized (re-derives as the engine replays).
+    #[serde(skip)]
+    pub play_seq: u64,
     /// Re-entrancy guard for stat-gated gimmick blanks (DESIGN.md §5). Transient
     /// engine bookkeeping — never serialized.
     #[serde(skip)]
@@ -207,9 +216,17 @@ impl GameState {
             last_roll_winner: None,
             last_turn_bumped: false,
             blanked_text: Default::default(),
+            play_seq: 0,
             blank_guard: RefCell::new(HashSet::new()),
             copy_guard: RefCell::new(HashSet::new()),
         }
+    }
+
+    /// Advance and return the global play sequence (task #93). The first played card
+    /// is tick 1; 0 stays reserved for setup declarations (gimmick / entrance).
+    pub fn bump_play_seq(&mut self) -> u64 {
+        self.play_seq += 1;
+        self.play_seq
     }
 
     /// The other player's key (two-player game).

@@ -210,6 +210,7 @@ fn build_card(rec: &Value) -> Result<Card> {
         tags: card_tags(rec),
         raw_text: rules_text(rec).to_owned(),
         effects: Vec::new(),
+        played_seq: None,
     })
 }
 

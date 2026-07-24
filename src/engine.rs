@@ -3072,79 +3072,105 @@ impl Engine {
         self.log_effect(key, "LoseBy", Some(&loser), json!({"kind": kind_name}));
     }
 
-    /// True iff `loser` is currently immune to a disqualification loss: some active
-    /// `DisqualificationRule` disables DQ for them and none re-enables it. A rule
-    /// applies to `loser` when its scope is `Match` (any owner) or `SelfSide` (owner
-    /// == loser). Effects are in-play-scoped and condition-gated. NOTE: last-played-
-    /// order tie-break between a disable and a re-enable is task #93 (needs a global
-    /// play sequence); with no re-enable card modeled yet this is exact.
+    /// True iff `loser` is currently immune to a disqualification loss: the
+    /// most-recently-played active `DisqualificationRule` that applies to them
+    /// disables DQ. A rule applies when its scope is `Match` (any owner) or `SelfSide`
+    /// (owner == loser). A standing no-DQ and a "this match has Disqualifications"
+    /// re-enable are resolved by last-played order in [`rule_immune`](Self::rule_immune).
     fn is_dq_immune(&self, loser: &str) -> bool {
-        let mut disabled = false;
-        let owners: Vec<String> = self.state.players.keys().cloned().collect();
-        for owner in &owners {
-            for (effects, active) in self.state.declaration_sources(owner) {
-                if !active {
-                    continue; // a blanked gimmick declares nothing
-                }
-                for eff in effects {
-                    if !matches!(eff.trigger, Trigger::Static) {
-                        continue;
-                    }
-                    for action in &eff.actions {
-                        let Action::DisqualificationRule { enabled, scope } = action else {
-                            continue;
-                        };
-                        let applies = *scope == DqScope::Match || owner == loser;
-                        if !applies || !conditions::holds(&eff.condition, &self.state, owner, None)
-                        {
-                            continue;
-                        }
-                        if *enabled {
-                            return false; // an active rule re-enables DQ
-                        }
-                        disabled = true;
-                    }
-                }
-            }
-        }
-        disabled
+        self.rule_immune(loser, |a| match a {
+            Action::DisqualificationRule { enabled, scope } => Some((*enabled, *scope)),
+            _ => None,
+        })
     }
 
-    /// True iff `loser` is currently immune to a count-out loss: some active
-    /// `CountOutRule` disables count-outs for them and none re-enables it — the
-    /// count-out analogue of [`is_dq_immune`](Self::is_dq_immune), scanning the same
-    /// declaration sources (a `Match`-scoped rule from any owner reaches everyone; a
-    /// `SelfSide` rule reaches only its owner). A blanked gimmick declares nothing.
+    /// True iff `loser` is currently immune to a count-out loss — the count-out
+    /// analogue of [`is_dq_immune`](Self::is_dq_immune), resolved by the same
+    /// last-played [`rule_immune`](Self::rule_immune) machinery over `CountOutRule`
+    /// toggles (no re-enable card is modeled for count-outs, so in practice this
+    /// still reduces to "any active disable → immune").
     fn is_count_out_immune(&self, loser: &str) -> bool {
-        let mut disabled = false;
-        let owners: Vec<String> = self.state.players.keys().cloned().collect();
-        for owner in &owners {
-            for (effects, active) in self.state.declaration_sources(owner) {
-                if !active {
-                    continue;
-                }
+        self.rule_immune(loser, |a| match a {
+            Action::CountOutRule { enabled, scope } => Some((*enabled, *scope)),
+            _ => None,
+        })
+    }
+
+    /// Resolve a standing match-rule toggle for `loser` by LAST-PLAYED order (task
+    /// #93). `extract` pulls `(enabled, scope)` from the toggle of interest
+    /// (`DisqualificationRule` / `CountOutRule`). The loss is DISABLED — `loser`
+    /// immune — iff the most-recently-played *applicable* toggle sets `enabled=false`;
+    /// with no toggle active the loss stands (rules default-on). A `Match`-scoped
+    /// toggle from any owner reaches everyone, a `SelfSide` one only its owner.
+    ///
+    /// Both players' gimmick, entrance, in-play and discard zones are scanned. Gimmick
+    /// and entrance declarations predate all play, so they resolve at the baseline
+    /// sequence 0; a played card carries the `played_seq` stamped when it hit the
+    /// board (and kept into the discard). A `WhileInDiscard` toggle — the lone "this
+    /// match has Disqualifications" re-enable — fires only from the discard pile;
+    /// every other toggle only while its card is in play. A blanked gimmick declares
+    /// nothing. Sequence ties (only possible among setup declarations, never between
+    /// two distinct played cards) resolve conservatively to the disable.
+    fn rule_immune<F>(&self, loser: &str, extract: F) -> bool
+    where
+        F: Fn(&Action) -> Option<(bool, DqScope)>,
+    {
+        let mut best: Option<(u64, bool)> = None;
+        for (owner, player) in &self.state.players {
+            let gimmick: &[Effect] = if self.state.is_gimmick_blanked(owner) {
+                &[]
+            } else {
+                &player.competitor.effects
+            };
+            // (effects, play sequence, is this the discard zone?)
+            let sources = std::iter::once((gimmick, 0u64, false))
+                .chain(std::iter::once((
+                    player.entrance.effects.as_slice(),
+                    0,
+                    false,
+                )))
+                .chain(
+                    player
+                        .in_play
+                        .iter()
+                        .map(|c| (c.effects.as_slice(), c.played_seq.unwrap_or(0), false)),
+                )
+                .chain(
+                    player
+                        .discard
+                        .iter()
+                        .map(|c| (c.effects.as_slice(), c.played_seq.unwrap_or(0), true)),
+                );
+            for (effects, seq, is_discard) in sources {
                 for eff in effects {
                     if !matches!(eff.trigger, Trigger::Static) {
                         continue;
                     }
+                    if (eff.duration == Duration::WhileInDiscard) != is_discard {
+                        continue; // a discard-scoped toggle fires only from the discard
+                    }
                     for action in &eff.actions {
-                        let Action::CountOutRule { enabled, scope } = action else {
+                        let Some((enabled, scope)) = extract(action) else {
                             continue;
                         };
-                        let applies = *scope == DqScope::Match || owner == loser;
+                        let applies = scope == DqScope::Match || owner == loser;
                         if !applies || !conditions::holds(&eff.condition, &self.state, owner, None)
                         {
                             continue;
                         }
-                        if *enabled {
-                            return false;
+                        let win = match best {
+                            None => true,
+                            Some((s, _)) if seq > s => true,
+                            Some((s, prev)) => seq == s && prev && !enabled,
+                        };
+                        if win {
+                            best = Some((seq, enabled));
                         }
-                        disabled = true;
                     }
                 }
             }
         }
-        disabled
+        best.map(|(_, enabled)| !enabled).unwrap_or(false)
     }
 
     /// Swap the Crowd Meter to a match type (GM Calace V1): append `effects` to the
@@ -3500,6 +3526,10 @@ impl Engine {
         if self.ended() {
             return Ok(false);
         }
+        // Stamp the global play sequence (task #93) as the card reaches the board; it
+        // rides along into the discard pile, where a "this match has Disqualifications"
+        // re-enable is resolved against a standing no-DQ by last-played order.
+        card.played_seq = Some(self.state.bump_play_seq());
         self.state
             .players
             .get_mut(active)
@@ -6971,6 +7001,104 @@ mod dq_immunity_tests {
                 .as_ref()
                 .map(|(l, r)| (l.as_str(), r.as_str())),
             Some(("A", "pinfall")),
+        );
+    }
+
+    // -- last-played resolution (task #93) -----------------------------------
+
+    /// A main-deck card carrying one Match-scoped `DisqualificationRule` toggle at
+    /// `duration`, stamped with play-sequence `seq` (as if played on that tick).
+    fn dq_card(uuid: &str, enabled: bool, duration: &str) -> Value {
+        json!({
+            "atk_type": "Grapple", "db_uuid": uuid, "name": uuid, "number": 2,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect",
+                "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "DisqualificationRule", "enabled": enabled, "scope": "MATCH"}],
+                "duration": duration,
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "dq toggle", "source": "card", "optional": false
+            }]
+        })
+    }
+
+    /// Push `card` into `key`'s `zone`, stamped with play-sequence `seq` (`played_seq`
+    /// is `#[serde(skip)]`, so it is set here rather than deserialized).
+    fn put(engine: &mut Engine, key: &str, zone: &str, card: Value, seq: u64) {
+        let mut c: Card = serde_json::from_value(card).unwrap();
+        c.played_seq = Some(seq);
+        let p = engine.state.players.get_mut(key).unwrap();
+        if zone == "discard" {
+            p.discard.push(c);
+        } else {
+            p.in_play.push(c);
+        }
+    }
+
+    #[test]
+    fn no_toggle_leaves_dq_enabled() {
+        let engine = engine_with(json!([]), json!([]));
+        assert!(!engine.is_dq_immune("A"), "DQ is on by default");
+    }
+
+    #[test]
+    fn a_discard_reenable_overrides_an_earlier_no_dq() {
+        // A's gimmick declares no-DQ (sequence 0, present from setup). Later a "this
+        // match has Disqualifications" card lands in A's discard (played tick 5). Last
+        // played wins: DQ is back on, so A is no longer immune.
+        let mut engine = engine_with(no_dq("MATCH"), json!([]));
+        put(
+            &mut engine,
+            "A",
+            "discard",
+            dq_card("ref", true, "WHILE_IN_DISCARD"),
+            5,
+        );
+        assert!(
+            !engine.is_dq_immune("A"),
+            "re-enable played after the no-DQ wins"
+        );
+    }
+
+    #[test]
+    fn a_later_no_dq_overrides_a_discard_reenable() {
+        // The re-enable is already in discard (tick 3); then a no-DQ card is played
+        // onto the board (tick 7). The most-recently-played toggle disables DQ again.
+        let mut engine = engine_with(json!([]), json!([]));
+        put(
+            &mut engine,
+            "A",
+            "discard",
+            dq_card("ref", true, "WHILE_IN_DISCARD"),
+            3,
+        );
+        put(
+            &mut engine,
+            "A",
+            "in_play",
+            dq_card("nodq", false, "WHILE_IN_PLAY"),
+            7,
+        );
+        assert!(engine.is_dq_immune("A"), "the later no-DQ wins");
+    }
+
+    #[test]
+    fn a_reenable_in_play_is_inert() {
+        // The same re-enable card sitting IN PLAY does nothing — its clause is
+        // discard-scoped — so a standing no-DQ gimmick still grants immunity.
+        let mut engine = engine_with(no_dq("MATCH"), json!([]));
+        put(
+            &mut engine,
+            "A",
+            "in_play",
+            dq_card("ref", true, "WHILE_IN_DISCARD"),
+            9,
+        );
+        assert!(
+            engine.is_dq_immune("A"),
+            "discard-scoped re-enable is inert in play"
         );
     }
 }

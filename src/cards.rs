@@ -47,6 +47,16 @@ pub struct Card {
     pub raw_text: String,
     #[serde(default)]
     pub effects: Vec<Effect>,
+    /// Global play-sequence stamp: the monotonic tick at which this physical card
+    /// was played onto the board (`GameState::bump_play_seq`), retained as it moves
+    /// on to the discard pile. `None` for a card that never went through the play
+    /// step (a setup card, or one milled straight to discard). Used only to resolve
+    /// competing match-rule toggles by LAST-PLAYED order (task #93): a standing
+    /// no-DQ declaration vs. a "this match has Disqualifications" re-enable. Transient
+    /// engine bookkeeping, never serialized — it must not leak into the observable
+    /// protocol or any golden, and re-derives as the engine replays a match.
+    #[serde(skip)]
+    pub played_seq: Option<u64>,
 }
 
 impl Card {
