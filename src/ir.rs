@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 71;
+pub const SCHEMA_VERSION: i64 = 72;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -548,6 +548,16 @@ pub enum Trigger {
         #[serde(default)]
         who: Option<Who>,
     },
+    /// Fires for each of `who`'s breakout ROLLS (up to `BREAKOUT_ATTEMPTS` per finish),
+    /// as each is made — distinct from [`Trigger::OnBreakout`], which fires once on a
+    /// SUCCESSFUL breakout. `who` is read from the effect owner's POV: `Opp` = "your
+    /// opponent's breakout roll" (the defender rolling against the owner's finish),
+    /// `SelfSide` = the owner's own breakout roll. The rolled value/skill is exposed via
+    /// the `RollContext`, so a `RollValue` / `RollWasSkill` condition gates on it ("if
+    /// your opponent rolls 10 for their Breakout roll, you lose"). schema v72
+    OnBreakoutRoll {
+        who: Who,
+    },
     /// Fires when the `who`-side's deck is shuffled by a card/gimmick EFFECT (any
     /// effect-caused shuffle: explicit "shuffle your deck", or the incidental shuffle
     /// after a search/tutor/shuffle-into-deck/hand-into-deck). NOT the match-start
@@ -687,6 +697,18 @@ pub enum Condition {
     DuringTurn {
         who: Who,
     },
+    /// The owner's competitor's name contains any of `name_contains` (case-insensitive
+    /// substring) — "you are Paul Walter Hauser". A clause that references a specific
+    /// wrestler is inert on every other competitor. schema v72
+    CompetitorIs {
+        name_contains: Vec<String>,
+    },
+    /// `who` has hit (landed) at least one card this turn — "if you hit another card
+    /// this turn" (task #94). Reads `PlayerState.hits_this_turn`, reset at each turn
+    /// start; the current (stopped) card is not yet counted. schema v72
+    HitThisTurn {
+        who: Who,
+    },
 }
 
 // ---------------------------------------------------------------------------
@@ -735,6 +757,12 @@ pub enum Action {
         #[serde(default)]
         choose: bool,
     },
+    /// Bury the TRIGGERING card — "bury this card" on an `OnStop` clause (task #94:
+    /// "If stopped, discard 1 card from your hand and bury this card or lose ..."). The
+    /// referent is [`Engine::stopped_card`], the card whose stop fired the effect;
+    /// burying moves it from the discard pile to the bottom of its owner's deck. A
+    /// no-op outside a stop context. schema v72
+    BuryThisCard,
     /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
     /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
     /// (→ hand). A no-op if either zone is empty. The "you may" lives on
@@ -1438,6 +1466,16 @@ pub enum IrNode {
         #[serde(default)]
         who: Option<Who>,
     },
+    /// Fires for each of `who`'s breakout ROLLS (up to `BREAKOUT_ATTEMPTS` per finish),
+    /// as each is made — distinct from [`Trigger::OnBreakout`], which fires once on a
+    /// SUCCESSFUL breakout. `who` is read from the effect owner's POV: `Opp` = "your
+    /// opponent's breakout roll" (the defender rolling against the owner's finish),
+    /// `SelfSide` = the owner's own breakout roll. The rolled value/skill is exposed via
+    /// the `RollContext`, so a `RollValue` / `RollWasSkill` condition gates on it ("if
+    /// your opponent rolls 10 for their Breakout roll, you lose"). schema v72
+    OnBreakoutRoll {
+        who: Who,
+    },
     /// Fires when the `who`-side's deck is shuffled by a card/gimmick EFFECT (any
     /// effect-caused shuffle: explicit "shuffle your deck", or the incidental shuffle
     /// after a search/tutor/shuffle-into-deck/hand-into-deck). NOT the match-start
@@ -1566,6 +1604,12 @@ pub enum IrNode {
     DuringTurn {
         who: Who,
     },
+    CompetitorIs {
+        name_contains: Vec<String>,
+    },
+    HitThisTurn {
+        who: Who,
+    },
 
     // Actions
     Draw {
@@ -1603,6 +1647,12 @@ pub enum IrNode {
         #[serde(default)]
         choose: bool,
     },
+    /// Bury the TRIGGERING card — "bury this card" on an `OnStop` clause (task #94:
+    /// "If stopped, discard 1 card from your hand and bury this card or lose ..."). The
+    /// referent is [`Engine::stopped_card`], the card whose stop fired the effect;
+    /// burying moves it from the discard pile to the bottom of its owner's deck. A
+    /// no-op outside a stop context. schema v72
+    BuryThisCard,
     /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
     /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
     /// (→ hand). A no-op if either zone is empty. The "you may" lives on

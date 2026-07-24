@@ -529,6 +529,19 @@ class OnBreakout(IRNode):
 
 
 @dataclass(frozen=True)
+class OnBreakoutRoll(IRNode):
+    """Fires for each of ``who``'s breakout ROLLS (up to BREAKOUT_ATTEMPTS per finish),
+    as each is made — distinct from :class:`OnBreakout`, which fires once on a
+    SUCCESSFUL breakout. ``who`` is read from the effect owner's POV: ``OPP`` = "your
+    opponent's breakout roll" (the defender rolling against the owner's finish),
+    ``SELF`` = the owner's own breakout roll. The rolled value/skill is exposed via the
+    roll context, so a :class:`RollValue` / :class:`RollWasSkill` condition gates on it
+    ("if your opponent rolls 10 for their Breakout roll, you lose")."""
+
+    who: Who
+
+
+@dataclass(frozen=True)
 class OnShuffle(IRNode):
     """Fires when the ``who``-side's deck is shuffled by a card/gimmick EFFECT (any
     effect-caused shuffle: explicit "shuffle your deck", or the incidental shuffle after
@@ -719,6 +732,24 @@ class DuringTurn(IRNode):
     """True iff it is currently ``who``'s turn — the active player (roll-off winner)
     is the ``who``-side. Gates a continuous effect to a turn phase ("during your
     opponent's turn: …" — La Fenix). Reads ``GameState.active``."""
+
+    who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
+class CompetitorIs(IRNode):
+    """True iff the owner's competitor name contains any of ``name_contains`` (case-
+    insensitive substring) — "you are Paul Walter Hauser". A clause referencing a
+    specific wrestler is inert on every other competitor."""
+
+    name_contains: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class HitThisTurn(IRNode):
+    """True iff ``who`` has hit (landed) at least one card this turn — "if you hit
+    another card this turn". Reads ``PlayerState.hits_this_turn`` (reset each turn
+    start); the current, stopped card is not yet counted."""
 
     who: Who = Who.SELF
 
@@ -1407,6 +1438,14 @@ class BlankStoppedText(IRNode):
 
 
 @dataclass(frozen=True)
+class BuryThisCard(IRNode):
+    """Bury the TRIGGERING card — "bury this card" on an ``OnStop`` clause ("If stopped,
+    discard 1 card from your hand and bury this card or lose ..."). The referent is the
+    card whose stop fired the effect (``Engine.stopped_card``); burying moves it from the
+    discard pile to the bottom of its owner's deck. A no-op outside a stop context."""
+
+
+@dataclass(frozen=True)
 class ChooseName(IRNode):
     """"Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
     ``options`` for the rest of the match, stored as ``PlayerState.chosen_name``.
@@ -1729,6 +1768,7 @@ Trigger = (
     | DuringOpponentTurn
     | StartOfMatch
     | OnBreakout
+    | OnBreakoutRoll
     | OnShuffle
     | OnDiscardMove
     | Static
@@ -1758,6 +1798,8 @@ Condition = (
     | BumpedLastTurnRoll
     | GimmickFlipped
     | DuringTurn
+    | CompetitorIs
+    | HitThisTurn
 )
 
 Action = (
@@ -1797,6 +1839,7 @@ Action = (
     | FlipGimmick
     | BlankText
     | BlankStoppedText
+    | BuryThisCard
     | ChooseName
     | LoseBy
     | ConsideredCompare

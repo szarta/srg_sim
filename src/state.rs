@@ -134,6 +134,12 @@ pub struct PlayerState {
     pub gimmick_blanked: bool,
     #[serde(default)]
     pub gimmick_flipped: bool,
+    /// Cards this player has HIT (landed) so far this turn, reset at each turn start.
+    /// Read by [`Condition::HitThisTurn`] ("if you hit another card this turn"); a
+    /// stopped card never lands, so it is not counted. Transient turn state, never
+    /// serialized (re-derives as the engine replays the turn).
+    #[serde(skip)]
+    pub hits_this_turn: i64,
     #[serde(default)]
     pub flags: Map<String, Value>,
 }

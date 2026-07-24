@@ -14,7 +14,7 @@
 //! [`enrich_card`] / [`enrich_deck`] attach compiled IR (and finish bonuses) to
 //! loaded domain objects.
 
-use crate::cards::{Card, Competitor, Deck, EntranceCard};
+use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
     CountZone, DeckEnd, Direction, Duration, Effect, EffectSource, EffectTag, Frequency,
@@ -100,6 +100,13 @@ fn quoted_names(text: &str) -> Vec<String> {
 fn cf_name(names: Vec<String>) -> CardFilter {
     CardFilter {
         name_contains: names,
+        ..Default::default()
+    }
+}
+
+fn cf_tag(tag: &str) -> CardFilter {
+    CardFilter {
+        tag: Some(tag.to_owned()),
         ..Default::default()
     }
 }
@@ -349,6 +356,93 @@ fn discard_or_lose(count: i64) -> Effect {
     )
 }
 
+/// "If stopped, unless you discard N <type> from your hand, you lose ..." — a
+/// pay-or-lose where the cost is discarding a specific attack type (task #94). Like
+/// [`discard_or_lose`] but the discard carries a type `selector`.
+fn discard_type_or_lose(count: i64, atk_type: AtkType) -> Effect {
+    let pay = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: format!("Discard {count} {} from your hand", atk_type.name()),
+        actions: vec![Action::Discard {
+            selector: cf_atk(atk_type),
+            count,
+            who: Who::SelfSide,
+            random: false,
+            per: None,
+            per_who: Who::SelfSide,
+            choose: false,
+        }],
+    };
+    let lose = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: "Lose the match via disqualification".to_owned(),
+        actions: vec![Action::LoseBy {
+            kind: LoseKind::Disqualification,
+            who: Who::SelfSide,
+        }],
+    };
+    eff(
+        on_your_stop(),
+        vec![Action::Choice {
+            options: vec![pay, lose],
+        }],
+        Condition::Always,
+        Duration::Instant,
+    )
+}
+
+/// The "take the loss" branch shared by the pay-or-lose Choice family (task #94).
+fn dq_lose_option() -> ChoiceOption {
+    ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: "Lose the match via disqualification".to_owned(),
+        actions: vec![Action::LoseBy {
+            kind: LoseKind::Disqualification,
+            who: Who::SelfSide,
+        }],
+    }
+}
+
+/// An OnStop "pay `pay_actions` (labelled `label`) OR lose via disqualification"
+/// Choice effect (task #94).
+fn pay_or_lose(label: String, pay_actions: Vec<Action>) -> Effect {
+    let pay = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label,
+        actions: pay_actions,
+    };
+    eff(
+        on_your_stop(),
+        vec![Action::Choice {
+            options: vec![pay, dq_lose_option()],
+        }],
+        Condition::Always,
+        Duration::Instant,
+    )
+}
+
+/// "If stopped, discard N from your hand and bury this card or lose ..." — pay the
+/// discard-plus-bury-the-stopped-card cost, or take the loss.
+fn discard_bury_or_lose(count: i64) -> Effect {
+    pay_or_lose(
+        format!("Discard {count} and bury this card"),
+        vec![
+            discard(count, Who::SelfSide, false, None, Who::SelfSide),
+            Action::BuryThisCard,
+        ],
+    )
+}
+
+/// "If stopped, randomly bury your hand or you lose ..." — bury the ENTIRE hand at
+/// random (the count caps the whole possible hand; the bury loops until the hand is
+/// empty), or take the loss.
+fn bury_hand_or_lose() -> Effect {
+    pay_or_lose(
+        "Randomly bury your hand".to_owned(),
+        vec![bury_hand(DECK_SIZE as i64, Who::SelfSide, true, false)],
+    )
+}
+
 fn has_in_play(who: Who, filter: CardFilter, count: i64) -> Condition {
     Condition::HasInPlay {
         who,
@@ -572,6 +666,23 @@ fn stop_condition(text: &str) -> Option<Condition> {
     static PLAY_NAME: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r#"^you have (\d+) cards? in play with "([^"]+)" in the name$"#).unwrap()
     });
+    // "you have a card in play with "X"[, "Y",] or "Z" in the name" — OR-list of
+    // quoted names, ≥1 in play (the count form is PLAY_NAME above).
+    static PLAY_NAMELIST: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"^you have a card in play with (.+) in the name$"#).unwrap());
+    // "you do not have "X" in play" — the negated in-play gate.
+    static NOT_HAVE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"^you do not have "([^"]+)" in play$"#).unwrap());
+    // "you have at least N <Tag> cards in play" — a tag-count in-play gate (Spotlight).
+    static PLAY_TAG: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^you have at least (\d+) (Spotlight) cards? in play$").unwrap()
+    });
+    // "you hit another card this turn" — the per-turn hit gate.
+    static HIT_TURN: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^you hit another card this turn$").unwrap());
+    // "you are not <Competitor>" — a competitor-identity gate (capitalized name).
+    static COMPETITOR_NOT: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^you are not ([A-Z].*)$").unwrap());
     static ROLL_VAL: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"^you rolled (\d+) for your turn roll$").unwrap());
     static ROLL_SK: LazyLock<Regex> =
@@ -638,6 +749,38 @@ fn stop_condition(text: &str) -> Option<Condition> {
             cf_name(vec![c[2].to_owned()]),
             c[1].parse().ok()?,
         ));
+    }
+    if let Some(c) = PLAY_NAMELIST.captures(t) {
+        let names = quoted_names(&c[1]);
+        if !names.is_empty() {
+            return Some(has_in_play(Who::SelfSide, cf_name(names), 1));
+        }
+    }
+    if let Some(c) = NOT_HAVE.captures(t) {
+        return Some(Condition::Not {
+            item: Box::new(has_in_play(
+                Who::SelfSide,
+                cf_name(vec![c[1].to_owned()]),
+                1,
+            )),
+        });
+    }
+    if let Some(c) = PLAY_TAG.captures(t) {
+        return Some(has_in_play(
+            Who::SelfSide,
+            cf_tag(&c[2]),
+            c[1].parse().ok()?,
+        ));
+    }
+    if HIT_TURN.is_match(t) {
+        return Some(Condition::HitThisTurn { who: Who::SelfSide });
+    }
+    if let Some(c) = COMPETITOR_NOT.captures(t) {
+        return Some(Condition::Not {
+            item: Box::new(Condition::CompetitorIs {
+                name_contains: vec![c[1].to_owned()],
+            }),
+        });
     }
     if let Some(c) = ROLL_VAL.captures(t) {
         return Some(Condition::RollValue {
@@ -1094,6 +1237,48 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Condition::Not {
                         item: Box::new(cond),
                     },
+                ))
+            },
+        ),
+        // "If stopped, and <cond>, you lose ..." — the loss fires when <cond> holds
+        // (the phrase carries its own polarity, e.g. "you do not have X in play").
+        rule(
+            r"(?i)If stopped,? and (.+?), you lose the match via disqualifications?",
+            |c| Some(lose_via(LoseKind::Disqualification, stop_condition(&c[1])?)),
+        ),
+        // "If stopped, unless you discard N <type> from your hand, you lose ..." —
+        // pay a typed-discard cost or take the loss.
+        rule(
+            r"(?i)If stopped, unless you discard (\d+) (Strike|Grapple|Submission)s? from your hand, you lose the match via disqualifications?",
+            |c| Some(discard_type_or_lose(num(c, 1), atk(&c[2]))),
+        ),
+        // "If stopped, discard N from your hand and bury this card or lose ..." —
+        // pay the discard + bury-the-stopped-card cost, or take the loss.
+        rule(
+            r"(?i)If stopped, discard (\d+) cards? from your hand and bury this card or lose the match via disqualifications?",
+            |c| Some(discard_bury_or_lose(num(c, 1))),
+        ),
+        // "If stopped, randomly bury your hand or you lose ..." — bury the whole hand.
+        rule(
+            r"(?i)If stopped, randomly bury your hand or you lose the match via disqualifications?",
+            |_| Some(bury_hand_or_lose()),
+        ),
+        // "If your opponent rolls N for their Breakout roll, you lose ..." — an
+        // OnBreakoutRoll(Opp) loss gated on the rolled value (task #94).
+        rule(
+            r"(?i)If your opponent rolls (\d+) for their Breakout roll, you (?:immediately )?lose the match via disqualifications?",
+            |c| {
+                Some(eff(
+                    Trigger::OnBreakoutRoll { who: Who::Opp },
+                    vec![Action::LoseBy {
+                        kind: LoseKind::Disqualification,
+                        who: Who::SelfSide,
+                    }],
+                    Condition::RollValue {
+                        cmp: Comparator::Eq,
+                        value: num(c, 1),
+                    },
+                    Duration::Instant,
                 ))
             },
         ),

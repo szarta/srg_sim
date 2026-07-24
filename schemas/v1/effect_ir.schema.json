@@ -164,6 +164,12 @@
             },
             {
               "$ref": "#/$defs/DuringTurn"
+            },
+            {
+              "$ref": "#/$defs/CompetitorIs"
+            },
+            {
+              "$ref": "#/$defs/HitThisTurn"
             }
           ]
         },
@@ -267,6 +273,12 @@
               },
               {
                 "$ref": "#/$defs/DuringTurn"
+              },
+              {
+                "$ref": "#/$defs/CompetitorIs"
+              },
+              {
+                "$ref": "#/$defs/HitThisTurn"
               }
             ]
           },
@@ -313,6 +325,18 @@
       "properties": {
         "@type": {
           "const": "BlankStoppedText"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "BuryThisCard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BuryThisCard"
         }
       },
       "required": [
@@ -785,6 +809,9 @@
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/BuryThisCard"
               },
               {
                 "$ref": "#/$defs/ChooseName"
@@ -1272,6 +1299,41 @@
       ],
       "type": "object"
     },
+    "CompetitorIs": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CompetitorIs"
+        },
+        "name_contains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "name_contains"
+      ],
+      "type": "object"
+    },
+    "HitThisTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "HitThisTurn"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
     "DuringTurn": {
       "additionalProperties": false,
       "properties": {
@@ -1404,6 +1466,9 @@
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/BuryThisCard"
               },
               {
                 "$ref": "#/$defs/ChooseName"
@@ -1578,6 +1643,12 @@
             },
             {
               "$ref": "#/$defs/DuringTurn"
+            },
+            {
+              "$ref": "#/$defs/CompetitorIs"
+            },
+            {
+              "$ref": "#/$defs/HitThisTurn"
             }
           ]
         },
@@ -1642,6 +1713,9 @@
             },
             {
               "$ref": "#/$defs/OnBreakout"
+            },
+            {
+              "$ref": "#/$defs/OnBreakoutRoll"
             },
             {
               "$ref": "#/$defs/OnShuffle"
@@ -2093,6 +2167,9 @@
           "$ref": "#/$defs/BlankStoppedText"
         },
         {
+          "$ref": "#/$defs/BuryThisCard"
+        },
+        {
           "$ref": "#/$defs/ChooseName"
         },
         {
@@ -2376,6 +2453,12 @@
         },
         {
           "$ref": "#/$defs/DuringTurn"
+        },
+        {
+          "$ref": "#/$defs/CompetitorIs"
+        },
+        {
+          "$ref": "#/$defs/HitThisTurn"
         },
         {
           "$ref": "#/$defs/ReturnToHand"
@@ -2686,6 +2769,12 @@
             },
             {
               "$ref": "#/$defs/DuringTurn"
+            },
+            {
+              "$ref": "#/$defs/CompetitorIs"
+            },
+            {
+              "$ref": "#/$defs/HitThisTurn"
             }
           ]
         }
@@ -2711,6 +2800,22 @@
               "type": "null"
             }
           ]
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "OnBreakoutRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnBreakoutRoll"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
         }
       },
       "required": [
@@ -3114,6 +3219,12 @@
               },
               {
                 "$ref": "#/$defs/DuringTurn"
+              },
+              {
+                "$ref": "#/$defs/CompetitorIs"
+              },
+              {
+                "$ref": "#/$defs/HitThisTurn"
               }
             ]
           },
@@ -3718,6 +3829,12 @@
             },
             {
               "$ref": "#/$defs/DuringTurn"
+            },
+            {
+              "$ref": "#/$defs/CompetitorIs"
+            },
+            {
+              "$ref": "#/$defs/HitThisTurn"
             }
           ]
         },
@@ -4178,5 +4295,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 71
+  "version": 72
 }

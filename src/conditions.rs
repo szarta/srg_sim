@@ -358,6 +358,14 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             state.players[&subject].gimmick_flipped
         }
         Condition::DuringTurn { who } => state.active == who_key(state, owner, *who),
+        Condition::CompetitorIs { name_contains } => {
+            let name = &state.players[owner].competitor.name;
+            any_substr_ci(name_contains, name)
+        }
+        Condition::HitThisTurn { who } => {
+            let subject = who_key(state, owner, *who);
+            state.players[&subject].hits_this_turn >= 1
+        }
     }
 }
 

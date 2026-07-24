@@ -291,7 +291,7 @@ fn dq_cause_grammar() {
 
     // An escape the condition parser cannot map stays Unsupported (not silently dropped).
     let effs = parse_text(
-        "If stopped, unless you hit another card this turn, you lose the match via disqualification.",
+        "If stopped, unless the moon is full, you lose the match via disqualification.",
         EffectSource::Card,
         None,
         None,
@@ -316,6 +316,87 @@ fn dq_cause_grammar() {
     let acts = e["actions"].as_array().unwrap();
     assert_eq!(acts[0]["@type"], "Discard");
     assert!(is_dq_loss(&acts[1]));
+
+    // Typed-discard cost: discard a Strike or take the loss.
+    let e = one(
+        "If stopped, unless you discard 1 Strike from your hand, you lose the match via disqualification.",
+    );
+    assert_eq!(e["actions"][0]["@type"], "Choice");
+    let opts = e["actions"][0]["options"].as_array().unwrap();
+    assert_eq!(opts[0]["actions"][0]["@type"], "Discard");
+    assert_eq!(opts[0]["actions"][0]["selector"]["atk_type"], "Strike");
+    assert!(is_dq_loss(&opts[1]["actions"][0]));
+
+    // OR-name-list escape ("unless you have a card in play with X/Y/Z in the name").
+    let e = one(
+        "If stopped, you lose the match via disqualification unless you have a card in play with \"Block\", \"Clothesline\", or \"Tackle\" in the name.",
+    );
+    assert_eq!(e["condition"]["@type"], "Not");
+    assert_eq!(e["condition"]["item"]["@type"], "HasInPlay");
+    assert_eq!(
+        e["condition"]["item"]["filter"]["name_contains"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+
+    // "and you do not have X in play" — a negated in-play gate on the loss.
+    let e = one(
+        "If stopped, and you do not have \"Call to the Crowd\" in play, you lose the match via disqualification.",
+    );
+    assert_eq!(e["condition"]["@type"], "Not");
+    assert_eq!(e["condition"]["item"]["@type"], "HasInPlay");
+    assert!(is_dq_loss(&e["actions"][0]));
+
+    // Discard-plus-bury-this-card cost, or lose.
+    let e = one(
+        "If stopped, discard 1 card from your hand and bury this card or lose the match via disqualification.",
+    );
+    let opts = e["actions"][0]["options"].as_array().unwrap();
+    assert_eq!(opts[0]["actions"][0]["@type"], "Discard");
+    assert_eq!(opts[0]["actions"][1]["@type"], "BuryThisCard");
+    assert!(is_dq_loss(&opts[1]["actions"][0]));
+
+    // Randomly-bury-your-hand cost, or lose.
+    let e = one("If stopped, randomly bury your hand or you lose the match via disqualification.");
+    let opts = e["actions"][0]["options"].as_array().unwrap();
+    assert_eq!(opts[0]["actions"][0]["@type"], "Bury");
+    assert_eq!(opts[0]["actions"][0]["source"], "HAND");
+    assert_eq!(opts[0]["actions"][0]["random"], true);
+
+    // Breakout-roll loss: OnBreakoutRoll(Opp) gated on the rolled value.
+    let e = one(
+        "If your opponent rolls 10 for their Breakout roll, you lose the match via disqualification.",
+    );
+    assert_eq!(e["trigger"]["@type"], "OnBreakoutRoll");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["condition"]["@type"], "RollValue");
+    assert_eq!(e["condition"]["value"], 10);
+    assert!(is_dq_loss(&e["actions"][0]));
+
+    // Competitor-identity escape ("unless you are <name>").
+    let e = one(
+        "If stopped and you are not Paul Walter Hauser, you lose the match via disqualification.",
+    );
+    assert_eq!(e["condition"]["item"]["@type"], "CompetitorIs");
+    assert_eq!(
+        e["condition"]["item"]["name_contains"][0],
+        "Paul Walter Hauser"
+    );
+
+    // Hit-this-turn escape.
+    let e = one(
+        "If stopped, unless you hit another card this turn, you lose the match via disqualification.",
+    );
+    assert_eq!(e["condition"]["item"]["@type"], "HitThisTurn");
+
+    // Spotlight-count escape (tag filter).
+    let e = one(
+        "If stopped, unless you have at least 6 Spotlight cards in play you lose the match via disqualification.",
+    );
+    assert_eq!(e["condition"]["item"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["item"]["filter"]["tag"], "Spotlight");
 }
 
 /// Draw-rider grammar (task #49): deck-position, conditional, and compare draws.

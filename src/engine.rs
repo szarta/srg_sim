@@ -431,6 +431,7 @@ impl Engine {
                         freq_counters: BTreeMap::new(),
                         gimmick_blanked: false,
                         gimmick_flipped: false,
+                        hits_this_turn: 0,
                         flags: serde_json::Map::new(),
                     },
                 )
@@ -1188,6 +1189,7 @@ impl Engine {
             | Action::BumpDrawReplace
             | Action::ScaleEntranceNumbers { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
+            Action::BuryThisCard => self.act_bury_this_card(key),
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
                 who,
@@ -2945,6 +2947,22 @@ impl Engine {
         self.log_effect(key, "BlankStoppedText", None, json!({"card": uuid}));
     }
 
+    /// Bury the triggering (stopped) card — move it from `key`'s discard pile to the
+    /// bottom of their deck. A no-op outside a stop context, or if the card has already
+    /// left the discard. See [`Action::BuryThisCard`].
+    fn act_bury_this_card(&mut self, key: &str) {
+        let Some(uuid) = self.stopped_card.clone() else {
+            return;
+        };
+        let player = self.state.players.get_mut(key).unwrap();
+        let Some(pos) = player.discard.iter().position(|c| c.db_uuid == uuid) else {
+            return;
+        };
+        let card = player.discard.remove(pos);
+        player.deck.push(card);
+        self.log_effect(key, "BuryThisCard", None, json!({"card": uuid}));
+    }
+
     /// Drop everything scoped "until the end of the turn" by the turn just finished:
     /// timed buffs under `UntilEndOfTurn` and the per-card text blanks from
     /// `BlankStoppedText`. Runs with the other per-turn resets at the top of the
@@ -3216,8 +3234,9 @@ impl Engine {
         self.clear_turn_freq();
         for player in self.state.players.values_mut() {
             player.flags.remove("extra_plays"); // "additional card this turn" is per-turn
-                                                // Promote a "re-roll your next turn roll" grant to this turn (SET, not
-                                                // accumulate); an unused grant expires.
+            player.hits_this_turn = 0; // reset the per-turn hit count (HitThisTurn)
+                                       // Promote a "re-roll your next turn roll" grant to this turn (SET, not
+                                       // accumulate); an unused grant expires.
             player.reroll_grants.this_turn = player.reroll_grants.next_turn;
             player.reroll_grants.next_turn = 0;
         }
@@ -3530,12 +3549,11 @@ impl Engine {
         // rides along into the discard pile, where a "this match has Disqualifications"
         // re-enable is resolved against a standing no-DQ by last-played order.
         card.played_seq = Some(self.state.bump_play_seq());
-        self.state
-            .players
-            .get_mut(active)
-            .unwrap()
-            .in_play
-            .push(card.clone());
+        {
+            let p = self.state.players.get_mut(active).unwrap();
+            p.in_play.push(card.clone());
+            p.hits_this_turn += 1; // a landed card is a hit this turn (Condition::HitThisTurn)
+        }
         self.run_effects(&effects, "OnHit", active, None)?; // the card's own "when this hits"
         self.run_hit_gimmicks(&card, active)?; // owner gimmick "when you hit a <type>" (D1)
         self.enforce_hand_caps()?; // a new Static max-handsize mod may force a discard
@@ -3907,9 +3925,15 @@ impl Engine {
         if self.ended() {
             return Ok(());
         }
-        if !auto && self.breakout(defender, value) {
-            self.on_broken_out(finisher)?; // defender broke out; the match resumes
-            return Ok(());
+        if !auto {
+            let broke = self.breakout(defender, value)?;
+            if self.ended() {
+                return Ok(()); // an OnBreakoutRoll clause ended the match on the roll
+            }
+            if broke {
+                self.on_broken_out(finisher)?; // defender broke out; the match resumes
+                return Ok(());
+            }
         }
         self.win(finisher, "finish");
         Ok(())
@@ -4029,7 +4053,7 @@ impl Engine {
 
     /// Up to `BREAKOUT_ATTEMPTS` defender rolls; the first that beats the finish
     /// value breaks out. Returns whether the defender broke out.
-    fn breakout(&mut self, defender: &str, finish_value: i64) -> bool {
+    fn breakout(&mut self, defender: &str, finish_value: i64) -> Eng<bool> {
         let cm = self.state.crowd_meter;
         let mut rolls: Vec<BreakoutRoll> = Vec::new();
         let mut broke = false;
@@ -4048,6 +4072,14 @@ impl Engine {
                 penalty,
                 success,
             });
+            // "If your opponent rolls X for their Breakout roll, you lose" — an
+            // OnBreakoutRoll effect on the finisher's side keys off this roll's value.
+            // A no-op for decks without one (the frozen corpus has none), so byte-
+            // identical there. A caused loss ends the match immediately.
+            self.run_on_breakout_roll(defender, skill, val)?;
+            if self.ended() {
+                break;
+            }
             if success {
                 broke = true;
                 break;
@@ -4060,7 +4092,38 @@ impl Engine {
             broke_out: broke,
             rolls,
         });
-        broke
+        Ok(broke)
+    }
+
+    /// Fire `OnBreakoutRoll` effects for `roller`'s just-made breakout roll (skill
+    /// `skill`, value `value`). The clause lives on the finisher's side (`who = Opp`,
+    /// the defender rolling against their finish); a `RollValue` / `RollWasSkill`
+    /// condition reads the roll from the `RollContext`. Resolves any loss it causes
+    /// straight away so `breakout` can bail. No-op when no such effect is in play.
+    fn run_on_breakout_roll(&mut self, roller: &str, skill: Skill, value: i64) -> Eng<()> {
+        let ctx = RollContext {
+            skill: Some(skill),
+            value: Some(value),
+            gap: None,
+            opp_skill: None,
+        };
+        for owner in ["A", "B"] {
+            let effects = self.standing_effects(owner);
+            for eff in &effects {
+                let Trigger::OnBreakoutRoll { who } = &eff.trigger else {
+                    continue;
+                };
+                if self.target(*who, owner) != roller {
+                    continue;
+                }
+                self.fire_if_ready(eff, owner, Some(&ctx))?;
+                self.resolve_pending();
+                if self.ended() {
+                    return Ok(());
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Breakout aftermath: ALL cards in play on BOTH sides clear to discard (§5),
@@ -5006,6 +5069,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::DuringOpponentTurn => "DuringOpponentTurn",
         Trigger::StartOfMatch => "StartOfMatch",
         Trigger::OnBreakout { .. } => "OnBreakout",
+        Trigger::OnBreakoutRoll { .. } => "OnBreakoutRoll",
         Trigger::OnShuffle { .. } => "OnShuffle",
         Trigger::OnDiscardMove { .. } => "OnDiscardMove",
         Trigger::Static => "Static",
@@ -5194,6 +5258,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BlankText { .. } => "BlankText",
         Action::CopyText { .. } => "CopyText",
         Action::BlankStoppedText => "BlankStoppedText",
+        Action::BuryThisCard => "BuryThisCard",
         Action::ChooseName { .. } => "ChooseName",
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
@@ -5358,14 +5423,17 @@ mod breakout_modifier_tests {
         // breaks out on the first attempt. Drives the real `breakout()` roll, proving
         // the bonus reaches `stat_breaks_out` as a negative penalty.
         let mut engine = engine();
-        assert!(!engine.breakout("A", 8), "5 < 8 cannot break out unaided");
+        assert!(
+            !engine.breakout("A", 8).unwrap(),
+            "5 < 8 cannot break out unaided"
+        );
         push_gimmick(
             &mut engine,
             "A",
             breakout_mod(5, Value::Null, json!({"@type": "Always"})),
         );
         assert!(
-            engine.breakout("A", 8),
+            engine.breakout("A", 8).unwrap(),
             "+5 lifts the roll to 10 and breaks out"
         );
         // The applied modifier is recorded as a negative penalty on the roll.
@@ -5373,6 +5441,84 @@ mod breakout_modifier_tests {
             panic!("last event is a Breakout");
         };
         assert_eq!(rolls[0].penalty, -5);
+    }
+
+    #[test]
+    fn opponent_rolling_ten_on_breakout_fires_the_loss() {
+        // "If your opponent rolls 10 for their Breakout roll, you lose via
+        // disqualification" (task #94): A (finisher) holds the clause; B (defender)
+        // rolls a raw 10 and A loses the match.
+        let mut engine = engine();
+        // Every one of B's stats is 10, so any breakout skill die is a raw-10 roll.
+        let stats = &mut engine.state.players.get_mut("B").unwrap().competitor.stats;
+        *stats = Skills {
+            power: 10,
+            agility: 10,
+            technique: 10,
+            submission: 10,
+            grapple: 10,
+            strike: 10,
+        };
+        // A's in-play finish carries the OnBreakoutRoll(Opp) + RollValue(10) loss.
+        let card = json!({
+            "atk_type": "Strike", "db_uuid": "brk", "name": "brk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect",
+                "trigger": {"@type": "OnBreakoutRoll", "who": "OPP"},
+                "condition": {"@type": "RollValue", "cmp": "=", "value": 10},
+                "actions": [{"@type": "LoseBy", "kind": "DISQUALIFICATION", "who": "SELF"}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "test", "source": "card", "optional": false
+            }]
+        });
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(serde_json::from_value(card).unwrap());
+        engine.breakout("B", 8).unwrap();
+        assert!(engine.ended(), "the rolled 10 ended the match on the roll");
+        assert_eq!(
+            engine.result.as_ref().unwrap().winner,
+            "B",
+            "A took the disqualification loss, so B wins"
+        );
+    }
+
+    #[test]
+    fn bury_this_card_moves_the_stopped_card_to_deck_bottom() {
+        // "bury this card" (task #94): the stopped card leaves the discard for the
+        // bottom of its owner's deck.
+        let mut engine = engine();
+        let card: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "stp", "name": "stp", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []
+        }))
+        .unwrap();
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .discard
+            .push(card);
+        engine.stopped_card = Some("stp".to_owned());
+        engine.act_bury_this_card("A");
+        let a = &engine.state.players["A"];
+        assert!(
+            a.discard.iter().all(|c| c.db_uuid != "stp"),
+            "the stopped card left the discard"
+        );
+        assert_eq!(
+            a.deck.last().unwrap().db_uuid,
+            "stp",
+            "buried to the bottom of the deck"
+        );
     }
 }
 
