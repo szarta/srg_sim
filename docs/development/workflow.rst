@@ -34,6 +34,9 @@ second build system. Run them by path so the shared venv's ``invoke`` is used
    * - ``invoke parser-fixture``
      - Refresh the curated parser regression sample
        :file:`fixtures/parser/clauses.json`.
+   * - ``invoke scripted-fixture``
+     - Regenerate the scripted-match snapshot fixture
+       :file:`web/src/sample/scripted_match.json` (the frontend replay golden).
    * - ``invoke wasm``
      - Build the web WASM package (``srg-core`` ``wasm`` feature →
        ``web/src/pkg`` via wasm-bindgen).

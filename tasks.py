@@ -77,6 +77,22 @@ def parser_fixture(c):
     c.run("cargo run --quiet --features cli -- parser-fixture", pty=True)
 
 
+@task(name="scripted-fixture")
+def scripted_fixture(c):
+    """Regenerate the scripted-match snapshot fixture `web/src/sample/scripted_match.json`.
+
+    Drives the deterministic scripted match (seat A takes `legal[0]`, seat B heuristic)
+    to `Done` and rewrites the ordered `Step` sequence the Run It Back frontend replays.
+    Run after an intended change to the Step shape, deck coverage, or the heuristic
+    policy, then review the diff: `tests/scripted_match.rs` holds the engine to it.
+    """
+    c.run(
+        "cargo test --test scripted_match scripted_match_matches_fixture",
+        pty=True,
+        env={"BLESS_SCRIPTED": "1"},
+    )
+
+
 @task
 def build(c, release=False):
     """Build the crate (debug by default; --release for optimized)."""
