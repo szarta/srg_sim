@@ -101,7 +101,9 @@ impl CardRef {
 ///
 /// Log events an observer could *not* see are dropped rather than redacted:
 /// `decision` (its `legal` list enumerates the deciding player's hand) and
-/// `unsupported` (an engine-coverage diagnostic, not a game event).
+/// `unsupported` (an engine-coverage diagnostic, not a game event). The one
+/// exception is a passed turn: a `turn_action` decision whose choice was `pass`
+/// projects to [`Action::Pass`], which carries the seat and nothing else.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Action {
@@ -132,6 +134,9 @@ pub enum Action {
         #[serde(default, skip_serializing_if = "String::is_empty")]
         reason: String,
     },
+    /// The active player passed instead of playing a card. Seat only — the pass
+    /// itself is public; the bury it recycles (if any) arrives as its own action.
+    Pass { player: String },
     /// The roll-off resolved: `winner` takes the turn (after `tie_bumps` bumps).
     TurnResult { winner: String, tie_bumps: i64 },
     /// Cards drawn — deck→hand is private on both ends, so this is a count only.
@@ -448,6 +453,14 @@ fn moved(mv: &CardMovement, ctx: &Ctx) -> (i64, Vec<CardRef>) {
 /// The event → action projection (see [`Action`]).
 fn project(event: &Event, ctx: &Ctx) -> Option<Action> {
     match event {
+        Event::Decision {
+            player,
+            point,
+            chosen,
+            ..
+        } if point == "turn_action" && chosen["kind"] == "pass" => Some(Action::Pass {
+            player: player.clone(),
+        }),
         Event::Decision { .. } | Event::Unsupported { .. } => None,
         Event::Draw(mv) => Some(Action::Draw {
             player: mv.player.clone(),

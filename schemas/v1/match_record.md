@@ -85,7 +85,8 @@ the frames **are** the record. Raw frame sequences are repetitive JSON — expec
 Same type names as the game-log events (`gamelog.schema.json`), projected to what a
 spectator could see. Log events an observer could *not* see are **dropped**, not
 redacted: `decision` (its `legal` list enumerates the deciding player's hand) and
-`unsupported` (an engine diagnostic).
+`unsupported` (an engine diagnostic). The one exception is a passed turn — a
+`turn_action` decision whose choice was `pass` projects to `pass`, seat only.
 
 | `type` | fields | notes |
 |---|---|---|
@@ -93,6 +94,7 @@ redacted: `decision` (its `legal` list enumerates the deciding player's hand) an
 | `roll` | `player, skill, base, value, mods[]` | `mods` = `{src, delta}` |
 | `play` | `player, card, order, atk_type` | `order`: Lead \| Followup \| Finish \| None |
 | `stop` | `player, card, stopped, reason?` | `player` is the seat playing the stop |
+| `pass` | `player` | the active seat passed; the card it recycles arrives as a separate `bury` |
 | `turn_result` | `winner, tie_bumps` | the roll-off |
 | `draw` | `player, count` | deck→hand is private both ends: **count only** |
 | `discard` \| `bury` \| `search` | `player, count, cards[]?, from?` | `cards` present only when the move was publicly visible |

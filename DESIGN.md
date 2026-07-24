@@ -581,7 +581,9 @@ A **frame** is one replay step: the *observable* (spectator) public state — bo
 boards, both discards, hand/deck **sizes** — plus the `action` that produced it, using
 the same type names as the log events above. Frames are the projection of the log:
 `decision` and `unsupported` events are dropped (not redacted), and a movement the log
-marks `hidden` becomes a count with no card ids. Nothing in a record, either kind,
+marks `hidden` becomes a count with no card ids. The one decision an observer *can*
+see is a passed turn, so a `turn_action` decision whose choice was `pass` projects to
+a `pass` action carrying the seat alone (the bury it recycles is its own action). Nothing in a record, either kind,
 carries a hidden zone's contents — that is what makes it publishable.
 
 - **full** — engine-run. Carries `replay`, so the frames are *derivable*: a consumer

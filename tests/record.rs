@@ -137,6 +137,30 @@ fn frames_never_leak_hidden_zones() {
     assert!(drew > 0, "a match always has draws to redact");
 }
 
+/// A passed turn is the one decision an observer *can* see, so it gets a frame —
+/// carrying the seat and nothing else (the deciding player's hand is what the
+/// underlying `decision` event's `legal` list would have leaked).
+#[test]
+fn a_passed_turn_projects_to_a_seat_only_frame() {
+    let mut passes = 0;
+    for seed in 0..8u64 {
+        for frame in &record(seed).frames {
+            let Action::Pass { player } = &frame.action else {
+                continue;
+            };
+            passes += 1;
+            assert!(player == "A" || player == "B", "bad seat {player}");
+            let json = serde_json::to_value(&frame.action).expect("action serializes");
+            assert_eq!(
+                json,
+                serde_json::json!({"type": "pass", "player": player}),
+                "a pass frame carries the seat and nothing else"
+            );
+        }
+    }
+    assert!(passes > 0, "no seed in 0..8 produced a pass");
+}
+
 /// Frames are a pure function of the snapshot, like the log: restoring a session
 /// reproduces the identical sequence. This is what lets a consumer store only the
 /// compact `replay` seed for a full record and rehydrate the frames on demand.

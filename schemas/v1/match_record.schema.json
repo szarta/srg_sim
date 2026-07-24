@@ -125,7 +125,7 @@
       }
     },
     "Action": {
-      "description": "What happened, tag-dispatched by `type` under the same names the game log uses (schemas/v1/gamelog.schema.json). Log events an observer could not see have no action: `decision` (its legal list enumerates the deciding player's hand) and `unsupported` (an engine diagnostic) are dropped, not redacted.",
+      "description": "What happened, tag-dispatched by `type` under the same names the game log uses (schemas/v1/gamelog.schema.json). Log events an observer could not see have no action: `decision` (its legal list enumerates the deciding player's hand) and `unsupported` (an engine diagnostic) are dropped, not redacted. The one exception is a passed turn — a `turn_action` decision whose choice was `pass` projects to the `pass` action, which carries the seat and nothing else.",
       "type": "object",
       "required": ["type"],
       "properties": { "type": { "type": "string" } },
@@ -172,6 +172,16 @@
             "stopped": { "$ref": "#/$defs/CardRef" },
             "reason": { "type": "string" }
           }
+        },
+        {
+          "title": "pass",
+          "additionalProperties": false,
+          "required": ["type", "player"],
+          "properties": {
+            "type": { "const": "pass" },
+            "player": { "$ref": "#/$defs/Seat" }
+          },
+          "description": "The active seat passed instead of playing a card. Seat only: the choice itself is public, while the card it recycles from discard (if any) arrives as its own `bury` action."
         },
         {
           "title": "turn_result",
