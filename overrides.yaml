@@ -10318,3 +10318,225 @@ b235c776b425411e9d3e355d84718782:
   raw_clause: If stopped, your next turn roll is -3.
   source: card
   optional: false
+
+# --- Fae Dragon deck (decks/fae.yaml) — close to zero for the Run It Back
+# bull-vs-fae frontend test (task #124). Existing nodes only; parsed siblings
+# (FinishBonus) kept verbatim, riders modeled, approximations noted in raw_clause. ---
+
+# Entrance "2 for the Supershow": stipulation-gated pre-match tutor of card #2.
+# Inert in a standard (no-stipulation) match — gated OFF with Not(Always), like the
+# warehouse match-type clauses (#97 would light it up). Faithful Search authored.
+cc6fbc06c4ac4d8480f3a5367a0120a0:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Not
+    item:
+      '@type': Always
+  actions:
+  - '@type': Search
+    filter:
+      '@type': CardFilter
+      number: 2
+    dest: HAND
+    count: 1
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'If this is a match with a stipulation: before the start of the match, search your deck for card #2 and add it to your hand. (inert in a standard match; needs match-type state #97)'
+  source: entrance
+  optional: false
+
+# #28 "9th Rule of Villainy!": +3 Agility / +2 Strike (parsed siblings, verbatim) +
+# "Look at opp's top 6 — discard 3, bury 2, put 1 on top." Scry(deck=OPP, top=6,
+# bury 2 to their deck bottom, rest FLIP = mill to discard). Approx: FLIP discards
+# the other 4 (real card returns 1 to top); the dominant effect — stripping ~5-6 of
+# the opponent's top from access — is kept.
+e905d8879ba742d8bdea6a0acb0d9d72:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    delta: 3
+    skill: Agility
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +3 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    delta: 2
+    skill: Strike
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +2 to Strike
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    deck: OPP
+    top: 6
+    bottom: 0
+    reveal: false
+    to_hand: 0
+    bury: 2
+    rest: FLIP
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Look at the top 6 cards of your opponent''s deck; discard 3, bury 2, and put the last 1 on top. (approx: bury 2 + discard the other 4 — the 1-to-top is dropped)'
+  source: card
+  optional: false
+
+# #29 "The Thorn Forest": +1 Technique / +4 Grapple (parsed siblings, verbatim) +
+# "If stopped, draw 1 per stop your opponent has in play (Max 2)" — OnStop(YOURS)
+# Draw n=1 per is_stop on the OPP board, cap 2.
+34cfd3e1a40545f6bd8985ba82774234:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    delta: 1
+    skill: Technique
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    delta: 4
+    skill: Grapple
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +4 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: YOURS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+    per:
+      '@type': CardFilter
+      is_stop: true
+    per_who: OPP
+    cap: 2
+    per_excludes_trigger: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If stopped, draw 1 card for each stop your opponent has in play (Max 2).
+  source: card
+  optional: false
+
+# #30 "Curse To Sleep": +3 Grapple (parsed sibling, verbatim) + "If either player
+# rolled Grapple, this card is also a Lead" (AlsoLead order=Lead, gated on the roll)
+# + "Your next turn roll is -1" (ModifyRoll SELF -1 NEXT). Approx: RollWasSkill checks
+# the actor's own turn roll; "either player" also counts the opponent's roll.
+b01e49a0967d4506bb09fe6f559c8f40:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    delta: 3
+    skill: Grapple
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +3 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AlsoLead
+    condition:
+      '@type': RollWasSkill
+      skill: Grapple
+    order: Lead
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'If either player rolled Grapple for their turn roll, this card is also a Lead. (approx: gates on the actor''s own turn roll)'
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: -1
+    when: NEXT
+    per: null
+    per_who: SELF
+    per_zone: IN_PLAY
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your next turn roll is -1.
+  source: card
+  optional: false

@@ -2672,6 +2672,102 @@
       }
     }
   ],
+  "34cfd3e1a40545f6bd8985ba82774234": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 4,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+4 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": 2,
+          "n": 1,
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": true,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_excludes_trigger": false,
+          "per_who": "OPP",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "If stopped, draw 1 card for each stop your opponent has in play (Max 2).",
+      "source": "card",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "YOURS",
+        "order": null
+      }
+    }
+  ],
   "37bd5a41ed97461cb33e713e9a13571d": [
     {
       "@type": "Effect",
@@ -9361,6 +9457,90 @@
       }
     }
   ],
+  "b01e49a0967d4506bb09fe6f559c8f40": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AlsoLead",
+          "condition": {
+            "@type": "RollWasSkill",
+            "skill": "Grapple"
+          },
+          "order": "Lead"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "If either player rolled Grapple for their turn roll, this card is also a Lead. (approx: gates on the actor's own turn roll)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": -1,
+          "per": null,
+          "per_who": "SELF",
+          "per_zone": "IN_PLAY",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your next turn roll is -1.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
   "b1c536d936c143d7b31a0ce0490f8bd9": [
     {
       "@type": "Effect",
@@ -11749,6 +11929,49 @@
       }
     }
   ],
+  "cc6fbc06c4ac4d8480f3a5367a0120a0": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Search",
+          "count": 1,
+          "dest": "HAND",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": 2,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Not",
+        "item": {
+          "@type": "Always"
+        }
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "If this is a match with a stipulation: before the start of the match, search your deck for card #2 and add it to your hand. (inert in a standard match; needs match-type state #97)",
+      "source": "entrance",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
   "ce167537544645cfb8afd41b488824d0": [
     {
       "@type": "Effect",
@@ -13304,6 +13527,88 @@
         "order": null,
         "text_contains": [],
         "who": "SELF"
+      }
+    }
+  ],
+  "e905d8879ba742d8bdea6a0acb0d9d72": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Agility"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Agility",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Strike"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Strike",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Scry",
+          "bottom": 0,
+          "bury": 2,
+          "deck": "OPP",
+          "rest": "FLIP",
+          "reveal": false,
+          "to_hand": 0,
+          "top": 6
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Look at the top 6 cards of your opponent's deck; discard 3, bury 2, and put the last 1 on top. (approx: bury 2 + discard the other 4 \u2014 the 1-to-top is dropped)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
       }
     }
   ],

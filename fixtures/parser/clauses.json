@@ -2777,13 +2777,29 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If this is a match with a stipulation: Before the start of the match, search your deck for card #2 and add it to your hand.",
-              "reason": "no grammar match"
+              "@type": "Search",
+              "count": 1,
+              "dest": "HAND",
+              "filter": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": 2,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              }
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "Not",
+            "item": {
+              "@type": "Always"
+            }
           },
           "duration": "INSTANT",
           "frequency": {
@@ -2792,7 +2808,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If this is a match with a stipulation: Before the start of the match, search your deck for card #2 and add it to your hand.",
+          "raw_clause": "If this is a match with a stipulation: before the start of the match, search your deck for card #2 and add it to your hand. (inert in a standard match; needs match-type state #97)",
           "source": "entrance",
           "trigger": {
             "@type": "OnPlay"
@@ -2859,9 +2875,14 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Look at the top 6 cards of your opponent's deck; discard 3, bury 2, and put the last 1 on top.",
-              "reason": "no grammar match"
+              "@type": "Scry",
+              "bottom": 0,
+              "bury": 2,
+              "deck": "OPP",
+              "rest": "FLIP",
+              "reveal": false,
+              "to_hand": 0,
+              "top": 6
             }
           ],
           "condition": {
@@ -2874,7 +2895,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "Look at the top 6 cards of your opponent's deck; discard 3, bury 2, and put the last 1 on top.",
+          "raw_clause": "Look at the top 6 cards of your opponent's deck; discard 3, bury 2, and put the last 1 on top. (approx: bury 2 + discard the other 4 — the 1-to-top is dropped)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -2941,9 +2962,26 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If stopped, draw 1 card for each stop your opponent has in play (Max 2).",
-              "reason": "no grammar match"
+              "@type": "Draw",
+              "cap": 2,
+              "n": 1,
+              "per": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": true,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "per_excludes_trigger": false,
+              "per_who": "OPP",
+              "source": "TOP",
+              "who": "SELF"
             }
           ],
           "condition": {
@@ -2959,7 +2997,9 @@
           "raw_clause": "If stopped, draw 1 card for each stop your opponent has in play (Max 2).",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnStop",
+            "dir": "YOURS",
+            "order": null
           }
         }
       ],
@@ -2998,9 +3038,12 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If either player rolled Grapple for their turn roll, this card is also a Lead.",
-              "reason": "no grammar match"
+              "@type": "AlsoLead",
+              "condition": {
+                "@type": "RollWasSkill",
+                "skill": "Grapple"
+              },
+              "order": "Lead"
             }
           ],
           "condition": {
@@ -3013,7 +3056,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If either player rolled Grapple for their turn roll, this card is also a Lead.",
+          "raw_clause": "If either player rolled Grapple for their turn roll, this card is also a Lead. (approx: gates on the actor's own turn roll)",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"
@@ -3023,9 +3066,13 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Your next turn roll is -1.",
-              "reason": "no grammar match"
+              "@type": "ModifyRoll",
+              "delta": -1,
+              "per": null,
+              "per_who": "SELF",
+              "per_zone": "IN_PLAY",
+              "when": "NEXT",
+              "who": "SELF"
             }
           ],
           "condition": {
@@ -8830,32 +8877,12 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 101,
-    "override": 105,
+    "grammar": 96,
+    "override": 115,
     "top_unparsed": [
       [
         "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
         2
-      ],
-      [
-        "If this is a match with a stipulation: Before the start of the match, search your deck for card #N and add it to your hand.",
-        1
-      ],
-      [
-        "Look at the top N cards of your opponent's deck; discard N, bury N, and put the last N on top.",
-        1
-      ],
-      [
-        "If stopped, draw N card for each stop your opponent has in play (Max N).",
-        1
-      ],
-      [
-        "If either player rolled <S> for their turn roll, this card is also a Lead.",
-        1
-      ],
-      [
-        "Your next turn roll is -N.",
-        1
       ],
       [
         "Finishes with \"Cannot Breakout\" in the text instead have blank text.",
@@ -8875,7 +8902,7 @@
       ]
     ],
     "total": 217,
-    "unsupported": 11
+    "unsupported": 6
   },
   "coverage_records": [
     {
