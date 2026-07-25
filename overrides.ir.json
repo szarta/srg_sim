@@ -2201,6 +2201,76 @@
       }
     }
   ],
+  "285f847b3e8f4b748444549593b47830": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishRollBonus",
+          "delta": 1,
+          "either": false,
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": "Finish",
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_who": "OPP",
+          "per_zone": "DISCARD",
+          "when_base_ge": null,
+          "when_base_le": null,
+          "when_skill": null
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your Finish rolls are +1 for each Finish your opponent hit on you this match (proxy: opponent Finishes in their discard)",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Unsupported",
+          "raw_text": "When this card is in your discard pile, your opponent's Finish cards cannot be other card types.",
+          "reason": "niche in-discard type-restriction; no engine mechanic (pending decision)"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_DISCARD",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When this card is in your discard pile, your opponent's Finish cards cannot be other card types.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "289c8f5092744a71a376e27dd231bd04": [
     {
       "@type": "Effect",

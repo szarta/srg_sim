@@ -10779,3 +10779,53 @@ dedc0e6d0bd14f6388c0b0e5191ffa72:
   raw_clause: "look at opponent's hand/discard, choose 1 Finish; copy its text and Spotlight (latched reactivation simplified to a continuous copy of opponent Finishes in discard)"
   source: gimmick
   optional: false
+
+# Cassandra's Grapple finish "The Shadow Symphony". Clause 1 (finish-roll scaling
+# per finishes the opponent landed on you) modeled via FinishRollBonus.per as a
+# faithful proxy: count the opponent's Finishes in their discard pile. Clause 2
+# ("in discard, opponent's Finish cards cannot be other card types") is a niche
+# type-restriction with no engine mechanic yet — kept as an explicit Unsupported
+# node (not silently dropped) pending a decision to build it.
+285f847b3e8f4b748444549593b47830:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishRollBonus
+    delta: 1
+    when_skill: null
+    either: false
+    when_base_le: null
+    when_base_ge: null
+    per:
+      '@type': CardFilter
+      play_order: Finish
+    per_who: OPP
+    per_zone: DISCARD
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: "Your Finish rolls are +1 for each Finish your opponent hit on you this match (proxy: opponent Finishes in their discard)"
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Unsupported
+    raw_text: "When this card is in your discard pile, your opponent's Finish cards cannot be other card types."
+    reason: "niche in-discard type-restriction; no engine mechanic (pending decision)"
+  duration: WHILE_IN_DISCARD
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: "When this card is in your discard pile, your opponent's Finish cards cannot be other card types."
+  source: card
+  optional: false
