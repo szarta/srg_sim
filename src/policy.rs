@@ -363,6 +363,14 @@ impl HeuristicPolicy {
         });
         or_first(by_kind(legal, if losing { "yes" } else { "no" }), legal)
     }
+
+    /// Take Pretty Paul's once-per-match bump replacement whenever it is offered — a
+    /// tie is about to force a bump either way, and the replacement strictly draws an
+    /// extra card, denies the opponent their bump draw, and skips both `OnBump`
+    /// gimmicks. A finesse "save it for the sign-flip" read is left to a human pilot.
+    fn at_bump_replace(&self, legal: &[Value]) -> Value {
+        or_first(by_kind(legal, "yes"), legal)
+    }
 }
 
 impl Policy for HeuristicPolicy {
@@ -385,6 +393,7 @@ impl Policy for HeuristicPolicy {
             "discard" => self.at_discard(legal, state, key),
             "optional" => self.at_optional(legal),
             "elect_bump" => self.at_elect_bump(legal),
+            "bump_replace" => self.at_bump_replace(legal),
             _ => legal[0].clone(),
         };
         Some(chosen)

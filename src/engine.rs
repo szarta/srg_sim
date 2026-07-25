@@ -1187,6 +1187,9 @@ impl Engine {
             | Action::StopCountsOrderAs { .. }
             | Action::SuppressStop { .. }
             | Action::BumpDrawReplace
+            // Pretty Paul's bump-replacement is read structurally in `roll_off`
+            // (`try_bump_replacement`), never executed here — a no-op, not Unsupported.
+            | Action::BumpReplacement { .. }
             | Action::ScaleEntranceNumbers { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::BuryThisCard => self.act_bury_this_card(key),
@@ -4364,6 +4367,16 @@ impl Engine {
             if va != vb {
                 break;
             }
+            // Pretty Paul "Let It Rip!": its owner MAY replace this bump with drawing
+            // + re-rolling both (no bump, so no OnBump gimmick and `bumps` unchanged).
+            if let Some((nsa, nva, nsb, nvb, nb)) = self.try_bump_replacement(bumps)? {
+                sa = nsa;
+                va = nva;
+                sb = nsb;
+                vb = nvb;
+                bumps = nb;
+                continue;
+            }
             let (nsa, nva, nsb, nvb, nb) = self.do_bump(bumps)?;
             sa = nsa;
             va = nva;
@@ -4442,12 +4455,76 @@ impl Engine {
         self.bump_draw("B")?;
         let bumps = bumps + 1;
         self.run_on_bump()?; // bump-punish gimmicks (Mastermind: opp next roll -2)
+        let (sa, va, sb, vb) = self.reroll_both()?;
+        Ok((sa, va, sb, vb, bumps))
+    }
+
+    /// "Each player re-rolls their turn roll": fresh dice for both sides, then the
+    /// same switch / in-roll-mod / re-roll offers a first roll gets. The re-roll tail
+    /// shared by a bump (`do_bump`) and Pretty Paul's bump replacement
+    /// (`try_bump_replacement`) so both stay byte-identical to a first roll-off.
+    fn reroll_both(&mut self) -> Eng<(Skill, i64, Skill, i64)> {
         let (sa, va) = self.roll_for("A", false);
         let (sb, vb) = self.roll_for("B", false);
         let (sa, va, sb, vb) = self.offer_switches(sa, va, sb, vb)?; // a bump re-roll is a turn roll too
         let (va, vb) = self.apply_in_roll_mods(sa, va, sb, vb); // debuff re-rolls too
-        let (sa, va, sb, vb) = self.offer_rerolls(sa, va, sb, vb)?; // re-roll offered post-bump too
-        Ok((sa, va, sb, vb, bumps))
+        self.offer_rerolls(sa, va, sb, vb) // re-roll offered post-bump too
+    }
+
+    /// A player holding an unspent `BumpReplacement` charge (Pretty Paul Says "Let It
+    /// Rip!") — `Some((key, draw))` with the number of cards its owner draws instead
+    /// of taking the bump, else `None`.
+    fn bump_replacement_owner(&self) -> Option<(String, i64)> {
+        for key in ["A", "B"] {
+            for eff in self.standing_effects(key) {
+                for a in &eff.actions {
+                    if let Action::BumpReplacement { uses, draw } = a {
+                        let used = self.state.players[key]
+                            .freq_counters
+                            .get("match:bump_replace")
+                            .copied()
+                            .unwrap_or(0);
+                        if used < *uses {
+                            return Some((key.to_owned(), *draw));
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Pretty Paul Says "Let It Rip!": at a tie that would force a bump, its owner MAY
+    /// spend a per-match charge to replace the bump — draw `draw` cards and re-roll
+    /// both turn rolls INSTEAD. Because the bump never happens, no `OnBump` gimmick
+    /// fires (the point vs a sign-flipper) and `bumps` is left unchanged (the turn is
+    /// not counted as bumped). `Some(fresh roll)` if the replacement was taken.
+    #[allow(clippy::type_complexity)]
+    fn try_bump_replacement(&mut self, bumps: i64) -> Eng<Option<(Skill, i64, Skill, i64, i64)>> {
+        let Some((owner, draw)) = self.bump_replacement_owner() else {
+            return Ok(None);
+        };
+        if !self.elect_bump_replacement(&owner)? {
+            return Ok(None);
+        }
+        self.draw(&owner, draw.max(0) as usize, DeckEnd::Top)?;
+        let (sa, va, sb, vb) = self.reroll_both()?;
+        Ok(Some((sa, va, sb, vb, bumps)))
+    }
+
+    /// Offer `owner` its once-per-match bump replacement and spend a charge if taken.
+    fn elect_bump_replacement(&mut self, owner: &str) -> Eng<bool> {
+        let legal = vec![
+            json!({"kind": "yes", "point": "bump_replace"}),
+            json!({"kind": "no", "point": "bump_replace"}),
+        ];
+        if self.decide("bump_replace", owner, legal)?["kind"] != "yes" {
+            return Ok(false);
+        }
+        let fc = &mut self.state.players.get_mut(owner).unwrap().freq_counters;
+        let cur = fc.get("match:bump_replace").copied().unwrap_or(0);
+        fc.insert("match:bump_replace".to_owned(), cur + 1);
+        Ok(true)
     }
 
     /// Offer each side its once-per-turn turn-roll re-roll (Dunn, Jay White). A taken
@@ -5242,6 +5319,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::StopCountsOrderAs { .. } => "StopCountsOrderAs",
         Action::SuppressStop { .. } => "SuppressStop",
         Action::BumpDrawReplace => "BumpDrawReplace",
+        Action::BumpReplacement { .. } => "BumpReplacement",
         Action::ScaleEntranceNumbers { .. } => "ScaleEntranceNumbers",
         Action::AddText { .. } => "AddText",
         Action::AbsorbGimmick { .. } => "AbsorbGimmick",
@@ -8368,6 +8446,112 @@ mod flip_percount_tests {
             !engine.also_lead_now("A", &card_with),
             "rolled Strike, not Agility → grant does not apply"
         );
+    }
+}
+
+#[cfg(test)]
+mod bump_replacement_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    /// Pretty Paul "Let It Rip!": a Static once-per-match `BumpReplacement`, paired
+    /// with an `OnBump` self-draw that must NOT fire when the bump is replaced.
+    fn pretty_paul_gimmick() -> serde_json::Value {
+        json!([
+            {
+                "@type": "Effect",
+                "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "BumpReplacement", "uses": 1, "draw": 2}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "let it rip", "source": "entrance", "optional": false
+            },
+            {
+                "@type": "Effect",
+                "trigger": {"@type": "OnBump"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF",
+                    "cap": null, "per": null, "per_excludes_trigger": false, "per_who": "SELF"}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "on bump draw", "source": "gimmick", "optional": false
+            }
+        ])
+    }
+
+    fn filler(uuid: &str) -> Card {
+        serde_json::from_value(
+            json!({"atk_type": "Strike", "db_uuid": uuid, "name": "Filler",
+            "number": 1, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []}),
+        )
+        .unwrap()
+    }
+
+    fn engine(a_gimmick: serde_json::Value) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str, effects: serde_json::Value| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": effects},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let pair = Policies::new(
+            Box::new(HeuristicPolicy::heuristic()),
+            Box::new(HeuristicPolicy::heuristic()),
+        );
+        Engine::new(
+            deck("A", a_gimmick),
+            deck("B", json!([])),
+            Box::new(pair),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn replacement_fires_spends_charge_and_skips_the_bump_punish() {
+        let mut e = engine(pretty_paul_gimmick());
+        e.state.players.get_mut("A").unwrap().deck =
+            (0..6).map(|i| filler(&format!("a{i}"))).collect();
+        let hand_before = e.state.players["A"].hand.len();
+
+        let out = e.try_bump_replacement(0).unwrap();
+        assert!(
+            out.is_some(),
+            "the once-per-match replacement is offered and taken"
+        );
+        let (.., bumps) = out.unwrap();
+        assert_eq!(bumps, 0, "a replaced bump is NOT counted as a bump");
+        assert_eq!(
+            e.state.players["A"].hand.len() - hand_before,
+            2,
+            "drew exactly `draw`=2 — the OnBump self-draw did NOT fire (bump was replaced)"
+        );
+        assert_eq!(
+            e.state.players["A"].freq_counters.get("match:bump_replace"),
+            Some(&1),
+            "the per-match charge was spent"
+        );
+
+        // Charge spent: a second would-bump falls through to a normal bump.
+        assert!(
+            e.try_bump_replacement(0).unwrap().is_none(),
+            "the once-per-match charge does not refill"
+        );
+    }
+
+    #[test]
+    fn no_replacement_without_the_declaration() {
+        let mut e = engine(json!([]));
+        assert!(e.bump_replacement_owner().is_none());
+        assert!(e.try_bump_replacement(0).unwrap().is_none());
     }
 }
 

@@ -509,6 +509,26 @@
       ],
       "type": "object"
     },
+    "BumpReplacement": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BumpReplacement"
+        },
+        "draw": {
+          "type": "integer"
+        },
+        "uses": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "draw",
+        "uses"
+      ],
+      "type": "object"
+    },
     "BumpedLastTurnRoll": {
       "additionalProperties": false,
       "properties": {
@@ -890,6 +910,9 @@
               },
               {
                 "$ref": "#/$defs/BumpDrawReplace"
+              },
+              {
+                "$ref": "#/$defs/BumpReplacement"
               },
               {
                 "$ref": "#/$defs/ScaleEntranceNumbers"
@@ -1550,6 +1573,9 @@
               },
               {
                 "$ref": "#/$defs/BumpDrawReplace"
+              },
+              {
+                "$ref": "#/$defs/BumpReplacement"
               },
               {
                 "$ref": "#/$defs/ScaleEntranceNumbers"
@@ -2471,6 +2497,9 @@
         },
         {
           "$ref": "#/$defs/BumpDrawReplace"
+        },
+        {
+          "$ref": "#/$defs/BumpReplacement"
         },
         {
           "$ref": "#/$defs/ScaleEntranceNumbers"
@@ -4295,5 +4324,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 72
+  "version": 73
 }

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 72;
+pub const SCHEMA_VERSION: i64 = 73;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1211,6 +1211,20 @@ pub enum Action {
     /// instead of drawing (Mack-a-Tack: "when you bump, your opponent discards 1 card
     /// instead of drawing"). Read in `do_bump`, never executed. schema v50
     BumpDrawReplace,
+    /// Static declaration that, `uses` times per match, the declarer MAY replace a
+    /// bump they would take with drawing `draw` cards and re-rolling both turn rolls
+    /// (Pretty Paul Says "Let It Rip!": "Once per match: When you would bump, draw 2
+    /// cards instead and each player re-rolls their turn roll"). Read structurally in
+    /// `roll_off` (`try_bump_replacement`), never executed: the bump is *replaced*, so
+    /// neither side's `OnBump` gimmick fires and the turn is not counted as bumped —
+    /// the whole point when a sign-flipper (Cassandra) has turned the owner's own
+    /// bump-punish against them. The per-match charge is tracked in `freq_counters`
+    /// under `match:bump_replace` (like `ElectBumpOnSameSkill`'s `uses`), not via the
+    /// frequency guard. schema v73
+    BumpReplacement {
+        uses: i64,
+        draw: i64,
+    },
     /// Static declaration that multiplies every number in the owner's Entrance card's
     /// effects by `factor`, when the entrance name matches `name_contains` (Pedro
     /// Valiant: "triple the numbers in the text of your Entrance cards with 'Training
@@ -2101,6 +2115,20 @@ pub enum IrNode {
     /// instead of drawing (Mack-a-Tack: "when you bump, your opponent discards 1 card
     /// instead of drawing"). Read in `do_bump`, never executed. schema v50
     BumpDrawReplace,
+    /// Static declaration that, `uses` times per match, the declarer MAY replace a
+    /// bump they would take with drawing `draw` cards and re-rolling both turn rolls
+    /// (Pretty Paul Says "Let It Rip!": "Once per match: When you would bump, draw 2
+    /// cards instead and each player re-rolls their turn roll"). Read structurally in
+    /// `roll_off` (`try_bump_replacement`), never executed: the bump is *replaced*, so
+    /// neither side's `OnBump` gimmick fires and the turn is not counted as bumped —
+    /// the whole point when a sign-flipper (Cassandra) has turned the owner's own
+    /// bump-punish against them. The per-match charge is tracked in `freq_counters`
+    /// under `match:bump_replace` (like `ElectBumpOnSameSkill`'s `uses`), not via the
+    /// frequency guard. schema v73
+    BumpReplacement {
+        uses: i64,
+        draw: i64,
+    },
     /// Static declaration that multiplies every number in the owner's Entrance card's
     /// effects by `factor`, when the entrance name matches `name_contains` (Pedro
     /// Valiant: "triple the numbers in the text of your Entrance cards with 'Training

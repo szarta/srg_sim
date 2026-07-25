@@ -9099,27 +9099,30 @@ c2d3731dec1f4242995caee8282bcc53:
   raw_clause: The player with fewest cards in hand draws 1 card. (opponent has fewer)
   source: card
   optional: false
+# Entrance 'Pretty Paul Says, "Let It Rip!"' (warehouse, mastermind-killshot):
+# "Once per match: When you would bump, draw 2 cards instead and each player re-rolls
+#  their turn roll." Modeled as a Static BumpReplacement{uses:1, draw:2} read at the
+# would-bump point in roll_off (try_bump_replacement): the owner MAY, once per match,
+# replace a forced-tie bump with drawing 2 and re-rolling both turn rolls. The bump is
+# REPLACED — so neither side's OnBump gimmick fires (the point vs a sign-flipper who
+# has turned the owner's own bump-punish against them) and the turn is not counted as
+# bumped. schema v73.
 5224820cfea446b6938f65d7154bd2f0:
 - '@type': Effect
   trigger:
-    '@type': OnBump
+    '@type': Static
   condition:
     '@type': Always
   actions:
-  - '@type': Draw
-    cap: null
-    n: 1
-    per: null
-    per_excludes_trigger: false
-    per_who: SELF
-    source: TOP
-    who: SELF
-  duration: INSTANT
+  - '@type': BumpReplacement
+    uses: 1
+    draw: 2
+  duration: WHILE_IN_PLAY
   frequency:
     '@type': FrequencyGuard
-    kind: ONCE_PER_MATCH
+    kind: UNLIMITED
     n: null
-  raw_clause: 'Once per match: When you would bump, draw 2 cards instead and each player re-rolls their turn roll. (modeled: +1 extra bump draw makes 2 total; the bump itself re-rolls both players)'
+  raw_clause: 'Once per match: When you would bump, draw 2 cards instead and each player re-rolls their turn roll.'
   source: entrance
   optional: false
 

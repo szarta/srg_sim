@@ -1534,6 +1534,21 @@ class BumpDrawReplace(IRNode):
 
 
 @dataclass(frozen=True)
+class BumpReplacement(IRNode):
+    """A Static declaration that, ``uses`` times per match, the declarer MAY replace a
+    bump they would take with drawing ``draw`` cards and re-rolling both turn rolls
+    (Pretty Paul Says "Let It Rip!": "Once per match: When you would bump, draw 2 cards
+    instead and each player re-rolls their turn roll"). Read structurally at the
+    would-bump point in the roll-off (``try_bump_replacement``); not executed as a
+    mutation. The bump is *replaced*, so neither side's OnBump gimmick fires and the
+    turn is not counted as bumped. The per-match charge is tracked in the owner's freq
+    counters (like ``ElectBumpOnSameSkill``'s ``uses``). schema v73"""
+
+    uses: int = 1
+    draw: int = 2
+
+
+@dataclass(frozen=True)
 class ScaleEntranceNumbers(IRNode):
     """A Static declaration that multiplies every number in the owner's Entrance card's
     effects by ``factor``, when the entrance name matches ``name_contains`` (Pedro
@@ -1846,6 +1861,7 @@ Action = (
     | SuppressOpponentDraw
     | SuppressSelfHandLoss
     | BumpDrawReplace
+    | BumpReplacement
     | ScaleEntranceNumbers
     | CrowdMeter
     | PlayExtraCard

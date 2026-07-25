@@ -3920,30 +3920,25 @@
       "@type": "Effect",
       "actions": [
         {
-          "@type": "Draw",
-          "cap": null,
-          "n": 1,
-          "per": null,
-          "per_excludes_trigger": false,
-          "per_who": "SELF",
-          "source": "TOP",
-          "who": "SELF"
+          "@type": "BumpReplacement",
+          "draw": 2,
+          "uses": 1
         }
       ],
       "condition": {
         "@type": "Always"
       },
-      "duration": "INSTANT",
+      "duration": "WHILE_IN_PLAY",
       "frequency": {
         "@type": "FrequencyGuard",
-        "kind": "ONCE_PER_MATCH",
+        "kind": "UNLIMITED",
         "n": null
       },
       "optional": false,
-      "raw_clause": "Once per match: When you would bump, draw 2 cards instead and each player re-rolls their turn roll. (modeled: +1 extra bump draw makes 2 total; the bump itself re-rolls both players)",
+      "raw_clause": "Once per match: When you would bump, draw 2 cards instead and each player re-rolls their turn roll.",
       "source": "entrance",
       "trigger": {
-        "@type": "OnBump"
+        "@type": "Static"
       }
     }
   ],
