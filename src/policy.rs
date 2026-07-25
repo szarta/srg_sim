@@ -25,8 +25,12 @@
 use crate::cards::Card;
 use crate::conditions;
 use crate::engine::Decider;
-use crate::ir::{Action, PlayOrder};
+use crate::finish::{finish_odds, FinishParams};
+use crate::ir::{Action, AtkType, PlayOrder, Skill};
+use crate::skills::Skills;
 use crate::state::GameState;
+use crate::stops::evaluate_stop;
+use num_rational::Rational64;
 use serde_json::Value;
 use std::cmp::Reverse;
 use std::collections::VecDeque;
@@ -101,7 +105,14 @@ impl Decider for Policies {
 /// `newbie`), or `None` for an unknown name.
 /// Every AI policy name [`build_policy`] accepts — the opponent roster the console
 /// (`srg`) and web client offer. Keep in lockstep with the `build_policy` match.
-pub const POLICIES: &[&str] = &["random", "heuristic", "aggressive", "smart", "newbie"];
+pub const POLICIES: &[&str] = &[
+    "random",
+    "heuristic",
+    "aggressive",
+    "smart",
+    "newbie",
+    "killshot",
+];
 
 pub fn build_policy(name: &str) -> Option<Box<dyn Policy>> {
     match name {
@@ -110,6 +121,7 @@ pub fn build_policy(name: &str) -> Option<Box<dyn Policy>> {
         "aggressive" => Some(Box::new(HeuristicPolicy::aggressive())),
         "smart" => Some(Box::new(HeuristicPolicy::smart())),
         "newbie" => Some(Box::new(HeuristicPolicy::newbie())),
+        "killshot" => Some(Box::new(HeuristicPolicy::killshot())),
         _ => None,
     }
 }
@@ -206,6 +218,16 @@ pub enum Profile {
     Smart,
     /// Greedy, no pass/bury game, misplays the stop/discard economy.
     Newbie,
+    /// Pilots Mastermind's finish line by **expected value** (Olympics pod). Among
+    /// playable finishes it fires the one maximizing `finish_odds x P(not stopped)`,
+    /// where the stop factor uses [`evaluate_stop`] against the live matchup — so it
+    /// prefers the higher-odds finish (Bomaye) when the opponent can't stop it and
+    /// falls back to the stop-card-proof Grapple finish (Kill Shot) when they can.
+    /// It does NOT wait for high Crowd Meter (games rarely reach it). Builds a chain
+    /// like `Aggressive` otherwise, and protects/recurs the Grapple finish. Selected
+    /// by name `killshot`; never the default, so the M1 conformance goldens (which
+    /// never name it) are untouched.
+    KillShot,
 }
 
 /// A transparent, playstyle-aware baseline. Offense: win when a Finish is playable;
@@ -238,6 +260,11 @@ impl HeuristicPolicy {
         Self::profile("newbie", Profile::Newbie)
     }
 
+    /// The Kill Shot pilot — commits to the Grapple finish line (todo: Olympics pod).
+    pub fn killshot() -> Self {
+        Self::profile("killshot", Profile::KillShot)
+    }
+
     fn profile(name: &str, profile: Profile) -> Self {
         Self {
             name: name.to_owned(),
@@ -260,7 +287,18 @@ impl HeuristicPolicy {
     }
 
     fn at_turn_action(&self, legal: &[Value], state: &GameState, key: &str) -> Value {
-        if let Some(finish) = find_play(legal, "Finish") {
+        // Finish selection. KillShot fires the best EXPECTED-VALUE finish available
+        // now — odds x P(not stop-carded) — because games are decided at low Crowd
+        // Meter (empirically ~90% end by CM2), so waiting for the unstoppable-but-slow
+        // Kill Shot to reach its high-CM auto-success is not viable. At low CM the
+        // higher-odds finish (e.g. Bomaye) wins unless the opponent can stop it, in
+        // which case the stop-card-proof Grapple finish takes over. Every other
+        // profile takes any playable Finish — the M1 baseline, byte-for-byte unchanged.
+        let finish = match self.profile {
+            Profile::KillShot => best_ev_finish(legal, state, key),
+            _ => find_play(legal, "Finish"),
+        };
+        if let Some(finish) = finish {
             return finish.clone(); // go for the win
         }
         match self.profile {
@@ -315,11 +353,15 @@ impl HeuristicPolicy {
         // the opponent's discard ("bury N in your opponent's discard") or either pile
         // (Cherry Glamazon), so each card is looked up in its OWN pile — the option's
         // `owner`, defaulting to `key` for the own-discard pass (`do_pass`).
+        let killshot = self.profile == Profile::KillShot;
         let best = (0..legal.len())
             .max_by_key(|&i| {
                 let owner = oowner(&legal[i]).unwrap_or(key);
                 let card = discard_card(state, owner, ocard(&legal[i]));
-                (recycle_value(card), Reverse(i))
+                // KillShot recurs its Grapple finish ahead of any other finish; a
+                // constant `false` for other profiles leaves their ordering intact.
+                let grapple_fin = killshot && is_grapple_finish(card);
+                (recycle_value(card), grapple_fin, Reverse(i))
             })
             .unwrap();
         legal[best].clone()
@@ -330,10 +372,15 @@ impl HeuristicPolicy {
             return legal[0].clone(); // sheds carelessly (leftmost) — may pitch a Finish
         }
         // Shed the least valuable card; on a tie, the earliest option (Python `min`
-        // keeps the first minimum, which `min_by_key` also does).
+        // keeps the first minimum, which `min_by_key` also does). KillShot breaks ties
+        // to keep its Grapple finish longest (a constant `false` for other profiles
+        // leaves their ordering intact).
+        let killshot = self.profile == Profile::KillShot;
         let worst = (0..legal.len())
             .min_by_key(|&i| {
-                discard_keep_value(hand_card(state, key, ocard(&legal[i])), state, key)
+                let card = hand_card(state, key, ocard(&legal[i]));
+                let grapple_fin = killshot && is_grapple_finish(card);
+                (discard_keep_value(card, state, key), grapple_fin)
             })
             .unwrap();
         legal[worst].clone()
@@ -444,6 +491,63 @@ fn find_play<'a>(legal: &'a [Value], order: &str) -> Option<&'a Value> {
     legal
         .iter()
         .find(|o| okind(o) == "play" && oorder(o) == order)
+}
+
+/// Discount applied to a finish's odds when the opponent's finish-stop is online —
+/// a rough P(they hold and play the stop). Keeps a stop-carded finish in the running
+/// (they may not have the card) while still favoring a truly unstoppable line.
+const STOP_DISCOUNT: Rational64 = Rational64::new_raw(2, 5);
+
+/// The playable Finish maximizing expected value (`finish_odds x stop-factor`) for
+/// the live matchup — the `KillShot` profile's selection. `None` if no Finish is
+/// playable.
+fn best_ev_finish<'a>(legal: &'a [Value], state: &GameState, key: &str) -> Option<&'a Value> {
+    let me = state.effective_stats(key, None);
+    let opp = state.effective_stats(&state.opponent_of(key), None);
+    let cm = state.crowd_meter;
+    legal
+        .iter()
+        .filter(|o| okind(o) == "play" && oorder(o) == "Finish")
+        .max_by_key(|o| finish_ev(hand_card(state, key, ocard(o)), &me, &opp, cm))
+}
+
+/// Expected value of firing `card` as a finish now: breakout odds, discounted if the
+/// opponent's keyed finish-stop is online for this matchup.
+fn finish_ev(card: &Card, me: &Skills, opp: &Skills, cm: i64) -> Rational64 {
+    let mut finish_bonus = Skills::default();
+    for (&s, &v) in &card.finish_bonuses {
+        finish_bonus = finish_bonus.with(s, v);
+    }
+    let odds = finish_odds(&FinishParams {
+        finisher: *me,
+        defender: *opp,
+        finish_bonus,
+        crowd_meter: cm,
+        ..Default::default()
+    });
+    let stoppable = atk_to_skill(card.atk_type)
+        .and_then(|ft| evaluate_stop(opp, ft, Some(me)))
+        .is_some_and(|ev| ev.online);
+    if stoppable {
+        odds * STOP_DISCOUNT
+    } else {
+        odds
+    }
+}
+
+/// The finish-type [`Skill`] a card's attack type keys its opponent stop on, if any.
+fn atk_to_skill(atk: AtkType) -> Option<Skill> {
+    match atk {
+        AtkType::Strike => Some(Skill::Strike),
+        AtkType::Grapple => Some(Skill::Grapple),
+        AtkType::Submission => Some(Skill::Submission),
+        AtkType::None => None,
+    }
+}
+
+/// True iff `card` is a Grapple finish (the Kill Shot line's payload).
+fn is_grapple_finish(card: &Card) -> bool {
+    card.play_order == PlayOrder::Finish && card.atk_type == AtkType::Grapple
 }
 
 fn holds_finish(state: &GameState, key: &str) -> bool {
