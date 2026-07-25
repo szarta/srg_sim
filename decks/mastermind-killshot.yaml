@@ -3,7 +3,7 @@
 # win board with Strike+Sub, grind CM, land Kill Shot. Grapple slots = recursion to
 # dig/recur Kill Shot (or pivot to Fade to Black). Rejected! #5 = D2 discard-nuke backstop.
 competitor: "Mastermind"
-entrance: "Impact is Family (V2)"
+entrance: "Pretty Paul Says, \"Let It Rip!\""
 cards:
   - {number: 1,  name: "Double Cross"}
   - {number: 2,  name: "Arm & Collar Tie Up"}
