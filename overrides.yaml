@@ -10751,3 +10751,31 @@ b01e49a0967d4506bb09fe6f559c8f40:
   raw_clause: Your next turn roll is -1.
   source: card
   optional: false
+
+# Cassandra's finish "Your Worst Nightmare!" (#127): latched Finish-copy. The
+# executable essence via CopyText — while in play, copy an opponent Finish's text
+# + Spotlight (copy_tags) from their discard pile. The "look at hand OR discard,
+# choose 1, re-activate later" latching is simplified to a continuous copy of the
+# opponent's Finishes in their discard (generally the strongest available target).
+dedc0e6d0bd14f6388c0b0e5191ffa72:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': CopyText
+    selector:
+      '@type': CardFilter
+      play_order: Finish
+    who: OPP
+    zone: DISCARD
+    copy_tags: true
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: "look at opponent's hand/discard, choose 1 Finish; copy its text and Spotlight (latched reactivation simplified to a continuous copy of opponent Finishes in discard)"
+  source: gimmick
+  optional: false

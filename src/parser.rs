@@ -281,6 +281,21 @@ fn bury_hand(count: i64, who: Who, random: bool, choose: bool) -> Action {
     }
 }
 
+/// Bury a player's ENTIRE discard pile at random (Rejected!: "Each player
+/// randomly buries their discard pile"). `count == DECK_SIZE` is the whole-pile
+/// idiom (the engine's `bury_from_discard` clamps by breaking when the pile is
+/// empty); `random` routes each pick through the RNG.
+fn bury_whole_discard(who: Who) -> Action {
+    Action::Bury {
+        choose: false,
+        selector: CardFilter::default(),
+        count: DECK_SIZE as i64,
+        who,
+        random: true,
+        source: BuryFrom::Discard,
+    }
+}
+
 fn buff(skill: Skill, delta: i64, who: Who) -> Action {
     Action::BuffSkill {
         skill,
@@ -978,6 +993,38 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // Per-count skill buff keyed to an OR-list of name substrings, e.g. D2's
+        // Thud!: "Your Agility skill is +1 for each card you have in play with
+        // 'Hammer', 'Smash', 'High', or 'Strike' in the name" (154 cards use the
+        // "for each card ... in the name" shape; the Chin/Spotlight scalers too).
+        rule(
+            &format!(
+                r#"Your {SK} skill is \+(\d+) for each card you have in play with (.+?) in the name(?: \(Max \+(\d+)\))?"#
+            ),
+            |c| {
+                let names = quoted_names(&c[3]);
+                if names.is_empty() {
+                    return None;
+                }
+                let cap = c.get(4).map(|m| m.as_str().parse::<i64>().unwrap());
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::BuffSkill {
+                        skill: skill(&c[1]),
+                        delta: num(c, 2),
+                        who: Who::SelfSide,
+                        duration: Duration::WhileInPlay,
+                        target_highest: false,
+                        per_crowd: false,
+                        cap,
+                        per: Some(cf_name(names)),
+                        per_zone: CountZone::InPlay,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         rule(&format!(r"Your {SK} is \+(\d+)"), |c| {
             Some(eff(
                 Trigger::Static,
@@ -1021,6 +1068,40 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     vec![bury(n, Who::Opp), bury(n, Who::SelfSide)],
                     Condition::Always,
                     Duration::Instant,
+                ))
+            },
+        ),
+        // Rejected! (D2 backstop): nuke both discard piles at random — denies
+        // discard recursion (D2's whole hammer engine).
+        rule(r"Each player randomly buries their discard pile", |_| {
+            Some(eff(
+                on_hit(),
+                vec![
+                    bury_whole_discard(Who::SelfSide),
+                    bury_whole_discard(Who::Opp),
+                ],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // Impact is Family (V2) entrance: blank the opponent's Spotlight Finishes
+        // (continuous selector scan; mirrors A Trip to the Upside Down's Spotlight
+        // blank). V1's broader "Spotlight cards" variant stays its own clause.
+        rule(
+            r"Your opponent'?s Spotlight Finishes have blank text",
+            |_| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::BlankText {
+                        selector: CardFilter {
+                            play_order: Some(PlayOrder::Finish),
+                            tag: Some("Spotlight".to_owned()),
+                            ..Default::default()
+                        },
+                        who: Who::Opp,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
                 ))
             },
         ),

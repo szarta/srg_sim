@@ -13127,6 +13127,47 @@
       }
     }
   ],
+  "dedc0e6d0bd14f6388c0b0e5191ffa72": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "CopyText",
+          "copy_tags": true,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": "Finish",
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "OPP",
+          "zone": "DISCARD"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "look at opponent's hand/discard, choose 1 Finish; copy its text and Spotlight (latched reactivation simplified to a continuous copy of opponent Finishes in discard)",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "def74dd5530540ce8a9e903bc10fd620": [
     {
       "@type": "Effect",

@@ -741,6 +741,53 @@ fn flip_then_recur_grammar() {
 
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
+/// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!
+/// (whole-discard random bury ×2), Impact is Family V2 (blank opp Spotlight Finishes).
+#[test]
+fn pod_fidelity_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // D2's Thud!: per-count Agility buff over a 4-name OR-list.
+    let e = a1("Your Agility skill is +1 for each card you have in play with \"Hammer\", \"Smash\", \"High\", or \"Strike\" in the name.");
+    let a = &e["actions"][0];
+    assert_eq!(a["@type"], "BuffSkill");
+    assert_eq!(a["skill"], "Agility");
+    assert_eq!(a["delta"], 1);
+    assert_eq!(a["per_zone"], "IN_PLAY");
+    assert_eq!(
+        a["per"]["name_contains"],
+        serde_json::json!(["Hammer", "Smash", "High", "Strike"])
+    );
+    assert_eq!(a["cap"], Value::Null);
+    // With a "(Max +N)" cap.
+    let a = a1("Your Technique skill is +1 for each card you have in play with \"Chin\" in the name (Max +3).")["actions"][0].clone();
+    assert_eq!(a["cap"], 3);
+    assert_eq!(a["per"]["name_contains"], serde_json::json!(["Chin"]));
+
+    // Rejected!: nuke both discard piles at random.
+    let e = a1("Each player randomly buries their discard pile.");
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 2, "buries both players");
+    for a in acts {
+        assert_eq!(a["@type"], "Bury");
+        assert_eq!(a["source"], "DISCARD");
+        assert_eq!(a["random"], true);
+    }
+    let whos: Vec<&str> = acts.iter().map(|a| a["who"].as_str().unwrap()).collect();
+    assert!(whos.contains(&"SELF") && whos.contains(&"OPP"));
+
+    // Impact is Family V2: blank opponent's Spotlight Finishes.
+    let a = a1("Your opponent's Spotlight Finishes have blank text.")["actions"][0].clone();
+    assert_eq!(a["@type"], "BlankText");
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(a["selector"]["play_order"], "Finish");
+    assert_eq!(a["selector"]["tag"], "Spotlight");
+}
+
 /// "also a Follow Up" conditional (AlsoLead order=Followup gated on RollWasSkill).
 #[test]
 fn next_roll_percount_and_also_followup_grammar() {

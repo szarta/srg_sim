@@ -5170,15 +5170,39 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "Your Agility skill is +1 for each card you have in play with \"Hammer\", \"Smash\", \"High\", or \"Strike\" in the name.",
-              "reason": "no grammar match"
+              "@type": "BuffSkill",
+              "cap": null,
+              "delta": 1,
+              "duration": "WHILE_IN_PLAY",
+              "per": {
+                "@type": "CardFilter",
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [
+                  "Hammer",
+                  "Smash",
+                  "High",
+                  "Strike"
+                ],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              "per_crowd": false,
+              "per_zone": "IN_PLAY",
+              "skill": "Agility",
+              "target_highest": false,
+              "who": "SELF"
             }
           ],
           "condition": {
             "@type": "Always"
           },
-          "duration": "INSTANT",
+          "duration": "WHILE_IN_PLAY",
           "frequency": {
             "@type": "FrequencyGuard",
             "kind": "UNLIMITED",
@@ -5188,7 +5212,7 @@
           "raw_clause": "Your Agility skill is +1 for each card you have in play with \"Hammer\", \"Smash\", \"High\", or \"Strike\" in the name.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "Static"
           }
         }
       ],
@@ -8908,7 +8932,7 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 94,
+    "grammar": 95,
     "override": 118,
     "top_unparsed": [
       [
@@ -8920,16 +8944,12 @@
         1
       ],
       [
-        "Your <S> skill is +N for each card you have in play with \"Hammer\", \"Smash\", \"High\", or \"<S>\" in the name.",
-        1
-      ],
-      [
         "When this card is in your discard pile: Your <S> skill is greater than your opponent's <S> skill for card effects.",
         1
       ]
     ],
     "total": 217,
-    "unsupported": 5
+    "unsupported": 4
   },
   "coverage_records": [
     {
