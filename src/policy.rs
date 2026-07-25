@@ -25,7 +25,7 @@
 use crate::cards::Card;
 use crate::conditions;
 use crate::engine::Decider;
-use crate::ir::{Action, AtkType, PlayOrder};
+use crate::ir::{Action, AtkType, PlayOrder, Trigger};
 use crate::state::GameState;
 use serde_json::Value;
 use std::cmp::Reverse;
@@ -436,8 +436,14 @@ impl HeuristicPolicy {
         or_first(by_kind(legal, "yes"), legal) // take optional edges (reroll / buff)
     }
 
-    /// Spend an elective same-skill bump only when behind on the roll.
-    fn at_elect_bump(&self, legal: &[Value]) -> Value {
+    /// Spend an elective same-skill bump (Ringside Ruckus / "The Floats") only when
+    /// behind on the roll — EXCEPT never when the opponent sign-flips our gimmick
+    /// (Cassandra): a bump fires our OnBump gimmick, and flipped it turns Mastermind's
+    /// "opponent's next roll -2" into a +2 for them, so the elective bump backfires.
+    fn at_elect_bump(&self, legal: &[Value], state: &GameState, key: &str) -> Value {
+        if self.profile == Profile::KillShot && opp_flips_gimmick_signs(state, key) {
+            return or_first(by_kind(legal, "no"), legal); // don't Float into a sign-flip
+        }
         let losing = legal.iter().any(|o| {
             okind(o) == "yes" && o.get("losing").and_then(Value::as_bool).unwrap_or(false)
         });
@@ -472,7 +478,7 @@ impl Policy for HeuristicPolicy {
             "bury_opp_hand" => self.at_bury_opp_hand(legal, state, key),
             "discard" => self.at_discard(legal, state, key),
             "optional" => self.at_optional(legal),
-            "elect_bump" => self.at_elect_bump(legal),
+            "elect_bump" => self.at_elect_bump(legal, state, key),
             "bump_replace" => self.at_bump_replace(legal),
             _ => legal[0].clone(),
         };
@@ -546,6 +552,24 @@ fn is_grapple_finish(card: &Card) -> bool {
 /// reserves for finishes: the #13–15 keyed finish-stops and the #25–27 bury-stops.
 fn is_reserved_stop(number: i64) -> bool {
     (13..=15).contains(&number) || (25..=27).contains(&number)
+}
+
+/// True iff `key`'s opponent has an active `Static` `FlipGimmickSigns` (Cassandra
+/// negating every printed +/- on `key`'s gimmick) — mirrors the engine's
+/// `gimmick_signs_flipped`. When set, `key`'s OnBump gimmick works AGAINST them, so
+/// the Kill Shot pilot declines the elective (Floats) bump.
+fn opp_flips_gimmick_signs(state: &GameState, key: &str) -> bool {
+    let opp = state.opponent_of(key);
+    if state.is_gimmick_blanked(&opp) {
+        return false;
+    }
+    state.players[&opp].competitor.effects.iter().any(|eff| {
+        matches!(eff.trigger, Trigger::Static)
+            && eff
+                .actions
+                .iter()
+                .any(|a| matches!(a, Action::FlipGimmickSigns { .. }))
+    })
 }
 
 fn holds_finish(state: &GameState, key: &str) -> bool {
