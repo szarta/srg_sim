@@ -1,0 +1,39 @@
+# Deathmatch King Matt Cardona — BASELINE opponent deck (Mastermind matchup sweep).
+#
+# Real competitor (stat game, 10-stat=strike) + real 3 finishes;
+# generic cassandra-shell support (slots 1-27). Fidelity: stat/gimmick/finish
+# matchup is real; the 1-27 support shell is a neutral placeholder.
+# stats: St10 Ag6 Pow8 Tec7 Sub5 Grp9
+competitor: {name: "Deathmatch King Matt Cardona", db_uuid: b3c837b732a54281aa9169ab1d46d42f}
+entrance: "App Battle on Supershow Go"
+cards:
+  - {number: 1, name: "Double Cross"}
+  - {number: 2, name: "Arm & Collar Tie Up"}
+  - {number: 3, name: "Snap Headlock"}
+  - {number: 4, name: "Double Chin Music"}
+  - {number: 5, name: "Super Hip Toss"}
+  - {number: 6, name: "Elevated Arm Bar"}
+  - {number: 7, name: "Drawin' Dimes"}
+  - {number: 8, name: "Sweet & Salty Impact Drop (Grapple)"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Headbutt"}
+  - {number: 11, name: "Matte Finish"}
+  - {number: 12, name: "Ready to Rumble"}
+  - {number: 13, name: "Soaring Dropkick"}
+  - {number: 14, name: "Al13n Boot Drop"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Big Boot"}
+  - {number: 17, name: "Snap DDT (Grapple)"}
+  - {number: 18, name: "You're Not Ready"}
+  - {number: 19, name: "Blockbuster Deal"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Destiny's Call (V2)"}
+  - {number: 25, name: "Simple Dropkick"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Re-boot", db_uuid: 96925c47a74240b3b5d628e72c7668df}  # St finish
+  - {number: 29, name: "Radio Silence", db_uuid: 96cb6e7c88a34b43ac8d9de699f50b69}  # Gr finish
+  - {number: 30, name: "The Deathmatch King's Pizza Cutter", db_uuid: 760f078624e44cec97bfb09ee5eb1a13}  # Sub finish

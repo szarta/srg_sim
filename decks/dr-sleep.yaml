@@ -1,0 +1,39 @@
+# Dr. Sleep — BASELINE opponent deck (Mastermind matchup sweep).
+#
+# Real competitor (round game, 10-stat=technique) + real 3 finishes;
+# generic cassandra-shell support (slots 1-27). Fidelity: stat/gimmick/finish
+# matchup is real; the 1-27 support shell is a neutral placeholder.
+# stats: St9 Ag5 Pow7 Tec10 Sub8 Grp6
+competitor: {name: "Dr. Sleep", db_uuid: 9bd2e6dfb6ae481caeb05659c5d734f5}
+entrance: "App Battle on Supershow Go"
+cards:
+  - {number: 1, name: "Double Cross"}
+  - {number: 2, name: "Arm & Collar Tie Up"}
+  - {number: 3, name: "Snap Headlock"}
+  - {number: 4, name: "Double Chin Music"}
+  - {number: 5, name: "Super Hip Toss"}
+  - {number: 6, name: "Elevated Arm Bar"}
+  - {number: 7, name: "Drawin' Dimes"}
+  - {number: 8, name: "Sweet & Salty Impact Drop (Grapple)"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Headbutt"}
+  - {number: 11, name: "Matte Finish"}
+  - {number: 12, name: "Ready to Rumble"}
+  - {number: 13, name: "Soaring Dropkick"}
+  - {number: 14, name: "Al13n Boot Drop"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Big Boot"}
+  - {number: 17, name: "Snap DDT (Grapple)"}
+  - {number: 18, name: "You're Not Ready"}
+  - {number: 19, name: "Blockbuster Deal"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Destiny's Call (V2)"}
+  - {number: 25, name: "Simple Dropkick"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Mood Swing", db_uuid: d809ef6c50ba46d1bb86d90cfc8eb780}  # St finish
+  - {number: 29, name: "Bermuda Triangle", db_uuid: c0e761547caa412eae59abf936393068}  # Gr finish
+  - {number: 30, name: "Sleep Paralysis", db_uuid: db759ccf104a420fb93beb89936ba9bb}  # Sub finish

@@ -1,0 +1,39 @@
+# Ricky Riot (V1) — BASELINE opponent deck (Mastermind matchup sweep).
+#
+# Real competitor (round game, 10-stat=technique) + real 3 finishes;
+# generic cassandra-shell support (slots 1-27). Fidelity: stat/gimmick/finish
+# matchup is real; the 1-27 support shell is a neutral placeholder.
+# stats: St5 Ag8 Pow6 Tec10 Sub7 Grp9
+competitor: {name: "Ricky Riot (V1)", db_uuid: 5cf0d256efd841b3b5c220e2487db443}
+entrance: "App Battle on Supershow Go"
+cards:
+  - {number: 1, name: "Double Cross"}
+  - {number: 2, name: "Arm & Collar Tie Up"}
+  - {number: 3, name: "Snap Headlock"}
+  - {number: 4, name: "Double Chin Music"}
+  - {number: 5, name: "Super Hip Toss"}
+  - {number: 6, name: "Elevated Arm Bar"}
+  - {number: 7, name: "Drawin' Dimes"}
+  - {number: 8, name: "Sweet & Salty Impact Drop (Grapple)"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Headbutt"}
+  - {number: 11, name: "Matte Finish"}
+  - {number: 12, name: "Ready to Rumble"}
+  - {number: 13, name: "Soaring Dropkick"}
+  - {number: 14, name: "Al13n Boot Drop"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Big Boot"}
+  - {number: 17, name: "Snap DDT (Grapple)"}
+  - {number: 18, name: "You're Not Ready"}
+  - {number: 19, name: "Blockbuster Deal"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Destiny's Call (V2)"}
+  - {number: 25, name: "Simple Dropkick"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Cream of the Crop Elbow Drop", db_uuid: b8d2707e485e40d08d0f29e5efaa8552}  # St finish
+  - {number: 29, name: "Soups Up Stunner", db_uuid: c042f762f1a545d082db24282f08e3c2}  # Gr finish
+  - {number: 30, name: "Get Good or Get Got", db_uuid: 75ef4c23fb8c427cb6cd8adfd099c41d}  # Sub finish

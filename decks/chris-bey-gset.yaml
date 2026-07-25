@@ -1,0 +1,39 @@
+# Chris Bey (GSET) — BASELINE opponent deck (Mastermind matchup sweep).
+#
+# Real competitor (stat game, 10-stat=strike) + real 3 finishes;
+# generic cassandra-shell support (slots 1-27). Fidelity: stat/gimmick/finish
+# matchup is real; the 1-27 support shell is a neutral placeholder.
+# stats: St10 Ag9 Pow6 Tec7 Sub5 Grp8
+competitor: {name: "Chris Bey (Greatest Story Ever Told)", db_uuid: 52787724f33243a4a597b78a394e6813}
+entrance: "App Battle on Supershow Go"
+cards:
+  - {number: 1, name: "Double Cross"}
+  - {number: 2, name: "Arm & Collar Tie Up"}
+  - {number: 3, name: "Snap Headlock"}
+  - {number: 4, name: "Double Chin Music"}
+  - {number: 5, name: "Super Hip Toss"}
+  - {number: 6, name: "Elevated Arm Bar"}
+  - {number: 7, name: "Drawin' Dimes"}
+  - {number: 8, name: "Sweet & Salty Impact Drop (Grapple)"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Headbutt"}
+  - {number: 11, name: "Matte Finish"}
+  - {number: 12, name: "Ready to Rumble"}
+  - {number: 13, name: "Soaring Dropkick"}
+  - {number: 14, name: "Al13n Boot Drop"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Big Boot"}
+  - {number: 17, name: "Snap DDT (Grapple)"}
+  - {number: 18, name: "You're Not Ready"}
+  - {number: 19, name: "Blockbuster Deal"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Destiny's Call (V2)"}
+  - {number: 25, name: "Simple Dropkick"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Beyne Buster", db_uuid: 69fb9440858c45a2830236c58a63ec29}  # St finish
+  - {number: 29, name: "Bey Blade", db_uuid: c24fce40986040c086992e6639692446}  # Gr finish
+  - {number: 30, name: "Inverter-Bey-ker", db_uuid: 05ccce44703143e8b1f414c6baef6d71}  # Sub finish

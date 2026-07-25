@@ -13687,6 +13687,89 @@
       }
     }
   ],
+  "e22c784373b5495bb95d5b19ff8c9a9e": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "RemoveFromPlay",
+          "choose": false,
+          "count": 1,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "OPP"
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        },
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        },
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 1,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "discard 1 card your opponent has in play, shuffle 2 from discard into deck, draw 1",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
   "e38cced416cc45e0a9e1367935fd590a": [
     {
       "@type": "Effect",

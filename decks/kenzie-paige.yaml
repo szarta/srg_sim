@@ -1,0 +1,39 @@
+# Kenzie Paige — BASELINE opponent deck (Mastermind matchup sweep).
+#
+# Real competitor (stat game, 10-stat=strike) + real 3 finishes;
+# generic cassandra-shell support (slots 1-27). Fidelity: stat/gimmick/finish
+# matchup is real; the 1-27 support shell is a neutral placeholder.
+# stats: St10 Ag7 Pow6 Tec5 Sub8 Grp9
+competitor: {name: "Kenzie Paige", db_uuid: 84b60d0aecfa4ddd80a546a12ad8317d}
+entrance: "App Battle on Supershow Go"
+cards:
+  - {number: 1, name: "Double Cross"}
+  - {number: 2, name: "Arm & Collar Tie Up"}
+  - {number: 3, name: "Snap Headlock"}
+  - {number: 4, name: "Double Chin Music"}
+  - {number: 5, name: "Super Hip Toss"}
+  - {number: 6, name: "Elevated Arm Bar"}
+  - {number: 7, name: "Drawin' Dimes"}
+  - {number: 8, name: "Sweet & Salty Impact Drop (Grapple)"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Headbutt"}
+  - {number: 11, name: "Matte Finish"}
+  - {number: 12, name: "Ready to Rumble"}
+  - {number: 13, name: "Soaring Dropkick"}
+  - {number: 14, name: "Al13n Boot Drop"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Big Boot"}
+  - {number: 17, name: "Snap DDT (Grapple)"}
+  - {number: 18, name: "You're Not Ready"}
+  - {number: 19, name: "Blockbuster Deal"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Destiny's Call (V2)"}
+  - {number: 25, name: "Simple Dropkick"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Petty Pump Kick", db_uuid: 5764b4ab6f4248569e61c9ee21d43ebb}  # St finish
+  - {number: 29, name: "The Front Paige Superkick", db_uuid: caa904b88c244c28aa16336eb1192434}  # Gr finish
+  - {number: 30, name: "Kenzie Cutter", db_uuid: 562fee87138547b39a0604da8fd031c6}  # Sub finish
