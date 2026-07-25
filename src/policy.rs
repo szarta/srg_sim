@@ -25,12 +25,8 @@
 use crate::cards::Card;
 use crate::conditions;
 use crate::engine::Decider;
-use crate::finish::{finish_odds, FinishParams};
-use crate::ir::{Action, AtkType, PlayOrder, Skill};
-use crate::skills::Skills;
+use crate::ir::{Action, AtkType, PlayOrder};
 use crate::state::GameState;
-use crate::stops::evaluate_stop;
-use num_rational::Rational64;
 use serde_json::Value;
 use std::cmp::Reverse;
 use std::collections::VecDeque;
@@ -218,15 +214,16 @@ pub enum Profile {
     Smart,
     /// Greedy, no pass/bury game, misplays the stop/discard economy.
     Newbie,
-    /// Pilots Mastermind's finish line by **expected value** (Olympics pod). Among
-    /// playable finishes it fires the one maximizing `finish_odds x P(not stopped)`,
-    /// where the stop factor uses [`evaluate_stop`] against the live matchup — so it
-    /// prefers the higher-odds finish (Bomaye) when the opponent can't stop it and
-    /// falls back to the stop-card-proof Grapple finish (Kill Shot) when they can.
-    /// It does NOT wait for high Crowd Meter (games rarely reach it). Builds a chain
-    /// like `Aggressive` otherwise, and protects/recurs the Grapple finish. Selected
-    /// by name `killshot`; never the default, so the M1 conformance goldens (which
-    /// never name it) are untouched.
+    /// Plays Mastermind's **Kill Shot line** (Olympics pod). The line keeps the board
+    /// **Grapple-free** — it builds only with Strikes and Submissions — so the
+    /// opponent's see-1 Grapple stop ("if your opponent has another Grapple in play,
+    /// stop any Grapple", deck #19) has no trigger, leaving a lone Grapple finish
+    /// unstoppable (its keyed card-13 stop is also skill-offline vs most of the
+    /// field). It fires ONLY the Grapple finish (Kill Shot) — declining the Strike/Sub
+    /// finishes, which the SAME Strike+Sub board makes see-1-stoppable — and each
+    /// un-stopped attempt clears the boards and raises the Crowd Meter, climbing the
+    /// ladder toward auto-success. Selected by name `killshot`; never the default, so
+    /// the M1 conformance goldens (which never name it) are untouched.
     KillShot,
 }
 
@@ -287,15 +284,14 @@ impl HeuristicPolicy {
     }
 
     fn at_turn_action(&self, legal: &[Value], state: &GameState, key: &str) -> Value {
-        // Finish selection. KillShot fires the best EXPECTED-VALUE finish available
-        // now — odds x P(not stop-carded) — because games are decided at low Crowd
-        // Meter (empirically ~90% end by CM2), so waiting for the unstoppable-but-slow
-        // Kill Shot to reach its high-CM auto-success is not viable. At low CM the
-        // higher-odds finish (e.g. Bomaye) wins unless the opponent can stop it, in
-        // which case the stop-card-proof Grapple finish takes over. Every other
-        // profile takes any playable Finish — the M1 baseline, byte-for-byte unchanged.
+        // Finish selection. KillShot fires ONLY the Grapple finish (Kill Shot): on its
+        // Grapple-free board it is the one finish the see-1 stop field can't touch, and
+        // each un-stopped attempt climbs the Crowd Meter ladder. It declines the
+        // Strike/Sub finishes (their see-1 stops ARE armed by our own Strike+Sub
+        // board). Every other profile takes any playable Finish — the M1 baseline,
+        // byte-for-byte unchanged.
         let finish = match self.profile {
-            Profile::KillShot => best_ev_finish(legal, state, key),
+            Profile::KillShot => find_grapple_finish(legal, state, key),
             _ => find_play(legal, "Finish"),
         };
         if let Some(finish) = finish {
@@ -319,18 +315,25 @@ impl HeuristicPolicy {
         or_first(by_kind(legal, "pass"), legal) // hold stops, pass to gather more
     }
 
-    /// The cheapest builder for the chain's next needed link, if any.
+    /// The cheapest builder for the chain's next needed link, if any. The `KillShot`
+    /// line keeps the board **Grapple-free** (Strikes/Submissions only) so a lone
+    /// Kill Shot can't be see-1-stopped — Grapple builders are excluded even at the
+    /// cost of passing a turn when only Grapples are on offer.
     fn build_candidate(&self, legal: &[Value], state: &GameState, key: &str) -> Option<Value> {
         let need = next_build_order(&state.players[key].in_play)?;
+        let grapple_free = self.profile == Profile::KillShot;
         let opts: Vec<Value> = legal
             .iter()
             .filter(|o| okind(o) == "play" && oorder(o) == need)
+            .filter(|o| {
+                !grapple_free || hand_card(state, key, ocard(o)).atk_type != AtkType::Grapple
+            })
             .cloned()
             .collect();
         cheapest_builder(&opts, state, key)
     }
 
-    fn at_stop(&self, legal: &[Value], _state: &GameState, _key: &str) -> Value {
+    fn at_stop(&self, legal: &[Value], state: &GameState, key: &str) -> Value {
         let stops: Vec<&Value> = legal.iter().filter(|o| okind(o) == "stop").collect();
         if stops.is_empty() {
             return legal[0].clone();
@@ -338,10 +341,40 @@ impl HeuristicPolicy {
         if self.profile == Profile::Newbie {
             return stops[0].clone(); // panics: stops the first threat, wastes it
         }
-        if ovs_order(&legal[0]) == "Finish" {
+        let incoming_finish = ovs_order(&legal[0]) == "Finish";
+        if self.profile == Profile::KillShot {
+            return self.at_stop_killshot(&stops, incoming_finish, state, key, legal);
+        }
+        if incoming_finish {
             return stops[0].clone(); // the real threat — spend a stop
         }
         legal[0].clone() // let a Lead / Follow Up resolve; save the stop
+    }
+
+    /// The Kill Shot line's defensive stop economy: the finish-answering stops (#13–15
+    /// finish-stops, #25–27 bury-stops) are MM's ONLY answer to the opponent's
+    /// finishes, so they are reserved for finishes — never spent on a Lead/Follow Up.
+    /// A Lead/Follow Up is instead disrupted with a **cheap, non-Grapple** stop (keeps
+    /// the board Grapple-free so a lone Kill Shot stays see-1-proof); if none is
+    /// available, the attack is let through rather than burning a reserved stop.
+    fn at_stop_killshot(
+        &self,
+        stops: &[&Value],
+        incoming_finish: bool,
+        state: &GameState,
+        key: &str,
+        legal: &[Value],
+    ) -> Value {
+        if incoming_finish {
+            return stops[0].clone(); // the real threat — spend the reserved stop
+        }
+        stops
+            .iter()
+            .find(|o| {
+                let c = hand_card(state, key, ocard(o));
+                !is_reserved_stop(c.number) && c.atk_type != AtkType::Grapple
+            })
+            .map_or_else(|| legal[0].clone(), |o| (*o).clone())
     }
 
     fn at_bury(&self, legal: &[Value], state: &GameState, key: &str) -> Value {
@@ -493,61 +526,26 @@ fn find_play<'a>(legal: &'a [Value], order: &str) -> Option<&'a Value> {
         .find(|o| okind(o) == "play" && oorder(o) == order)
 }
 
-/// Discount applied to a finish's odds when the opponent's finish-stop is online —
-/// a rough P(they hold and play the stop). Keeps a stop-carded finish in the running
-/// (they may not have the card) while still favoring a truly unstoppable line.
-const STOP_DISCOUNT: Rational64 = Rational64::new_raw(2, 5);
-
-/// The playable Finish maximizing expected value (`finish_odds x stop-factor`) for
-/// the live matchup — the `KillShot` profile's selection. `None` if no Finish is
-/// playable.
-fn best_ev_finish<'a>(legal: &'a [Value], state: &GameState, key: &str) -> Option<&'a Value> {
-    let me = state.effective_stats(key, None);
-    let opp = state.effective_stats(&state.opponent_of(key), None);
-    let cm = state.crowd_meter;
-    legal
-        .iter()
-        .filter(|o| okind(o) == "play" && oorder(o) == "Finish")
-        .max_by_key(|o| finish_ev(hand_card(state, key, ocard(o)), &me, &opp, cm))
-}
-
-/// Expected value of firing `card` as a finish now: breakout odds, discounted if the
-/// opponent's keyed finish-stop is online for this matchup.
-fn finish_ev(card: &Card, me: &Skills, opp: &Skills, cm: i64) -> Rational64 {
-    let mut finish_bonus = Skills::default();
-    for (&s, &v) in &card.finish_bonuses {
-        finish_bonus = finish_bonus.with(s, v);
-    }
-    let odds = finish_odds(&FinishParams {
-        finisher: *me,
-        defender: *opp,
-        finish_bonus,
-        crowd_meter: cm,
-        ..Default::default()
-    });
-    let stoppable = atk_to_skill(card.atk_type)
-        .and_then(|ft| evaluate_stop(opp, ft, Some(me)))
-        .is_some_and(|ev| ev.online);
-    if stoppable {
-        odds * STOP_DISCOUNT
-    } else {
-        odds
-    }
-}
-
-/// The finish-type [`Skill`] a card's attack type keys its opponent stop on, if any.
-fn atk_to_skill(atk: AtkType) -> Option<Skill> {
-    match atk {
-        AtkType::Strike => Some(Skill::Strike),
-        AtkType::Grapple => Some(Skill::Grapple),
-        AtkType::Submission => Some(Skill::Submission),
-        AtkType::None => None,
-    }
+/// A playable **Grapple** Finish option — Mastermind's Kill Shot. The `KillShot`
+/// profile fires only this: on a Grapple-free board it is the finish the see-1 stop
+/// field can't touch. `None` if no Grapple finish is playable (then the line holds).
+fn find_grapple_finish<'a>(legal: &'a [Value], state: &GameState, key: &str) -> Option<&'a Value> {
+    legal.iter().find(|o| {
+        okind(o) == "play"
+            && oorder(o) == "Finish"
+            && hand_card(state, key, ocard(o)).atk_type == AtkType::Grapple
+    })
 }
 
 /// True iff `card` is a Grapple finish (the Kill Shot line's payload).
 fn is_grapple_finish(card: &Card) -> bool {
     card.play_order == PlayOrder::Finish && card.atk_type == AtkType::Grapple
+}
+
+/// True iff a stop's deck number is a finish-answering stop the Kill Shot line
+/// reserves for finishes: the #13–15 keyed finish-stops and the #25–27 bury-stops.
+fn is_reserved_stop(number: i64) -> bool {
+    (13..=15).contains(&number) || (25..=27).contains(&number)
 }
 
 fn holds_finish(state: &GameState, key: &str) -> bool {
