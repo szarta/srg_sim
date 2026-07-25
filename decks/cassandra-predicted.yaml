@@ -1,36 +1,69 @@
-# Cassandra — PREDICTED build (Olympics pod, she faces Mastermind + The Bull).
-# Proxy: standard stop skeleton + generic offense, 0 skill cards (can't run Field
-# of Fire: St6/A7). Her 3 native finishes; pushes Barbwire Kiss (Sub, open vs MM).
+# Cassandra — PREDICTED build (Olympics pod: she faces Mastermind + The Bull).
+#
+# STRATEGIC CORE (derived from the stop math, stops.rs evaluate_stop):
+#   Cassandra P10 T5 A7 St6 Sub8 Gr9. Her three finishes are one per type
+#   (YWN=Strike #28, Shadow Symphony=Grapple #29, Barbwire Kiss=Sub #30), so she
+#   can push any line — BUT her low T5/St6/A7 means:
+#     - Strike finish: stopped by BOTH (MM & Bull T6 > her T5).
+#     - Grapple finish: stopped by BOTH (their Strike > her St6).
+#     - Sub finish (Barbwire): OPEN vs Mastermind (P7/Gr5 can't online card 14),
+#       but STOPPED by The Bull (P10/Gr9 = equal-8 + Colossal Smash).
+#   => NO line is open vs both, and she is FINISH-LOCKED vs The Bull (he skill-
+#      stops all three types no matter which finish she borrows). Her only skill-
+#      open line anywhere is Barbwire Kiss vs Mastermind.
+#
+# GAME PLAN (one deck for both):
+#   - Push Barbwire Kiss (Sub): HOLD Submissions (keeps opp 19-21 Sub see-1
+#     unarmed), play Strikes + Grapples. Vs MM it is skill-unstoppable — his only
+#     answer is the 25-27 bury stops, which she strips with hand attrition.
+#   - Vs The Bull she cannot finish cleanly: win by attrition / gimmick-flip /
+#     Crowd Meter / count-out. Bait/exhaust Bull's card-14 (Colossal) before any
+#     Barbwire attempt.
+#   - Her real engine is the Gimmick flip (inverts MM's bump-punish and Bull's
+#     "3-less" gimmick) + out-grinding on cards: +2 handsize entrance, recursion,
+#     opponent hand-strip, and board removal.
+#
+# LEGALITY: 10 Strike / 10 Grapple / 10 Sub (slot-locked). 2 skill cards
+#   (#8 Sweet & Salty Impact Drop, #17 Snap DDT — both Grapple, req Gr8, met by
+#   Gr9). No tag/trios cards.
 competitor: "Cassandra"
-entrance: "Backstage Consultation"
+entrance: "Backstage Consultation"   # +2 max handsize — fuels the grind/attrition plan
 cards:
-  - {number: 1,  name: "Double Cross"}
-  - {number: 2,  name: "Arm & Collar Tie Up"}
-  - {number: 3,  name: "Snap Headlock"}
-  - {number: 4,  name: "Double Chin Music"}
-  - {number: 5,  name: "Super Hip Toss"}
-  - {number: 6,  name: "Elevated Arm Bar"}
-  - {number: 7,  name: "Drawin' Dimes"}
-  - {number: 8,  name: "Reverse Scoop Slam"}
-  - {number: 9,  name: "Apply Pressure"}
-  - {number: 10, name: "Headbutt"}
-  - {number: 11, name: "Double Wrist Twist"}
-  - {number: 12, name: "Ready to Rumble"}
-  - {number: 13, name: "Soaring Dropkick"}
-  - {number: 14, name: "Al13n Boot Drop"}
-  - {number: 15, name: "Cosmic Knee in the Ropes"}
-  - {number: 16, name: "Big Boot"}
-  - {number: 17, name: "American Dragon Drop"}
-  - {number: 18, name: "You're Not Ready"}
-  - {number: 19, name: "Blockbuster Deal"}
-  - {number: 20, name: "Panic Slam"}
-  - {number: 21, name: "Back Rake"}
-  - {number: 22, name: "Spin Wheel Kick"}
-  - {number: 23, name: "Jackhammer"}
-  - {number: 24, name: "Destiny's Call (V2)"}
-  - {number: 25, name: "Simple Dropkick"}
-  - {number: 26, name: "Back Drop"}
-  - {number: 27, name: "Double Finger Lock"}
-  - {number: 28, name: "Your Worst Nightmare!"}
-  - {number: 29, name: "The Shadow Symphony"}
-  - {number: 30, name: "Barbwire Kiss"}
+  # --- early stops 1-6 ---
+  - {number: 1,  name: "Double Cross"}            # St
+  - {number: 2,  name: "Arm & Collar Tie Up"}     # Gr
+  - {number: 3,  name: "Snap Headlock"}           # Sub (held)
+  - {number: 4,  name: "Double Chin Music"}       # St
+  - {number: 5,  name: "Super Hip Toss"}          # Gr
+  - {number: 6,  name: "Elevated Arm Bar"}        # Sub (held)
+  # --- Strike flex (St6 weak -> utility/draw) ---
+  - {number: 7,  name: "Drawin' Dimes"}           # St  draw
+  - {number: 8,  name: "Sweet & Salty Impact Drop (Grapple)"}  # Gr SKILL: opp buries 2 from hand (strip stops)
+  - {number: 9,  name: "Apply Pressure"}          # Sub (held)
+  - {number: 10, name: "Headbutt"}                # St
+  - {number: 11, name: "Matte Finish"}            # Gr  card-advantage engine: Draw 3 (fully modeled)
+  - {number: 12, name: "Ready to Rumble"}         # Sub (held; opp-gimmick blank if ever played)
+  # --- RPS skill stops 13-15 (mostly offline vs her opps -> take the rider value) ---
+  - {number: 13, name: "Soaring Dropkick"}        # St  (Grapple-finish stop; offline vs both, draw rider)
+  - {number: 14, name: "Al13n Boot Drop"}         # Gr  (Sub-finish stop; ALWAYS online via P10/Gr9)
+  - {number: 15, name: "Cosmic Knee in the Ropes"}# Sub (Strike-finish stop; held)
+  # --- more flex ---
+  - {number: 16, name: "Big Boot"}                # St
+  - {number: 17, name: "Snap DDT (Grapple)"}      # Gr SKILL: draw + next-roll +2 + stop Follow Up Sub (modeled)
+  - {number: 18, name: "You're Not Ready"}        # Sub (held)
+  # --- see-1 stops 19-21 ---
+  - {number: 19, name: "Blockbuster Deal"}        # St
+  - {number: 20, name: "Panic Slam"}              # Gr
+  - {number: 21, name: "Back Rake"}               # Sub (held)
+  # --- flex ---
+  - {number: 22, name: "Spin Wheel Kick"}         # St
+  - {number: 23, name: "Jackhammer"}              # Gr  removal: discard 1 opp card in play (anti-board)
+  - {number: 24, name: "Destiny's Call (V2)"}     # Sub (held)
+  # --- bury stops 25-27 (THE answer to MM's unstoppable Kill Shot) ---
+  - {number: 25, name: "Simple Dropkick"}         # St
+  - {number: 26, name: "Back Drop"}               # Gr
+  - {number: 27, name: "Double Finger Lock"}      # Sub (held)
+  # --- finishes 28-30 (push #30 Barbwire) ---
+  - {number: 28, name: "Your Worst Nightmare!"}   # St  finish (not pushed)
+  - {number: 29, name: "The Shadow Symphony"}     # Gr  finish (not pushed)
+  - {number: 30, name: "Barbwire Kiss"}           # Sub finish — THE push (open vs MM)
