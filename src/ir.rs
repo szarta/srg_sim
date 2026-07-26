@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 76;
+pub const SCHEMA_VERSION: i64 = 77;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1354,6 +1354,14 @@ pub enum Action {
         number_max: i64,
     },
     DoubleFinishIfBumped,
+    /// Double this card's own printed Finish-roll bonuses when `condition` holds —
+    /// the conditional generalization of [`Self::DoubleFinishIfBumped`] ("double
+    /// these bonuses if you have another Submission in play / rolled Power / …";
+    /// kenzie, king-cage, foxworthy, srg-boss). Read in `card_finish_bonus` against
+    /// the owner's turn-roll context, never executed. schema v77
+    DoubleFinishIf {
+        condition: Condition,
+    },
     Choice {
         options: Vec<ChoiceOption>,
     },
@@ -2287,6 +2295,14 @@ pub enum IrNode {
         number_max: i64,
     },
     DoubleFinishIfBumped,
+    /// Double this card's own printed Finish-roll bonuses when `condition` holds —
+    /// the conditional generalization of [`Self::DoubleFinishIfBumped`] ("double
+    /// these bonuses if you have another Submission in play / rolled Power / …";
+    /// kenzie, king-cage, foxworthy, srg-boss). Read in `card_finish_bonus` against
+    /// the owner's turn-roll context, never executed. schema v77
+    DoubleFinishIf {
+        condition: Condition,
+    },
     Choice {
         options: Vec<ChoiceOption>,
     },

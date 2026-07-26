@@ -272,6 +272,9 @@ CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value,
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
 FinishRollBonus(delta, when_skill?, either=False, per?, per_who=SELF, per_zone=IN_PLAY, per_divisor?)  # +delta to a Finish roll; when_skill gates on the rolled skill. `per` set = delta * floor((count of per_who's cards in per_zone matching the filter) / per_divisor) — "+1 per Spotlight in your opponent's discard" (schema v28); per_zone=FLIPPED_THIS_TURN for "+1 for each Strike card flipped", per_divisor=3 for "+1 for every 3 Strikes in play" (schema v74)
 DoubleFinishIfBumped          # Static self-decl: double THIS card's Finish bonuses if the finisher bumped
+DoubleFinishIf(condition)     # conditional generalization: double THIS card's Finish bonuses when `condition`
+                              # holds ("… if you have another Submission in play / rolled Power"). Read in
+                              # card_finish_bonus against the owner's turn-roll ctx (so RollWasSkill resolves). schema v77
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
 `Bury(selector, count, who, random, source)` moves `count` cards to the **bottom of the

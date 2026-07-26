@@ -1375,6 +1375,16 @@ class DoubleFinishIfBumped(IRNode):
 
 
 @dataclass(frozen=True)
+class DoubleFinishIf(IRNode):
+    """Conditional generalization of :class:`DoubleFinishIfBumped`: double THIS card's
+    printed Finish bonuses when ``condition`` holds ("double these bonuses if you have
+    another Submission in play / rolled Power / …"). Read by the finish sequence
+    against the owner's turn-roll context; a no-op to execute. schema v77"""
+
+    condition: Condition = Always()
+
+
+@dataclass(frozen=True)
 class RevealAndDiscard(IRNode):
     """Reveal ``count`` random cards from ``who``'s hand and discard those that can
     act as Stops ("Your opponent randomly reveals 3 cards in their hand and discards
@@ -1897,6 +1907,7 @@ Action = (
     | StopCountsOrderAs
     | SuppressStop
     | DoubleFinishIfBumped
+    | DoubleFinishIf
     | Choice
 )
 

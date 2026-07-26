@@ -11453,3 +11453,105 @@ c042f762f1a545d082db24282f08e3c2:
   raw_clause: when this card is in your discard pile and your opponent's turn roll is at least 3 greater than yours, you may re-roll your next turn roll
   source: card
   optional: false
+
+# ---------------------------------------------------------------------------
+# Olympics opponent (Mastermind matchup sweep): Kenzie Paige. DoubleFinishIf (v77)
+# + AlsoLead/HasInPlay (existing). The OnHit-Strike reveal-branch gimmick is left
+# Unsupported (needs a reveal-opp-hand-then-branch mechanic).
+# ---------------------------------------------------------------------------
+
+# Kenzie Paige — Petty Pump Kick (#28): "+2 to Technique / +1 to Submission / If
+# your opponent has 2 or more Grapples in play, this card is also a Lead."
+5764b4ab6f4248569e61c9ee21d43ebb:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Technique, delta: 2}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Submission, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnPlay}
+  condition: {'@type': Always}
+  actions:
+  - '@type': AlsoLead
+    order: Lead
+    condition:
+      '@type': HasInPlay
+      who: OPP
+      count: 2
+      cmp: '>='
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Grapple
+        play_order: null
+        tag: null
+        name: null
+        raw: null
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if your opponent has 2 or more Grapples in play, this card is also a Lead
+  source: card
+  optional: false
+
+# Kenzie Paige — Kenzie Cutter (#30 Submission finish): "+2 to Power / +1 to
+# Technique / If you have another Submission in play, double these bonuses." The
+# card is itself a Submission, so "another Submission" = HasInPlay{Submission, >=2}.
+562fee87138547b39a0604da8fd031c6:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Power, delta: 2}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Technique, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': DoubleFinishIf
+    condition:
+      '@type': HasInPlay
+      who: SELF
+      count: 2
+      cmp: '>='
+      filter:
+        '@type': CardFilter
+        number: null
+        atk_type: Submission
+        play_order: null
+        tag: null
+        name: null
+        raw: null
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if you have another Submission in play, double these bonuses
+  source: card
+  optional: false

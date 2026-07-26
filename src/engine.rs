@@ -1197,6 +1197,7 @@ impl Engine {
             | Action::Stop { .. }
             | Action::AlsoLead { .. }
             | Action::DoubleFinishIfBumped
+            | Action::DoubleFinishIf { .. }
             | Action::DisqualificationRule { .. }
             | Action::CountOutRule { .. }
             | Action::ConsideredCompare { .. }
@@ -4091,6 +4092,18 @@ impl Engine {
         {
             bonus *= 2;
         }
+        // Conditional double (schema v77): "double these bonuses if <cond>". The
+        // condition sees the owner's turn-roll context so a `RollWasSkill{Power}`
+        // gate ("if you rolled Power for your turn roll") resolves at finish time.
+        let roll = self.roll_ctx.get(owner);
+        if card.effects.iter().any(|eff| {
+            eff.actions.iter().any(|a| {
+                matches!(a, Action::DoubleFinishIf { condition }
+                    if conditions::holds(condition, &self.state, owner, roll))
+            })
+        }) {
+            bonus *= 2;
+        }
         bonus
     }
 
@@ -5497,6 +5510,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::Unstoppable { .. } => "Unstoppable",
         Action::AlsoLead { .. } => "AlsoLead",
         Action::DoubleFinishIfBumped => "DoubleFinishIfBumped",
+        Action::DoubleFinishIf { .. } => "DoubleFinishIf",
         Action::Choice { .. } => "Choice",
         Action::Unsupported { .. } => "Unsupported",
     }
@@ -8373,6 +8387,43 @@ mod man_from_it_tests {
         assert_eq!(
             engine.state.players["A"].reroll_grants.next_turn, 1,
             "discard OnRoll granted a next-turn re-roll"
+        );
+    }
+
+    /// `DoubleFinishIf{condition}` (schema v77) doubles a card's own printed Finish
+    /// bonus when the condition holds — Kenzie Cutter: doubled only with another
+    /// Submission in play (`HasInPlay{Submission, >=2}`).
+    #[test]
+    fn double_finish_if_doubles_only_when_condition_holds() {
+        let cutter: Card = serde_json::from_value(json!({
+            "atk_type":"Submission","db_uuid":"cutter","name":"Kenzie Cutter","number":30,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{"Power":2},
+            "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"DoubleFinishIf","condition":{"@type":"HasInPlay","who":"SELF",
+                    "count":2,"cmp":">=","filter":{"@type":"CardFilter","atk_type":"Submission"}}}],
+                "duration":"WHILE_IN_PLAY","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let other: Card = serde_json::from_value(json!({"atk_type":"Submission","db_uuid":"o",
+            "name":"o","number":1,"play_order":"Finish","raw_text":"","tags":[],
+            "finish_bonuses":{},"effects":[]}))
+        .unwrap();
+        let mut engine = engine_with(json!([]));
+
+        engine.state.players.get_mut("A").unwrap().in_play = vec![cutter.clone()];
+        assert_eq!(
+            engine.card_finish_bonus(&cutter, Skill::Power, "A"),
+            2,
+            "only 1 Submission in play → not doubled"
+        );
+
+        engine.state.players.get_mut("A").unwrap().in_play = vec![cutter.clone(), other];
+        assert_eq!(
+            engine.card_finish_bonus(&cutter, Skill::Power, "A"),
+            4,
+            "another Submission in play → doubled"
         );
     }
 }

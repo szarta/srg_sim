@@ -332,18 +332,6 @@
       ],
       "type": "object"
     },
-    "BuryThisCard": {
-      "additionalProperties": false,
-      "properties": {
-        "@type": {
-          "const": "BuryThisCard"
-        }
-      },
-      "required": [
-        "@type"
-      ],
-      "type": "object"
-    },
     "BlankText": {
       "additionalProperties": false,
       "properties": {
@@ -361,34 +349,6 @@
         "@type",
         "selector",
         "who"
-      ],
-      "type": "object"
-    },
-    "CopyText": {
-      "additionalProperties": false,
-      "properties": {
-        "@type": {
-          "const": "CopyText"
-        },
-        "selector": {
-          "$ref": "#/$defs/CardFilter"
-        },
-        "who": {
-          "$ref": "#/$defs/Who"
-        },
-        "zone": {
-          "$ref": "#/$defs/CountZone"
-        },
-        "copy_tags": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "@type",
-        "selector",
-        "who",
-        "zone",
-        "copy_tags"
       ],
       "type": "object"
     },
@@ -583,6 +543,18 @@
         "HAND"
       ],
       "type": "string"
+    },
+    "BuryThisCard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BuryThisCard"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
     },
     "CardFilter": {
       "additionalProperties": false,
@@ -879,6 +851,9 @@
                 "$ref": "#/$defs/SuppressStop"
               },
               {
+                "$ref": "#/$defs/DoubleFinishIf"
+              },
+              {
                 "$ref": "#/$defs/DoubleFinishIfBumped"
               },
               {
@@ -1013,6 +988,25 @@
       ],
       "type": "string"
     },
+    "CompetitorIs": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CompetitorIs"
+        },
+        "name_contains": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "name_contains"
+      ],
+      "type": "object"
+    },
     "ConsideredCompare": {
       "additionalProperties": false,
       "properties": {
@@ -1046,6 +1040,34 @@
       "required": [
         "@type",
         "who"
+      ],
+      "type": "object"
+    },
+    "CopyText": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CopyText"
+        },
+        "copy_tags": {
+          "type": "boolean"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "zone": {
+          "$ref": "#/$defs/CountZone"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "who",
+        "zone",
+        "copy_tags"
       ],
       "type": "object"
     },
@@ -1094,6 +1116,22 @@
         "@type",
         "selector",
         "count"
+      ],
+      "type": "object"
+    },
+    "CoupledDiscard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CoupledDiscard"
+        },
+        "offset": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "offset"
       ],
       "type": "object"
     },
@@ -1202,22 +1240,6 @@
       ],
       "type": "object"
     },
-    "CoupledDiscard": {
-      "additionalProperties": false,
-      "properties": {
-        "@type": {
-          "const": "CoupledDiscard"
-        },
-        "offset": {
-          "type": "integer"
-        }
-      },
-      "required": [
-        "@type",
-        "offset"
-      ],
-      "type": "object"
-    },
     "DiscardInPlayMatch": {
       "additionalProperties": false,
       "properties": {
@@ -1247,6 +1269,98 @@
         "@type",
         "enabled",
         "scope"
+      ],
+      "type": "object"
+    },
+    "DoubleFinishIf": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "DoubleFinishIf"
+        },
+        "condition": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Always"
+            },
+            {
+              "$ref": "#/$defs/And"
+            },
+            {
+              "$ref": "#/$defs/Or"
+            },
+            {
+              "$ref": "#/$defs/Not"
+            },
+            {
+              "$ref": "#/$defs/SkillCompare"
+            },
+            {
+              "$ref": "#/$defs/HandSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/CrowdMeterCompare"
+            },
+            {
+              "$ref": "#/$defs/HasInPlay"
+            },
+            {
+              "$ref": "#/$defs/HasInHand"
+            },
+            {
+              "$ref": "#/$defs/HasInDiscard"
+            },
+            {
+              "$ref": "#/$defs/InPlayCompare"
+            },
+            {
+              "$ref": "#/$defs/ChosenNameIs"
+            },
+            {
+              "$ref": "#/$defs/RollWasSkill"
+            },
+            {
+              "$ref": "#/$defs/RollGapExactly"
+            },
+            {
+              "$ref": "#/$defs/RollGapAtLeast"
+            },
+            {
+              "$ref": "#/$defs/RollLeadAtLeast"
+            },
+            {
+              "$ref": "#/$defs/RollValue"
+            },
+            {
+              "$ref": "#/$defs/OppWonLastRoll"
+            },
+            {
+              "$ref": "#/$defs/BumpedLastTurnRoll"
+            },
+            {
+              "$ref": "#/$defs/GimmickFlipped"
+            },
+            {
+              "$ref": "#/$defs/PrintedRollValue"
+            },
+            {
+              "$ref": "#/$defs/SameRolledSkill"
+            },
+            {
+              "$ref": "#/$defs/DuringTurn"
+            },
+            {
+              "$ref": "#/$defs/CompetitorIs"
+            },
+            {
+              "$ref": "#/$defs/HitThisTurn"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "condition"
       ],
       "type": "object"
     },
@@ -1339,41 +1453,6 @@
       },
       "required": [
         "@type"
-      ],
-      "type": "object"
-    },
-    "CompetitorIs": {
-      "additionalProperties": false,
-      "properties": {
-        "@type": {
-          "const": "CompetitorIs"
-        },
-        "name_contains": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "required": [
-        "@type",
-        "name_contains"
-      ],
-      "type": "object"
-    },
-    "HitThisTurn": {
-      "additionalProperties": false,
-      "properties": {
-        "@type": {
-          "const": "HitThisTurn"
-        },
-        "who": {
-          "$ref": "#/$defs/Who"
-        }
-      },
-      "required": [
-        "@type",
-        "who"
       ],
       "type": "object"
     },
@@ -1557,6 +1636,9 @@
               },
               {
                 "$ref": "#/$defs/SuppressStop"
+              },
+              {
+                "$ref": "#/$defs/DoubleFinishIf"
               },
               {
                 "$ref": "#/$defs/DoubleFinishIfBumped"
@@ -1860,12 +1942,6 @@
             }
           ]
         },
-        "per_who": {
-          "$ref": "#/$defs/Who"
-        },
-        "per_zone": {
-          "$ref": "#/$defs/CountZone"
-        },
         "per_divisor": {
           "anyOf": [
             {
@@ -1875,6 +1951,12 @@
               "type": "null"
             }
           ]
+        },
+        "per_who": {
+          "$ref": "#/$defs/Who"
+        },
+        "per_zone": {
+          "$ref": "#/$defs/CountZone"
         },
         "when_base_ge": {
           "anyOf": [
@@ -2194,6 +2276,22 @@
       ],
       "type": "object"
     },
+    "HitThisTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "HitThisTurn"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
     "IRNode": {
       "oneOf": [
         {
@@ -2264,6 +2362,9 @@
         },
         {
           "$ref": "#/$defs/Discard"
+        },
+        {
+          "$ref": "#/$defs/DoubleFinishIf"
         },
         {
           "$ref": "#/$defs/DoubleFinishIfBumped"
@@ -4369,5 +4470,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 76
+  "version": 77
 }

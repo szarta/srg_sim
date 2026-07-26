@@ -4200,6 +4200,100 @@
       }
     }
   ],
+  "562fee87138547b39a0604da8fd031c6": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Power",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "DoubleFinishIf",
+          "condition": {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 2,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Submission",
+              "is_stop": null,
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "SELF"
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you have another Submission in play, double these bonuses",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "56c451a5edc74d2caec72363e28fe1df": [
     {
       "@type": "Effect",
@@ -4370,6 +4464,101 @@
       },
       "optional": false,
       "raw_clause": "Your opponent's next Submission has the added text: \"If stopped, you lose the match via disqualification.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "5764b4ab6f4248569e61c9ee21d43ebb": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Submission"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Submission",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AlsoLead",
+          "condition": {
+            "@type": "HasInPlay",
+            "cmp": ">=",
+            "count": 2,
+            "filter": {
+              "@type": "CardFilter",
+              "atk_type": "Grapple",
+              "is_stop": null,
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            },
+            "who": "OPP"
+          },
+          "order": "Lead"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if your opponent has 2 or more Grapples in play, this card is also a Lead",
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
