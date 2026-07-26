@@ -104,6 +104,19 @@ fn cf_name(names: Vec<String>) -> CardFilter {
     }
 }
 
+/// A card-substring filter over the title (`"X" in the name`) or the rules text
+/// (`"X" in the text`) — picks the attribute from the phrasing captured as `attr`.
+fn name_or_text_filter(attr: &str, names: Vec<String>) -> CardFilter {
+    if attr == "text" {
+        CardFilter {
+            text_contains: names,
+            ..Default::default()
+        }
+    } else {
+        cf_name(names)
+    }
+}
+
 fn cf_tag(tag: &str) -> CardFilter {
     CardFilter {
         tag: Some(tag.to_owned()),
@@ -310,6 +323,23 @@ fn buff(skill: Skill, delta: i64, who: Who) -> Action {
     }
 }
 
+/// A `BuffSkill` scaled by the count of the owner's in-play cards matching `per`
+/// (clamped to `cap`) — "your Technique and Grapple are +1 for each card you have
+/// in play with 'Breaker' in the name". `per: None` = a flat +`delta`.
+fn buff_per(skill: Skill, delta: i64, per: Option<CardFilter>, cap: Option<i64>) -> Action {
+    Action::BuffSkill {
+        skill,
+        delta,
+        who: Who::SelfSide,
+        duration: Duration::WhileInPlay,
+        target_highest: false,
+        per_crowd: false,
+        cap,
+        per,
+        per_zone: CountZone::InPlay,
+    }
+}
+
 fn max_hand(delta: i64, who: Who) -> Action {
     Action::MaxHandSize {
         delta,
@@ -492,6 +522,31 @@ fn skill(text: &str) -> Skill {
         "Strike" => Skill::Strike,
         other => unreachable!("skill regex admitted {other:?}"),
     }
+}
+
+/// A conjunction of skill names — "Power", "Technique and Grapple", "Power,
+/// Technique, and Agility" (an optional trailing " skill"/" skills" is tolerated).
+/// Empty if any token isn't a skill name (the caller then declines the rule).
+fn skill_list(text: &str) -> Vec<Skill> {
+    let normalized = text
+        .replace(" skills", "")
+        .replace(" skill", "")
+        .replace(", and ", ", ")
+        .replace(" and ", ", ");
+    let mut out = Vec::new();
+    for tok in normalized.split(',') {
+        let t = tok.trim();
+        if t.is_empty() {
+            continue;
+        }
+        match t {
+            "Power" | "Agility" | "Technique" | "Submission" | "Grapple" | "Strike" => {
+                out.push(skill(t));
+            }
+            _ => return Vec::new(),
+        }
+    }
+    out
 }
 
 fn atk(text: &str) -> AtkType {
@@ -1033,6 +1088,114 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // Count-of-type gate → a real skill buff: "When you have at least 2 Grapples
+        // in play, your Submission is +1" (Ivelisse). "your X is +N" is a general
+        // skill buff (folds into effective stats); gated on ≥N of an attack type.
+        rule(
+            &format!(
+                r"(?:When|If) you have at least (\d+) {ATK}s? in play, your {SK} (?:is|are) \+(\d+)"
+            ),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![buff(skill(&c[3]), num(c, 4), Who::SelfSide)],
+                    has_in_play(Who::SelfSide, cf_atk(atk(&c[2])), num(c, 1)),
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Count-of-type gate → a finish-roll bonus: "If you have at least 2 Grapples
+        // in play, +3 to Agility" (Ivelisse's Desert Eagle). "+N to X" is the printed
+        // finish bonus form (finish-roll only); gated on ≥N of an attack type.
+        rule(
+            &format!(r"(?:When|If) you have at least (\d+) {ATK}s? in play, \+(\d+) to {SK}"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::FinishBonus {
+                        skill: skill(&c[4]),
+                        delta: num(c, 3),
+                    }],
+                    has_in_play(Who::SelfSide, cf_atk(atk(&c[2])), num(c, 1)),
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Name-in-play (≥1) gate → a skill buff on one or more skills: "When you have
+        // a card with 'High' in the name in play, your Power, Technique, and Agility
+        // are +1" (RVD); "…'Fire'…, your Power is +1" (Shattered Split).
+        rule(
+            r#"When you have a card with (.+?) in the name in play, your (.+?) (?:is|are) \+(\d+)"#,
+            |c| {
+                let names = quoted_names(&c[1]);
+                let skills = skill_list(&c[2]);
+                if names.is_empty() || skills.is_empty() {
+                    return None;
+                }
+                let delta = num(c, 3);
+                let actions = skills
+                    .into_iter()
+                    .map(|s| buff(s, delta, Who::SelfSide))
+                    .collect();
+                Some(eff(
+                    Trigger::Static,
+                    actions,
+                    has_in_play(Who::SelfSide, cf_name(names), 1),
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Multi-skill per-count buff, "Your X [and Y] are +N for each card you have in
+        // play with 'Z' in the name/text" (Evee's Spell Breaker). The single-skill
+        // "Your X skill is +N for each …" rule above wins first for its exact shape.
+        rule(
+            r#"Your (.+?) (?:is|are) \+(\d+) for each card you have in play with (.+?) in the (name|text)(?: \(Max \+(\d+)\))?"#,
+            |c| {
+                let skills = skill_list(&c[1]);
+                let names = quoted_names(&c[3]);
+                if skills.is_empty() || names.is_empty() {
+                    return None;
+                }
+                let delta = num(c, 2);
+                let cap = c.get(5).map(|m| m.as_str().parse::<i64>().unwrap());
+                let filter = name_or_text_filter(&c[4], names);
+                let actions = skills
+                    .into_iter()
+                    .map(|s| buff_per(s, delta, Some(filter.clone()), cap))
+                    .collect();
+                Some(eff(
+                    Trigger::Static,
+                    actions,
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Same per-count buff phrased "+N to X [and Y] for each card … in the
+        // name/text" (Witch's My Most Powerful Spell; Postal's "…in the text (Max +4)").
+        rule(
+            r#"\+(\d+) to (.+?) for each card you have in play with (.+?) in the (name|text)(?: \(Max \+(\d+)\))?"#,
+            |c| {
+                let skills = skill_list(&c[2]);
+                let names = quoted_names(&c[3]);
+                if skills.is_empty() || names.is_empty() {
+                    return None;
+                }
+                let delta = num(c, 1);
+                let cap = c.get(5).map(|m| m.as_str().parse::<i64>().unwrap());
+                let filter = name_or_text_filter(&c[4], names);
+                let actions = skills
+                    .into_iter()
+                    .map(|s| buff_per(s, delta, Some(filter.clone()), cap))
+                    .collect();
+                Some(eff(
+                    Trigger::Static,
+                    actions,
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         rule(r"Each player draws? (\d+) cards?", |c| {
             let n = num(c, 1);
             Some(eff(
