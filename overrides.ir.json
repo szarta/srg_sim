@@ -2608,6 +2608,77 @@
       }
     }
   ],
+  "2f51b6e9e93948bcaefc324c7d55f079": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "AddFromDiscard",
+                  "filter": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "is_stop": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "play_orders": [],
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  }
+                }
+              ],
+              "label": "add 1 card from your discard pile to your hand"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Scry",
+                  "bottom": 0,
+                  "bury": 1,
+                  "deck": "SELF",
+                  "rest": "FLIP",
+                  "reveal": false,
+                  "to_hand": 2,
+                  "top": 3
+                }
+              ],
+              "label": "look at the top 3, put 2 in hand, bury the other"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "add 1 card from your discard pile to your hand or look at the top 3, keep 2, bury the other",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    }
+  ],
   "30249467b3ff48dcb6b971e9b5d7182f": [
     {
       "@type": "Effect",
@@ -10669,6 +10740,94 @@
       }
     }
   ],
+  "b684f046dbca4e608eeef10581716eb1": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddFromDiscard",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "add 1 card from your discard pile to your hand",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddFromDiscard",
+          "filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "CrowdMeterCompare",
+        "cmp": ">=",
+        "value": 3
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if the Crowd Meter is 3 or greater, add a 2nd card from your discard pile (add-2-instead)",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    }
+  ],
   "b6896677acfb4ccc998b1a0e36102838": [
     {
       "@type": "Effect",
@@ -15562,6 +15721,59 @@
       },
       "optional": false,
       "raw_clause": "\"Rejected\" has blank text.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "f42eb6454c7e41b089ba563fdd333ab5": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": 1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Submission",
+          "target_highest": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "HasInPlay",
+        "cmp": ">=",
+        "count": 2,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": "Submission",
+          "is_stop": null,
+          "name": null,
+          "name_contains": [],
+          "number": null,
+          "play_order": null,
+          "play_orders": [
+            "Followup",
+            "Finish"
+          ],
+          "raw": null,
+          "tag": null,
+          "text_contains": []
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you have another Follow Up or Finish Submission in play, your Submission skill is +1",
       "source": "card",
       "trigger": {
         "@type": "Static"

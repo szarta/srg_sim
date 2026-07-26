@@ -11136,7 +11136,6 @@ b6896677acfb4ccc998b1a0e36102838:
     n: null
   raw_clause: if you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll
   source: card
-  optional: true
   optional: false
 
 # Defector — Dismantler (#30 Submission finish): "+3 to Technique / +1 to
@@ -11555,3 +11554,93 @@ c042f762f1a545d082db24282f08e3c2:
   raw_clause: if you have another Submission in play, double these bonuses
   source: card
   optional: false
+
+# ============================================================================
+# Mastermind "Pate" build (decks/mastermind-pate.yaml) — Cassandra-relevant
+# riders the grammar dropped. Anti-D2 clauses (#9 bury-recur, #10/#12 draw-steal)
+# are deliberately NOT modeled here: they only bite D2's draw/recur gimmick
+# (Cassandra's gimmick neither draws nor recurs), and D2's recur mode is already
+# simplified to always-draw, so they cannot change the Cassandra matchup and only
+# widen the (already winning) D2 matchup. Modeled here: the buffs that fire vs any
+# opponent. Pendulum Swing's "next time you roll Submission +2" stays Unsupported
+# (ModifyRoll has no rolled-skill gate; an unconditional +2 would over-credit).
+# ============================================================================
+
+# #7 Drawin' Dimes (Strike): add 1 from discard; CM>=3 -> add a 2nd (the "instead").
+b684f046dbca4e608eeef10581716eb1:
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF}
+  condition: {'@type': Always}
+  actions:
+  - '@type': AddFromDiscard
+    filter: {'@type': CardFilter, number: null, atk_type: null, play_order: null, tag: null, name: null, raw: null}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: add 1 card from your discard pile to your hand
+  source: card
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF}
+  condition: {'@type': CrowdMeterCompare, cmp: '>=', value: 3}
+  actions:
+  - '@type': AddFromDiscard
+    filter: {'@type': CardFilter, number: null, atk_type: null, play_order: null, tag: null, name: null, raw: null}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if the Crowd Meter is 3 or greater, add a 2nd card from your discard pile (add-2-instead)
+  source: card
+
+# #18 Soup'r Angled Crab: if another Follow Up/Finish Submission in play, Submission +1.
+# Card is itself a Follow Up Submission, so it matches its own filter -> "another" = count>=2.
+f42eb6454c7e41b089ba563fdd333ab5:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition:
+    '@type': HasInPlay
+    who: SELF
+    filter: {'@type': CardFilter, number: null, atk_type: Submission, play_order: null, play_orders: [Followup, Finish], tag: null, name: null, raw: null}
+    count: 2
+    cmp: '>='
+  actions:
+  - '@type': BuffSkill
+    who: SELF
+    skill: Submission
+    delta: 1
+    duration: WHILE_IN_PLAY
+    cap: null
+    per: null
+    per_crowd: false
+    per_zone: IN_PLAY
+    target_highest: false
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if you have another Follow Up or Finish Submission in play, your Submission skill is +1
+  source: card
+
+# #24 Mystical Magic: add 1 from discard, OR dig top 3 -> keep 2, bury 1.
+2f51b6e9e93948bcaefc324c7d55f079:
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF}
+  condition: {'@type': Always}
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: add 1 card from your discard pile to your hand
+      actions:
+      - '@type': AddFromDiscard
+        filter: {'@type': CardFilter, number: null, atk_type: null, play_order: null, tag: null, name: null, raw: null}
+    - '@type': ChoiceOption
+      label: look at the top 3, put 2 in hand, bury the other
+      actions:
+      - '@type': Scry
+        deck: SELF
+        top: 3
+        to_hand: 2
+        bury: 1
+        bottom: 0
+        reveal: false
+        rest: FLIP
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: add 1 card from your discard pile to your hand or look at the top 3, keep 2, bury the other
+  source: card

@@ -1,0 +1,36 @@
+# Mastermind — Brandon's build (side A for the human-vs-D2 playtest, todo #42).
+# Competitor + entrance "Ringside Ruckus With The Floats". Card #16 "Cosmic
+# Dragon Knee" chosen by the pilot to complete the 30-card deck.
+competitor: "Mastermind"
+entrance: "Ringside Ruckus With The Floats"
+cards:
+  - {number: 1,  name: "Snap Punch"}
+  - {number: 2,  name: "Arm & Collar Tie Up"}
+  - {number: 3,  name: "Snap Headlock"}
+  - {number: 4,  name: "Snap Kick"}
+  - {number: 5,  name: "Super Hip Toss"}
+  - {number: 6,  name: "Elevated Arm Bar"}
+  - {number: 7,  name: "Drawin' Dimes (Strike)"}
+  - {number: 8,  name: "Reverse Scoop Slam"}
+  - {number: 9,  name: "Pendulum Swing"}
+  - {number: 10, name: "Fire Up!"}
+  - {number: 11, name: "Getting Over"}
+  - {number: 12, name: "Scratching and Clawing"}
+  - {number: 13, name: "Cosmic Sheep Elbow"}
+  - {number: 14, name: "Rib Breaker"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Field of Fire (Strike, Agility)"}
+  - {number: 17, name: "American Dragon Drop"}
+  - {number: 18, name: "Soup'r Angled Crab"}
+  - {number: 19, name: "Blindside Smash"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Mystical Magic"}
+  - {number: 25, name: "Spinning Elbow"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Bomaye"}
+  - {number: 29, name: "Kill Shot"}
+  - {number: 30, name: "Fade to Black"}
