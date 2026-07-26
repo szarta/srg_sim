@@ -681,6 +681,27 @@ impl Engine {
         out
     }
 
+    /// `standing_effects` PLUS the triggered effects a card declares while it sits in
+    /// `key`'s discard pile (`Duration::WhileInDiscard`, non-`Static`). Used only at
+    /// TRIGGER-dispatch sites (the turn roll-off, breakout) so a "when this card is in
+    /// your discard pile, when you roll / your opponent breaks out …" clause fires
+    /// from the discard — which `standing_effects` (in-play + gimmick only) never
+    /// surfaces. Passive reads (finish bonuses, stops, buffs) keep `standing_effects`
+    /// so a discarded card contributes no stats. Static discard toggles (DQ rules,
+    /// cannot-be-stopped) stay on the `rule_immune` scan, not here.
+    fn triggered_effects(&self, key: &str) -> Vec<Effect> {
+        let mut out = self.standing_effects(key);
+        for card in &self.state.players[key].discard {
+            out.extend(
+                card.effects
+                    .iter()
+                    .filter(|e| e.duration == Duration::WhileInDiscard)
+                    .cloned(),
+            );
+        }
+        out
+    }
+
     /// True iff `key`'s opponent has an active `Static` `FlipGimmickSigns`
     /// (Cassandra negating every printed +/- on `key`'s gimmick).
     fn gimmick_signs_flipped(&self, key: &str) -> bool {
@@ -4229,7 +4250,7 @@ impl Engine {
             opp_skill: None,
         };
         for owner in ["A", "B"] {
-            let effects = self.standing_effects(owner);
+            let effects = self.triggered_effects(owner);
             for eff in &effects {
                 let Trigger::OnBreakoutRoll { who } = &eff.trigger else {
                     continue;
@@ -4257,7 +4278,7 @@ impl Engine {
         // frozen corpus (which has none) is byte-identical.
         let breaker = self.state.opponent_of(finisher);
         for key in ["A", "B"] {
-            for eff in self.standing_effects(key) {
+            for eff in self.triggered_effects(key) {
                 let Trigger::OnBreakout { who } = &eff.trigger else {
                     continue;
                 };
@@ -4317,7 +4338,7 @@ impl Engine {
     /// skill (`None` = any) and gated by the roller's roll context.
     fn run_on_roll(&mut self, key: &str) -> Eng<()> {
         let opp = self.state.opponent_of(key);
-        let effects = self.standing_effects(key);
+        let effects = self.triggered_effects(key); // incl. WHILE_IN_DISCARD OnRoll
         for eff in &effects {
             let Trigger::OnRoll { skill, who } = &eff.trigger else {
                 continue;
@@ -8296,6 +8317,62 @@ mod man_from_it_tests {
         assert!(
             !engine.offer_finish_reroll("A", Skill::Power).unwrap(),
             "rolled Power → gate fails, no re-roll"
+        );
+    }
+
+    /// A `Duration::WhileInDiscard` triggered effect fires from the discard pile via
+    /// `triggered_effects` at trigger-dispatch sites — Ricky Riot's Soups Up Stunner:
+    /// in discard + opponent rolled ≥3 higher (`RollGapAtLeast{3}`) grants a next-turn
+    /// re-roll (`Reroll{Next}`). It stays dormant until the card reaches the discard.
+    #[test]
+    fn while_in_discard_onroll_reroll_fires_from_the_discard() {
+        let soups: Card = serde_json::from_value(json!({
+            "atk_type":"Grapple","db_uuid":"soups","name":"Soups Up","number":29,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect","trigger":{"@type":"OnRoll","skill":null,"who":"SELF"},
+                "condition":{"@type":"RollGapAtLeast","k":3},
+                "actions":[{"@type":"Reroll","who":"SELF","once":true,"choose":false,
+                    "when":"NEXT","cost":null,"finish":false}],
+                "duration":"WHILE_IN_DISCARD","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let ctx = |gap| RollContext {
+            skill: Some(Skill::Strike),
+            gap: Some(gap),
+            value: None,
+            opp_skill: None,
+        };
+
+        // In hand (not discard): the WHILE_IN_DISCARD effect is dormant even at gap 3.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().hand = vec![soups.clone()];
+        engine.roll_ctx.insert("A".into(), ctx(3));
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].reroll_grants.next_turn, 0,
+            "dormant while in hand"
+        );
+
+        // In discard, opponent rolled only 2 higher: the gate fails, no grant.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![soups.clone()];
+        engine.roll_ctx.insert("A".into(), ctx(2));
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].reroll_grants.next_turn, 0,
+            "gap 2 < 3, no grant"
+        );
+
+        // In discard, opponent rolled 3 higher: the discard effect fires, grants a re-roll.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![soups];
+        engine.roll_ctx.insert("A".into(), ctx(3));
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].reroll_grants.next_turn, 1,
+            "discard OnRoll granted a next-turn re-roll"
         );
     }
 }
