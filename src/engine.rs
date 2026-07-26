@@ -3913,7 +3913,7 @@ impl Engine {
             let in_play = &self.state.players[finisher].in_play;
             in_play
                 .iter()
-                .map(|c| self.card_finish_bonus(c, skill))
+                .map(|c| self.card_finish_bonus(c, skill, finisher))
                 .sum()
         };
         let bonus = combo + self.finish_roll_bonus(finisher, skill, base);
@@ -3943,8 +3943,14 @@ impl Engine {
     }
 
     /// A single in-play card's Finish-roll combo bonus for `skill`, doubled when the
-    /// card declares `DoubleFinishIfBumped` and this turn's roll-off bumped.
-    fn card_finish_bonus(&self, card: &Card, skill: Skill) -> i64 {
+    /// card declares `DoubleFinishIfBumped` and this turn's roll-off bumped. A
+    /// text-blanked card contributes nothing — its printed "+N to <skill>" is blank
+    /// (e.g. an opposing Impact is Family V2 blanking a Spotlight finish collapses it
+    /// to raw stats). `owner` is the card's controller (the finisher).
+    fn card_finish_bonus(&self, card: &Card, skill: Skill, owner: &str) -> i64 {
+        if self.state.is_text_blanked(card, owner) {
+            return 0;
+        }
         let mut bonus = card.bonus_for(skill);
         if self.turn_bumped
             && card.effects.iter().any(|eff| {

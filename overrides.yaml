@@ -6182,7 +6182,8 @@ bd11579fd13144f1bcf07c38a347edcd:
   optional: false
 
 # #2 "A Trip to the Upside Down": copies the opponent's Spotlight in their discard,
-# then blanks them (a paired BlankText). Not itself a Spotlight.
+# then blanks them (a paired BlankText). It IS itself a Spotlight (cards.yaml
+# spotlight flag) — so an opposing Impact is Family (V2) blanks its text.
 76698f39f7a84d1ba5b19911c5326590:
 - '@type': Effect
   trigger:
