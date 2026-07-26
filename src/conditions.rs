@@ -366,6 +366,13 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .and_then(serde_json::Value::as_i64)
                 == Some(state.turn_no - 1)
         }
+        Condition::RerolledTurnRoll => {
+            state.players[owner]
+                .flags
+                .get("rerolled_turn")
+                .and_then(serde_json::Value::as_i64)
+                == Some(state.turn_no)
+        }
         Condition::GimmickFlipped { who } => {
             let subject = who_key(state, owner, *who);
             state.players[&subject].gimmick_flipped

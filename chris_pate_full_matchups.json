@@ -1,0 +1,1005 @@
+{
+  "my_team": "Unnamed Team (Chris Pate)",
+  "my_players": [
+    {
+      "slot": "Captain",
+      "player": "Chris Pate",
+      "competitor": "Soborno",
+      "ten_stat": "agility"
+    },
+    {
+      "slot": "R1",
+      "player": "Ryon Piercer",
+      "competitor": "Little Guido",
+      "ten_stat": "technique"
+    },
+    {
+      "slot": "R2",
+      "player": "Sam Stanton",
+      "competitor": "Rey Zerblade",
+      "ten_stat": "grapple"
+    },
+    {
+      "slot": "R3",
+      "player": "Brandon Arrendondo",
+      "competitor": "Mastermind",
+      "ten_stat": "strike"
+    },
+    {
+      "slot": "R4",
+      "player": "Matt Hass",
+      "competitor": "D1 (V1)",
+      "ten_stat": "submission"
+    },
+    {
+      "slot": "R5",
+      "player": "Rin Puck",
+      "competitor": "The Bull",
+      "ten_stat": "power"
+    }
+  ],
+  "vs": {
+    "I H.A.T.E. My Life": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Colby Cram",
+        "round_opp_competitor": "Mrs. Apocalypse",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Eddy Fury",
+        "stat_opp_competitor": "Copy Kat (V2)",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Drew Madsen",
+        "round_opp_competitor": "D2 (V1)",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Colby Cram",
+        "stat_opp_competitor": "Mrs. Apocalypse",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Eddy Fury",
+        "round_opp_competitor": "Copy Kat (V2)",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Jokerfish",
+        "stat_opp_competitor": "The Queen of Cheer Adrianna Dee",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "mecchi",
+        "round_opp_competitor": "Cassandra",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Drew Madsen",
+        "stat_opp_competitor": "D2 (V1)",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Jokerfish",
+        "round_opp_competitor": "The Queen of Cheer Adrianna Dee",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "Mikey Nichols",
+        "stat_opp_competitor": "Johnny Korea",
+        "doubled": false
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Mikey Nichols",
+        "round_opp_competitor": "Johnny Korea",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "mecchi",
+        "stat_opp_competitor": "Cassandra",
+        "doubled": false
+      }
+    ],
+    "My MF'n Nillas... and Ant": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Ronnie Rombs",
+        "round_opp_competitor": "Rowdy Ron",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Ronnie Rombs",
+        "stat_opp_competitor": "Rowdy Ron",
+        "doubled": true
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Candyman Dan",
+        "round_opp_competitor": "Candyman Dan",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Candyman Dan",
+        "stat_opp_competitor": "Candyman Dan",
+        "doubled": true
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Tim Riley",
+        "round_opp_competitor": "Brian Cage (V2)",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Papa Nequaquam",
+        "stat_opp_competitor": "Papa Nequaquam",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Papa Nequaquam",
+        "round_opp_competitor": "Papa Nequaquam",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "The Misfit",
+        "stat_opp_competitor": "Deathmatch King Matt Cardona",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Ant West",
+        "round_opp_competitor": "Killer Kelly",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Ant West",
+        "stat_opp_competitor": "Killer Kelly",
+        "doubled": true
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "The Misfit",
+        "round_opp_competitor": "Deathmatch King Matt Cardona",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Tim Riley",
+        "stat_opp_competitor": "Brian Cage (V2)",
+        "doubled": false
+      }
+    ],
+    "#MOTHERCHUCKERS": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Chuck",
+        "round_opp_competitor": "Tetsuya Naito",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Zach Atchley",
+        "stat_opp_competitor": "The Cyclone (V2)",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Zach Atchley",
+        "round_opp_competitor": "The Cyclone (V2)",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Chuck",
+        "stat_opp_competitor": "Tetsuya Naito",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "BrimeTime",
+        "round_opp_competitor": "Theo the Greek Neo (V1)",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "BrimeTime",
+        "stat_opp_competitor": "Theo the Greek Neo (V1)",
+        "doubled": true
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Erin Cassandra Williams",
+        "round_opp_competitor": "D3 (V1)",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Erin Cassandra Williams",
+        "stat_opp_competitor": "D3 (V1)",
+        "doubled": true
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Slamilton",
+        "round_opp_competitor": "Slime Girl",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Slamilton",
+        "stat_opp_competitor": "Slime Girl",
+        "doubled": true
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "jared bridgewater",
+        "round_opp_competitor": "Joe Hendry",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "jared bridgewater",
+        "stat_opp_competitor": "Joe Hendry",
+        "doubled": true
+      }
+    ],
+    "Dunn Deal": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Bob Dunn",
+        "round_opp_competitor": "King Kong Dundy",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "New Guy Nick",
+        "stat_opp_competitor": "Unicorn Princess",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Paul M",
+        "round_opp_competitor": "Pretzel Wizard",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Foreman Alle",
+        "stat_opp_competitor": "The Phoenix EV Fresh",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Ron Rumble",
+        "round_opp_competitor": "The SRG Boss (The Greatest American Who Ever Lived)",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Jorge Luis Ortiz Cortes",
+        "stat_opp_competitor": "Noah the Boa",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Jorge Luis Ortiz Cortes",
+        "round_opp_competitor": "Noah the Boa",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "Ron Rumble",
+        "stat_opp_competitor": "The SRG Boss (The Greatest American Who Ever Lived)",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "New Guy Nick",
+        "round_opp_competitor": "Unicorn Princess",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Bob Dunn",
+        "stat_opp_competitor": "King Kong Dundy",
+        "doubled": false
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Foreman Alle",
+        "round_opp_competitor": "The Phoenix EV Fresh",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Paul M",
+        "stat_opp_competitor": "Pretzel Wizard",
+        "doubled": false
+      }
+    ],
+    "The Cannoli's Ricotta Renegades": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Anthony Perry",
+        "round_opp_competitor": "Jebediah The Amish Assassin",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "Taylor Schwab",
+        "stat_opp_competitor": "El Blanco Diablo (V1)",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Taylor Schwab",
+        "round_opp_competitor": "El Blanco Diablo (V1)",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Danshee",
+        "stat_opp_competitor": "Dr. Sleep",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Keith Overby",
+        "round_opp_competitor": "Trent?",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Anthony Perry",
+        "stat_opp_competitor": "Jebediah The Amish Assassin",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Danshee",
+        "round_opp_competitor": "Dr. Sleep",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Keith Overby",
+        "stat_opp_competitor": "Trent?",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Slade Holladay",
+        "round_opp_competitor": "General Manager John Calace (V1)",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Slade Holladay",
+        "stat_opp_competitor": "General Manager John Calace (V1)",
+        "doubled": true
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "The Influencer",
+        "round_opp_competitor": "Fae Dragon",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "The Influencer",
+        "stat_opp_competitor": "Fae Dragon",
+        "doubled": true
+      }
+    ],
+    "Bully Boi Clique": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Matt Barone",
+        "round_opp_competitor": "Overdog (V1)",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "The Possum King",
+        "stat_opp_competitor": "Amazing Red",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "The Possum King",
+        "round_opp_competitor": "Amazing Red",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "NY Phenom",
+        "stat_opp_competitor": "J Tagas",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "NY Phenom",
+        "round_opp_competitor": "J Tagas",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "swaggy",
+        "stat_opp_competitor": "Scott Prime (V1)",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "swaggy",
+        "round_opp_competitor": "Scott Prime (V1)",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "StevenMoonstar",
+        "stat_opp_competitor": "Kenzie Paige",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "StevenMoonstar",
+        "round_opp_competitor": "Kenzie Paige",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Matt Barone",
+        "stat_opp_competitor": "Overdog (V1)",
+        "doubled": false
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Marissa Wilson",
+        "round_opp_competitor": "Queen of Rock",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Marissa Wilson",
+        "stat_opp_competitor": "Queen of Rock",
+        "doubled": true
+      }
+    ],
+    "unnamed team (Collin Simon)": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Collin Simon",
+        "round_opp_competitor": "Gangrel",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "The End",
+        "stat_opp_competitor": "Cheetah",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Ref Dave",
+        "round_opp_competitor": "Tomato Tomato Jr.",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Michael Kirk",
+        "stat_opp_competitor": "Zack Sabre Jr. (V1)",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Michael Kirk",
+        "round_opp_competitor": "Zack Sabre Jr. (V1)",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Collin Simon",
+        "stat_opp_competitor": "Gangrel",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Mothman",
+        "round_opp_competitor": "Evee Laveaux",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Double Russell",
+        "stat_opp_competitor": "RVD",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "The End",
+        "round_opp_competitor": "Cheetah",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Mothman",
+        "stat_opp_competitor": "Evee Laveaux",
+        "doubled": false
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Double Russell",
+        "round_opp_competitor": "RVD",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Ref Dave",
+        "stat_opp_competitor": "Tomato Tomato Jr.",
+        "doubled": false
+      }
+    ],
+    "Unnamed Team (Collector Sean)": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Collector Sean",
+        "round_opp_competitor": "Swoggle (V1)",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Collector Sean",
+        "stat_opp_competitor": "Swoggle (V1)",
+        "doubled": true
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Practisite Jeremy S",
+        "round_opp_competitor": "Smart Mark Sterling",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Practisite Jeremy S",
+        "stat_opp_competitor": "Smart Mark Sterling",
+        "doubled": true
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Angela Kristina",
+        "round_opp_competitor": "Candy MaM",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "Angela Kristina",
+        "stat_opp_competitor": "Candy MaM",
+        "doubled": true
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Jeffrey Fox",
+        "round_opp_competitor": "Foxworthy (V3)",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Jeffrey Fox",
+        "stat_opp_competitor": "Foxworthy (V3)",
+        "doubled": true
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Neil Sheen",
+        "round_opp_competitor": "The East End Enforcer",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Neil Sheen",
+        "stat_opp_competitor": "The East End Enforcer",
+        "doubled": true
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Nic Baxter",
+        "round_opp_competitor": "Sage the Wiccan Witch (V1)",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Nic Baxter",
+        "stat_opp_competitor": "Sage the Wiccan Witch (V1)",
+        "doubled": true
+      }
+    ],
+    "Cheetah's Collection": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Ian Chambers",
+        "round_opp_competitor": "Supersonica",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Ian Chambers",
+        "stat_opp_competitor": "Supersonica",
+        "doubled": true
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Jonathan Thew",
+        "round_opp_competitor": "Tortured Vigilante",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Shannon",
+        "stat_opp_competitor": "Ms. Tierious",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Robert Dowdy",
+        "round_opp_competitor": "Dough Nation (V1)",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "BlackstarSRG",
+        "stat_opp_competitor": "El Gato Shinobi",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Ron Hough",
+        "round_opp_competitor": "Shattered Split",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Ron Hough",
+        "stat_opp_competitor": "Shattered Split",
+        "doubled": true
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "BlackstarSRG",
+        "round_opp_competitor": "El Gato Shinobi",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "Jonathan Thew",
+        "stat_opp_competitor": "Tortured Vigilante",
+        "doubled": false
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Shannon",
+        "round_opp_competitor": "Ms. Tierious",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Robert Dowdy",
+        "stat_opp_competitor": "Dough Nation (V1)",
+        "doubled": false
+      }
+    ],
+    "Any Team": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Everett Stephens",
+        "round_opp_competitor": "Mila Mai (V1)",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Everett Stephens",
+        "stat_opp_competitor": "Mila Mai (V1)",
+        "doubled": true
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "THE Johnny Korea",
+        "round_opp_competitor": "Possum King",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Garry Crawford",
+        "stat_opp_competitor": "Abigail Fairy in Training",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Mike Benton",
+        "round_opp_competitor": "Tommy Stillwell",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "Mike Benton",
+        "stat_opp_competitor": "Tommy Stillwell",
+        "doubled": true
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Chugganomics",
+        "round_opp_competitor": "The Witch's Apprentice",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Arcade Addict Aaron",
+        "stat_opp_competitor": "Khloe Mai",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Garry Crawford",
+        "round_opp_competitor": "Abigail Fairy in Training",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "THE Johnny Korea",
+        "stat_opp_competitor": "Possum King",
+        "doubled": false
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Arcade Addict Aaron",
+        "round_opp_competitor": "Khloe Mai",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Chugganomics",
+        "stat_opp_competitor": "The Witch's Apprentice",
+        "doubled": false
+      }
+    ],
+    "The Real Tristate": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Brian Schmidt",
+        "round_opp_competitor": "Mr. Poppintwist",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Tomasello the Wiseman",
+        "stat_opp_competitor": "El Phantasmo",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "John Eldis",
+        "round_opp_competitor": "The Chosen One",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "Flame Fighter",
+        "stat_opp_competitor": "Hallow King (V1)",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Google Docs Dan",
+        "round_opp_competitor": "Ivelisse \"La Sicaria\"",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "John Eldis",
+        "stat_opp_competitor": "The Chosen One",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "The Centipede John VonMacek",
+        "round_opp_competitor": "King Brian Cage",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Google Docs Dan",
+        "stat_opp_competitor": "Ivelisse \"La Sicaria\"",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Flame Fighter",
+        "round_opp_competitor": "Hallow King (V1)",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Brian Schmidt",
+        "stat_opp_competitor": "Mr. Poppintwist",
+        "doubled": false
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Tomasello the Wiseman",
+        "round_opp_competitor": "El Phantasmo",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "The Centipede John VonMacek",
+        "stat_opp_competitor": "King Brian Cage",
+        "doubled": false
+      }
+    ],
+    "Unnamed Team (Rambo Apocalypse)": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "Rambo Apocalypse",
+        "round_opp_competitor": "Uncle Awesome (V2)",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "Chris Cole",
+        "stat_opp_competitor": "Real Beater",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Brock Smith",
+        "round_opp_competitor": "Defector",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "Cory Pitney",
+        "stat_opp_competitor": "Ricky Riot (V1)",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "Joe Gilchrist",
+        "round_opp_competitor": "Chris Bey (Greatest Story Ever Told)",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Brock Smith",
+        "stat_opp_competitor": "Defector",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Cory Pitney",
+        "round_opp_competitor": "Ricky Riot (V1)",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Joe Gilchrist",
+        "stat_opp_competitor": "Chris Bey (Greatest Story Ever Told)",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Evil Ed",
+        "round_opp_competitor": "Sgt. Yoga",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Evil Ed",
+        "stat_opp_competitor": "Sgt. Yoga",
+        "doubled": true
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Chris Cole",
+        "round_opp_competitor": "Real Beater",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Rambo Apocalypse",
+        "stat_opp_competitor": "Uncle Awesome (V2)",
+        "doubled": false
+      }
+    ],
+    "Clown Town": [
+      {
+        "me_player": "Chris Pate",
+        "me_competitor": "Soborno",
+        "me_slot": "Captain",
+        "me_ten_stat": "agility",
+        "round_opp_player": "John P",
+        "round_opp_competitor": "El Scorpio",
+        "round_opp_ten_stat": "technique",
+        "stat_opp_player": "Brian O",
+        "stat_opp_competitor": "King Greatness",
+        "doubled": false
+      },
+      {
+        "me_player": "Ryon Piercer",
+        "me_competitor": "Little Guido",
+        "me_slot": "R1",
+        "me_ten_stat": "technique",
+        "round_opp_player": "Bombada",
+        "round_opp_competitor": "Mr. Sunday Night Ron Rumble",
+        "round_opp_ten_stat": "power",
+        "stat_opp_player": "John P",
+        "stat_opp_competitor": "El Scorpio",
+        "doubled": false
+      },
+      {
+        "me_player": "Sam Stanton",
+        "me_competitor": "Rey Zerblade",
+        "me_slot": "R2",
+        "me_ten_stat": "grapple",
+        "round_opp_player": "El Hombre Cybernetico",
+        "round_opp_competitor": "AJ Styles",
+        "round_opp_ten_stat": "strike",
+        "stat_opp_player": "Mark Perre",
+        "stat_opp_competitor": "Leader of the Postal Nation",
+        "doubled": false
+      },
+      {
+        "me_player": "Brandon Arrendondo",
+        "me_competitor": "Mastermind",
+        "me_slot": "R3",
+        "me_ten_stat": "strike",
+        "round_opp_player": "Mark Perre",
+        "round_opp_competitor": "Leader of the Postal Nation",
+        "round_opp_ten_stat": "grapple",
+        "stat_opp_player": "El Hombre Cybernetico",
+        "stat_opp_competitor": "AJ Styles",
+        "doubled": false
+      },
+      {
+        "me_player": "Matt Hass",
+        "me_competitor": "D1 (V1)",
+        "me_slot": "R4",
+        "me_ten_stat": "submission",
+        "round_opp_player": "Craig Blachfield",
+        "round_opp_competitor": "Mr. Snap (V1)",
+        "round_opp_ten_stat": "submission",
+        "stat_opp_player": "Craig Blachfield",
+        "stat_opp_competitor": "Mr. Snap (V1)",
+        "doubled": true
+      },
+      {
+        "me_player": "Rin Puck",
+        "me_competitor": "The Bull",
+        "me_slot": "R5",
+        "me_ten_stat": "power",
+        "round_opp_player": "Brian O",
+        "round_opp_competitor": "King Greatness",
+        "round_opp_ten_stat": "agility",
+        "stat_opp_player": "Bombada",
+        "stat_opp_competitor": "Mr. Sunday Night Ron Rumble",
+        "doubled": false
+      }
+    ]
+  }
+}

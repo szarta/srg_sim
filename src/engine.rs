@@ -3602,8 +3602,8 @@ impl Engine {
             order: card.play_order.name().to_owned(),
             atk_type: card.atk_type.name().to_owned(),
         });
-        if let Some(stop) = self.offer_stop(defender, &card)? {
-            self.apply_stop(active, defender, card, stop)?;
+        if let Some((stop, extra)) = self.offer_stop(defender, &card)? {
+            self.apply_stop(active, defender, card, stop, extra)?;
             return Ok(false);
         }
         // The card's own effects plus any "added text" its owner's active gimmick
@@ -3738,9 +3738,12 @@ impl Engine {
     /// Offer `defender` the stop window for `card`; return the chosen stopper (taken
     /// from hand) or `None`. The `none` option carries what is being defended so a
     /// policy can reserve stops for the real threat.
-    fn offer_stop(&mut self, defender: &str, card: &Card) -> Eng<Option<Card>> {
+    fn offer_stop(&mut self, defender: &str, card: &Card) -> Eng<Option<(Card, Vec<Card>)>> {
+        let need = Self::stops_required(card);
         let stops = self.legal_stops(defender, card);
-        if stops.is_empty() {
+        // A card that "can only be stopped by N Stops" (King Brian Cage) is
+        // unstoppable unless the defender holds N legal stops to commit at once.
+        if (stops.len() as i64) < need {
             return Ok(None);
         }
         let mut legal = vec![json!({
@@ -3754,7 +3757,32 @@ impl Engine {
             return Ok(None);
         }
         let number = choice["number"].as_i64().unwrap();
-        Ok(Some(self.take_from_hand(defender, number)))
+        let primary = self.take_from_hand(defender, number);
+        // Commit the N-1 additional stops the requirement demands, best (lowest
+        // number) remaining first; the pre-check guarantees enough are on hand.
+        let mut extra = Vec::new();
+        for _ in 1..need {
+            let others = self.legal_stops(defender, card);
+            let Some(next) = others.first() else { break };
+            let n = next.number;
+            extra.push(self.take_from_hand(defender, n));
+        }
+        Ok(Some((primary, extra)))
+    }
+
+    /// How many Stops must be committed at once to stop `card` — the max `RequireStops`
+    /// count printed on the card (default 1). Read from the attack's own effects.
+    fn stops_required(card: &Card) -> i64 {
+        card.effects
+            .iter()
+            .flat_map(|e| &e.actions)
+            .filter_map(|a| match a {
+                Action::RequireStops { count } => Some(*count),
+                _ => None,
+            })
+            .max()
+            .unwrap_or(1)
+            .max(1)
     }
 
     fn legal_stops(&self, defender: &str, attack: &Card) -> Vec<Card> {
@@ -3860,13 +3888,10 @@ impl Engine {
     /// Apply a stop: the stopped ATTACK goes to the attacker's discard; the stopping
     /// card enters the defender's board and persists (bypassing the play-sequence
     /// gate). Fires the stop's OnHit + hit gimmicks, then both sides' OnStop.
-    fn apply_stop(&mut self, active: &str, defender: &str, attack: Card, stop: Card) -> Eng<()> {
-        self.state
-            .players
-            .get_mut(active)
-            .unwrap()
-            .discard
-            .push(attack.clone());
+    /// Land one committed stop card: it enters the defender's play area (a stop is
+    /// itself a hit), logs the Stop event, and fires its OnHit + hit gimmicks. Shared
+    /// by the primary stop and every extra a `RequireStops` attack forces.
+    fn land_stop_card(&mut self, defender: &str, stop: &Card, attack: &Card) -> Eng<()> {
         self.state
             .players
             .get_mut(defender)
@@ -3882,14 +3907,39 @@ impl Engine {
             reason: format!("{} stops {}", stop.atk_type.name(), attack.atk_type.name()),
         });
         let stop_effects = stop.effects.clone();
-        let attack_effects = attack.effects.clone();
         self.run_effects(&stop_effects, "OnHit", defender, None)?;
-        self.run_hit_gimmicks(&stop, defender)?; // a stop entering play is itself a hit
-                                                 // "The stopped card has blank text until the end of the turn" must resolve
-                                                 // BEFORE the stopped card's own OnStop: the whole point of that family is to
-                                                 // suppress the stopped card's "If Stopped" text, several members reading
-                                                 // "stop any card WITH 'If Stopped' in the text: that card has blank text …".
-                                                 // Split so those effects land first and the rest keep their original order.
+        self.run_hit_gimmicks(stop, defender)?; // a stop entering play is itself a hit
+        Ok(())
+    }
+
+    fn apply_stop(
+        &mut self,
+        active: &str,
+        defender: &str,
+        attack: Card,
+        stop: Card,
+        extra: Vec<Card>,
+    ) -> Eng<()> {
+        self.state
+            .players
+            .get_mut(active)
+            .unwrap()
+            .discard
+            .push(attack.clone());
+        self.land_stop_card(defender, &stop, &attack)?;
+        // Extra stops a `RequireStops` attack forced: each lands as a committed stop.
+        // The heavy attack-side resolution below (blank-text, OnStop) runs once, keyed
+        // off the primary stop — MM's extra stops are vanilla, with no OnStop text.
+        for s in &extra {
+            self.land_stop_card(defender, s, &attack)?;
+        }
+        let stop_effects = stop.effects.clone();
+        let attack_effects = attack.effects.clone();
+        // "The stopped card has blank text until the end of the turn" must resolve
+        // BEFORE the stopped card's own OnStop: the whole point of that family is to
+        // suppress the stopped card's "If Stopped" text, several members reading
+        // "stop any card WITH 'If Stopped' in the text: that card has blank text …".
+        // Split so those effects land first and the rest keep their original order.
         self.stopped_card = Some(attack.db_uuid.clone());
         let (blanking, rest): (Vec<Effect>, Vec<Effect>) =
             stop_effects.into_iter().partition(|e| {
@@ -4735,6 +4785,15 @@ impl Engine {
             };
             if let Some(target) = self.offer_reroll(owner, own_ctx, opp_ctx)? {
                 let (ns, nv) = self.roll_for(&target, false);
+                // Stamp the re-rolled side's turn so a `RerolledTurnRoll` finish rider
+                // ("… or you re-rolled your turn roll" — King Brian Cage) resolves.
+                let turn = self.state.turn_no;
+                self.state
+                    .players
+                    .get_mut(&target)
+                    .unwrap()
+                    .flags
+                    .insert("rerolled_turn".to_owned(), json!(turn));
                 self.log_effect(
                     owner,
                     "Reroll",
@@ -5532,6 +5591,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::AlsoLead { .. } => "AlsoLead",
         Action::DoubleFinishIfBumped => "DoubleFinishIfBumped",
         Action::DoubleFinishIf { .. } => "DoubleFinishIf",
+        Action::RequireStops { .. } => "RequireStops",
         Action::Choice { .. } => "Choice",
         Action::Unsupported { .. } => "Unsupported",
     }
@@ -5924,7 +5984,7 @@ mod on_stop_order_tests {
         let mut engine = la_fenix_engine();
         let attack: Card = serde_json::from_value(card("my-finish", "Finish")).unwrap();
         let stop: Card = serde_json::from_value(card("their-stop", "Lead")).unwrap();
-        engine.apply_stop("A", "B", attack, stop).unwrap();
+        engine.apply_stop("A", "B", attack, stop, vec![]).unwrap();
         assert!(
             tutored(&engine),
             "a stopped Finish tutors the deck Finish to hand"
@@ -5936,7 +5996,7 @@ mod on_stop_order_tests {
         let mut engine = la_fenix_engine();
         let attack: Card = serde_json::from_value(card("my-lead", "Lead")).unwrap();
         let stop: Card = serde_json::from_value(card("their-stop", "Lead")).unwrap();
-        engine.apply_stop("A", "B", attack, stop).unwrap();
+        engine.apply_stop("A", "B", attack, stop, vec![]).unwrap();
         assert!(
             !tutored(&engine),
             "the order=Finish gate stays inert when a Lead is stopped"
@@ -6413,7 +6473,13 @@ mod blank_stopped_text_tests {
         let mut engine = engine();
         let before = engine.state.players["A"].hand.len();
         engine
-            .apply_stop("A", "B", attack_with_if_stopped(), stop_card(blanks))
+            .apply_stop(
+                "A",
+                "B",
+                attack_with_if_stopped(),
+                stop_card(blanks),
+                vec![],
+            )
             .unwrap();
         let drew = engine.state.players["A"].hand.len() - before;
         (engine, drew)
@@ -7035,7 +7101,7 @@ mod pending_text_tests {
         let mut g: Card = serde_json::from_value(card("g", "Grapple")).unwrap();
         engine.apply_pending_text("B", &mut g);
         let stop: Card = serde_json::from_value(card("st", "Grapple")).unwrap();
-        engine.apply_stop("B", "A", g, stop).unwrap();
+        engine.apply_stop("B", "A", g, stop, vec![]).unwrap();
         engine.resolve_pending();
         let result = engine.result.as_ref().expect("the match ended");
         assert_eq!(result.winner, "A", "the poisoned player's opponent wins");
@@ -8526,6 +8592,208 @@ mod man_from_it_tests {
             engine.card_finish_bonus(&towels, Skill::Submission, "A"),
             1,
             "pass on turn 3 (not turn_no-1) → not doubled"
+        );
+    }
+
+    /// King Cage Clutch: "double these bonuses if you rolled Power for your turn roll
+    /// or re-rolled your turn roll" — `DoubleFinishIf{Or{RollWasSkill{Power}, RerolledTurnRoll}}`.
+    /// Either disjunct alone doubles; neither leaves the base bonus.
+    #[test]
+    fn king_cage_double_fires_on_rolled_power_or_a_reroll() {
+        let clutch: Card = serde_json::from_value(json!({
+            "atk_type":"Submission","db_uuid":"clutch","name":"King Cage Clutch","number":30,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{"Submission":3},
+            "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"DoubleFinishIf","condition":{"@type":"Or","items":[
+                    {"@type":"RollWasSkill","skill":"Power","who":"SELF"},
+                    {"@type":"RerolledTurnRoll"}]}}],
+                "duration":"WHILE_IN_PLAY","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let mut engine = engine_with(json!([]));
+        engine.state.turn_no = 4;
+        engine.state.players.get_mut("A").unwrap().in_play = vec![clutch.clone()];
+
+        // Neither disjunct: rolled Agility, no reroll this turn → not doubled.
+        engine.roll_ctx.insert(
+            "A".into(),
+            RollContext {
+                skill: Some(Skill::Agility),
+                gap: None,
+                value: None,
+                opp_skill: None,
+            },
+        );
+        assert_eq!(
+            engine.card_finish_bonus(&clutch, Skill::Submission, "A"),
+            3,
+            "no trigger → base"
+        );
+
+        // Rolled Power → doubled.
+        engine.roll_ctx.insert(
+            "A".into(),
+            RollContext {
+                skill: Some(Skill::Power),
+                gap: None,
+                value: None,
+                opp_skill: None,
+            },
+        );
+        assert_eq!(
+            engine.card_finish_bonus(&clutch, Skill::Submission, "A"),
+            6,
+            "rolled Power → doubled"
+        );
+
+        // Rolled Agility but re-rolled this turn (flag stamped) → doubled via the OR.
+        engine.roll_ctx.insert(
+            "A".into(),
+            RollContext {
+                skill: Some(Skill::Agility),
+                gap: None,
+                value: None,
+                opp_skill: None,
+            },
+        );
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flags
+            .insert("rerolled_turn".to_owned(), json!(4));
+        assert_eq!(
+            engine.card_finish_bonus(&clutch, Skill::Submission, "A"),
+            6,
+            "re-rolled → doubled"
+        );
+    }
+}
+
+#[cfg(test)]
+mod require_stops_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    fn finish_stop(number: i64) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": format!("stop{number}"), "name": "stop",
+            "number": number, "play_order": "Lead", "raw_text": "", "tags": [],
+            "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": "Finish", "atk_type": null,
+                             "source_is_skillreq": false}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stop")
+    }
+
+    /// A Finish attack that "can only be stopped by `count` Stops".
+    fn require_stops_finish(count: i64) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "combo", "name": "Killer Combo", "number": 28,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "RequireStops", "count": count}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "2 stops", "source": "card", "optional": false
+            }]
+        }))
+        .expect("attack")
+    }
+
+    /// Picks the first non-"none" (a stop) option; falls back to the first option.
+    struct PickStop;
+    impl Decider for PickStop {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            legal: &[Value],
+            _: &mut GameState,
+        ) -> Option<Value> {
+            legal
+                .iter()
+                .find(|o| o["kind"] != "none")
+                .cloned()
+                .or_else(|| legal.first().cloned())
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "pick".into()
+        }
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(PickStop),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn stops_required_reads_the_count() {
+        assert_eq!(Engine::stops_required(&require_stops_finish(2)), 2);
+        assert_eq!(Engine::stops_required(&require_stops_finish(1)), 1);
+        // a plain attack with no RequireStops needs a single stop
+        let plain: Card = serde_json::from_value(json!({"atk_type":"Strike","db_uuid":"p",
+            "name":"p","number":1,"play_order":"Finish","raw_text":"","tags":[],
+            "finish_bonuses":{},"effects":[]}))
+        .unwrap();
+        assert_eq!(Engine::stops_required(&plain), 1);
+    }
+
+    #[test]
+    fn require_two_stops_is_unstoppable_with_one_in_hand() {
+        let mut e = engine();
+        e.state.players.get_mut("B").unwrap().hand = vec![finish_stop(1)];
+        // one legal stop < the 2 required → not offered, the finish lands
+        assert!(e
+            .offer_stop("B", &require_stops_finish(2))
+            .unwrap()
+            .is_none());
+    }
+
+    #[test]
+    fn require_two_stops_commits_two_when_available() {
+        let mut e = engine();
+        e.state.players.get_mut("B").unwrap().hand =
+            vec![finish_stop(1), finish_stop(2), finish_stop(3)];
+        let (_, extra) = e
+            .offer_stop("B", &require_stops_finish(2))
+            .unwrap()
+            .expect("2 legal stops → stoppable");
+        assert_eq!(
+            extra.len(),
+            1,
+            "a 2-stop finish consumes exactly one extra stop"
+        );
+        assert_eq!(
+            e.state.players["B"].hand.len(),
+            1,
+            "both committed stops left the defender's hand (3 → 1)"
         );
     }
 }

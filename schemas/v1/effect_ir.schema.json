@@ -173,6 +173,9 @@
             },
             {
               "$ref": "#/$defs/EndedTurnNoPlay"
+            },
+            {
+              "$ref": "#/$defs/RerolledTurnRoll"
             }
           ]
         },
@@ -285,6 +288,9 @@
               },
               {
                 "$ref": "#/$defs/EndedTurnNoPlay"
+              },
+              {
+                "$ref": "#/$defs/RerolledTurnRoll"
               }
             ]
           },
@@ -925,6 +931,9 @@
               },
               {
                 "$ref": "#/$defs/StopRequiresTag"
+              },
+              {
+                "$ref": "#/$defs/RequireStops"
               }
             ]
           },
@@ -1373,6 +1382,9 @@
             },
             {
               "$ref": "#/$defs/EndedTurnNoPlay"
+            },
+            {
+              "$ref": "#/$defs/RerolledTurnRoll"
             }
           ]
         }
@@ -1718,6 +1730,9 @@
               },
               {
                 "$ref": "#/$defs/StopRequiresTag"
+              },
+              {
+                "$ref": "#/$defs/RequireStops"
               }
             ]
           },
@@ -1802,6 +1817,9 @@
             },
             {
               "$ref": "#/$defs/EndedTurnNoPlay"
+            },
+            {
+              "$ref": "#/$defs/RerolledTurnRoll"
             }
           ]
         },
@@ -2693,6 +2711,12 @@
         },
         {
           "$ref": "#/$defs/StopRequiresTag"
+        },
+        {
+          "$ref": "#/$defs/RerolledTurnRoll"
+        },
+        {
+          "$ref": "#/$defs/RequireStops"
         }
       ]
     },
@@ -2982,6 +3006,9 @@
             },
             {
               "$ref": "#/$defs/EndedTurnNoPlay"
+            },
+            {
+              "$ref": "#/$defs/RerolledTurnRoll"
             }
           ]
         }
@@ -3435,6 +3462,9 @@
               },
               {
                 "$ref": "#/$defs/EndedTurnNoPlay"
+              },
+              {
+                "$ref": "#/$defs/RerolledTurnRoll"
               }
             ]
           },
@@ -3563,6 +3593,22 @@
       ],
       "type": "object"
     },
+    "RequireStops": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RequireStops"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "count"
+      ],
+      "type": "object"
+    },
     "Reroll": {
       "additionalProperties": false,
       "properties": {
@@ -3603,6 +3649,18 @@
         "when",
         "cost",
         "finish"
+      ],
+      "type": "object"
+    },
+    "RerolledTurnRoll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RerolledTurnRoll"
+        }
+      },
+      "required": [
+        "@type"
       ],
       "type": "object"
     },
@@ -4056,6 +4114,9 @@
             },
             {
               "$ref": "#/$defs/EndedTurnNoPlay"
+            },
+            {
+              "$ref": "#/$defs/RerolledTurnRoll"
             }
           ]
         },
@@ -4516,5 +4577,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 79
+  "version": 80
 }

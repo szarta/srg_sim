@@ -1,0 +1,1658 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SRG Olympics — Matchup Report</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1a1c20; --muted:#5b6470; --line:#e2e6ec;
+  --th-bg:#f4f6f9; --row:#fafbfc; --accent:#7b3f9e; --code-bg:#f0f2f5;
+  --warn:#b3541e;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14161a; --fg:#e6e9ee; --muted:#9aa4b2; --line:#2a2f38;
+    --th-bg:#1e232b; --row:#191d23; --accent:#c58af0; --code-bg:#232830; --warn:#e0a35a; }
+}
+:root[data-theme="light"]{ --bg:#ffffff; --fg:#1a1c20; --muted:#5b6470; --line:#e2e6ec;
+  --th-bg:#f4f6f9; --row:#fafbfc; --accent:#7b3f9e; --code-bg:#f0f2f5; --warn:#b3541e; }
+:root[data-theme="dark"]{ --bg:#14161a; --fg:#e6e9ee; --muted:#9aa4b2; --line:#2a2f38;
+  --th-bg:#1e232b; --row:#191d23; --accent:#c58af0; --code-bg:#232830; --warn:#e0a35a; }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);
+  font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  margin:0;padding:0;}
+.wrap{max-width:1140px;margin:0 auto;padding:32px 22px 80px;}
+h1{font-size:26px;line-height:1.2;margin:.2em 0 .5em;border-bottom:3px solid var(--accent);padding-bottom:.3em;}
+h2{font-size:20px;margin:1.8em 0 .5em;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:.25em;}
+h3{font-size:16px;margin:1.4em 0 .4em;}
+p{margin:.6em 0;} p em{color:var(--muted);}
+code{background:var(--code-bg);padding:.1em .35em;border-radius:4px;font-size:.88em;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+a{color:var(--accent);}
+.tw{overflow-x:auto;margin:.7em 0;border:1px solid var(--line);border-radius:8px;}
+table{border-collapse:collapse;width:100%;font-size:13px;}
+th,td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top;}
+th{background:var(--th-bg);position:sticky;top:0;font-weight:600;}
+tbody tr:nth-child(even){background:var(--row);}
+td:nth-child(1){white-space:normal;}
+strong{font-weight:650;}
+.foot{margin-top:60px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:12px;}
+</style></head>
+<body><div class="wrap">
+<h1>SRG Olympics — Matchup Report: <em>Unnamed Team (Chris Pate)</em></h1>
+<p>Auto-generated from <code>olympics.json</code> + <code>chris_pate_full_matchups.json</code>. Covers our team against <strong>every</strong> other team (both game types), the 13–15 skill-stop openness in each matchup, and the entrance-card assignment.</p>
+<h2>Our roster</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Slot</th>
+<th>Drafter</th>
+<th>Competitor</th>
+<th>10-stat</th>
+<th>Stat line (P/T/A/St/Su/Gr)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Captain</td>
+<td>Chris Pate</td>
+<td>Soborno</td>
+<td>agility</td>
+<td>5/9/10/8/6/7</td>
+</tr>
+<tr>
+<td>R1</td>
+<td>Ryon Piercer</td>
+<td>Little Guido</td>
+<td>technique</td>
+<td>5/10/8/6/9/7</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>Sam Stanton</td>
+<td>Rey Zerblade</td>
+<td>grapple</td>
+<td>8/7/5/9/6/10</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>Brandon Arrendondo</td>
+<td>Mastermind</td>
+<td>strike</td>
+<td>7/6/9/10/8/5</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>Matt Hass</td>
+<td>D1 (V1)</td>
+<td>submission</td>
+<td>7/8/9/6/10/5</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>Rin Puck</td>
+<td>The Bull</td>
+<td>power</td>
+<td>10/6/5/7/8/9</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Format.</strong> Each team-vs-team matchup pairs players two ways: by <strong>draft round/slot</strong> and by <strong>10-stat</strong>. Every team fields one competitor of each 10-stat, so the stat game is a fixed 1:1 permutation; the round game reshuffles which stat each player faces.</p>
+<h2>Entrance-card assignment (recommended)</h2>
+<p>One unique EntranceCard per player from a shared pool; each is consumed once. Assignment maximizes value across the whole slate (analytical scoring).</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Entrance</th>
+<th>→ Player</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ringside Ruckus With The Floats</strong></td>
+<td>Brandon / Mastermind</td>
+<td>Stat-rescue base is flat for everyone; only Mastermind's <em>bump→opp −2</em> gimmick doubles each elective bump.</td>
+</tr>
+<tr>
+<td><strong>You Got to Fight Your Way Out</strong></td>
+<td>Rin Puck / The Bull</td>
+<td>Only clearly defense-positive seat (net +9 stops on); unstoppable Power finish ⇒ no offense downside.</td>
+</tr>
+<tr>
+<td><strong>Impact is Family (V2)</strong></td>
+<td>Ryon / Little Guido</td>
+<td>Top remaining Spotlight-finish exposure (5 opponents).</td>
+</tr>
+<tr>
+<td><strong>Pretty Paul Says "Let It Rip!"</strong></td>
+<td>Chris Pate / Soborno</td>
+<td>Non-bump seat; faces Cyclone V2 (denies its draw-4-on-bump) + generic draw-2 tempo.</td>
+</tr>
+<tr>
+<td><strong>Beastie</strong> <em>(scanned)</em></td>
+<td>Sam Stanton / Rey Zerblade</td>
+<td>Grapple-weighted trigger (P/T/A/Su/Gr/Gr) → recover 2 Finishes; sustains repeat grapple finish attempts, independent of his bump tool.</td>
+</tr>
+<tr>
+<td><strong>The Sky Tyrant</strong> <em>(scanned)</em></td>
+<td>Matt Hass / D1</td>
+<td>Fires on Tech/Agility/Sub (his top 3 skills) → filter + draw; fuels his submission card-advantage engine, no downside clause.</td>
+</tr>
+</tbody>
+</table></div>
+<p><em>Scanned alternates</em> are drawn from the full 149-card EntranceCard pool for the two seats that fit none of the 4 key cards well; they are provisional pending each player's actual finish plan.</p>
+<h3>Ringside Ruckus (Floats) — stat-rescue value</h3>
+<p>Floats (<em>twice/match: same-skill roll → may bump</em>) rescues <strong>losing mirrors</strong> (skills where we're behind). Base value is near-flat because every competitor is a permutation of {5–10}. The <strong>gimmick multiplier</strong> decides who benefits.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Player</th>
+<th>Rescuable losing-mirrors (26 games)</th>
+<th>Gimmick on each bump</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ryon Piercer / Little Guido</td>
+<td>58</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Chris Pate / Soborno</td>
+<td>57</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Matt Hass / D1 (V1)</td>
+<td>57</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Sam Stanton / Rey Zerblade</td>
+<td>55</td>
+<td>+1 to the re-roll</td>
+</tr>
+<tr>
+<td>Brandon Arrendondo / Mastermind</td>
+<td>54</td>
+<td>opp next roll −2 (≈ doubles each rescue)</td>
+</tr>
+<tr>
+<td>Rin Puck / The Bull</td>
+<td>54</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<p><em>(Fae Dragon inverts the rule — Rin Puck Floats when </em><em>ahead</em><em>, not behind.)</em></p>
+<h3>Impact is Family (V2) — Spotlight-finish exposure</h3>
+<p>Blanks the opponent's <strong>Spotlight Finishes</strong>. Value = distinct opponents who run one.</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Player</th>
+<th># opponents w/ Spotlight finish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Brandon Arrendondo / Mastermind</td>
+<td>6</td>
+</tr>
+<tr>
+<td>Ryon Piercer / Little Guido</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Chris Pate / Soborno</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Rin Puck / The Bull</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Matt Hass / D1 (V1)</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Sam Stanton / Rey Zerblade</td>
+<td>2</td>
+</tr>
+</tbody>
+</table></div>
+<h3>You Got to Fight Your Way Out — 13–15 stop deltas</h3>
+<p>Makes printed skills ≤8 count as <strong>equal</strong> to the opponent's for Stop effects &amp; Gimmick. Double-edged: raises our low skills (turning our stops <strong>on</strong>) but equalizes away our high-skill advantages (turning stops <strong>off</strong> / closing our lines).</p>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Player (stat)</th>
+<th>Defense: ON / OFF (net)</th>
+<th>Offense: opens / closes (net)</th>
+<th>Read</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chris Pate / Soborno (agility)</td>
+<td>17 / 29 (-12)</td>
+<td>22 / 19 (+3)</td>
+<td>weak</td>
+</tr>
+<tr>
+<td>Ryon Piercer / Little Guido (technique)</td>
+<td>20 / 18 (+2)</td>
+<td>22 / 25 (-3)</td>
+<td>~neutral</td>
+</tr>
+<tr>
+<td>Sam Stanton / Rey Zerblade (grapple)</td>
+<td>10 / 32 (-22)</td>
+<td>24 / 20 (+4)</td>
+<td>mixed, defense-poor</td>
+</tr>
+<tr>
+<td>Brandon Arrendondo / Mastermind (strike)</td>
+<td>17 / 20 (-3)</td>
+<td>21 / 30 (-9)</td>
+<td><strong>actively bad</strong> (kills his St10/A9 edge)</td>
+</tr>
+<tr>
+<td>Matt Hass / D1 (V1) (submission)</td>
+<td>13 / 35 (-22)</td>
+<td>31 / 24 (+7)</td>
+<td>offense-only</td>
+</tr>
+<tr>
+<td>Rin Puck / The Bull (power)</td>
+<td>22 / 13 (+9)</td>
+<td>21 / 24 (-3)</td>
+<td><strong>defense goldmine</strong></td>
+</tr>
+</tbody>
+</table></div>
+<h3>Opponent gimmicks that rewrite the math</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Opponent</th>
+<th>Team</th>
+<th>Gimmick</th>
+<th>Effect on our entrances</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fae Dragon</td>
+<td>The Cannoli's Ricotta Renegades</td>
+<td>The player with the lowest turn roll wins the turn roll.</td>
+<td><strong>Inverts Floats</strong> (Float when ahead). Rin Puck faces it ×2. Nothing counters it.</td>
+</tr>
+<tr>
+<td>Cassandra</td>
+<td>I H.A.T.E. My Life</td>
+<td>Change "+" to "-" and "-" to "+" on your target's Gimmick and "Champio</td>
+<td>Flips Mastermind's −2→+2; Pretty Paul defuses.</td>
+</tr>
+<tr>
+<td>Mrs. Apocalypse</td>
+<td>I H.A.T.E. My Life</td>
+<td>During the turn roll: When your opponent's turn roll is 7 or less, the</td>
+<td>Penalizes our Floats bumps (roll −1); blanks our gimmick on ≤7 rolls.</td>
+</tr>
+<tr>
+<td>Tetsuya Naito</td>
+<td>#MOTHERCHUCKERS</td>
+<td>When your opponent rolls Technique for their turn roll, you may bump.</td>
+<td>Steals bump initiative when we roll Technique.</td>
+</tr>
+<tr>
+<td>The Cyclone (V2)</td>
+<td>#MOTHERCHUCKERS</td>
+<td>When you bump, you may have either player shuffle their hand into thei</td>
+<td>Draws 4 on any bump → our Floats feed it; Pretty Paul is the counter.</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Full matchups &amp; stop openness</h2>
+<p>For each of our players: their opponent in the <strong>round</strong> game (slot-vs-slot) and the <strong>stat</strong> game (shared 10-stat), with which finish lines are <strong>open</strong> each way. <code>Gr/Su/St</code> = Grapple/Submission/Strike keyed stops (13/14/15). Power/Technique/Agility finishes have <strong>no keyed stop — always open</strong>. <em>Our open</em> = finish types the opponent can't stop (our offense). <em>Their open</em> = finish types we can't stop (their offense).</p>
+<h3>Chris Pate — Soborno (Captain, 10=agility)</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Opp team</th>
+<th>Game</th>
+<th>Opponent</th>
+<th>Our open (G/Su/St)</th>
+<th>Their open (G/Su/St)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>round</td>
+<td>Mrs. Apocalypse</td>
+<td>Gr</td>
+<td>St</td>
+<td>◦ bump-interacting gimmick</td>
+</tr>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>stat</td>
+<td>Copy Kat (V2)</td>
+<td>Gr+St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>round</td>
+<td>Rowdy Ron</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>stat (doubled)</td>
+<td>Rowdy Ron</td>
+<td>St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>round</td>
+<td>Tetsuya Naito</td>
+<td>Gr</td>
+<td>Su+St</td>
+<td>◦ bump-interacting gimmick</td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>stat</td>
+<td>The Cyclone (V2)</td>
+<td>Gr+St</td>
+<td>—</td>
+<td>◦ bump-interacting gimmick</td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>round</td>
+<td>King Kong Dundy</td>
+<td>Gr</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>stat</td>
+<td>Unicorn Princess</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>round</td>
+<td>Jebediah The Amish Assas</td>
+<td>Gr</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>stat</td>
+<td>El Blanco Diablo (V1)</td>
+<td>—</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>round</td>
+<td>Overdog (V1)</td>
+<td>—</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>stat</td>
+<td>Amazing Red</td>
+<td>Su+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>round</td>
+<td>Gangrel</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>stat</td>
+<td>Cheetah</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>round</td>
+<td>Swoggle (V1)</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>stat (doubled)</td>
+<td>Swoggle (V1)</td>
+<td>St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>round</td>
+<td>Supersonica</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>stat (doubled)</td>
+<td>Supersonica</td>
+<td>St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>round</td>
+<td>Mila Mai (V1)</td>
+<td>—</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>stat (doubled)</td>
+<td>Mila Mai (V1)</td>
+<td>—</td>
+<td>—</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>round</td>
+<td>Mr. Poppintwist</td>
+<td>Gr</td>
+<td>Su+St</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>stat</td>
+<td>El Phantasmo</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>round</td>
+<td>Uncle Awesome (V2)</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>stat</td>
+<td>Real Beater</td>
+<td>Gr</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>round</td>
+<td>El Scorpio</td>
+<td>—</td>
+<td>Su+St</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>stat</td>
+<td>King Greatness</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3>Ryon Piercer — Little Guido (R1, 10=technique)</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Opp team</th>
+<th>Game</th>
+<th>Opponent</th>
+<th>Our open (G/Su/St)</th>
+<th>Their open (G/Su/St)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>round</td>
+<td>D2 (V1)</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>stat</td>
+<td>Mrs. Apocalypse</td>
+<td>St</td>
+<td>Gr</td>
+<td>◦ bump-interacting gimmick</td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>round</td>
+<td>Candyman Dan</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>stat (doubled)</td>
+<td>Candyman Dan</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>round</td>
+<td>The Cyclone (V2)</td>
+<td>St</td>
+<td>Gr</td>
+<td>◦ bump-interacting gimmick</td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>stat</td>
+<td>Tetsuya Naito</td>
+<td>St</td>
+<td>Su</td>
+<td>◦ bump-interacting gimmick</td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>round</td>
+<td>Pretzel Wizard</td>
+<td>Gr</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>stat</td>
+<td>The Phoenix EV Fresh</td>
+<td>—</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>round</td>
+<td>El Blanco Diablo (V1)</td>
+<td>St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>stat</td>
+<td>Dr. Sleep</td>
+<td>—</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>round</td>
+<td>Amazing Red</td>
+<td>Su+St</td>
+<td>Gr+Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>stat</td>
+<td>J Tagas</td>
+<td>St</td>
+<td>Gr+Su</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>round</td>
+<td>Tomato Tomato Jr.</td>
+<td>St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>stat</td>
+<td>Zack Sabre Jr. (V1)</td>
+<td>Gr+Su</td>
+<td>Gr+Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>round</td>
+<td>Smart Mark Sterling</td>
+<td>Gr</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>stat (doubled)</td>
+<td>Smart Mark Sterling</td>
+<td>Gr</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>round</td>
+<td>Tortured Vigilante</td>
+<td>—</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>stat</td>
+<td>Ms. Tierious</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>round</td>
+<td>Possum King</td>
+<td>—</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>stat</td>
+<td>Abigail Fairy in Trainin</td>
+<td>St</td>
+<td>Gr+Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>round</td>
+<td>The Chosen One</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>stat</td>
+<td>Hallow King (V1)</td>
+<td>St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>round</td>
+<td>Defector</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>stat</td>
+<td>Ricky Riot (V1)</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>round</td>
+<td>Mr. Sunday Night Ron Rum</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>stat</td>
+<td>El Scorpio</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3>Sam Stanton — Rey Zerblade (R2, 10=grapple)</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Opp team</th>
+<th>Game</th>
+<th>Opponent</th>
+<th>Our open (G/Su/St)</th>
+<th>Their open (G/Su/St)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>round</td>
+<td>Copy Kat (V2)</td>
+<td>—</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>stat</td>
+<td>The Queen of Cheer Adria</td>
+<td>Gr+St</td>
+<td>Gr+St</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>round</td>
+<td>Brian Cage (V2)</td>
+<td>St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>stat</td>
+<td>Papa Nequaquam</td>
+<td>St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>round</td>
+<td>Theo the Greek Neo (V1)</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>stat (doubled)</td>
+<td>Theo the Greek Neo (V1)</td>
+<td>Su</td>
+<td>—</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>round</td>
+<td>The SRG Boss (The Greate</td>
+<td>—</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>stat</td>
+<td>Noah the Boa</td>
+<td>Gr+Su</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>round</td>
+<td>Trent?</td>
+<td>Su+St</td>
+<td>Gr+St</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>stat</td>
+<td>Jebediah The Amish Assas</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>round</td>
+<td>J Tagas</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>stat</td>
+<td>Scott Prime (V1)</td>
+<td>Gr+Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>round</td>
+<td>Zack Sabre Jr. (V1)</td>
+<td>Su</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>stat</td>
+<td>Gangrel</td>
+<td>Gr+St</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>round</td>
+<td>Candy MaM</td>
+<td>Su</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>stat (doubled)</td>
+<td>Candy MaM</td>
+<td>Su</td>
+<td>St</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>round</td>
+<td>Dough Nation (V1)</td>
+<td>—</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>stat</td>
+<td>El Gato Shinobi</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>round</td>
+<td>Tommy Stillwell</td>
+<td>—</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>stat (doubled)</td>
+<td>Tommy Stillwell</td>
+<td>—</td>
+<td>St</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>round</td>
+<td>Ivelisse "La Sicaria"</td>
+<td>Su</td>
+<td>Gr+St</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>stat</td>
+<td>The Chosen One</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>round</td>
+<td>Chris Bey (Greatest Stor</td>
+<td>Su+St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>stat</td>
+<td>Defector</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>round</td>
+<td>AJ Styles</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>stat</td>
+<td>Leader of the Postal Nat</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3>Brandon Arrendondo — Mastermind (R3, 10=strike)</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Opp team</th>
+<th>Game</th>
+<th>Opponent</th>
+<th>Our open (G/Su/St)</th>
+<th>Their open (G/Su/St)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>round</td>
+<td>Cassandra</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td>⚠️ sign-flips your gimmick</td>
+</tr>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>stat</td>
+<td>D2 (V1)</td>
+<td>Gr</td>
+<td>Su+St</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>round</td>
+<td>Papa Nequaquam</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>stat</td>
+<td>Deathmatch King Matt Car</td>
+<td>Gr</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>round</td>
+<td>D3 (V1)</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>stat (doubled)</td>
+<td>D3 (V1)</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>round</td>
+<td>Noah the Boa</td>
+<td>Gr</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>stat</td>
+<td>The SRG Boss (The Greate</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>round</td>
+<td>Dr. Sleep</td>
+<td>Gr</td>
+<td>Su+St</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>stat</td>
+<td>Trent?</td>
+<td>—</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>round</td>
+<td>Scott Prime (V1)</td>
+<td>Gr</td>
+<td>Su+St</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>stat</td>
+<td>Kenzie Paige</td>
+<td>Gr+St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>round</td>
+<td>Evee Laveaux</td>
+<td>Gr</td>
+<td>Su+St</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>stat</td>
+<td>RVD</td>
+<td>—</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>round</td>
+<td>Foxworthy (V3)</td>
+<td>Gr</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>stat (doubled)</td>
+<td>Foxworthy (V3)</td>
+<td>Gr</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>round</td>
+<td>Shattered Split</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>stat (doubled)</td>
+<td>Shattered Split</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>round</td>
+<td>The Witch's Apprentice</td>
+<td>Gr</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>stat</td>
+<td>Khloe Mai</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>round</td>
+<td>King Brian Cage</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>stat</td>
+<td>Ivelisse "La Sicaria"</td>
+<td>Gr</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>round</td>
+<td>Ricky Riot (V1)</td>
+<td>Gr</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>stat</td>
+<td>Chris Bey (Greatest Stor</td>
+<td>—</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>round</td>
+<td>Leader of the Postal Nat</td>
+<td>Gr+St</td>
+<td>Su+St</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>stat</td>
+<td>AJ Styles</td>
+<td>—</td>
+<td>—</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<h3>Matt Hass — D1 (V1) (R4, 10=submission)</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Opp team</th>
+<th>Game</th>
+<th>Opponent</th>
+<th>Our open (G/Su/St)</th>
+<th>Their open (G/Su/St)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>round</td>
+<td>The Queen of Cheer Adria</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>stat</td>
+<td>Johnny Korea</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>round</td>
+<td>Killer Kelly</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>stat (doubled)</td>
+<td>Killer Kelly</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>round</td>
+<td>Slime Girl</td>
+<td>Su</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>stat (doubled)</td>
+<td>Slime Girl</td>
+<td>Su</td>
+<td>—</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>round</td>
+<td>Unicorn Princess</td>
+<td>St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>stat</td>
+<td>King Kong Dundy</td>
+<td>Gr+St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>round</td>
+<td>General Manager John Cal</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>stat (doubled)</td>
+<td>General Manager John Cal</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>round</td>
+<td>Kenzie Paige</td>
+<td>St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>stat</td>
+<td>Overdog (V1)</td>
+<td>St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>round</td>
+<td>Cheetah</td>
+<td>St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>stat</td>
+<td>Evee Laveaux</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>round</td>
+<td>The East End Enforcer</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>stat (doubled)</td>
+<td>The East End Enforcer</td>
+<td>St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>round</td>
+<td>El Gato Shinobi</td>
+<td>St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>stat</td>
+<td>Tortured Vigilante</td>
+<td>Gr+St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>round</td>
+<td>Abigail Fairy in Trainin</td>
+<td>Gr</td>
+<td>Gr+Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>stat</td>
+<td>Possum King</td>
+<td>Su+St</td>
+<td>Gr+Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>round</td>
+<td>Hallow King (V1)</td>
+<td>—</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>stat</td>
+<td>Mr. Poppintwist</td>
+<td>Gr</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>round</td>
+<td>Sgt. Yoga</td>
+<td>St</td>
+<td>Su</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>stat (doubled)</td>
+<td>Sgt. Yoga</td>
+<td>St</td>
+<td>Su</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>round</td>
+<td>Mr. Snap (V1)</td>
+<td>—</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>stat (doubled)</td>
+<td>Mr. Snap (V1)</td>
+<td>—</td>
+<td>—</td>
+<td>(doubled)</td>
+</tr>
+</tbody>
+</table></div>
+<h3>Rin Puck — The Bull (R5, 10=power)</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>Opp team</th>
+<th>Game</th>
+<th>Opponent</th>
+<th>Our open (G/Su/St)</th>
+<th>Their open (G/Su/St)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>round</td>
+<td>Johnny Korea</td>
+<td>Su</td>
+<td>Gr+St</td>
+<td></td>
+</tr>
+<tr>
+<td>I H.A.T.E. My Life</td>
+<td>stat</td>
+<td>Cassandra</td>
+<td>St</td>
+<td>—</td>
+<td>⚠️ sign-flips your gimmick</td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>round</td>
+<td>Deathmatch King Matt Car</td>
+<td>—</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>My MF'n Nillas... and</td>
+<td>stat</td>
+<td>Brian Cage (V2)</td>
+<td>St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>round</td>
+<td>Joe Hendry</td>
+<td>St</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>#MOTHERCHUCKERS</td>
+<td>stat (doubled)</td>
+<td>Joe Hendry</td>
+<td>St</td>
+<td>—</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>round</td>
+<td>The Phoenix EV Fresh</td>
+<td>Su</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>Dunn Deal</td>
+<td>stat</td>
+<td>Pretzel Wizard</td>
+<td>Su</td>
+<td>St</td>
+<td></td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>round</td>
+<td>Fae Dragon</td>
+<td>Su</td>
+<td>Gr+St</td>
+<td>⚠️ lowest-roll-wins (inverts turn rolls)</td>
+</tr>
+<tr>
+<td>The Cannoli's Ricotta</td>
+<td>stat (doubled)</td>
+<td>Fae Dragon</td>
+<td>Su</td>
+<td>Gr+St</td>
+<td>⚠️ lowest-roll-wins (inverts turn rolls) (doubled)</td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>round</td>
+<td>Queen of Rock</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Bully Boi Clique</td>
+<td>stat (doubled)</td>
+<td>Queen of Rock</td>
+<td>Su</td>
+<td>Gr</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>round</td>
+<td>RVD</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>unnamed team (Collin S</td>
+<td>stat</td>
+<td>Tomato Tomato Jr.</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>round</td>
+<td>Sage the Wiccan Witch (V</td>
+<td>St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Collecto</td>
+<td>stat (doubled)</td>
+<td>Sage the Wiccan Witch (V</td>
+<td>St</td>
+<td>Gr</td>
+<td>(doubled)</td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>round</td>
+<td>Ms. Tierious</td>
+<td>Su</td>
+<td>Gr+St</td>
+<td></td>
+</tr>
+<tr>
+<td>Cheetah's Collection</td>
+<td>stat</td>
+<td>Dough Nation (V1)</td>
+<td>Su+St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>round</td>
+<td>Khloe Mai</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Any Team</td>
+<td>stat</td>
+<td>The Witch's Apprentice</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>round</td>
+<td>El Phantasmo</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>The Real Tristate</td>
+<td>stat</td>
+<td>King Brian Cage</td>
+<td>St</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>round</td>
+<td>Real Beater</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Unnamed Team (Rambo Ap</td>
+<td>stat</td>
+<td>Uncle Awesome (V2)</td>
+<td>—</td>
+<td>—</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>round</td>
+<td>King Greatness</td>
+<td>Su</td>
+<td>Gr</td>
+<td></td>
+</tr>
+<tr>
+<td>Clown Town</td>
+<td>stat</td>
+<td>Mr. Sunday Night Ron Rum</td>
+<td>Su+St</td>
+<td>Gr+St</td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<div class="foot">Generated from olympics.json — SRG Olympics matchup &amp; entrance analysis.</div>
+</div></body></html>

@@ -178,6 +178,9 @@ OppWonLastRoll               # the opponent won the PREVIOUS turn's roll-off (Ga
 EndedTurnNoPlay              # the owner ended the PREVIOUS turn without playing a card — roll-off winner on turn_no-1 who
                              # passed (PlayerState.flags["last_pass_turn"]); false on turn 1 / after a play or lost roll-off.
                              # Gates The SRG Boss's finish riders. schema v78
+RerolledTurnRoll             # the owner re-rolled their turn roll THIS turn (any turn die re-rolled at the roll-off;
+                             # PlayerState.flags["rerolled_turn"]). Gates King Brian Cage's finish riders, OR'd with
+                             # RollWasSkill{Power}. schema v80
 DuringTurn(who)              # it is currently who's turn (GameState.active == who-side) — gates a continuous
                              # effect to a turn phase ("during your opponent's turn: …" — La Fenix). schema v19
 Always
@@ -278,6 +281,8 @@ DoubleFinishIfBumped          # Static self-decl: double THIS card's Finish bonu
 DoubleFinishIf(condition)     # conditional generalization: double THIS card's Finish bonuses when `condition`
                               # holds ("… if you have another Submission in play / rolled Power"). Read in
                               # card_finish_bonus against the owner's turn-roll ctx (so RollWasSkill resolves). schema v77
+RequireStops(count)           # this card can only be stopped by `count` Stops at once — the defender must commit
+                              # `count` legal stops or it lands (King Brian Cage). Read in offer_stop. schema v80
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
 `Bury(selector, count, who, random, source)` moves `count` cards to the **bottom of the

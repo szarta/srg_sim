@@ -1,0 +1,3495 @@
+{
+  "_format": {
+    "description": "SRG Olympics tournament structure. A Team has Players; each Player is a human drafter piloting one SingleCompetitorCard. Matchups pair two Teams; players meet in two games each: one paired by matching 10-stat, one paired by matching draft round.",
+    "competitor_pool": "uuid -> resolved SingleCompetitorCard {competitor, roster_name, division, ten_stat (the skill rated 10), stats}. Reference source of card facts.",
+    "teams[].players[]": "{name (drafter), slot ('Captain'|'R1'..'R5'), round (0=Captain,1..5), competitor, db_uuid (->competitor_pool), ten_stat}",
+    "matchups[]": "{tournament_round, team_a, team_b, games:[{pairing:'round'(slot vs slot)|'ten_stat', key, a:{player,competitor,db_uuid,ten_stat,slot}, b:{...}|null if no partner}]}"
+  },
+  "schema_version": 1,
+  "tournament": "SRG Olympics",
+  "competitor_pool": {
+    "c0bfb96bd9054080960a0ecbaeb13e64": {
+      "competitor": "Abigail Fairy in Training",
+      "roster_name": "Abigail Fairy in Training",
+      "division": "Intergalactic",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 7,
+        "technique": 10,
+        "agility": 9,
+        "strike": 6,
+        "submission": 5,
+        "grapple": 8
+      }
+    },
+    "b5a305c0f693405f8cb43b4e5864e559": {
+      "competitor": "AJ Styles",
+      "roster_name": "AJ Styles",
+      "division": "Underworld",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 6,
+        "technique": 8,
+        "agility": 9,
+        "strike": 10,
+        "submission": 5,
+        "grapple": 7
+      }
+    },
+    "2507369b706f4dec83b61e8da40b80c0": {
+      "competitor": "Amazing Red",
+      "roster_name": "Amazing Red",
+      "division": "World Championship",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 5,
+        "technique": 8,
+        "agility": 10,
+        "strike": 9,
+        "submission": 6,
+        "grapple": 7
+      }
+    },
+    "12d4949f97d344238c8b1c7cdc719a63": {
+      "competitor": "Brian Cage (V2)",
+      "roster_name": "Brian Cage (-2 to opponent roll)",
+      "division": "Global",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 6,
+        "agility": 8,
+        "strike": 7,
+        "submission": 5,
+        "grapple": 9
+      }
+    },
+    "8ddf0b4f072e4799bcb6df6b22e84b18": {
+      "competitor": "King Brian Cage",
+      "roster_name": "Brian Cage, King Cage",
+      "division": "Underworld",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 6,
+        "agility": 8,
+        "strike": 7,
+        "submission": 5,
+        "grapple": 9
+      }
+    },
+    "e1e8ae66adc2457a8d87a4a1d9820442": {
+      "competitor": "Candy MaM",
+      "roster_name": "Candy Mam",
+      "division": "Underworld",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 6,
+        "technique": 9,
+        "agility": 8,
+        "strike": 5,
+        "submission": 7,
+        "grapple": 10
+      }
+    },
+    "f8dad17fa6a940b89d0466691d98b7fc": {
+      "competitor": "Candyman Dan",
+      "roster_name": "Candyman Dan",
+      "division": "Underworld",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 6,
+        "technique": 10,
+        "agility": 8,
+        "strike": 5,
+        "submission": 7,
+        "grapple": 9
+      }
+    },
+    "98f3f8c2a9624054b696f59bc8d89dd9": {
+      "competitor": "Cassandra",
+      "roster_name": "Cassandra",
+      "division": "Intergalactic",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 5,
+        "agility": 7,
+        "strike": 6,
+        "submission": 8,
+        "grapple": 9
+      }
+    },
+    "8e7340565e01403d99eb2026d2d49765": {
+      "competitor": "Cheetah",
+      "roster_name": "Cheetah",
+      "division": "Intergalactic",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 5,
+        "technique": 8,
+        "agility": 10,
+        "strike": 7,
+        "submission": 6,
+        "grapple": 9
+      }
+    },
+    "52787724f33243a4a597b78a394e6813": {
+      "competitor": "Chris Bey (Greatest Story Ever Told)",
+      "roster_name": "Chris Bey, GSET (flip on power)",
+      "division": "Global",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 6,
+        "technique": 7,
+        "agility": 9,
+        "strike": 10,
+        "submission": 5,
+        "grapple": 8
+      }
+    },
+    "9e57cd60fb34451bbf7426fb315033ca": {
+      "competitor": "Copy Kat (V2)",
+      "roster_name": "Copy Kat",
+      "division": "United States",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 9,
+        "technique": 8,
+        "agility": 10,
+        "strike": 7,
+        "submission": 6,
+        "grapple": 5
+      }
+    },
+    "b69620138a614df0bea6b3bddcc2123d": {
+      "competitor": "The Cyclone (V2)",
+      "roster_name": "Cyclone (OS)",
+      "division": "World Championship",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 9,
+        "technique": 8,
+        "agility": 10,
+        "strike": 7,
+        "submission": 5,
+        "grapple": 6
+      }
+    },
+    "51537506696946a2ad10662229ccd96f": {
+      "competitor": "D1 (V1)",
+      "roster_name": "D1",
+      "division": "United States",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 7,
+        "technique": 8,
+        "agility": 9,
+        "strike": 6,
+        "submission": 10,
+        "grapple": 5
+      }
+    },
+    "bd04b23708fe49728541a20e689cae61": {
+      "competitor": "D2 (V1)",
+      "roster_name": "D2",
+      "division": "World Championship",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 8,
+        "technique": 6,
+        "agility": 5,
+        "strike": 10,
+        "submission": 9,
+        "grapple": 7
+      }
+    },
+    "91c51b9ed3e14a0582f050716596dbd6": {
+      "competitor": "D3 (V1)",
+      "roster_name": "D3 (3 cards for finish)",
+      "division": "Hardcore",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 8,
+        "technique": 5,
+        "agility": 6,
+        "strike": 10,
+        "submission": 7,
+        "grapple": 9
+      }
+    },
+    "fc7f7efc0f914eb88a42db65b9778ab6": {
+      "competitor": "Defector",
+      "roster_name": "Defector",
+      "division": "Intergalactic",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 9,
+        "strike": 5,
+        "submission": 8,
+        "grapple": 10
+      }
+    },
+    "4727798038a94d549fa5267837d5aa09": {
+      "competitor": "Dough Nation (V1)",
+      "roster_name": "Dough Nation (kick)",
+      "division": "United States",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 5,
+        "agility": 6,
+        "strike": 9,
+        "submission": 8,
+        "grapple": 7
+      }
+    },
+    "763531a5c5ee468690793b8683f59abd": {
+      "competitor": "Mila Mai (V1)",
+      "roster_name": "Dr. Mila Mai MD",
+      "division": "United States",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 6,
+        "technique": 7,
+        "agility": 10,
+        "strike": 8,
+        "submission": 9,
+        "grapple": 5
+      }
+    },
+    "9bd2e6dfb6ae481caeb05659c5d734f5": {
+      "competitor": "Dr. Sleep",
+      "roster_name": "Dr. Sleep",
+      "division": "Global",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 7,
+        "technique": 10,
+        "agility": 5,
+        "strike": 9,
+        "submission": 8,
+        "grapple": 6
+      }
+    },
+    "fbc6b406877442389762487515cd1b5d": {
+      "competitor": "El Blanco Diablo (V1)",
+      "roster_name": "El Blanco Diablo (original)",
+      "division": "Old School",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 6,
+        "technique": 7,
+        "agility": 10,
+        "strike": 8,
+        "submission": 9,
+        "grapple": 5
+      }
+    },
+    "44a083f3214148959e40c125bb5eb7b2": {
+      "competitor": "El Gato Shinobi",
+      "roster_name": "El Gato Shinobi",
+      "division": "Underworld",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 5,
+        "technique": 6,
+        "agility": 9,
+        "strike": 8,
+        "submission": 7,
+        "grapple": 10
+      }
+    },
+    "c8788ae573734217b3a4ee2563d998b7": {
+      "competitor": "El Phantasmo",
+      "roster_name": "El Phantasmo",
+      "division": "Global",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 5,
+        "technique": 8,
+        "agility": 10,
+        "strike": 9,
+        "submission": 7,
+        "grapple": 6
+      }
+    },
+    "8b00ea8e2268466d98265ebb62cc0c64": {
+      "competitor": "El Scorpio",
+      "roster_name": "El Scorpio (draw from bottom)",
+      "division": "United States",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 5,
+        "technique": 10,
+        "agility": 6,
+        "strike": 9,
+        "submission": 7,
+        "grapple": 8
+      }
+    },
+    "cc42c7a9d4834a03836944558edd39cc": {
+      "competitor": "Evee Laveaux",
+      "roster_name": "Evee Laveaux",
+      "division": null,
+      "ten_stat": "submission",
+      "stats": {
+        "power": 9,
+        "technique": 6,
+        "agility": 7,
+        "strike": 8,
+        "submission": 10,
+        "grapple": 5
+      }
+    },
+    "c37902890fa44033ad8ca1412ba9ae3d": {
+      "competitor": "Fae Dragon",
+      "roster_name": "Fae Dragon",
+      "division": "World Championship",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 7,
+        "agility": 6,
+        "strike": 8,
+        "submission": 9,
+        "grapple": 5
+      }
+    },
+    "f2a6fa1ed1cb46a49f1fa65e19190a4c": {
+      "competitor": "Foxworthy (V3)",
+      "roster_name": "Foxworthy (4, 5, 6 are 7-9)",
+      "division": "United States",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 8,
+        "technique": 5,
+        "agility": 6,
+        "strike": 10,
+        "submission": 9,
+        "grapple": 7
+      }
+    },
+    "5c50247e9da54a7f9c39315f0707c497": {
+      "competitor": "Gangrel",
+      "roster_name": "Gangrel",
+      "division": "Global",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 9,
+        "technique": 7,
+        "agility": 5,
+        "strike": 8,
+        "submission": 6,
+        "grapple": 10
+      }
+    },
+    "c3a4f97f97024dc7aba6e6321cf47bd2": {
+      "competitor": "General Manager John Calace (V1)",
+      "roster_name": "General Manager John Calace",
+      "division": "Underworld",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 9,
+        "technique": 7,
+        "agility": 8,
+        "strike": 6,
+        "submission": 10,
+        "grapple": 5
+      }
+    },
+    "ba1af0065d3a45f7823ed63f6b5ce426": {
+      "competitor": "Hallow King (V1)",
+      "roster_name": "Hallow King (original)",
+      "division": "Hardcore",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 8,
+        "technique": 10,
+        "agility": 7,
+        "strike": 9,
+        "submission": 6,
+        "grapple": 5
+      }
+    },
+    "c30f8ab941e046cdb7dea5772f96019b": {
+      "competitor": "Ivelisse \"La Sicaria\"",
+      "roster_name": "Ivelisse La Sicaria",
+      "division": "Global",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 5,
+        "technique": 7,
+        "agility": 6,
+        "strike": 10,
+        "submission": 8,
+        "grapple": 9
+      }
+    },
+    "30cad233d0364e188ba962d7f891619f": {
+      "competitor": "J Tagas",
+      "roster_name": "J Tagas",
+      "division": null,
+      "ten_stat": "technique",
+      "stats": {
+        "power": 6,
+        "technique": 10,
+        "agility": 8,
+        "strike": 9,
+        "submission": 5,
+        "grapple": 7
+      }
+    },
+    "bcfd31f67b454a1e9d41d981fb265e5d": {
+      "competitor": "Jebediah The Amish Assassin",
+      "roster_name": "Jebediah the Amish Assassin",
+      "division": "Hardcore",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 8,
+        "strike": 5,
+        "submission": 9,
+        "grapple": 10
+      }
+    },
+    "87b26269da2d464da1bbf43c3f7b2d32": {
+      "competitor": "Joe Hendry",
+      "roster_name": "Joe Hendry",
+      "division": "Underworld",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 5,
+        "agility": 8,
+        "strike": 6,
+        "submission": 7,
+        "grapple": 9
+      }
+    },
+    "c7c67bea6ff64c3b81cc812363c23ac4": {
+      "competitor": "Johnny Korea",
+      "roster_name": "Johnny Korea",
+      "division": "United States",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 9,
+        "technique": 6,
+        "agility": 7,
+        "strike": 8,
+        "submission": 10,
+        "grapple": 5
+      }
+    },
+    "84b60d0aecfa4ddd80a546a12ad8317d": {
+      "competitor": "Kenzie Paige",
+      "roster_name": "Kenzie Page",
+      "division": "Global",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 6,
+        "technique": 5,
+        "agility": 7,
+        "strike": 10,
+        "submission": 8,
+        "grapple": 9
+      }
+    },
+    "3c8273a9252a46feb337348e29c30ad3": {
+      "competitor": "Khloe Mai",
+      "roster_name": "Khloe Mai",
+      "division": "United States",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 6,
+        "technique": 9,
+        "agility": 8,
+        "strike": 10,
+        "submission": 7,
+        "grapple": 5
+      }
+    },
+    "d22f300a2da6416b9dc580d04a8374df": {
+      "competitor": "Killer Kelly",
+      "roster_name": "Killer Kelly",
+      "division": "Global",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 8,
+        "technique": 7,
+        "agility": 5,
+        "strike": 6,
+        "submission": 10,
+        "grapple": 9
+      }
+    },
+    "7e5c8dfeecc041958080980601611097": {
+      "competitor": "King Greatness",
+      "roster_name": "King Greatness",
+      "division": "United States",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 5,
+        "technique": 8,
+        "agility": 10,
+        "strike": 9,
+        "submission": 7,
+        "grapple": 6
+      }
+    },
+    "ad7d8a1ad1f94531ba438895bbdc4fd7": {
+      "competitor": "King Kong Dundy",
+      "roster_name": "King Kong Dundy (shuffle on power)",
+      "division": "Hardcore",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 6,
+        "technique": 7,
+        "agility": 9,
+        "strike": 5,
+        "submission": 10,
+        "grapple": 8
+      }
+    },
+    "417d1d704f49439c8c8e4f3bd703a880": {
+      "competitor": "Leader of the Postal Nation",
+      "roster_name": "Leader of the Postal Nation",
+      "division": "United States",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 9,
+        "strike": 5,
+        "submission": 8,
+        "grapple": 10
+      }
+    },
+    "1cf1f13bf01a404ea9117d3483eb2984": {
+      "competitor": "Little Guido",
+      "roster_name": "Little Guido",
+      "division": "Underworld",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 5,
+        "technique": 10,
+        "agility": 8,
+        "strike": 6,
+        "submission": 9,
+        "grapple": 7
+      }
+    },
+    "31b5d4f1aa0743b4bc3d0622d81b0d92": {
+      "competitor": "Mastermind",
+      "roster_name": "Mastermind",
+      "division": "Intergalactic",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 9,
+        "strike": 10,
+        "submission": 8,
+        "grapple": 5
+      }
+    },
+    "b3c837b732a54281aa9169ab1d46d42f": {
+      "competitor": "Deathmatch King Matt Cardona",
+      "roster_name": "Matt Cardona, Deathmatch King",
+      "division": "World Championship",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 8,
+        "technique": 7,
+        "agility": 6,
+        "strike": 10,
+        "submission": 5,
+        "grapple": 9
+      }
+    },
+    "7c61c4f8ca78491ba66c77a6a2778888": {
+      "competitor": "Mr. Poppintwist",
+      "roster_name": "Mr. Poppintwist",
+      "division": "World Championship",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 6,
+        "technique": 9,
+        "agility": 7,
+        "strike": 5,
+        "submission": 10,
+        "grapple": 8
+      }
+    },
+    "f9cb3b3b788346eda95fcb066e9305ad": {
+      "competitor": "Mr. Snap (V1)",
+      "roster_name": "Mr. Snap (random bury)",
+      "division": "World Championship",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 5,
+        "technique": 9,
+        "agility": 6,
+        "strike": 7,
+        "submission": 10,
+        "grapple": 8
+      }
+    },
+    "01294f0b05eb48ddaf8dd763b852a7ad": {
+      "competitor": "Mr. Sunday Night Ron Rumble",
+      "roster_name": "Mr. Sunday Night Ron Rumble",
+      "division": "United States",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 6,
+        "agility": 5,
+        "strike": 9,
+        "submission": 8,
+        "grapple": 7
+      }
+    },
+    "dfa3e0991ea3426197f4ded552575d61": {
+      "competitor": "Mrs. Apocalypse",
+      "roster_name": "Mrs. Apocalypse",
+      "division": "United States",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 8,
+        "technique": 10,
+        "agility": 9,
+        "strike": 7,
+        "submission": 6,
+        "grapple": 5
+      }
+    },
+    "fbad14e83e1043c1949a671a30cd2323": {
+      "competitor": "Ms. Tierious",
+      "roster_name": "Ms. Tierious",
+      "division": "United States",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 5,
+        "technique": 10,
+        "agility": 9,
+        "strike": 7,
+        "submission": 8,
+        "grapple": 6
+      }
+    },
+    "b34f7beab430461182c377100b12c213": {
+      "competitor": "Noah the Boa",
+      "roster_name": "Noah The Boa",
+      "division": "Old School",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 7,
+        "technique": 9,
+        "agility": 5,
+        "strike": 8,
+        "submission": 6,
+        "grapple": 10
+      }
+    },
+    "5f78183903ba49eabae4c4ec9f0ffd11": {
+      "competitor": "Overdog (V1)",
+      "roster_name": "Overdog (original)",
+      "division": "Underworld",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 5,
+        "technique": 7,
+        "agility": 6,
+        "strike": 9,
+        "submission": 10,
+        "grapple": 8
+      }
+    },
+    "d9a4d476808c4f43bd536ab181a3c275": {
+      "competitor": "Papa Nequaquam",
+      "roster_name": "Papa Nequaquam",
+      "division": null,
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 8,
+        "technique": 5,
+        "agility": 9,
+        "strike": 7,
+        "submission": 6,
+        "grapple": 10
+      }
+    },
+    "5384da96ce6740ce9081b60773b99873": {
+      "competitor": "The Phoenix EV Fresh",
+      "roster_name": "Phoenix EV Fresh",
+      "division": "United States",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 7,
+        "technique": 10,
+        "agility": 9,
+        "strike": 6,
+        "submission": 8,
+        "grapple": 5
+      }
+    },
+    "9e5c51951a104635ac7af1fcd4c1dc67": {
+      "competitor": "Possum King",
+      "roster_name": "Possum Kang (King)",
+      "division": null,
+      "ten_stat": "submission",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 9,
+        "strike": 8,
+        "submission": 10,
+        "grapple": 5
+      }
+    },
+    "fcb3c164213a49be9ab0ae4a70bdc211": {
+      "competitor": "Pretzel Wizard",
+      "roster_name": "Pretzel Wizard",
+      "division": "Hardcore",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 8,
+        "agility": 7,
+        "strike": 5,
+        "submission": 9,
+        "grapple": 6
+      }
+    },
+    "7b1af704863e498b8b473e44c8d42ed4": {
+      "competitor": "The Queen of Cheer Adrianna Dee",
+      "roster_name": "Queen of Cheer, Adrianna Dee",
+      "division": "World Championship",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 8,
+        "technique": 7,
+        "agility": 5,
+        "strike": 9,
+        "submission": 6,
+        "grapple": 10
+      }
+    },
+    "5dbd7e84b45a4473b1c096c3b90cf9d3": {
+      "competitor": "Queen of Rock",
+      "roster_name": "Queen of Rock",
+      "division": null,
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 7,
+        "agility": 9,
+        "strike": 8,
+        "submission": 5,
+        "grapple": 6
+      }
+    },
+    "ee0c785df87947449d12e60e1023e17d": {
+      "competitor": "Real Beater",
+      "roster_name": "Real Beater",
+      "division": "United States",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 6,
+        "technique": 5,
+        "agility": 10,
+        "strike": 7,
+        "submission": 9,
+        "grapple": 8
+      }
+    },
+    "3e6ec7e5fe33421d83a699ac956a6858": {
+      "competitor": "Rey Zerblade",
+      "roster_name": "Rey Zerblade",
+      "division": "Old School",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 8,
+        "technique": 7,
+        "agility": 5,
+        "strike": 9,
+        "submission": 6,
+        "grapple": 10
+      }
+    },
+    "5cf0d256efd841b3b5c220e2487db443": {
+      "competitor": "Ricky Riot (V1)",
+      "roster_name": "Ricky Riot (2 cards if 3 less)",
+      "division": "World Championship",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 6,
+        "technique": 10,
+        "agility": 8,
+        "strike": 5,
+        "submission": 7,
+        "grapple": 9
+      }
+    },
+    "76844541603c4065993d0c45c0de838b": {
+      "competitor": "Rowdy Ron",
+      "roster_name": "Rowdy Ron",
+      "division": "United States",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 6,
+        "technique": 7,
+        "agility": 10,
+        "strike": 9,
+        "submission": 5,
+        "grapple": 8
+      }
+    },
+    "276fb52f04234fa9bb6adebf98aa91e6": {
+      "competitor": "RVD",
+      "roster_name": "RVD",
+      "division": "World Championship",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 7,
+        "technique": 8,
+        "agility": 9,
+        "strike": 10,
+        "submission": 5,
+        "grapple": 6
+      }
+    },
+    "04ee2101e644473f9327c2333d8183c8": {
+      "competitor": "Sage the Wiccan Witch (V1)",
+      "roster_name": "Sage the Wiccan Witch",
+      "division": "Intergalactic",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 5,
+        "agility": 7,
+        "strike": 9,
+        "submission": 6,
+        "grapple": 8
+      }
+    },
+    "504e8e4759024076b094608d6b8172a6": {
+      "competitor": "Scott Prime (V1)",
+      "roster_name": "Scott Prime",
+      "division": "Underworld",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 5,
+        "strike": 8,
+        "submission": 9,
+        "grapple": 10
+      }
+    },
+    "ad4de9bc71a94dc08d89d5ce147cc9a1": {
+      "competitor": "Sgt. Yoga",
+      "roster_name": "Sgt. Yoga",
+      "division": "United States",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 9,
+        "technique": 6,
+        "agility": 5,
+        "strike": 7,
+        "submission": 10,
+        "grapple": 8
+      }
+    },
+    "627444f08925427b973a23be26369043": {
+      "competitor": "Shattered Split",
+      "roster_name": "Shattered Split",
+      "division": "United States",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 9,
+        "technique": 5,
+        "agility": 6,
+        "strike": 10,
+        "submission": 8,
+        "grapple": 7
+      }
+    },
+    "e03d8c8283804088a9ff5bac13d02c99": {
+      "competitor": "Slime Girl",
+      "roster_name": "Slime Girl",
+      "division": "Intergalactic",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 6,
+        "technique": 9,
+        "agility": 8,
+        "strike": 7,
+        "submission": 10,
+        "grapple": 5
+      }
+    },
+    "a9091bdff29143e3a4352eb281739624": {
+      "competitor": "Smart Mark Sterling",
+      "roster_name": "Smart Mark Sterling",
+      "division": "World Championship",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 7,
+        "technique": 10,
+        "agility": 5,
+        "strike": 6,
+        "submission": 8,
+        "grapple": 9
+      }
+    },
+    "aebe9e8baa0046ddbde13690b7c18455": {
+      "competitor": "Soborno",
+      "roster_name": "Soborno",
+      "division": "World Championship",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 5,
+        "technique": 9,
+        "agility": 10,
+        "strike": 8,
+        "submission": 6,
+        "grapple": 7
+      }
+    },
+    "4bcdec3ecc6445fbb9be4aa897d17972": {
+      "competitor": "Supersonica",
+      "roster_name": "SuperSonica",
+      "division": "Super Lucha",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 10,
+        "strike": 8,
+        "submission": 5,
+        "grapple": 9
+      }
+    },
+    "3076e579ea384f008e9bc0db1b62dd57": {
+      "competitor": "Swoggle (V1)",
+      "roster_name": "Swoggle (draw from bottom)",
+      "division": "Global",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 7,
+        "technique": 5,
+        "agility": 10,
+        "strike": 8,
+        "submission": 6,
+        "grapple": 9
+      }
+    },
+    "ef4b285b0236403a9be1a821b7e5bda5": {
+      "competitor": "Tetsuya Naito",
+      "roster_name": "Tetsuya Naito",
+      "division": "Global",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 5,
+        "technique": 10,
+        "agility": 7,
+        "strike": 8,
+        "submission": 6,
+        "grapple": 9
+      }
+    },
+    "894c9965da684adb8ab5f532bafbff59": {
+      "competitor": "The Bull",
+      "roster_name": "The Bull",
+      "division": null,
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 6,
+        "agility": 5,
+        "strike": 7,
+        "submission": 8,
+        "grapple": 9
+      }
+    },
+    "5d256305732d4c1bb9df684e30854d71": {
+      "competitor": "The Chosen One",
+      "roster_name": "The Chosen One",
+      "division": null,
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 8,
+        "strike": 5,
+        "submission": 9,
+        "grapple": 10
+      }
+    },
+    "e1c622913f79416a899b8fd39ac0b9f9": {
+      "competitor": "The East End Enforcer",
+      "roster_name": "The East End Enforcer",
+      "division": null,
+      "ten_stat": "submission",
+      "stats": {
+        "power": 8,
+        "technique": 6,
+        "agility": 5,
+        "strike": 7,
+        "submission": 10,
+        "grapple": 9
+      }
+    },
+    "8f2c00bb6fdd44a4aa6742ddd90650eb": {
+      "competitor": "The SRG Boss (The Greatest American Who Ever Lived)",
+      "roster_name": "The Greatest American Who Ever Lived SRG Boss",
+      "division": "World Championship",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 9,
+        "technique": 5,
+        "agility": 6,
+        "strike": 10,
+        "submission": 8,
+        "grapple": 7
+      }
+    },
+    "831eb73c2ab9435794db4413c7e2521b": {
+      "competitor": "Theo the Greek Neo (V1)",
+      "roster_name": "Theo the Greek Neo (play another card)",
+      "division": "Underworld",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 7,
+        "technique": 5,
+        "agility": 9,
+        "strike": 6,
+        "submission": 8,
+        "grapple": 10
+      }
+    },
+    "9d97eac40c3048e392de35c0f3812a46": {
+      "competitor": "Tomato Tomato Jr.",
+      "roster_name": "Tomato Tomato Jr.",
+      "division": null,
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 5,
+        "agility": 8,
+        "strike": 7,
+        "submission": 9,
+        "grapple": 6
+      }
+    },
+    "2e4a3c658deb43499e6e3e398d0def13": {
+      "competitor": "Tommy Stillwell",
+      "roster_name": "Tommy Stillwel",
+      "division": "Underworld",
+      "ten_stat": "grapple",
+      "stats": {
+        "power": 8,
+        "technique": 9,
+        "agility": 7,
+        "strike": 5,
+        "submission": 6,
+        "grapple": 10
+      }
+    },
+    "c9c7ebf148884c038fa00763434c6244": {
+      "competitor": "Tortured Vigilante",
+      "roster_name": "Tortured Vigilante",
+      "division": "World Championship",
+      "ten_stat": "submission",
+      "stats": {
+        "power": 7,
+        "technique": 6,
+        "agility": 9,
+        "strike": 5,
+        "submission": 10,
+        "grapple": 8
+      }
+    },
+    "902a282a6c6f4317b4cf87e0a4eed30d": {
+      "competitor": "Trent?",
+      "roster_name": "Trent?",
+      "division": "Global",
+      "ten_stat": "strike",
+      "stats": {
+        "power": 5,
+        "technique": 7,
+        "agility": 8,
+        "strike": 10,
+        "submission": 6,
+        "grapple": 9
+      }
+    },
+    "1886db488a2540c18d7fc450b201f9b0": {
+      "competitor": "Uncle Awesome (V2)",
+      "roster_name": "Uncle Awesome (+1 to tech for each)",
+      "division": "Underworld",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 7,
+        "agility": 8,
+        "strike": 6,
+        "submission": 5,
+        "grapple": 9
+      }
+    },
+    "834c8775accf428380910277cbe27413": {
+      "competitor": "Unicorn Princess",
+      "roster_name": "Unicorn Princess",
+      "division": "United States",
+      "ten_stat": "agility",
+      "stats": {
+        "power": 5,
+        "technique": 7,
+        "agility": 10,
+        "strike": 9,
+        "submission": 6,
+        "grapple": 8
+      }
+    },
+    "0d71d3dff2ad4f23a35055c49935c913": {
+      "competitor": "The Witch's Apprentice",
+      "roster_name": "Witch's Apprentice",
+      "division": "World Championship",
+      "ten_stat": "power",
+      "stats": {
+        "power": 10,
+        "technique": 5,
+        "agility": 7,
+        "strike": 8,
+        "submission": 9,
+        "grapple": 6
+      }
+    },
+    "98d943afc0ad4074a534d4e92ab0b9dc": {
+      "competitor": "Zack Sabre Jr. (V1)",
+      "roster_name": "Zack Sabre Jr.",
+      "division": "Underworld",
+      "ten_stat": "technique",
+      "stats": {
+        "power": 5,
+        "technique": 10,
+        "agility": 8,
+        "strike": 6,
+        "submission": 9,
+        "grapple": 7
+      }
+    }
+  },
+  "teams": [
+    {
+      "name": "Unnamed Team (Chris Pate)",
+      "players": [
+        {
+          "name": "Chris Pate",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Soborno",
+          "db_uuid": "aebe9e8baa0046ddbde13690b7c18455",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "Ryon Piercer",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Little Guido",
+          "db_uuid": "1cf1f13bf01a404ea9117d3483eb2984",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Sam Stanton",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Rey Zerblade",
+          "db_uuid": "3e6ec7e5fe33421d83a699ac956a6858",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Brandon Arrendondo",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Mastermind",
+          "db_uuid": "31b5d4f1aa0743b4bc3d0622d81b0d92",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Matt Hass",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "D1 (V1)",
+          "db_uuid": "51537506696946a2ad10662229ccd96f",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "Rin Puck",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "The Bull",
+          "db_uuid": "894c9965da684adb8ab5f532bafbff59",
+          "ten_stat": "power"
+        }
+      ]
+    },
+    {
+      "name": "I H.A.T.E. My Life",
+      "players": [
+        {
+          "name": "Colby Cram",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Mrs. Apocalypse",
+          "db_uuid": "dfa3e0991ea3426197f4ded552575d61",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Drew Madsen",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "D2 (V1)",
+          "db_uuid": "bd04b23708fe49728541a20e689cae61",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Eddy Fury",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Copy Kat (V2)",
+          "db_uuid": "9e57cd60fb34451bbf7426fb315033ca",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "mecchi",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Cassandra",
+          "db_uuid": "98f3f8c2a9624054b696f59bc8d89dd9",
+          "ten_stat": "power"
+        },
+        {
+          "name": "Jokerfish",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "The Queen of Cheer Adrianna Dee",
+          "db_uuid": "7b1af704863e498b8b473e44c8d42ed4",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Mikey Nichols",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Johnny Korea",
+          "db_uuid": "c7c67bea6ff64c3b81cc812363c23ac4",
+          "ten_stat": "submission"
+        }
+      ]
+    },
+    {
+      "name": "My MF'n Nillas... and Ant",
+      "players": [
+        {
+          "name": "Ronnie Rombs",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Rowdy Ron",
+          "db_uuid": "76844541603c4065993d0c45c0de838b",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "Candyman Dan",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Candyman Dan",
+          "db_uuid": "f8dad17fa6a940b89d0466691d98b7fc",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Tim Riley",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Brian Cage (V2)",
+          "db_uuid": "12d4949f97d344238c8b1c7cdc719a63",
+          "ten_stat": "power"
+        },
+        {
+          "name": "Papa Nequaquam",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Papa Nequaquam",
+          "db_uuid": "d9a4d476808c4f43bd536ab181a3c275",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Ant West",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Killer Kelly",
+          "db_uuid": "d22f300a2da6416b9dc580d04a8374df",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "The Misfit",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Deathmatch King Matt Cardona",
+          "db_uuid": "b3c837b732a54281aa9169ab1d46d42f",
+          "ten_stat": "strike"
+        }
+      ]
+    },
+    {
+      "name": "#MOTHERCHUCKERS",
+      "players": [
+        {
+          "name": "Chuck",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Tetsuya Naito",
+          "db_uuid": "ef4b285b0236403a9be1a821b7e5bda5",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Zach Atchley",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "The Cyclone (V2)",
+          "db_uuid": "b69620138a614df0bea6b3bddcc2123d",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "BrimeTime",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Theo the Greek Neo (V1)",
+          "db_uuid": "831eb73c2ab9435794db4413c7e2521b",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Erin Cassandra Williams",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "D3 (V1)",
+          "db_uuid": "91c51b9ed3e14a0582f050716596dbd6",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Slamilton",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Slime Girl",
+          "db_uuid": "e03d8c8283804088a9ff5bac13d02c99",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "jared bridgewater",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Joe Hendry",
+          "db_uuid": "87b26269da2d464da1bbf43c3f7b2d32",
+          "ten_stat": "power"
+        }
+      ]
+    },
+    {
+      "name": "Dunn Deal",
+      "players": [
+        {
+          "name": "Bob Dunn",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "King Kong Dundy",
+          "db_uuid": "ad7d8a1ad1f94531ba438895bbdc4fd7",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "Paul M",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Pretzel Wizard",
+          "db_uuid": "fcb3c164213a49be9ab0ae4a70bdc211",
+          "ten_stat": "power"
+        },
+        {
+          "name": "Ron Rumble",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "The SRG Boss (The Greatest American Who Ever Lived)",
+          "db_uuid": "8f2c00bb6fdd44a4aa6742ddd90650eb",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Jorge Luis Ortiz Cortes",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Noah the Boa",
+          "db_uuid": "b34f7beab430461182c377100b12c213",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "New Guy Nick",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Unicorn Princess",
+          "db_uuid": "834c8775accf428380910277cbe27413",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "Foreman Alle",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "The Phoenix EV Fresh",
+          "db_uuid": "5384da96ce6740ce9081b60773b99873",
+          "ten_stat": "technique"
+        }
+      ]
+    },
+    {
+      "name": "The Cannoli's Ricotta Renegades",
+      "players": [
+        {
+          "name": "Anthony Perry",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Jebediah The Amish Assassin",
+          "db_uuid": "bcfd31f67b454a1e9d41d981fb265e5d",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Taylor Schwab",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "El Blanco Diablo (V1)",
+          "db_uuid": "fbc6b406877442389762487515cd1b5d",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "Keith Overby",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Trent?",
+          "db_uuid": "902a282a6c6f4317b4cf87e0a4eed30d",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Danshee",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Dr. Sleep",
+          "db_uuid": "9bd2e6dfb6ae481caeb05659c5d734f5",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Slade Holladay",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "General Manager John Calace (V1)",
+          "db_uuid": "c3a4f97f97024dc7aba6e6321cf47bd2",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "The Influencer",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Fae Dragon",
+          "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
+          "ten_stat": "power"
+        }
+      ]
+    },
+    {
+      "name": "Bully Boi Clique",
+      "players": [
+        {
+          "name": "Matt Barone",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Overdog (V1)",
+          "db_uuid": "5f78183903ba49eabae4c4ec9f0ffd11",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "The Possum King",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Amazing Red",
+          "db_uuid": "2507369b706f4dec83b61e8da40b80c0",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "NY Phenom",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "J Tagas",
+          "db_uuid": "30cad233d0364e188ba962d7f891619f",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "swaggy",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Scott Prime (V1)",
+          "db_uuid": "504e8e4759024076b094608d6b8172a6",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "StevenMoonstar",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Kenzie Paige",
+          "db_uuid": "84b60d0aecfa4ddd80a546a12ad8317d",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Marissa Wilson",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Queen of Rock",
+          "db_uuid": "5dbd7e84b45a4473b1c096c3b90cf9d3",
+          "ten_stat": "power"
+        }
+      ]
+    },
+    {
+      "name": "unnamed team (Collin Simon)",
+      "players": [
+        {
+          "name": "Collin Simon",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Gangrel",
+          "db_uuid": "5c50247e9da54a7f9c39315f0707c497",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Ref Dave",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Tomato Tomato Jr.",
+          "db_uuid": "9d97eac40c3048e392de35c0f3812a46",
+          "ten_stat": "power"
+        },
+        {
+          "name": "Michael Kirk",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Zack Sabre Jr. (V1)",
+          "db_uuid": "98d943afc0ad4074a534d4e92ab0b9dc",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Mothman",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Evee Laveaux",
+          "db_uuid": "cc42c7a9d4834a03836944558edd39cc",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "The End",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Cheetah",
+          "db_uuid": "8e7340565e01403d99eb2026d2d49765",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "Double Russell",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "RVD",
+          "db_uuid": "276fb52f04234fa9bb6adebf98aa91e6",
+          "ten_stat": "strike"
+        }
+      ]
+    },
+    {
+      "name": "Unnamed Team (Collector Sean)",
+      "players": [
+        {
+          "name": "Collector Sean",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Swoggle (V1)",
+          "db_uuid": "3076e579ea384f008e9bc0db1b62dd57",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "Practisite Jeremy S",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Smart Mark Sterling",
+          "db_uuid": "a9091bdff29143e3a4352eb281739624",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Angela Kristina",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Candy MaM",
+          "db_uuid": "e1e8ae66adc2457a8d87a4a1d9820442",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Jeffrey Fox",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Foxworthy (V3)",
+          "db_uuid": "f2a6fa1ed1cb46a49f1fa65e19190a4c",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Neil Sheen",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "The East End Enforcer",
+          "db_uuid": "e1c622913f79416a899b8fd39ac0b9f9",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "Nic Baxter",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Sage the Wiccan Witch (V1)",
+          "db_uuid": "04ee2101e644473f9327c2333d8183c8",
+          "ten_stat": "power"
+        }
+      ]
+    },
+    {
+      "name": "Cheetah's Collection",
+      "players": [
+        {
+          "name": "Ian Chambers",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Supersonica",
+          "db_uuid": "4bcdec3ecc6445fbb9be4aa897d17972",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "Jonathan Thew",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Tortured Vigilante",
+          "db_uuid": "c9c7ebf148884c038fa00763434c6244",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "Robert Dowdy",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Dough Nation (V1)",
+          "db_uuid": "4727798038a94d549fa5267837d5aa09",
+          "ten_stat": "power"
+        },
+        {
+          "name": "Ron Hough",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Shattered Split",
+          "db_uuid": "627444f08925427b973a23be26369043",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "BlackstarSRG",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "El Gato Shinobi",
+          "db_uuid": "44a083f3214148959e40c125bb5eb7b2",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Shannon",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Ms. Tierious",
+          "db_uuid": "fbad14e83e1043c1949a671a30cd2323",
+          "ten_stat": "technique"
+        }
+      ]
+    },
+    {
+      "name": "Any Team",
+      "players": [
+        {
+          "name": "Everett Stephens",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Mila Mai (V1)",
+          "db_uuid": "763531a5c5ee468690793b8683f59abd",
+          "ten_stat": "agility"
+        },
+        {
+          "name": "THE Johnny Korea",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Possum King",
+          "db_uuid": "9e5c51951a104635ac7af1fcd4c1dc67",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "Mike Benton",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Tommy Stillwell",
+          "db_uuid": "2e4a3c658deb43499e6e3e398d0def13",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Chugganomics",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "The Witch's Apprentice",
+          "db_uuid": "0d71d3dff2ad4f23a35055c49935c913",
+          "ten_stat": "power"
+        },
+        {
+          "name": "Garry Crawford",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Abigail Fairy in Training",
+          "db_uuid": "c0bfb96bd9054080960a0ecbaeb13e64",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Arcade Addict Aaron",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Khloe Mai",
+          "db_uuid": "3c8273a9252a46feb337348e29c30ad3",
+          "ten_stat": "strike"
+        }
+      ]
+    },
+    {
+      "name": "The Real Tristate",
+      "players": [
+        {
+          "name": "Brian Schmidt",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Mr. Poppintwist",
+          "db_uuid": "7c61c4f8ca78491ba66c77a6a2778888",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "John Eldis",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "The Chosen One",
+          "db_uuid": "5d256305732d4c1bb9df684e30854d71",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Google Docs Dan",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Ivelisse \"La Sicaria\"",
+          "db_uuid": "c30f8ab941e046cdb7dea5772f96019b",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "The Centipede John VonMacek",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "King Brian Cage",
+          "db_uuid": "8ddf0b4f072e4799bcb6df6b22e84b18",
+          "ten_stat": "power"
+        },
+        {
+          "name": "Flame Fighter",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Hallow King (V1)",
+          "db_uuid": "ba1af0065d3a45f7823ed63f6b5ce426",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Tomasello the Wiseman",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "El Phantasmo",
+          "db_uuid": "c8788ae573734217b3a4ee2563d998b7",
+          "ten_stat": "agility"
+        }
+      ]
+    },
+    {
+      "name": "Unnamed Team (Rambo Apocalypse)",
+      "players": [
+        {
+          "name": "Rambo Apocalypse",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "Uncle Awesome (V2)",
+          "db_uuid": "1886db488a2540c18d7fc450b201f9b0",
+          "ten_stat": "power"
+        },
+        {
+          "name": "Brock Smith",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Defector",
+          "db_uuid": "fc7f7efc0f914eb88a42db65b9778ab6",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Joe Gilchrist",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "Chris Bey (Greatest Story Ever Told)",
+          "db_uuid": "52787724f33243a4a597b78a394e6813",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Cory Pitney",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Ricky Riot (V1)",
+          "db_uuid": "5cf0d256efd841b3b5c220e2487db443",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Evil Ed",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Sgt. Yoga",
+          "db_uuid": "ad4de9bc71a94dc08d89d5ce147cc9a1",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "Chris Cole",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "Real Beater",
+          "db_uuid": "ee0c785df87947449d12e60e1023e17d",
+          "ten_stat": "agility"
+        }
+      ]
+    },
+    {
+      "name": "Clown Town",
+      "players": [
+        {
+          "name": "John P",
+          "slot": "Captain",
+          "round": 0,
+          "competitor": "El Scorpio",
+          "db_uuid": "8b00ea8e2268466d98265ebb62cc0c64",
+          "ten_stat": "technique"
+        },
+        {
+          "name": "Bombada",
+          "slot": "R1",
+          "round": 1,
+          "competitor": "Mr. Sunday Night Ron Rumble",
+          "db_uuid": "01294f0b05eb48ddaf8dd763b852a7ad",
+          "ten_stat": "power"
+        },
+        {
+          "name": "El Hombre Cybernetico",
+          "slot": "R2",
+          "round": 2,
+          "competitor": "AJ Styles",
+          "db_uuid": "b5a305c0f693405f8cb43b4e5864e559",
+          "ten_stat": "strike"
+        },
+        {
+          "name": "Mark Perre",
+          "slot": "R3",
+          "round": 3,
+          "competitor": "Leader of the Postal Nation",
+          "db_uuid": "417d1d704f49439c8c8e4f3bd703a880",
+          "ten_stat": "grapple"
+        },
+        {
+          "name": "Craig Blachfield",
+          "slot": "R4",
+          "round": 4,
+          "competitor": "Mr. Snap (V1)",
+          "db_uuid": "f9cb3b3b788346eda95fcb066e9305ad",
+          "ten_stat": "submission"
+        },
+        {
+          "name": "Brian O",
+          "slot": "R5",
+          "round": 5,
+          "competitor": "King Greatness",
+          "db_uuid": "7e5c8dfeecc041958080980601611097",
+          "ten_stat": "agility"
+        }
+      ]
+    }
+  ],
+  "matchups": [
+    {
+      "tournament_round": 1,
+      "team_a": "Unnamed Team (Chris Pate)",
+      "team_b": "I H.A.T.E. My Life",
+      "games": [
+        {
+          "pairing": "round",
+          "key": "Captain",
+          "a": {
+            "player": "Chris Pate",
+            "competitor": "Soborno",
+            "db_uuid": "aebe9e8baa0046ddbde13690b7c18455",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Colby Cram",
+            "competitor": "Mrs. Apocalypse",
+            "db_uuid": "dfa3e0991ea3426197f4ded552575d61",
+            "ten_stat": "technique",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R1",
+          "a": {
+            "player": "Ryon Piercer",
+            "competitor": "Little Guido",
+            "db_uuid": "1cf1f13bf01a404ea9117d3483eb2984",
+            "ten_stat": "technique",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Drew Madsen",
+            "competitor": "D2 (V1)",
+            "db_uuid": "bd04b23708fe49728541a20e689cae61",
+            "ten_stat": "strike",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R2",
+          "a": {
+            "player": "Sam Stanton",
+            "competitor": "Rey Zerblade",
+            "db_uuid": "3e6ec7e5fe33421d83a699ac956a6858",
+            "ten_stat": "grapple",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "Eddy Fury",
+            "competitor": "Copy Kat (V2)",
+            "db_uuid": "9e57cd60fb34451bbf7426fb315033ca",
+            "ten_stat": "agility",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R3",
+          "a": {
+            "player": "Brandon Arrendondo",
+            "competitor": "Mastermind",
+            "db_uuid": "31b5d4f1aa0743b4bc3d0622d81b0d92",
+            "ten_stat": "strike",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "mecchi",
+            "competitor": "Cassandra",
+            "db_uuid": "98f3f8c2a9624054b696f59bc8d89dd9",
+            "ten_stat": "power",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R4",
+          "a": {
+            "player": "Matt Hass",
+            "competitor": "D1 (V1)",
+            "db_uuid": "51537506696946a2ad10662229ccd96f",
+            "ten_stat": "submission",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Jokerfish",
+            "competitor": "The Queen of Cheer Adrianna Dee",
+            "db_uuid": "7b1af704863e498b8b473e44c8d42ed4",
+            "ten_stat": "grapple",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R5",
+          "a": {
+            "player": "Rin Puck",
+            "competitor": "The Bull",
+            "db_uuid": "894c9965da684adb8ab5f532bafbff59",
+            "ten_stat": "power",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Mikey Nichols",
+            "competitor": "Johnny Korea",
+            "db_uuid": "c7c67bea6ff64c3b81cc812363c23ac4",
+            "ten_stat": "submission",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "agility",
+          "a": {
+            "player": "Chris Pate",
+            "competitor": "Soborno",
+            "db_uuid": "aebe9e8baa0046ddbde13690b7c18455",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Eddy Fury",
+            "competitor": "Copy Kat (V2)",
+            "db_uuid": "9e57cd60fb34451bbf7426fb315033ca",
+            "ten_stat": "agility",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "technique",
+          "a": {
+            "player": "Ryon Piercer",
+            "competitor": "Little Guido",
+            "db_uuid": "1cf1f13bf01a404ea9117d3483eb2984",
+            "ten_stat": "technique",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Colby Cram",
+            "competitor": "Mrs. Apocalypse",
+            "db_uuid": "dfa3e0991ea3426197f4ded552575d61",
+            "ten_stat": "technique",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "grapple",
+          "a": {
+            "player": "Sam Stanton",
+            "competitor": "Rey Zerblade",
+            "db_uuid": "3e6ec7e5fe33421d83a699ac956a6858",
+            "ten_stat": "grapple",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "Jokerfish",
+            "competitor": "The Queen of Cheer Adrianna Dee",
+            "db_uuid": "7b1af704863e498b8b473e44c8d42ed4",
+            "ten_stat": "grapple",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "strike",
+          "a": {
+            "player": "Brandon Arrendondo",
+            "competitor": "Mastermind",
+            "db_uuid": "31b5d4f1aa0743b4bc3d0622d81b0d92",
+            "ten_stat": "strike",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Drew Madsen",
+            "competitor": "D2 (V1)",
+            "db_uuid": "bd04b23708fe49728541a20e689cae61",
+            "ten_stat": "strike",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "submission",
+          "a": {
+            "player": "Matt Hass",
+            "competitor": "D1 (V1)",
+            "db_uuid": "51537506696946a2ad10662229ccd96f",
+            "ten_stat": "submission",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Mikey Nichols",
+            "competitor": "Johnny Korea",
+            "db_uuid": "c7c67bea6ff64c3b81cc812363c23ac4",
+            "ten_stat": "submission",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "power",
+          "a": {
+            "player": "Rin Puck",
+            "competitor": "The Bull",
+            "db_uuid": "894c9965da684adb8ab5f532bafbff59",
+            "ten_stat": "power",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "mecchi",
+            "competitor": "Cassandra",
+            "db_uuid": "98f3f8c2a9624054b696f59bc8d89dd9",
+            "ten_stat": "power",
+            "slot": "R3"
+          }
+        }
+      ]
+    },
+    {
+      "tournament_round": 1,
+      "team_a": "My MF'n Nillas... and Ant",
+      "team_b": "#MOTHERCHUCKERS",
+      "games": [
+        {
+          "pairing": "round",
+          "key": "Captain",
+          "a": {
+            "player": "Ronnie Rombs",
+            "competitor": "Rowdy Ron",
+            "db_uuid": "76844541603c4065993d0c45c0de838b",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Chuck",
+            "competitor": "Tetsuya Naito",
+            "db_uuid": "ef4b285b0236403a9be1a821b7e5bda5",
+            "ten_stat": "technique",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R1",
+          "a": {
+            "player": "Candyman Dan",
+            "competitor": "Candyman Dan",
+            "db_uuid": "f8dad17fa6a940b89d0466691d98b7fc",
+            "ten_stat": "technique",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Zach Atchley",
+            "competitor": "The Cyclone (V2)",
+            "db_uuid": "b69620138a614df0bea6b3bddcc2123d",
+            "ten_stat": "agility",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R2",
+          "a": {
+            "player": "Tim Riley",
+            "competitor": "Brian Cage (V2)",
+            "db_uuid": "12d4949f97d344238c8b1c7cdc719a63",
+            "ten_stat": "power",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "BrimeTime",
+            "competitor": "Theo the Greek Neo (V1)",
+            "db_uuid": "831eb73c2ab9435794db4413c7e2521b",
+            "ten_stat": "grapple",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R3",
+          "a": {
+            "player": "Papa Nequaquam",
+            "competitor": "Papa Nequaquam",
+            "db_uuid": "d9a4d476808c4f43bd536ab181a3c275",
+            "ten_stat": "grapple",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Erin Cassandra Williams",
+            "competitor": "D3 (V1)",
+            "db_uuid": "91c51b9ed3e14a0582f050716596dbd6",
+            "ten_stat": "strike",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R4",
+          "a": {
+            "player": "Ant West",
+            "competitor": "Killer Kelly",
+            "db_uuid": "d22f300a2da6416b9dc580d04a8374df",
+            "ten_stat": "submission",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Slamilton",
+            "competitor": "Slime Girl",
+            "db_uuid": "e03d8c8283804088a9ff5bac13d02c99",
+            "ten_stat": "submission",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R5",
+          "a": {
+            "player": "The Misfit",
+            "competitor": "Deathmatch King Matt Cardona",
+            "db_uuid": "b3c837b732a54281aa9169ab1d46d42f",
+            "ten_stat": "strike",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "jared bridgewater",
+            "competitor": "Joe Hendry",
+            "db_uuid": "87b26269da2d464da1bbf43c3f7b2d32",
+            "ten_stat": "power",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "agility",
+          "a": {
+            "player": "Ronnie Rombs",
+            "competitor": "Rowdy Ron",
+            "db_uuid": "76844541603c4065993d0c45c0de838b",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Zach Atchley",
+            "competitor": "The Cyclone (V2)",
+            "db_uuid": "b69620138a614df0bea6b3bddcc2123d",
+            "ten_stat": "agility",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "technique",
+          "a": {
+            "player": "Candyman Dan",
+            "competitor": "Candyman Dan",
+            "db_uuid": "f8dad17fa6a940b89d0466691d98b7fc",
+            "ten_stat": "technique",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Chuck",
+            "competitor": "Tetsuya Naito",
+            "db_uuid": "ef4b285b0236403a9be1a821b7e5bda5",
+            "ten_stat": "technique",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "power",
+          "a": {
+            "player": "Tim Riley",
+            "competitor": "Brian Cage (V2)",
+            "db_uuid": "12d4949f97d344238c8b1c7cdc719a63",
+            "ten_stat": "power",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "jared bridgewater",
+            "competitor": "Joe Hendry",
+            "db_uuid": "87b26269da2d464da1bbf43c3f7b2d32",
+            "ten_stat": "power",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "grapple",
+          "a": {
+            "player": "Papa Nequaquam",
+            "competitor": "Papa Nequaquam",
+            "db_uuid": "d9a4d476808c4f43bd536ab181a3c275",
+            "ten_stat": "grapple",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "BrimeTime",
+            "competitor": "Theo the Greek Neo (V1)",
+            "db_uuid": "831eb73c2ab9435794db4413c7e2521b",
+            "ten_stat": "grapple",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "submission",
+          "a": {
+            "player": "Ant West",
+            "competitor": "Killer Kelly",
+            "db_uuid": "d22f300a2da6416b9dc580d04a8374df",
+            "ten_stat": "submission",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Slamilton",
+            "competitor": "Slime Girl",
+            "db_uuid": "e03d8c8283804088a9ff5bac13d02c99",
+            "ten_stat": "submission",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "strike",
+          "a": {
+            "player": "The Misfit",
+            "competitor": "Deathmatch King Matt Cardona",
+            "db_uuid": "b3c837b732a54281aa9169ab1d46d42f",
+            "ten_stat": "strike",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Erin Cassandra Williams",
+            "competitor": "D3 (V1)",
+            "db_uuid": "91c51b9ed3e14a0582f050716596dbd6",
+            "ten_stat": "strike",
+            "slot": "R3"
+          }
+        }
+      ]
+    },
+    {
+      "tournament_round": 1,
+      "team_a": "Dunn Deal",
+      "team_b": "The Cannoli's Ricotta Renegades",
+      "games": [
+        {
+          "pairing": "round",
+          "key": "Captain",
+          "a": {
+            "player": "Bob Dunn",
+            "competitor": "King Kong Dundy",
+            "db_uuid": "ad7d8a1ad1f94531ba438895bbdc4fd7",
+            "ten_stat": "submission",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Anthony Perry",
+            "competitor": "Jebediah The Amish Assassin",
+            "db_uuid": "bcfd31f67b454a1e9d41d981fb265e5d",
+            "ten_stat": "grapple",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R1",
+          "a": {
+            "player": "Paul M",
+            "competitor": "Pretzel Wizard",
+            "db_uuid": "fcb3c164213a49be9ab0ae4a70bdc211",
+            "ten_stat": "power",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Taylor Schwab",
+            "competitor": "El Blanco Diablo (V1)",
+            "db_uuid": "fbc6b406877442389762487515cd1b5d",
+            "ten_stat": "agility",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R2",
+          "a": {
+            "player": "Ron Rumble",
+            "competitor": "The SRG Boss (The Greatest American Who Ever Lived)",
+            "db_uuid": "8f2c00bb6fdd44a4aa6742ddd90650eb",
+            "ten_stat": "strike",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "Keith Overby",
+            "competitor": "Trent?",
+            "db_uuid": "902a282a6c6f4317b4cf87e0a4eed30d",
+            "ten_stat": "strike",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R3",
+          "a": {
+            "player": "Jorge Luis Ortiz Cortes",
+            "competitor": "Noah the Boa",
+            "db_uuid": "b34f7beab430461182c377100b12c213",
+            "ten_stat": "grapple",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Danshee",
+            "competitor": "Dr. Sleep",
+            "db_uuid": "9bd2e6dfb6ae481caeb05659c5d734f5",
+            "ten_stat": "technique",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R4",
+          "a": {
+            "player": "New Guy Nick",
+            "competitor": "Unicorn Princess",
+            "db_uuid": "834c8775accf428380910277cbe27413",
+            "ten_stat": "agility",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Slade Holladay",
+            "competitor": "General Manager John Calace (V1)",
+            "db_uuid": "c3a4f97f97024dc7aba6e6321cf47bd2",
+            "ten_stat": "submission",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R5",
+          "a": {
+            "player": "Foreman Alle",
+            "competitor": "The Phoenix EV Fresh",
+            "db_uuid": "5384da96ce6740ce9081b60773b99873",
+            "ten_stat": "technique",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "The Influencer",
+            "competitor": "Fae Dragon",
+            "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
+            "ten_stat": "power",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "submission",
+          "a": {
+            "player": "Bob Dunn",
+            "competitor": "King Kong Dundy",
+            "db_uuid": "ad7d8a1ad1f94531ba438895bbdc4fd7",
+            "ten_stat": "submission",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Slade Holladay",
+            "competitor": "General Manager John Calace (V1)",
+            "db_uuid": "c3a4f97f97024dc7aba6e6321cf47bd2",
+            "ten_stat": "submission",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "power",
+          "a": {
+            "player": "Paul M",
+            "competitor": "Pretzel Wizard",
+            "db_uuid": "fcb3c164213a49be9ab0ae4a70bdc211",
+            "ten_stat": "power",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "The Influencer",
+            "competitor": "Fae Dragon",
+            "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
+            "ten_stat": "power",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "strike",
+          "a": {
+            "player": "Ron Rumble",
+            "competitor": "The SRG Boss (The Greatest American Who Ever Lived)",
+            "db_uuid": "8f2c00bb6fdd44a4aa6742ddd90650eb",
+            "ten_stat": "strike",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "Keith Overby",
+            "competitor": "Trent?",
+            "db_uuid": "902a282a6c6f4317b4cf87e0a4eed30d",
+            "ten_stat": "strike",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "grapple",
+          "a": {
+            "player": "Jorge Luis Ortiz Cortes",
+            "competitor": "Noah the Boa",
+            "db_uuid": "b34f7beab430461182c377100b12c213",
+            "ten_stat": "grapple",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Anthony Perry",
+            "competitor": "Jebediah The Amish Assassin",
+            "db_uuid": "bcfd31f67b454a1e9d41d981fb265e5d",
+            "ten_stat": "grapple",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "agility",
+          "a": {
+            "player": "New Guy Nick",
+            "competitor": "Unicorn Princess",
+            "db_uuid": "834c8775accf428380910277cbe27413",
+            "ten_stat": "agility",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Taylor Schwab",
+            "competitor": "El Blanco Diablo (V1)",
+            "db_uuid": "fbc6b406877442389762487515cd1b5d",
+            "ten_stat": "agility",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "technique",
+          "a": {
+            "player": "Foreman Alle",
+            "competitor": "The Phoenix EV Fresh",
+            "db_uuid": "5384da96ce6740ce9081b60773b99873",
+            "ten_stat": "technique",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Danshee",
+            "competitor": "Dr. Sleep",
+            "db_uuid": "9bd2e6dfb6ae481caeb05659c5d734f5",
+            "ten_stat": "technique",
+            "slot": "R3"
+          }
+        }
+      ]
+    },
+    {
+      "tournament_round": 1,
+      "team_a": "Bully Boi Clique",
+      "team_b": "unnamed team (Collin Simon)",
+      "games": [
+        {
+          "pairing": "round",
+          "key": "Captain",
+          "a": {
+            "player": "Matt Barone",
+            "competitor": "Overdog (V1)",
+            "db_uuid": "5f78183903ba49eabae4c4ec9f0ffd11",
+            "ten_stat": "submission",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Collin Simon",
+            "competitor": "Gangrel",
+            "db_uuid": "5c50247e9da54a7f9c39315f0707c497",
+            "ten_stat": "grapple",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R1",
+          "a": {
+            "player": "The Possum King",
+            "competitor": "Amazing Red",
+            "db_uuid": "2507369b706f4dec83b61e8da40b80c0",
+            "ten_stat": "agility",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Ref Dave",
+            "competitor": "Tomato Tomato Jr.",
+            "db_uuid": "9d97eac40c3048e392de35c0f3812a46",
+            "ten_stat": "power",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R2",
+          "a": {
+            "player": "NY Phenom",
+            "competitor": "J Tagas",
+            "db_uuid": "30cad233d0364e188ba962d7f891619f",
+            "ten_stat": "technique",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "Michael Kirk",
+            "competitor": "Zack Sabre Jr. (V1)",
+            "db_uuid": "98d943afc0ad4074a534d4e92ab0b9dc",
+            "ten_stat": "technique",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R3",
+          "a": {
+            "player": "swaggy",
+            "competitor": "Scott Prime (V1)",
+            "db_uuid": "504e8e4759024076b094608d6b8172a6",
+            "ten_stat": "grapple",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Mothman",
+            "competitor": "Evee Laveaux",
+            "db_uuid": "cc42c7a9d4834a03836944558edd39cc",
+            "ten_stat": "submission",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R4",
+          "a": {
+            "player": "StevenMoonstar",
+            "competitor": "Kenzie Paige",
+            "db_uuid": "84b60d0aecfa4ddd80a546a12ad8317d",
+            "ten_stat": "strike",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "The End",
+            "competitor": "Cheetah",
+            "db_uuid": "8e7340565e01403d99eb2026d2d49765",
+            "ten_stat": "agility",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R5",
+          "a": {
+            "player": "Marissa Wilson",
+            "competitor": "Queen of Rock",
+            "db_uuid": "5dbd7e84b45a4473b1c096c3b90cf9d3",
+            "ten_stat": "power",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Double Russell",
+            "competitor": "RVD",
+            "db_uuid": "276fb52f04234fa9bb6adebf98aa91e6",
+            "ten_stat": "strike",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "submission",
+          "a": {
+            "player": "Matt Barone",
+            "competitor": "Overdog (V1)",
+            "db_uuid": "5f78183903ba49eabae4c4ec9f0ffd11",
+            "ten_stat": "submission",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Mothman",
+            "competitor": "Evee Laveaux",
+            "db_uuid": "cc42c7a9d4834a03836944558edd39cc",
+            "ten_stat": "submission",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "agility",
+          "a": {
+            "player": "The Possum King",
+            "competitor": "Amazing Red",
+            "db_uuid": "2507369b706f4dec83b61e8da40b80c0",
+            "ten_stat": "agility",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "The End",
+            "competitor": "Cheetah",
+            "db_uuid": "8e7340565e01403d99eb2026d2d49765",
+            "ten_stat": "agility",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "technique",
+          "a": {
+            "player": "NY Phenom",
+            "competitor": "J Tagas",
+            "db_uuid": "30cad233d0364e188ba962d7f891619f",
+            "ten_stat": "technique",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "Michael Kirk",
+            "competitor": "Zack Sabre Jr. (V1)",
+            "db_uuid": "98d943afc0ad4074a534d4e92ab0b9dc",
+            "ten_stat": "technique",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "grapple",
+          "a": {
+            "player": "swaggy",
+            "competitor": "Scott Prime (V1)",
+            "db_uuid": "504e8e4759024076b094608d6b8172a6",
+            "ten_stat": "grapple",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Collin Simon",
+            "competitor": "Gangrel",
+            "db_uuid": "5c50247e9da54a7f9c39315f0707c497",
+            "ten_stat": "grapple",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "strike",
+          "a": {
+            "player": "StevenMoonstar",
+            "competitor": "Kenzie Paige",
+            "db_uuid": "84b60d0aecfa4ddd80a546a12ad8317d",
+            "ten_stat": "strike",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Double Russell",
+            "competitor": "RVD",
+            "db_uuid": "276fb52f04234fa9bb6adebf98aa91e6",
+            "ten_stat": "strike",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "power",
+          "a": {
+            "player": "Marissa Wilson",
+            "competitor": "Queen of Rock",
+            "db_uuid": "5dbd7e84b45a4473b1c096c3b90cf9d3",
+            "ten_stat": "power",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Ref Dave",
+            "competitor": "Tomato Tomato Jr.",
+            "db_uuid": "9d97eac40c3048e392de35c0f3812a46",
+            "ten_stat": "power",
+            "slot": "R1"
+          }
+        }
+      ]
+    },
+    {
+      "tournament_round": 1,
+      "team_a": "Unnamed Team (Collector Sean)",
+      "team_b": "Cheetah's Collection",
+      "games": [
+        {
+          "pairing": "round",
+          "key": "Captain",
+          "a": {
+            "player": "Collector Sean",
+            "competitor": "Swoggle (V1)",
+            "db_uuid": "3076e579ea384f008e9bc0db1b62dd57",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Ian Chambers",
+            "competitor": "Supersonica",
+            "db_uuid": "4bcdec3ecc6445fbb9be4aa897d17972",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R1",
+          "a": {
+            "player": "Practisite Jeremy S",
+            "competitor": "Smart Mark Sterling",
+            "db_uuid": "a9091bdff29143e3a4352eb281739624",
+            "ten_stat": "technique",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Jonathan Thew",
+            "competitor": "Tortured Vigilante",
+            "db_uuid": "c9c7ebf148884c038fa00763434c6244",
+            "ten_stat": "submission",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R2",
+          "a": {
+            "player": "Angela Kristina",
+            "competitor": "Candy MaM",
+            "db_uuid": "e1e8ae66adc2457a8d87a4a1d9820442",
+            "ten_stat": "grapple",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "Robert Dowdy",
+            "competitor": "Dough Nation (V1)",
+            "db_uuid": "4727798038a94d549fa5267837d5aa09",
+            "ten_stat": "power",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R3",
+          "a": {
+            "player": "Jeffrey Fox",
+            "competitor": "Foxworthy (V3)",
+            "db_uuid": "f2a6fa1ed1cb46a49f1fa65e19190a4c",
+            "ten_stat": "strike",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Ron Hough",
+            "competitor": "Shattered Split",
+            "db_uuid": "627444f08925427b973a23be26369043",
+            "ten_stat": "strike",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R4",
+          "a": {
+            "player": "Neil Sheen",
+            "competitor": "The East End Enforcer",
+            "db_uuid": "e1c622913f79416a899b8fd39ac0b9f9",
+            "ten_stat": "submission",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "BlackstarSRG",
+            "competitor": "El Gato Shinobi",
+            "db_uuid": "44a083f3214148959e40c125bb5eb7b2",
+            "ten_stat": "grapple",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R5",
+          "a": {
+            "player": "Nic Baxter",
+            "competitor": "Sage the Wiccan Witch (V1)",
+            "db_uuid": "04ee2101e644473f9327c2333d8183c8",
+            "ten_stat": "power",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Shannon",
+            "competitor": "Ms. Tierious",
+            "db_uuid": "fbad14e83e1043c1949a671a30cd2323",
+            "ten_stat": "technique",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "agility",
+          "a": {
+            "player": "Collector Sean",
+            "competitor": "Swoggle (V1)",
+            "db_uuid": "3076e579ea384f008e9bc0db1b62dd57",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Ian Chambers",
+            "competitor": "Supersonica",
+            "db_uuid": "4bcdec3ecc6445fbb9be4aa897d17972",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "technique",
+          "a": {
+            "player": "Practisite Jeremy S",
+            "competitor": "Smart Mark Sterling",
+            "db_uuid": "a9091bdff29143e3a4352eb281739624",
+            "ten_stat": "technique",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Shannon",
+            "competitor": "Ms. Tierious",
+            "db_uuid": "fbad14e83e1043c1949a671a30cd2323",
+            "ten_stat": "technique",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "grapple",
+          "a": {
+            "player": "Angela Kristina",
+            "competitor": "Candy MaM",
+            "db_uuid": "e1e8ae66adc2457a8d87a4a1d9820442",
+            "ten_stat": "grapple",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "BlackstarSRG",
+            "competitor": "El Gato Shinobi",
+            "db_uuid": "44a083f3214148959e40c125bb5eb7b2",
+            "ten_stat": "grapple",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "strike",
+          "a": {
+            "player": "Jeffrey Fox",
+            "competitor": "Foxworthy (V3)",
+            "db_uuid": "f2a6fa1ed1cb46a49f1fa65e19190a4c",
+            "ten_stat": "strike",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Ron Hough",
+            "competitor": "Shattered Split",
+            "db_uuid": "627444f08925427b973a23be26369043",
+            "ten_stat": "strike",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "submission",
+          "a": {
+            "player": "Neil Sheen",
+            "competitor": "The East End Enforcer",
+            "db_uuid": "e1c622913f79416a899b8fd39ac0b9f9",
+            "ten_stat": "submission",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Jonathan Thew",
+            "competitor": "Tortured Vigilante",
+            "db_uuid": "c9c7ebf148884c038fa00763434c6244",
+            "ten_stat": "submission",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "power",
+          "a": {
+            "player": "Nic Baxter",
+            "competitor": "Sage the Wiccan Witch (V1)",
+            "db_uuid": "04ee2101e644473f9327c2333d8183c8",
+            "ten_stat": "power",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Robert Dowdy",
+            "competitor": "Dough Nation (V1)",
+            "db_uuid": "4727798038a94d549fa5267837d5aa09",
+            "ten_stat": "power",
+            "slot": "R2"
+          }
+        }
+      ]
+    },
+    {
+      "tournament_round": 1,
+      "team_a": "Any Team",
+      "team_b": "The Real Tristate",
+      "games": [
+        {
+          "pairing": "round",
+          "key": "Captain",
+          "a": {
+            "player": "Everett Stephens",
+            "competitor": "Mila Mai (V1)",
+            "db_uuid": "763531a5c5ee468690793b8683f59abd",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Brian Schmidt",
+            "competitor": "Mr. Poppintwist",
+            "db_uuid": "7c61c4f8ca78491ba66c77a6a2778888",
+            "ten_stat": "submission",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R1",
+          "a": {
+            "player": "THE Johnny Korea",
+            "competitor": "Possum King",
+            "db_uuid": "9e5c51951a104635ac7af1fcd4c1dc67",
+            "ten_stat": "submission",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "John Eldis",
+            "competitor": "The Chosen One",
+            "db_uuid": "5d256305732d4c1bb9df684e30854d71",
+            "ten_stat": "grapple",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R2",
+          "a": {
+            "player": "Mike Benton",
+            "competitor": "Tommy Stillwell",
+            "db_uuid": "2e4a3c658deb43499e6e3e398d0def13",
+            "ten_stat": "grapple",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "Google Docs Dan",
+            "competitor": "Ivelisse \"La Sicaria\"",
+            "db_uuid": "c30f8ab941e046cdb7dea5772f96019b",
+            "ten_stat": "strike",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R3",
+          "a": {
+            "player": "Chugganomics",
+            "competitor": "The Witch's Apprentice",
+            "db_uuid": "0d71d3dff2ad4f23a35055c49935c913",
+            "ten_stat": "power",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "The Centipede John VonMacek",
+            "competitor": "King Brian Cage",
+            "db_uuid": "8ddf0b4f072e4799bcb6df6b22e84b18",
+            "ten_stat": "power",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R4",
+          "a": {
+            "player": "Garry Crawford",
+            "competitor": "Abigail Fairy in Training",
+            "db_uuid": "c0bfb96bd9054080960a0ecbaeb13e64",
+            "ten_stat": "technique",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Flame Fighter",
+            "competitor": "Hallow King (V1)",
+            "db_uuid": "ba1af0065d3a45f7823ed63f6b5ce426",
+            "ten_stat": "technique",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R5",
+          "a": {
+            "player": "Arcade Addict Aaron",
+            "competitor": "Khloe Mai",
+            "db_uuid": "3c8273a9252a46feb337348e29c30ad3",
+            "ten_stat": "strike",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Tomasello the Wiseman",
+            "competitor": "El Phantasmo",
+            "db_uuid": "c8788ae573734217b3a4ee2563d998b7",
+            "ten_stat": "agility",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "agility",
+          "a": {
+            "player": "Everett Stephens",
+            "competitor": "Mila Mai (V1)",
+            "db_uuid": "763531a5c5ee468690793b8683f59abd",
+            "ten_stat": "agility",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Tomasello the Wiseman",
+            "competitor": "El Phantasmo",
+            "db_uuid": "c8788ae573734217b3a4ee2563d998b7",
+            "ten_stat": "agility",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "submission",
+          "a": {
+            "player": "THE Johnny Korea",
+            "competitor": "Possum King",
+            "db_uuid": "9e5c51951a104635ac7af1fcd4c1dc67",
+            "ten_stat": "submission",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Brian Schmidt",
+            "competitor": "Mr. Poppintwist",
+            "db_uuid": "7c61c4f8ca78491ba66c77a6a2778888",
+            "ten_stat": "submission",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "grapple",
+          "a": {
+            "player": "Mike Benton",
+            "competitor": "Tommy Stillwell",
+            "db_uuid": "2e4a3c658deb43499e6e3e398d0def13",
+            "ten_stat": "grapple",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "John Eldis",
+            "competitor": "The Chosen One",
+            "db_uuid": "5d256305732d4c1bb9df684e30854d71",
+            "ten_stat": "grapple",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "power",
+          "a": {
+            "player": "Chugganomics",
+            "competitor": "The Witch's Apprentice",
+            "db_uuid": "0d71d3dff2ad4f23a35055c49935c913",
+            "ten_stat": "power",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "The Centipede John VonMacek",
+            "competitor": "King Brian Cage",
+            "db_uuid": "8ddf0b4f072e4799bcb6df6b22e84b18",
+            "ten_stat": "power",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "technique",
+          "a": {
+            "player": "Garry Crawford",
+            "competitor": "Abigail Fairy in Training",
+            "db_uuid": "c0bfb96bd9054080960a0ecbaeb13e64",
+            "ten_stat": "technique",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Flame Fighter",
+            "competitor": "Hallow King (V1)",
+            "db_uuid": "ba1af0065d3a45f7823ed63f6b5ce426",
+            "ten_stat": "technique",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "strike",
+          "a": {
+            "player": "Arcade Addict Aaron",
+            "competitor": "Khloe Mai",
+            "db_uuid": "3c8273a9252a46feb337348e29c30ad3",
+            "ten_stat": "strike",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Google Docs Dan",
+            "competitor": "Ivelisse \"La Sicaria\"",
+            "db_uuid": "c30f8ab941e046cdb7dea5772f96019b",
+            "ten_stat": "strike",
+            "slot": "R2"
+          }
+        }
+      ]
+    },
+    {
+      "tournament_round": 1,
+      "team_a": "Unnamed Team (Rambo Apocalypse)",
+      "team_b": "Clown Town",
+      "games": [
+        {
+          "pairing": "round",
+          "key": "Captain",
+          "a": {
+            "player": "Rambo Apocalypse",
+            "competitor": "Uncle Awesome (V2)",
+            "db_uuid": "1886db488a2540c18d7fc450b201f9b0",
+            "ten_stat": "power",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "John P",
+            "competitor": "El Scorpio",
+            "db_uuid": "8b00ea8e2268466d98265ebb62cc0c64",
+            "ten_stat": "technique",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R1",
+          "a": {
+            "player": "Brock Smith",
+            "competitor": "Defector",
+            "db_uuid": "fc7f7efc0f914eb88a42db65b9778ab6",
+            "ten_stat": "grapple",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Bombada",
+            "competitor": "Mr. Sunday Night Ron Rumble",
+            "db_uuid": "01294f0b05eb48ddaf8dd763b852a7ad",
+            "ten_stat": "power",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R2",
+          "a": {
+            "player": "Joe Gilchrist",
+            "competitor": "Chris Bey (Greatest Story Ever Told)",
+            "db_uuid": "52787724f33243a4a597b78a394e6813",
+            "ten_stat": "strike",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "El Hombre Cybernetico",
+            "competitor": "AJ Styles",
+            "db_uuid": "b5a305c0f693405f8cb43b4e5864e559",
+            "ten_stat": "strike",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R3",
+          "a": {
+            "player": "Cory Pitney",
+            "competitor": "Ricky Riot (V1)",
+            "db_uuid": "5cf0d256efd841b3b5c220e2487db443",
+            "ten_stat": "technique",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "Mark Perre",
+            "competitor": "Leader of the Postal Nation",
+            "db_uuid": "417d1d704f49439c8c8e4f3bd703a880",
+            "ten_stat": "grapple",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R4",
+          "a": {
+            "player": "Evil Ed",
+            "competitor": "Sgt. Yoga",
+            "db_uuid": "ad4de9bc71a94dc08d89d5ce147cc9a1",
+            "ten_stat": "submission",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Craig Blachfield",
+            "competitor": "Mr. Snap (V1)",
+            "db_uuid": "f9cb3b3b788346eda95fcb066e9305ad",
+            "ten_stat": "submission",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "round",
+          "key": "R5",
+          "a": {
+            "player": "Chris Cole",
+            "competitor": "Real Beater",
+            "db_uuid": "ee0c785df87947449d12e60e1023e17d",
+            "ten_stat": "agility",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Brian O",
+            "competitor": "King Greatness",
+            "db_uuid": "7e5c8dfeecc041958080980601611097",
+            "ten_stat": "agility",
+            "slot": "R5"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "power",
+          "a": {
+            "player": "Rambo Apocalypse",
+            "competitor": "Uncle Awesome (V2)",
+            "db_uuid": "1886db488a2540c18d7fc450b201f9b0",
+            "ten_stat": "power",
+            "slot": "Captain"
+          },
+          "b": {
+            "player": "Bombada",
+            "competitor": "Mr. Sunday Night Ron Rumble",
+            "db_uuid": "01294f0b05eb48ddaf8dd763b852a7ad",
+            "ten_stat": "power",
+            "slot": "R1"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "grapple",
+          "a": {
+            "player": "Brock Smith",
+            "competitor": "Defector",
+            "db_uuid": "fc7f7efc0f914eb88a42db65b9778ab6",
+            "ten_stat": "grapple",
+            "slot": "R1"
+          },
+          "b": {
+            "player": "Mark Perre",
+            "competitor": "Leader of the Postal Nation",
+            "db_uuid": "417d1d704f49439c8c8e4f3bd703a880",
+            "ten_stat": "grapple",
+            "slot": "R3"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "strike",
+          "a": {
+            "player": "Joe Gilchrist",
+            "competitor": "Chris Bey (Greatest Story Ever Told)",
+            "db_uuid": "52787724f33243a4a597b78a394e6813",
+            "ten_stat": "strike",
+            "slot": "R2"
+          },
+          "b": {
+            "player": "El Hombre Cybernetico",
+            "competitor": "AJ Styles",
+            "db_uuid": "b5a305c0f693405f8cb43b4e5864e559",
+            "ten_stat": "strike",
+            "slot": "R2"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "technique",
+          "a": {
+            "player": "Cory Pitney",
+            "competitor": "Ricky Riot (V1)",
+            "db_uuid": "5cf0d256efd841b3b5c220e2487db443",
+            "ten_stat": "technique",
+            "slot": "R3"
+          },
+          "b": {
+            "player": "John P",
+            "competitor": "El Scorpio",
+            "db_uuid": "8b00ea8e2268466d98265ebb62cc0c64",
+            "ten_stat": "technique",
+            "slot": "Captain"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "submission",
+          "a": {
+            "player": "Evil Ed",
+            "competitor": "Sgt. Yoga",
+            "db_uuid": "ad4de9bc71a94dc08d89d5ce147cc9a1",
+            "ten_stat": "submission",
+            "slot": "R4"
+          },
+          "b": {
+            "player": "Craig Blachfield",
+            "competitor": "Mr. Snap (V1)",
+            "db_uuid": "f9cb3b3b788346eda95fcb066e9305ad",
+            "ten_stat": "submission",
+            "slot": "R4"
+          }
+        },
+        {
+          "pairing": "ten_stat",
+          "key": "agility",
+          "a": {
+            "player": "Chris Cole",
+            "competitor": "Real Beater",
+            "db_uuid": "ee0c785df87947449d12e60e1023e17d",
+            "ten_stat": "agility",
+            "slot": "R5"
+          },
+          "b": {
+            "player": "Brian O",
+            "competitor": "King Greatness",
+            "db_uuid": "7e5c8dfeecc041958080980601611097",
+            "ten_stat": "agility",
+            "slot": "R5"
+          }
+        }
+      ]
+    }
+  ]
+}

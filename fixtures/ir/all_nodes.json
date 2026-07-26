@@ -225,6 +225,10 @@
     "@type": "DoubleFinishIfBumped"
   },
   {
+    "@type": "RequireStops",
+    "count": 2
+  },
+  {
     "@type": "Draw",
     "cap": null,
     "n": 0,
@@ -506,6 +510,9 @@
   },
   {
     "@type": "BumpedLastTurnRoll"
+  },
+  {
+    "@type": "RerolledTurnRoll"
   },
   {
     "@type": "Or",

@@ -732,6 +732,14 @@ class EndedTurnNoPlay(IRNode):
 
 
 @dataclass(frozen=True)
+class RerolledTurnRoll(IRNode):
+    """True iff the owner re-rolled their turn roll THIS turn (any turn die re-rolled
+    at the roll-off; ``flags["rerolled_turn"]``). Gates King Brian Cage's finish riders
+    ("if you rolled Power for your turn roll or you re-rolled your turn roll, …"), OR'd
+    with ``RollWasSkill{Power}``. schema v80"""
+
+
+@dataclass(frozen=True)
 class GimmickFlipped(IRNode):
     """True iff ``who``'s competitor card has been turned over to its back side (by
     :class:`FlipGimmick`). Gates a two-sided gimmick's front effects (``Not(...)``)
@@ -1394,6 +1402,16 @@ class DoubleFinishIf(IRNode):
 
 
 @dataclass(frozen=True)
+class RequireStops(IRNode):
+    """This card can only be stopped by ``count`` Stops at once — the defender must
+    commit ``count`` legal stop cards, or it lands (King Brian Cage's "This card will
+    only be stopped by 2 Stops"). Read by the stop window; a no-op to execute. schema
+    v80"""
+
+    count: int = 2
+
+
+@dataclass(frozen=True)
 class RevealAndDiscard(IRNode):
     """Reveal ``count`` random cards from ``who``'s hand and discard those that can
     act as Stops ("Your opponent randomly reveals 3 cards in their hand and discards
@@ -1854,6 +1872,7 @@ Condition = (
     | OppWonLastRoll
     | BumpedLastTurnRoll
     | EndedTurnNoPlay
+    | RerolledTurnRoll
     | GimmickFlipped
     | DuringTurn
     | CompetitorIs
@@ -1921,6 +1940,7 @@ Action = (
     | SuppressStop
     | DoubleFinishIfBumped
     | DoubleFinishIf
+    | RequireStops
     | Choice
 )
 

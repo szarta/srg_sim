@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 79;
+pub const SCHEMA_VERSION: i64 = 80;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -708,6 +708,13 @@ pub enum Condition {
     /// lost the previous roll-off. Gates The SRG Boss's finish riders ("if you ended
     /// the last turn without playing a card, …"). schema v78
     EndedTurnNoPlay,
+    /// The owner re-rolled their turn roll **this** turn — any of their turn dice was
+    /// re-rolled at the roll-off (a granted "re-roll your next turn roll", a standing
+    /// `Reroll{This}`, or a bump re-roll). Reads `PlayerState.flags["rerolled_turn"]`,
+    /// stamped in `offer_rerolls` for the re-rolled side; false otherwise. Gates King
+    /// Brian Cage's finish riders ("if you rolled Power for your turn roll or you
+    /// re-rolled your turn roll, …"), OR'd with `RollWasSkill{Power}`. schema v80
+    RerolledTurnRoll,
     GimmickFlipped {
         who: Who,
     },
@@ -1375,6 +1382,13 @@ pub enum Action {
     DoubleFinishIf {
         condition: Condition,
     },
+    /// This card can only be stopped by `count` Stops at once — the defender must
+    /// commit `count` legal stop cards to stop it, or it lands (King Brian Cage's
+    /// "This card will only be stopped by 2 Stops"). A Static self-effect read from
+    /// the attack's own effects in `offer_stop`; never executed. schema v80
+    RequireStops {
+        count: i64,
+    },
     Choice {
         options: Vec<ChoiceOption>,
     },
@@ -1678,6 +1692,9 @@ pub enum IrNode {
     /// The owner ended the previous turn without playing a card (roll-off winner on
     /// `turn_no - 1` who passed). Reads `flags["last_pass_turn"]`. schema v78
     EndedTurnNoPlay,
+    /// The owner re-rolled their turn roll this turn. Reads `flags["rerolled_turn"]`,
+    /// stamped in `offer_rerolls`. Gates King Brian Cage's finish riders. schema v80
+    RerolledTurnRoll,
     GimmickFlipped {
         who: Who,
     },
@@ -2324,6 +2341,11 @@ pub enum IrNode {
     /// the owner's turn-roll context, never executed. schema v77
     DoubleFinishIf {
         condition: Condition,
+    },
+    /// This card can only be stopped by `count` Stops at once (King Brian Cage). A
+    /// Static self-effect read in `offer_stop`; never executed. schema v80
+    RequireStops {
+        count: i64,
     },
     Choice {
         options: Vec<ChoiceOption>,
