@@ -1069,7 +1069,8 @@
     "CountZone": {
       "enum": [
         "IN_PLAY",
-        "DISCARD"
+        "DISCARD",
+        "FLIPPED_THIS_TURN"
       ],
       "type": "string"
     },
@@ -1843,6 +1844,16 @@
         "per_zone": {
           "$ref": "#/$defs/CountZone"
         },
+        "per_divisor": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "when_base_ge": {
           "anyOf": [
             {
@@ -1882,6 +1893,7 @@
         "per",
         "per_who",
         "per_zone",
+        "per_divisor",
         "when_base_le",
         "when_base_ge"
       ],
@@ -4324,5 +4336,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 73
+  "version": 74
 }

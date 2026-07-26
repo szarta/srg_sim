@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 73;
+pub const SCHEMA_VERSION: i64 = 74;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -213,6 +213,12 @@ pub enum CountZone {
     #[default]
     InPlay,
     Discard,
+    /// Cards the target FLIPPED this turn (drained deck → discard by `Flip`), read
+    /// while they are still the current turn's flips — "your Finish roll is +1 for
+    /// each Strike card flipped" (Five Star Frog Splash); "for each Strike flipped:
+    /// +1 to Strike and Power" (Five Star Heart Punch). Transient turn state,
+    /// re-derived on replay. schema v74
+    FlippedThisTurn,
 }
 
 /// Reach of a [`Action::DisqualificationRule`] toggle. `SelfSide` = "you cannot
@@ -1270,6 +1276,12 @@ pub enum Action {
         per_who: Who,
         #[serde(default)]
         per_zone: CountZone,
+        /// Integer divisor on the per-count before scaling by `delta` — the count is
+        /// `floor(matches / per_divisor)`. `None`/`Some(1)` = one bonus per match;
+        /// `Some(3)` = "your Finish roll is +1 for every 3 Strikes you have in play"
+        /// (The Ride Along). Only meaningful with `per` set. schema v74
+        #[serde(default)]
+        per_divisor: Option<i64>,
     },
     BreakoutModifier {
         delta: i64,
@@ -2174,6 +2186,12 @@ pub enum IrNode {
         per_who: Who,
         #[serde(default)]
         per_zone: CountZone,
+        /// Integer divisor on the per-count before scaling by `delta` — the count is
+        /// `floor(matches / per_divisor)`. `None`/`Some(1)` = one bonus per match;
+        /// `Some(3)` = "your Finish roll is +1 for every 3 Strikes you have in play"
+        /// (The Ride Along). Only meaningful with `per` set. schema v74
+        #[serde(default)]
+        per_divisor: Option<i64>,
     },
     BreakoutModifier {
         delta: i64,

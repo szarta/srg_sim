@@ -141,6 +141,20 @@ fn recur_filter(desc: &str) -> Option<CardFilter> {
     count_filter(d).or_else(|| d.strip_suffix("es").and_then(count_filter))
 }
 
+/// The card-selector inside a "for each `<X>` flipped" per-count over the turn's
+/// flips — an attack type, a Stop, an "X in the name" substring, or bare "card"
+/// (every flip). `None` for a descriptor with no filter.
+fn flipped_filter(desc: &str) -> Option<CardFilter> {
+    let d = desc.trim();
+    if d.eq_ignore_ascii_case("stop") || d.eq_ignore_ascii_case("stops") {
+        return Some(CardFilter {
+            is_stop: Some(true),
+            ..Default::default()
+        });
+    }
+    recur_filter(d)
+}
+
 /// "If you have a(nother) `<desc>` in play, …" as a `HasInPlay(SELF, …, ≥1)` gate.
 /// `None` for descriptors with no CardFilter (e.g. "stop").
 fn has_in_play_desc(desc: &str) -> Option<Condition> {
@@ -1015,6 +1029,7 @@ fn finish_bonus(delta: i64, when_skill: Option<Skill>, either: bool) -> Action {
         per: None,
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
+        per_divisor: None,
     }
 }
 
@@ -2462,12 +2477,93 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         per: Some(per),
                         per_who: Who::SelfSide,
                         per_zone: CountZone::InPlay,
+                        per_divisor: None,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))
             },
         ),
+        // Same, phrased "for every N <X> you have in play" — the divisor floors the
+        // count ("+1 for every 3 Strikes you have in play", The Ride Along).
+        rule(
+            r"Your Finish rolls? (?:is|are) ([+-]\d+) for every (\d+) (?:other )?(.+?) you have in play",
+            |c| {
+                let per = count_filter(&c[3])?;
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::FinishRollBonus {
+                        delta: num(c, 1),
+                        when_skill: None,
+                        either: false,
+                        when_base_le: None,
+                        when_base_ge: None,
+                        per: Some(per),
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::InPlay,
+                        per_divisor: Some(num(c, 2)),
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Per-count Finish bonus over cards FLIPPED this turn: "your Finish roll is
+        // +1 for each Strike card flipped" (Five Star Frog Splash). The filter reads
+        // the flipped set — an attack type, a stop, or a name substring.
+        rule(
+            r#"Your Finish rolls? (?:is|are) ([+-]\d+) for each (.+?) (?:card )?(?:you )?flipped(?: for your [Gg]immick)?"#,
+            |c| {
+                let per = flipped_filter(&c[2])?;
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::FinishRollBonus {
+                        delta: num(c, 1),
+                        when_skill: None,
+                        either: false,
+                        when_base_le: None,
+                        when_base_ge: None,
+                        per: Some(per),
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::FlippedThisTurn,
+                        per_divisor: None,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Skill buff scaled by the turn's flips: "For each Strike flipped: +1 to
+        // Strike and Power" (Five Star Heart Punch). Multi-skill; folds into the
+        // finish/turn roll via the derived stats over CountZone::FlippedThisTurn.
+        rule(r"For each (.+?) flipped:? \+(\d+) to (.+)", |c| {
+            let per = flipped_filter(&c[1])?;
+            let skills = skill_list(&c[3]);
+            if skills.is_empty() {
+                return None;
+            }
+            let delta = num(c, 2);
+            let actions = skills
+                .into_iter()
+                .map(|s| Action::BuffSkill {
+                    skill: s,
+                    delta,
+                    who: Who::SelfSide,
+                    duration: Duration::WhileInPlay,
+                    target_highest: false,
+                    per_crowd: false,
+                    cap: None,
+                    per: Some(per.clone()),
+                    per_zone: CountZone::FlippedThisTurn,
+                })
+                .collect();
+            Some(eff(
+                Trigger::Static,
+                actions,
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
         // Base-roll-gated Finish bonus: "If your Finish roll is N or less/greater,
         // it is +M". The N-or-less/greater reads the BASE roll (skill stat pre-bonus);
         // +M is a SIGNED additive bonus (a bare "M" is a SET, left Unsupported).
@@ -2485,6 +2581,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         per: None,
                         per_who: Who::SelfSide,
                         per_zone: CountZone::InPlay,
+                        per_divisor: None,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -2505,6 +2602,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         per: None,
                         per_who: Who::SelfSide,
                         per_zone: CountZone::InPlay,
+                        per_divisor: None,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,

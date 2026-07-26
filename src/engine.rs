@@ -270,6 +270,7 @@ fn negate_action(action: &Action) -> Action {
             per,
             per_who,
             per_zone,
+            per_divisor,
         } => Action::FinishRollBonus {
             delta: -*delta,
             when_skill: *when_skill,
@@ -279,6 +280,7 @@ fn negate_action(action: &Action) -> Action {
             per: per.clone(),
             per_who: *per_who,
             per_zone: *per_zone,
+            per_divisor: *per_divisor,
         },
         Action::BreakoutModifier { delta, attempts } => Action::BreakoutModifier {
             delta: -*delta,
@@ -432,6 +434,7 @@ impl Engine {
                         gimmick_blanked: false,
                         gimmick_flipped: false,
                         hits_this_turn: 0,
+                        flipped_this_turn: Vec::new(),
                         flags: serde_json::Map::new(),
                     },
                 )
@@ -1642,6 +1645,9 @@ impl Engine {
         }
         let uuids = flipped.iter().map(|c| c.db_uuid.clone()).collect();
         let player = self.state.players.get_mut(&target).unwrap();
+        // Record this turn's flips (read by CountZone::FlippedThisTurn) before they
+        // join the discard, so a "+1 for each Strike flipped" rider can count them.
+        player.flipped_this_turn.extend(flipped.iter().cloned());
         player.discard.extend(flipped);
         let t = self.state.turn_no;
         self.log(Event::Discard(CardMovement {
@@ -3238,8 +3244,9 @@ impl Engine {
         for player in self.state.players.values_mut() {
             player.flags.remove("extra_plays"); // "additional card this turn" is per-turn
             player.hits_this_turn = 0; // reset the per-turn hit count (HitThisTurn)
-                                       // Promote a "re-roll your next turn roll" grant to this turn (SET, not
-                                       // accumulate); an unused grant expires.
+            player.flipped_this_turn.clear(); // reset per-turn flips (FlippedThisTurn)
+                                              // Promote a "re-roll your next turn roll" grant to this turn (SET, not
+                                              // accumulate); an unused grant expires.
             player.reroll_grants.this_turn = player.reroll_grants.next_turn;
             player.reroll_grants.next_turn = 0;
         }
@@ -3981,6 +3988,7 @@ impl Engine {
                     per,
                     per_who,
                     per_zone,
+                    per_divisor,
                     ..
                 } = a
                 {
@@ -3997,7 +4005,9 @@ impl Engine {
                         let mult = match per {
                             Some(f) => {
                                 let who = self.target(*per_who, key);
-                                self.state.count_in_zone(f, *per_zone, &who)
+                                let count = self.state.count_in_zone(f, *per_zone, &who);
+                                // "+1 for every N X" divides the match count first.
+                                count / per_divisor.unwrap_or(1).max(1)
                             }
                             None => 1,
                         };
@@ -5462,6 +5472,70 @@ mod breakout_modifier_tests {
         );
         assert_eq!(engine.breakout_bonus("A", 1), 1);
         assert_eq!(engine.breakout_bonus("A", 3), 3);
+    }
+
+    fn strike_cards(n: usize) -> Vec<Card> {
+        (0..n)
+            .map(|i| {
+                serde_json::from_value(json!({
+                    "atk_type": "Strike", "db_uuid": format!("s{i}"), "effects": [],
+                    "finish_bonuses": {}, "name": "s", "number": 1, "play_order": "Lead",
+                    "raw_text": "", "tags": []
+                }))
+                .expect("card")
+            })
+            .collect()
+    }
+
+    fn finish_roll_per(zone: &str, divisor: Value) -> Value {
+        json!({
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "FinishRollBonus", "delta": 1, "when_skill": null,
+                "either": false, "when_base_le": null, "when_base_ge": null,
+                "per": {"@type": "CardFilter", "atk_type": "Strike"},
+                "per_who": "SELF", "per_zone": zone, "per_divisor": divisor}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "t", "source": "gimmick", "optional": false
+        })
+    }
+
+    #[test]
+    fn finish_roll_bonus_counts_cards_flipped_this_turn() {
+        // Five Star Frog Splash: "+1 for each Strike card flipped" reads the turn's
+        // flips (CountZone::FlippedThisTurn), not the discard they land in.
+        let mut engine = engine();
+        push_gimmick(
+            &mut engine,
+            "A",
+            finish_roll_per("FLIPPED_THIS_TURN", Value::Null),
+        );
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Grapple, 5),
+            0,
+            "no flips yet"
+        );
+        engine.state.players.get_mut("A").unwrap().flipped_this_turn = strike_cards(3);
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Grapple, 5),
+            3,
+            "+1 per Strike flipped"
+        );
+    }
+
+    #[test]
+    fn finish_roll_bonus_divisor_floors_the_count() {
+        // The Ride Along: "+1 for every 3 Strikes you have in play" -> floor(7/3) = 2.
+        let mut engine = engine();
+        push_gimmick(&mut engine, "A", finish_roll_per("IN_PLAY", json!(3)));
+        engine.state.players.get_mut("A").unwrap().in_play = strike_cards(7);
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Grapple, 5),
+            2,
+            "floor(7/3)"
+        );
     }
 
     #[test]

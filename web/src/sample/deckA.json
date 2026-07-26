@@ -2900,6 +2900,7 @@
             "delta": 2,
             "either": false,
             "per": null,
+            "per_divisor": null,
             "per_who": "SELF",
             "per_zone": "IN_PLAY",
             "when_base_ge": null,

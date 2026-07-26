@@ -218,8 +218,9 @@ ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP, per_zone=IN_PLAY)  # d
                               # in `per_zone` (IN_PLAY, or DISCARD for "+2 for each Finish in your discard pile"; schema v70)
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?, cap?, per?, per_zone=IN_PLAY)
                                                  # per=CardFilter -> bonus = delta * (count of the target's cards
-                                                 # in per_zone {IN_PLAY|DISCARD} matching per), clamped to cap
-                                                 # ("+1 for each card in play with 'Chin' in the name, Max +3"); schema v7
+                                                 # in per_zone {IN_PLAY|DISCARD|FLIPPED_THIS_TURN} matching per), clamped to cap
+                                                 # ("+1 for each card in play with 'Chin' in the name, Max +3"; FLIPPED_THIS_TURN
+                                                 # = cards flipped this turn, "for each Strike flipped: +1 to Strike"); schema v7/v74
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 AddText(name_contains=[...], effects=[Effect...])  # Static gimmick: the owner's played cards whose title matches (case-insensitive OR) gain `effects` (their own triggers, usually OnPlay), injected at play time alongside the card's own. El Super Santa/Sabu. schema v25
 Reroll(who, once=True, choose=False, when=THIS)  # who=SELF/OPP die; choose=owner picks a player;
@@ -263,7 +264,7 @@ SuppressOpponentDraw         # Static decl (schema v21): "your opponent does not
                              # (Sami "The Draw") — a Draw(who=OPP) resolved by the declaring player is voided at act_draw.
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
 FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
-FinishRollBonus(delta, when_skill?, either=False, per?, per_who=SELF, per_zone=IN_PLAY)  # +delta to a Finish roll; when_skill gates on the rolled skill. `per` set = delta * (count of per_who's cards in per_zone matching the filter) — "+1 per Spotlight in your opponent's discard". schema v28
+FinishRollBonus(delta, when_skill?, either=False, per?, per_who=SELF, per_zone=IN_PLAY, per_divisor?)  # +delta to a Finish roll; when_skill gates on the rolled skill. `per` set = delta * floor((count of per_who's cards in per_zone matching the filter) / per_divisor) — "+1 per Spotlight in your opponent's discard" (schema v28); per_zone=FLIPPED_THIS_TURN for "+1 for each Strike card flipped", per_divisor=3 for "+1 for every 3 Strikes in play" (schema v74)
 DoubleFinishIfBumped          # Static self-decl: double THIS card's Finish bonuses if the finisher bumped
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```

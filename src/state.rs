@@ -140,6 +140,12 @@ pub struct PlayerState {
     /// serialized (re-derives as the engine replays the turn).
     #[serde(skip)]
     pub hits_this_turn: i64,
+    /// Cards this player FLIPPED this turn (each drained deck → discard by `Flip`,
+    /// also recorded here). Read by a per-count over [`CountZone::FlippedThisTurn`]
+    /// ("your Finish roll is +1 for each Strike card flipped"); reset at each turn
+    /// start. Transient turn state, never serialized (re-derives on replay).
+    #[serde(skip)]
+    pub flipped_this_turn: Vec<Card>,
     #[serde(default)]
     pub flags: Map<String, Value>,
 }
@@ -438,6 +444,7 @@ impl GameState {
         let cards = match zone {
             CountZone::InPlay => &player.in_play,
             CountZone::Discard => &player.discard,
+            CountZone::FlippedThisTurn => &player.flipped_this_turn,
         };
         let mut out = Vec::new();
         for c in cards {
@@ -644,6 +651,11 @@ impl GameState {
             CountZone::InPlay => conditions::count_in_play(&player.in_play, filter, None),
             CountZone::Discard => player
                 .discard
+                .iter()
+                .filter(|c| conditions::card_matches(c, filter))
+                .count() as i64,
+            CountZone::FlippedThisTurn => player
+                .flipped_this_turn
                 .iter()
                 .filter(|c| conditions::card_matches(c, filter))
                 .count() as i64,
