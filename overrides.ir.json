@@ -4083,6 +4083,40 @@
       }
     }
   ],
+  "52787724f33243a4a597b78a394e6813": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Scry",
+          "bottom": 0,
+          "bury": 0,
+          "deck": "SELF",
+          "rest": "FLIP",
+          "reveal": true,
+          "to_hand": 1,
+          "top": 2
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you roll Power for your turn roll: flip 2 cards and add one to your hand, mill the other",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Power",
+        "who": "SELF"
+      }
+    }
+  ],
   "5538bdae8345481ca3d414396a7dc766": [
     {
       "@type": "Effect",
@@ -11317,6 +11351,152 @@
       "source": "gimmick",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "c24fce40986040c086992e6639692446": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Power",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "is_stop": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "play_orders": [],
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  }
+                }
+              ],
+              "label": "Shuffle 2 cards from your discard pile into your deck"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Draw",
+                  "cap": null,
+                  "n": 2,
+                  "per": null,
+                  "per_excludes_trigger": false,
+                  "per_who": "SELF",
+                  "source": "TOP",
+                  "who": "SELF"
+                }
+              ],
+              "label": "Draw 2 cards"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "shuffle 2 cards from your discard pile into your deck, or draw 2 cards",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],

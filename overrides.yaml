@@ -11202,3 +11202,112 @@ b6896677acfb4ccc998b1a0e36102838:
   raw_clause: discard any number of cards from your hand, your opponent discards the same number of cards from their hand -1
   source: card
   optional: false
+
+# ---------------------------------------------------------------------------
+# Olympics opponent (Mastermind matchup sweep): Chris Bey (GSET). Existing nodes.
+# ---------------------------------------------------------------------------
+
+# Chris Bey (GSET) GIMMICK: "When you roll Power for your turn roll: Flip 2 cards
+# and add one of the flipped cards to your hand; you may bury the other." A dig:
+# Scry top 2, keep 1 to hand, mill the other (rest=FLIP → discard). The "may bury"
+# nuance (deck-bottom instead of discard) is dropped — same Scry dig as Ricky Riot.
+52787724f33243a4a597b78a394e6813:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Power
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    top: 2
+    bottom: 0
+    to_hand: 1
+    bury: 0
+    rest: FLIP
+    deck: SELF
+    reveal: true
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'when you roll Power for your turn roll: flip 2 cards and add one to your hand, mill the other'
+  source: gimmick
+  optional: false
+
+# Chris Bey — Bey Blade (#29 Grapple finish): "+3 to Power / +1 to Technique /
+# +1 to Grapple / Shuffle 2 cards from your discard pile into your deck, or draw 2
+# cards." The choice is Choice[ShuffleIntoDeck | Draw 2] (ShuffleIntoDeck drops the
+# count DB-wide, like every other shuffle-from-discard card).
+c24fce40986040c086992e6639692446:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Power, delta: 3}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +3 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Technique, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Grapple, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    order: null
+    atk_type: null
+    name_contains: []
+    text_contains: []
+    on_any: false
+    who: SELF
+  condition: {'@type': Always}
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: Shuffle 2 cards from your discard pile into your deck
+      actions:
+      - '@type': ShuffleIntoDeck
+        selector:
+          '@type': CardFilter
+          number: null
+          atk_type: null
+          play_order: null
+          tag: null
+          name: null
+          raw: null
+    - '@type': ChoiceOption
+      label: Draw 2 cards
+      actions:
+      - '@type': Draw
+        n: 2
+        source: TOP
+        who: SELF
+        per: null
+        per_who: SELF
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: shuffle 2 cards from your discard pile into your deck, or draw 2 cards
+  source: card
+  optional: false
