@@ -11311,3 +11311,91 @@ c24fce40986040c086992e6639692446:
   raw_clause: shuffle 2 cards from your discard pile into your deck, or draw 2 cards
   source: card
   optional: false
+
+# ---------------------------------------------------------------------------
+# Olympics opponent (Mastermind matchup sweep): Noah the Boa. Existing nodes.
+# ---------------------------------------------------------------------------
+
+# Noah the Boa GIMMICK: "Your Stop cards with 'DDT' in the name have the added
+# text: 'Stop any Finish Submission'." AddText onto DDT-named cards (only Boa Bite
+# DDT in this deck), injecting a Stop{Finish, Submission} clause.
+b34f7beab430461182c377100b12c213:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddText
+    name_contains: [DDT]
+    effects:
+    - '@type': Effect
+      trigger:
+        '@type': OnPlay
+      condition:
+        '@type': Always
+      actions:
+      - '@type': Stop
+        order: Finish
+        atk_type: Submission
+        source_is_skillreq: false
+      duration: INSTANT
+      frequency:
+        '@type': FrequencyGuard
+        kind: UNLIMITED
+        n: null
+      raw_clause: 'added text: stop any Finish Submission'
+      source: gimmick
+      optional: false
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: your Stop cards with "DDT" in the name have the added text "Stop any Finish Submission"
+  source: gimmick
+  optional: false
+
+# Noah the Boa — Boa Bite DDT (#29): "Stop any Follow Up Submission [or, via the
+# gimmick, Finish Submission] / +1 to Agility / +1 to Submission." The parser
+# choked on the trailing "or" (which dangles into the gimmick's added text). The
+# card's own stop is Stop{Follow Up, Submission}; the gimmick adds the Finish one.
+9da2a54f40a74f0ba000e5a42d9df87b:
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Stop
+    order: Followup
+    atk_type: Submission
+    source_is_skillreq: false
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: stop any Follow Up Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Agility, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Submission, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Submission
+  source: card
+  optional: false

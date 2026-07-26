@@ -8878,6 +8878,86 @@
       }
     }
   ],
+  "9da2a54f40a74f0ba000e5a42d9df87b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Submission",
+          "even_unstoppable": false,
+          "order": "Followup",
+          "source_is_skillreq": false,
+          "target": null
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "stop any Follow Up Submission",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Agility"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Agility",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Submission"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Submission",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "9e57cd60fb34451bbf7426fb315033ca": [
     {
       "@type": "Effect",
@@ -10191,6 +10271,64 @@
         "@type": "OnRoll",
         "skill": "Submission",
         "who": "SELF"
+      }
+    }
+  ],
+  "b34f7beab430461182c377100b12c213": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddText",
+          "effects": [
+            {
+              "@type": "Effect",
+              "actions": [
+                {
+                  "@type": "Stop",
+                  "atk_type": "Submission",
+                  "even_unstoppable": false,
+                  "order": "Finish",
+                  "source_is_skillreq": false,
+                  "target": null
+                }
+              ],
+              "condition": {
+                "@type": "Always"
+              },
+              "duration": "INSTANT",
+              "frequency": {
+                "@type": "FrequencyGuard",
+                "kind": "UNLIMITED",
+                "n": null
+              },
+              "optional": false,
+              "raw_clause": "added text: stop any Finish Submission",
+              "source": "gimmick",
+              "trigger": {
+                "@type": "OnPlay"
+              }
+            }
+          ],
+          "name_contains": [
+            "DDT"
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your Stop cards with \"DDT\" in the name have the added text \"Stop any Finish Submission\"",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
