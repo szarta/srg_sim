@@ -3572,6 +3572,7 @@
                   "@type": "Reroll",
                   "choose": false,
                   "cost": null,
+                  "finish": false,
                   "once": false,
                   "when": "NEXT",
                   "who": "SELF"

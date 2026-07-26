@@ -601,6 +601,7 @@
     "@type": "Reroll",
     "choose": false,
     "cost": null,
+    "finish": false,
     "once": false,
     "when": "THIS",
     "who": "SELF"

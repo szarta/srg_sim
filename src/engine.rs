@@ -33,6 +33,9 @@ pub const OPENING_HAND: usize = 3;
 pub const HAND_CAP: i64 = 10;
 pub const BREAKOUT_ATTEMPTS: usize = 3;
 pub const TURN_CAP: i64 = 400;
+/// Max finish-roll re-rolls honored per finish — a loop guard for "you may re-roll
+/// your Finish roll" (schema v76), independent of each effect's own frequency guard.
+const FINISH_REROLL_CAP: usize = 3;
 pub const MAX_TIE_REROLLS: i64 = 64;
 
 // ---------------------------------------------------------------------------
@@ -1086,6 +1089,7 @@ impl Engine {
                 choose,
             } => self.act_remove_from_play(selector, *who, *count, *choose, key)?,
             Action::DiscardInPlayMatch => self.act_discard_in_play_match(key)?,
+            Action::CoupledDiscard { offset } => self.act_coupled_discard(*offset, key)?,
             Action::ReturnToHand {
                 selector,
                 who,
@@ -2125,6 +2129,32 @@ impl Engine {
             ..Default::default()
         };
         self.discard_one_in_play(key, &opp, &filter)?;
+        Ok(())
+    }
+
+    /// Defector's Dismantler (schema v76). "Discard any number of cards from your
+    /// hand, your opponent discards the same number of cards from their hand
+    /// `offset`." No policy count-choice hook exists, so N is a heuristic: strip the
+    /// opponent's hand when affordable — `N = min(self_hand, opp_hand + 1)`, so the
+    /// opponent (who sheds `N + offset`) empties whenever the actor can pay. The
+    /// self-discard fires `OnBury` so a discard-recur gimmick (Defector's own) still
+    /// triggers; a self-hand-loss suppressor zeroes the whole trade.
+    fn act_coupled_discard(&mut self, offset: i64, key: &str) -> Eng<()> {
+        let opp = self.state.opponent_of(key);
+        if self.suppresses_self_hand_loss(key, key) {
+            self.log_effect(key, "SuppressSelfHandLoss", Some(key), json!({"n": 0}));
+            return Ok(());
+        }
+        let self_hand = self.state.players[key].hand.len() as i64;
+        let opp_hand = self.state.players[&opp].hand.len() as i64;
+        let n = self_hand.min(opp_hand + 1).max(0);
+        if n > 0 && self.discard_from_hand(key, key, n as usize, false, None)? > 0 {
+            self.run_on_bury(key, true, true)?; // effect-caused hand discard (gimmick recur)
+        }
+        let opp_n = (n + offset).max(0);
+        if opp_n > 0 && self.discard_from_hand(&opp, &opp, opp_n as usize, false, None)? > 0 {
+            self.run_on_bury(&opp, true, true)?;
+        }
         Ok(())
     }
 
@@ -3907,10 +3937,11 @@ impl Engine {
     /// The finish roll: base stat + the whole in-play combo's printed bonuses for the
     /// rolled skill + flat Finish-roll bonuses + crowd meter. Auto-success, else the
     /// defender's breakout attempt decides win vs. resume (DESIGN.md §5/§6).
-    fn finish_sequence(&mut self, finisher: &str, defender: &str, card: &Card) -> Eng<()> {
+    /// Roll the finish die and apply any switch-rolled-skill (Scott Prime) so base +
+    /// combo recompute from the switched skill. Shared by the initial finish roll and
+    /// each finish-roll re-roll.
+    fn roll_finish_skill(&mut self, finisher: &str) -> Eng<Skill> {
         let mut skill = self.state.rng.roll();
-        // Switch-rolled-skill also applies to the Finish roll (Scott Prime): switch
-        // before base/combo are computed so they recompute from the new skill.
         if let Some(to) = self.find_switch(finisher, skill)? {
             self.log_effect(
                 finisher,
@@ -3919,6 +3950,72 @@ impl Engine {
                 json!({"from": skill.name(), "to": to.name(), "roll": "finish"}),
             );
             skill = to;
+        }
+        Ok(skill)
+    }
+
+    /// Offer `finisher`'s optional finish-roll re-roll ("you may re-roll your Finish
+    /// roll", schema v76). Scans standing effects for a `Reroll{when:This, finish:true}`
+    /// whose gate holds against the finish roll `skill`, honoring frequency, the
+    /// optional "you may", and any in-play cost; on election it runs the effect's
+    /// OTHER actions (e.g. "draw 1 card to re-roll") and returns `true` to signal a
+    /// re-roll. `who`/`choose` are ignored — a finish re-roll is always the finisher's.
+    fn offer_finish_reroll(&mut self, finisher: &str, skill: Skill) -> Eng<bool> {
+        let ctx = RollContext {
+            skill: Some(skill),
+            gap: None,
+            value: None,
+            opp_skill: None,
+        };
+        let effects = self.standing_effects(finisher);
+        for eff in &effects {
+            let Some(cost) = eff.actions.iter().find_map(|a| match a {
+                Action::Reroll {
+                    when: RollWhen::This,
+                    finish: true,
+                    cost,
+                    ..
+                } => Some(cost.clone()),
+                _ => None,
+            }) else {
+                continue;
+            };
+            if !(self.may_fire(eff, finisher)
+                && conditions::holds(&eff.condition, &self.state, finisher, Some(&ctx)))
+            {
+                continue;
+            }
+            if let Some(filter) = &cost {
+                if !self.has_in_play(finisher, filter) {
+                    continue;
+                }
+            }
+            if eff.optional && !self.take_optional(eff, finisher)? {
+                continue;
+            }
+            self.mark_fired(eff, finisher);
+            if let Some(filter) = &cost {
+                self.pay_reroll_cost(finisher, filter)?;
+            }
+            // The paired non-Reroll actions ("draw 1 card to re-roll") resolve here.
+            for a in &eff.actions {
+                if !matches!(a, Action::Reroll { .. }) {
+                    self.apply_action(a, finisher, &eff.raw_clause)?;
+                }
+            }
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
+    fn finish_sequence(&mut self, finisher: &str, defender: &str, card: &Card) -> Eng<()> {
+        let mut skill = self.roll_finish_skill(finisher)?;
+        // Optional finish-roll re-roll ("you may re-roll your Finish roll", v76):
+        // bounded to avoid loops, each taken re-roll re-applies switch-rolled-skill.
+        let mut rerolls = 0;
+        while rerolls < FINISH_REROLL_CAP && self.offer_finish_reroll(finisher, skill)? {
+            rerolls += 1;
+            skill = self.roll_finish_skill(finisher)?;
         }
         let base = self.stat(finisher, skill);
         let combo: i64 = {
@@ -4701,6 +4798,7 @@ impl Engine {
                     choose,
                     when: RollWhen::This,
                     cost,
+                    finish: false, // finish-scoped re-rolls are offered in the finish sequence
                     ..
                 } => Some((*who, *choose, cost.clone())),
                 _ => None,
@@ -5322,6 +5420,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::CountsAsInPlay { .. } => "CountsAsInPlay",
         Action::RemoveFromPlay { .. } => "RemoveFromPlay",
         Action::DiscardInPlayMatch => "DiscardInPlayMatch",
+        Action::CoupledDiscard { .. } => "CoupledDiscard",
         Action::ReturnToHand { .. } => "ReturnToHand",
         Action::RevealAndDiscard { .. } => "RevealAndDiscard",
         Action::RevealForDraw { .. } => "RevealForDraw",
@@ -8157,6 +8256,47 @@ mod man_from_it_tests {
         assert!(b.hand.iter().any(|c| c.db_uuid == "b-fu"));
         assert!(!b.hand.iter().any(|c| c.db_uuid == "b-fin"));
         assert!(b.deck.iter().any(|c| c.db_uuid == "b-fin"));
+    }
+
+    /// Defector's Dismantler (schema v76): `CoupledDiscard{offset:-1}` — the actor
+    /// sheds N = min(self_hand, opp_hand+1), the opponent sheds max(0, N-1). With
+    /// A=5, B=3: N=4 → A keeps 1; opp sheds 3 → B empties.
+    #[test]
+    fn coupled_discard_strips_the_opponent_hand() {
+        let mut engine = engine_with(json!([]));
+        let mk = |u: &str| -> Card { serde_json::from_value(card(u, "Lead", 1)).unwrap() };
+        engine.state.players.get_mut("A").unwrap().hand =
+            (0..5).map(|i| mk(&format!("a{i}"))).collect();
+        engine.state.players.get_mut("B").unwrap().hand =
+            (0..3).map(|i| mk(&format!("b{i}"))).collect();
+        engine.act_coupled_discard(-1, "A").unwrap();
+        assert_eq!(engine.state.players["A"].hand.len(), 1, "A sheds 4 of 5");
+        assert_eq!(engine.state.players["B"].hand.len(), 0, "B sheds 3 (N-1)");
+    }
+
+    /// A finish-roll re-roll (`Reroll{when:This, finish:true}`, schema v76) is offered
+    /// only when its gate matches the finish skill. Gated on Agility here: offered on
+    /// an Agility finish roll, not on a Power one.
+    #[test]
+    fn finish_reroll_offered_only_on_the_gated_skill() {
+        let reroll = json!([{
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "RollWasSkill", "skill": "Agility", "who": "SELF"},
+            "actions": [{"@type": "Reroll", "who": "SELF", "once": true, "choose": false,
+                "when": "THIS", "cost": null, "finish": true}],
+            "duration": "WHILE_IN_PLAY", "optional": false,
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "", "source": "gimmick"
+        }]);
+        let mut engine = engine_with(reroll);
+        assert!(
+            engine.offer_finish_reroll("A", Skill::Agility).unwrap(),
+            "rolled Agility → re-roll offered"
+        );
+        assert!(
+            !engine.offer_finish_reroll("A", Skill::Power).unwrap(),
+            "rolled Power → gate fails, no re-roll"
+        );
     }
 }
 

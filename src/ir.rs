@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 75;
+pub const SCHEMA_VERSION: i64 = 76;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -862,6 +862,16 @@ pub enum Action {
     /// both ends of. No-op if the owner has nothing in play; the second discard is
     /// skipped if the opponent has no same-order card. schema v51
     DiscardInPlayMatch,
+    /// "Discard any number of cards from your hand, your opponent discards the same
+    /// number of cards from their hand `offset`" (Defector's Dismantler: offset -1;
+    /// 2 cards). The actor's chosen count N is a heuristic in `act_coupled_discard`
+    /// (strip the opponent's hand when affordable: N = min(self_hand, opp_hand+1)),
+    /// since no policy count-choice hook exists; the self-discard fires OnBury so a
+    /// discard-recur gimmick still triggers, then the opponent sheds max(0, N+offset).
+    /// schema v76
+    CoupledDiscard {
+        offset: i64,
+    },
     /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): return matching
     /// in-play cards to their OWNER's hand (bounce). `who` picks the board; `choose`
     /// (like [`ShuffleHandDraw`]) lets the actor pick from EITHER board — "any player
@@ -1080,6 +1090,12 @@ pub enum Action {
         /// only while a matching card is in play, and taking it shuffles one away.
         #[serde(default)]
         cost: Option<CardFilter>,
+        /// Scope: `false` (default) = the turn-roll off, offered in `offer_reroll`;
+        /// `true` = the FINISH roll, offered in `offer_finish_reroll` inside the
+        /// finish sequence ("you may re-roll your Finish roll" — 59 cards, e.g.
+        /// Tomato Tomato Jr.). Keeps the two roll paths from cross-firing. schema v76
+        #[serde(default)]
+        finish: bool,
     },
     /// "When you roll `from` for your turn roll or Finish roll, you may switch it to
     /// `to`" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn
@@ -1779,6 +1795,16 @@ pub enum IrNode {
     /// both ends of. No-op if the owner has nothing in play; the second discard is
     /// skipped if the opponent has no same-order card. schema v51
     DiscardInPlayMatch,
+    /// "Discard any number of cards from your hand, your opponent discards the same
+    /// number of cards from their hand `offset`" (Defector's Dismantler: offset -1;
+    /// 2 cards). The actor's chosen count N is a heuristic in `act_coupled_discard`
+    /// (strip the opponent's hand when affordable: N = min(self_hand, opp_hand+1)),
+    /// since no policy count-choice hook exists; the self-discard fires OnBury so a
+    /// discard-recur gimmick still triggers, then the opponent sheds max(0, N+offset).
+    /// schema v76
+    CoupledDiscard {
+        offset: i64,
+    },
     /// "Add `count` card(s) in play to their hand" (Fox Assassin V2): return matching
     /// in-play cards to their OWNER's hand (bounce). `who` picks the board; `choose`
     /// (like [`ShuffleHandDraw`]) lets the actor pick from EITHER board — "any player
@@ -1997,6 +2023,12 @@ pub enum IrNode {
         /// only while a matching card is in play, and taking it shuffles one away.
         #[serde(default)]
         cost: Option<CardFilter>,
+        /// Scope: `false` (default) = the turn-roll off, offered in `offer_reroll`;
+        /// `true` = the FINISH roll, offered in `offer_finish_reroll` inside the
+        /// finish sequence ("you may re-roll your Finish roll" — 59 cards, e.g.
+        /// Tomato Tomato Jr.). Keeps the two roll paths from cross-firing. schema v76
+        #[serde(default)]
+        finish: bool,
     },
     /// "When you roll `from` for your turn roll or Finish roll, you may switch it to
     /// `to`" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn

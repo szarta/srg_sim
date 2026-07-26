@@ -11031,9 +11031,10 @@ cafd810652ea41c4b628e7cb2a1f583b:
 # Technique / +1 to Grapple / If either player rolled Power for their turn roll,
 # draw 2 cards. / If you rolled Agility or Strike for your Finish roll, you may
 # draw 1 card to re-roll your Finish roll." The either-player draw gates on the
-# turn roll via Or[RollWasSkill{Power,SELF|OPP}] (schema v75; roll ctx now threaded
-# into OnPlay/OnHit). The finish-roll reroll rider stays explicit-Unsupported —
-# it needs a gated "draw-then-reroll the FINISH roll" mechanic (own task).
+# turn roll via Or[RollWasSkill{Power,SELF|OPP}] (schema v75; roll ctx threaded into
+# OnPlay/OnHit). The finish-roll reroll (schema v76) is a Reroll{when:This,
+# finish:true} read by offer_finish_reroll, gated on rolling Ag/St, optional ("you
+# may"), with the paired "draw 1 card" as a sibling action run on election.
 b6896677acfb4ccc998b1a0e36102838:
 - '@type': Effect
   trigger:
@@ -11104,18 +11105,100 @@ b6896677acfb4ccc998b1a0e36102838:
   optional: false
 - '@type': Effect
   trigger:
-    '@type': OnPlay
+    '@type': Static
+  condition:
+    '@type': Or
+    items:
+    - '@type': RollWasSkill
+      skill: Agility
+      who: SELF
+    - '@type': RollWasSkill
+      skill: Strike
+      who: SELF
+  actions:
+  - '@type': Reroll
+    who: SELF
+    once: true
+    choose: false
+    when: THIS
+    cost: null
+    finish: true
+  - '@type': Draw
+    n: 1
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: ONCE_PER_TURN
+    n: null
+  raw_clause: if you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll
+  source: card
+  optional: true
+  optional: false
+
+# Defector — Dismantler (#30 Submission finish): "+3 to Technique / +1 to
+# Submission / Discards any number of cards from your hand, your opponent discards
+# the same number of cards from their hand -1." The coupled discard is the new
+# CoupledDiscard{offset:-1} (schema v76): the actor sheds a heuristic N =
+# min(self_hand, opp_hand+1) (stripping the opponent when affordable), which fires
+# Defector's OnBury recur gimmick, then the opponent sheds max(0, N-1).
+299b7aea5bbd4004be88ad06ed9529c3:
+- '@type': Effect
+  trigger:
+    '@type': Static
   condition:
     '@type': Always
   actions:
-  - '@type': Unsupported
-    raw_text: "If you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll."
-    reason: "gated draw-then-reroll of the FINISH roll; no such mechanic yet (Reroll{when:This} is the turn-roll path)"
+  - '@type': FinishBonus
+    skill: Technique
+    delta: 3
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +3 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Submission
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    order: null
+    atk_type: null
+    name_contains: []
+    text_contains: []
+    on_any: false
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': CoupledDiscard
+    offset: -1
   duration: INSTANT
   frequency:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
-  raw_clause: if you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll
+  raw_clause: discard any number of cards from your hand, your opponent discards the same number of cards from their hand -1
   source: card
   optional: false

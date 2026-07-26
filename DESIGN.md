@@ -225,9 +225,13 @@ BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?
                                                  # = cards flipped this turn, "for each Strike flipped: +1 to Strike"); schema v7/v74
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 AddText(name_contains=[...], effects=[Effect...])  # Static gimmick: the owner's played cards whose title matches (case-insensitive OR) gain `effects` (their own triggers, usually OnPlay), injected at play time alongside the card's own. El Super Santa/Sabu. schema v25
-Reroll(who, once=True, choose=False, when=THIS)  # who=SELF/OPP die; choose=owner picks a player;
+Reroll(who, once=True, choose=False, when=THIS, cost?, finish=False)  # who=SELF/OPP die; choose=owner picks a player;
                               # when=NEXT grants a one-shot re-roll for the owner's next turn roll
-                              # (schema v9 choose, v10 when). Structural read in the roll-off.
+                              # (schema v9 choose, v10 when). Structural read in the roll-off. finish=True (v76):
+                              # a FINISH-roll re-roll, offered in offer_finish_reroll ("you may re-roll your Finish roll").
+CoupledDiscard(offset)        # "discard any number from your hand, opp discards that number `offset`" (Dismantler,
+                              # offset -1). Actor's count N is an engine heuristic (min(self_hand, opp_hand+1)); the
+                              # self-discard fires OnBury; opp then sheds max(0, N+offset). schema v76
 SwitchRolledSkill(from_skill, to)  # "when you roll from_skill for your turn/Finish roll, you may switch it
                               # to `to`" (Scott Prime; schema v14). Structural read in BOTH roll paths; the
                               # "you may" lives on Effect.optional. Turn die keeps its mods (value recomputed

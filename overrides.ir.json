@@ -1581,6 +1581,7 @@
           "@type": "Reroll",
           "choose": true,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -2279,6 +2280,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "OPP"
@@ -2312,6 +2314,88 @@
         "@type": "InRoll",
         "either": false,
         "skill": null,
+        "who": "SELF"
+      }
+    }
+  ],
+  "299b7aea5bbd4004be88ad06ed9529c3": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Submission"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Submission",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "CoupledDiscard",
+          "offset": -1
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "discard any number of cards from your hand, your opponent discards the same number of cards from their hand -1",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
         "who": "SELF"
       }
     }
@@ -3388,6 +3472,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "NEXT",
           "who": "SELF"
@@ -4464,6 +4549,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -5099,6 +5185,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -5216,6 +5303,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": false,
           "when": "NEXT",
           "who": "SELF"
@@ -7749,6 +7837,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "NEXT",
           "who": "SELF"
@@ -8898,6 +8987,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "OPP"
@@ -9903,6 +9993,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -10320,25 +10411,51 @@
       "@type": "Effect",
       "actions": [
         {
-          "@type": "Unsupported",
-          "raw_text": "If you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll.",
-          "reason": "gated draw-then-reroll of the FINISH roll; no such mechanic yet (Reroll{when:This} is the turn-roll path)"
+          "@type": "Reroll",
+          "choose": false,
+          "cost": null,
+          "finish": true,
+          "once": true,
+          "when": "THIS",
+          "who": "SELF"
+        },
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 1,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
         }
       ],
       "condition": {
-        "@type": "Always"
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "RollWasSkill",
+            "skill": "Agility",
+            "who": "SELF"
+          },
+          {
+            "@type": "RollWasSkill",
+            "skill": "Strike",
+            "who": "SELF"
+          }
+        ]
       },
-      "duration": "INSTANT",
+      "duration": "WHILE_IN_PLAY",
       "frequency": {
         "@type": "FrequencyGuard",
-        "kind": "UNLIMITED",
+        "kind": "ONCE_PER_TURN",
         "n": null
       },
       "optional": false,
       "raw_clause": "if you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll",
       "source": "card",
       "trigger": {
-        "@type": "OnPlay"
+        "@type": "Static"
       }
     }
   ],
@@ -10686,6 +10803,7 @@
           "@type": "Reroll",
           "choose": true,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -12284,6 +12402,7 @@
           "@type": "Reroll",
           "choose": false,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -12763,6 +12882,7 @@
             "tag": null,
             "text_contains": []
           },
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "SELF"
@@ -14596,6 +14716,7 @@
           "@type": "Reroll",
           "choose": true,
           "cost": null,
+          "finish": false,
           "once": true,
           "when": "THIS",
           "who": "SELF"

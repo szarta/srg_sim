@@ -759,6 +759,9 @@
                 "$ref": "#/$defs/DiscardInPlayMatch"
               },
               {
+                "$ref": "#/$defs/CoupledDiscard"
+              },
+              {
                 "$ref": "#/$defs/RevealAndDiscard"
               },
               {
@@ -1199,6 +1202,22 @@
       ],
       "type": "object"
     },
+    "CoupledDiscard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CoupledDiscard"
+        },
+        "offset": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "offset"
+      ],
+      "type": "object"
+    },
     "DiscardInPlayMatch": {
       "additionalProperties": false,
       "properties": {
@@ -1418,6 +1437,9 @@
               },
               {
                 "$ref": "#/$defs/DiscardInPlayMatch"
+              },
+              {
+                "$ref": "#/$defs/CoupledDiscard"
               },
               {
                 "$ref": "#/$defs/RevealAndDiscard"
@@ -2395,6 +2417,9 @@
         },
         {
           "$ref": "#/$defs/DiscardInPlayMatch"
+        },
+        {
+          "$ref": "#/$defs/CoupledDiscard"
         },
         {
           "$ref": "#/$defs/Reroll"
@@ -3413,6 +3438,9 @@
             }
           ]
         },
+        "finish": {
+          "type": "boolean"
+        },
         "once": {
           "type": "boolean"
         },
@@ -3429,7 +3457,8 @@
         "once",
         "choose",
         "when",
-        "cost"
+        "cost",
+        "finish"
       ],
       "type": "object"
     },
@@ -4340,5 +4369,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 75
+  "version": 76
 }

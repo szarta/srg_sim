@@ -968,6 +968,18 @@ class DiscardInPlayMatch(IRNode):
 
 
 @dataclass(frozen=True)
+class CoupledDiscard(IRNode):
+    """"Discard any number of cards from your hand, your opponent discards the same
+    number of cards from their hand ``offset``" (Defector's Dismantler: offset -1; 2
+    cards). The actor's chosen count N is a heuristic in the engine (strip the
+    opponent's hand when affordable: N = min(self_hand, opp_hand+1)), since no policy
+    count-choice hook exists; the self-discard fires OnBury so a discard-recur gimmick
+    still triggers, then the opponent sheds max(0, N+offset). schema v76"""
+
+    offset: int
+
+
+@dataclass(frozen=True)
 class ReturnToHand(IRNode):
     """"Add ``count`` card(s) in play to their hand" (Fox Assassin V2): bounce
     matching in-play cards back to their OWNER's hand. ``who`` picks the board;
@@ -1230,6 +1242,10 @@ class Reroll(IRNode):
     # to re-roll"). ``None`` = free; when set, the re-roll is offered only while a
     # matching card is in play, and taking it shuffles one away. schema v48
     cost: CardFilter | None = None
+    # Scope: False (default) = the turn roll-off (offer_reroll); True = the FINISH
+    # roll (offer_finish_reroll in the finish sequence) — "you may re-roll your Finish
+    # roll" (59 cards, e.g. Tomato Tomato Jr.). Keeps the paths from cross-firing. v76
+    finish: bool = False
 
 
 @dataclass(frozen=True)
@@ -1835,6 +1851,7 @@ Action = (
     | CountsAsInPlay
     | RemoveFromPlay
     | DiscardInPlayMatch
+    | CoupledDiscard
     | ReturnToHand
     | RevealAndDiscard
     | RevealForDraw
