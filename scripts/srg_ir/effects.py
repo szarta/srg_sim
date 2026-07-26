@@ -673,6 +673,10 @@ class InPlayCompare(IRNode):
 @dataclass(frozen=True)
 class RollWasSkill(IRNode):
     skill: Skill
+    # SELF (default) = the owner's rolled skill; OPP reads the other side's skill
+    # from the roll context (opp_skill). Under And/Or this expresses "if both/either
+    # players rolled X for their turn roll" (Tomato Tomato Jr.). schema v75
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)

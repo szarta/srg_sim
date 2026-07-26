@@ -164,7 +164,9 @@ ChosenNameIs(name, who)      # who's ChooseName binding == name; the gate that r
                              # option (Raven). False until a choice is bound. schema v37
 InPlayCompare(filter, cmp, who, vs_who)  # cross-board: who's count of filter in play `cmp` vs_who's count ("target has more
                              # Strikes in play than you" — Snake Pitt V3: who=OPP, vs_who=SELF, cmp=>). Honors CountsAsInPlay. schema v33
-RollWasSkill(skill) / RollGapExactly(k) / RollGapAtLeast(k)   # gap = opp - self, positive = self rolled lower
+RollWasSkill(skill, who?) / RollGapExactly(k) / RollGapAtLeast(k)   # gap = opp - self, positive = self rolled lower.
+                             # RollWasSkill who: SELF (default) reads the owner's rolled skill, OPP the other side's
+                             # (roll ctx opp_skill); under And/Or = "both/either players rolled X for turn roll". schema v75
 RollLeadAtLeast(k)           # self rolled >= k HIGHER than opp (gap <= -k) — mirror of RollGapAtLeast (YamatoHama). schema v2.
 RollValue(cmp, value)        # the actual number rolled this turn, read via the trigger's `who` (Mrs. Apocalypse, Numer01)
 PrintedRollValue(who, value) # the rolled skill's PRINTED (base, unbuffed) stat on the who-side's competitor == value

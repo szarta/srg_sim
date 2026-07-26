@@ -5073,7 +5073,8 @@
                   "@type": "AlsoLead",
                   "condition": {
                     "@type": "RollWasSkill",
-                    "skill": "Agility"
+                    "skill": "Agility",
+                    "who": "SELF"
                   },
                   "order": "Followup"
                 }

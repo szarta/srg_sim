@@ -3672,11 +3672,15 @@
         },
         "skill": {
           "$ref": "#/$defs/Skill"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
         }
       },
       "required": [
         "@type",
-        "skill"
+        "skill",
+        "who"
       ],
       "type": "object"
     },
@@ -4336,5 +4340,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 74
+  "version": 75
 }

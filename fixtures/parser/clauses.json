@@ -3041,8 +3041,19 @@
             {
               "@type": "AlsoLead",
               "condition": {
-                "@type": "RollWasSkill",
-                "skill": "Grapple"
+                "@type": "Or",
+                "items": [
+                  {
+                    "@type": "RollWasSkill",
+                    "skill": "Grapple",
+                    "who": "SELF"
+                  },
+                  {
+                    "@type": "RollWasSkill",
+                    "skill": "Grapple",
+                    "who": "OPP"
+                  }
+                ]
               },
               "order": "Lead"
             }
@@ -3057,7 +3068,7 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "If either player rolled Grapple for their turn roll, this card is also a Lead. (approx: gates on the actor's own turn roll)",
+          "raw_clause": "if either player rolled Grapple for their turn roll, this card is also a Lead",
           "source": "card",
           "trigger": {
             "@type": "OnPlay"

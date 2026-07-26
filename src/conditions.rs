@@ -332,7 +332,13 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             let m = count_in_play(&state.players[&right].in_play, filter, None);
             cmp_apply(*cmp, n, m)
         }
-        Condition::RollWasSkill { skill } => roll.is_some_and(|r| r.skill == Some(*skill)),
+        Condition::RollWasSkill { skill, who } => roll.is_some_and(|r| {
+            let rolled = match who {
+                Who::SelfSide => r.skill,
+                Who::Opp => r.opp_skill,
+            };
+            rolled == Some(*skill)
+        }),
         Condition::RollGapExactly { k } => roll.is_some_and(|r| r.gap == Some(*k)),
         Condition::RollGapAtLeast { k } => roll.is_some_and(|r| r.gap.is_some_and(|g| g >= *k)),
         // A lead of k = the owner rolled k higher = gap (opp - owner) <= -k.

@@ -2289,11 +2289,13 @@
         "items": [
           {
             "@type": "RollWasSkill",
-            "skill": "Agility"
+            "skill": "Agility",
+            "who": "SELF"
           },
           {
             "@type": "RollWasSkill",
-            "skill": "Grapple"
+            "skill": "Grapple",
+            "who": "SELF"
           }
         ]
       },
@@ -9830,8 +9832,19 @@
         {
           "@type": "AlsoLead",
           "condition": {
-            "@type": "RollWasSkill",
-            "skill": "Grapple"
+            "@type": "Or",
+            "items": [
+              {
+                "@type": "RollWasSkill",
+                "skill": "Grapple",
+                "who": "SELF"
+              },
+              {
+                "@type": "RollWasSkill",
+                "skill": "Grapple",
+                "who": "OPP"
+              }
+            ]
           },
           "order": "Lead"
         }
@@ -9846,7 +9859,7 @@
         "n": null
       },
       "optional": false,
-      "raw_clause": "If either player rolled Grapple for their turn roll, this card is also a Lead. (approx: gates on the actor's own turn roll)",
+      "raw_clause": "if either player rolled Grapple for their turn roll, this card is also a Lead",
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
@@ -10204,6 +10217,131 @@
       }
     }
   ],
+  "b6896677acfb4ccc998b1a0e36102838": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 2,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "RollWasSkill",
+            "skill": "Power",
+            "who": "SELF"
+          },
+          {
+            "@type": "RollWasSkill",
+            "skill": "Power",
+            "who": "OPP"
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if either player rolled Power for their turn roll, draw 2 cards",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Unsupported",
+          "raw_text": "If you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll.",
+          "reason": "gated draw-then-reroll of the FINISH roll; no such mechanic yet (Reroll{when:This} is the turn-roll path)"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
   "b69620138a614df0bea6b3bddcc2123d": [
     {
       "@type": "Effect",
@@ -10555,7 +10693,8 @@
       ],
       "condition": {
         "@type": "RollWasSkill",
-        "skill": "Technique"
+        "skill": "Technique",
+        "who": "SELF"
       },
       "duration": "WHILE_IN_PLAY",
       "frequency": {
@@ -12264,9 +12403,23 @@
       "@type": "Effect",
       "actions": [
         {
-          "@type": "Unsupported",
-          "raw_text": "If both players rolled Power for their turn roll, this card is also a Lead.",
-          "reason": "conditional AlsoLead gated on BOTH players' turn-roll skill; RollWasSkill has no who-side (needs schema field)"
+          "@type": "AlsoLead",
+          "condition": {
+            "@type": "And",
+            "items": [
+              {
+                "@type": "RollWasSkill",
+                "skill": "Power",
+                "who": "SELF"
+              },
+              {
+                "@type": "RollWasSkill",
+                "skill": "Power",
+                "who": "OPP"
+              }
+            ]
+          },
+          "order": "Lead"
         }
       ],
       "condition": {
@@ -14450,7 +14603,8 @@
       ],
       "condition": {
         "@type": "RollWasSkill",
-        "skill": "Technique"
+        "skill": "Technique",
+        "who": "SELF"
       },
       "duration": "WHILE_IN_PLAY",
       "frequency": {

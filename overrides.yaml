@@ -10746,8 +10746,8 @@ e905d8879ba742d8bdea6a0acb0d9d72:
 
 # #30 "Curse To Sleep": +3 Grapple (parsed sibling, verbatim) + "If either player
 # rolled Grapple, this card is also a Lead" (AlsoLead order=Lead, gated on the roll)
-# + "Your next turn roll is -1" (ModifyRoll SELF -1 NEXT). Approx: RollWasSkill checks
-# the actor's own turn roll; "either player" also counts the opponent's roll.
+# + "Your next turn roll is -1" (ModifyRoll SELF -1 NEXT). "Either player" = Or over
+# both sides' turn roll (RollWasSkill who=SELF | who=OPP), exact since schema v75.
 b01e49a0967d4506bb09fe6f559c8f40:
 - '@type': Effect
   trigger:
@@ -10774,15 +10774,21 @@ b01e49a0967d4506bb09fe6f559c8f40:
   actions:
   - '@type': AlsoLead
     condition:
-      '@type': RollWasSkill
-      skill: Grapple
+      '@type': Or
+      items:
+      - '@type': RollWasSkill
+        skill: Grapple
+        who: SELF
+      - '@type': RollWasSkill
+        skill: Grapple
+        who: OPP
     order: Lead
   duration: INSTANT
   frequency:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
-  raw_clause: 'If either player rolled Grapple for their turn roll, this card is also a Lead. (approx: gates on the actor''s own turn roll)'
+  raw_clause: if either player rolled Grapple for their turn roll, this card is also a Lead
   source: card
   optional: false
 - '@type': Effect
@@ -10929,8 +10935,8 @@ fc7f7efc0f914eb88a42db65b9778ab6:
 # Override needed ONLY because the DB typo "yoru" blocks the (182-card) grammar
 # for "add 1 card from your discard pile to your hand"; the finish bonuses parse
 # fine but an override replaces the whole card, so they are reproduced here. The
-# conditional "also a Lead" rider stays explicit-Unsupported: it gates on BOTH
-# players' turn-roll skill, and RollWasSkill has no who-side (needs a schema field).
+# conditional "also a Lead" rider (schema v75) gates on BOTH players' turn roll:
+# And[RollWasSkill{Power,SELF}, RollWasSkill{Power,OPP}], read by also_lead_now.
 cafd810652ea41c4b628e7cb2a1f583b:
 - '@type': Effect
   trigger:
@@ -11001,14 +11007,115 @@ cafd810652ea41c4b628e7cb2a1f583b:
   condition:
     '@type': Always
   actions:
-  - '@type': Unsupported
-    raw_text: "If both players rolled Power for their turn roll, this card is also a Lead."
-    reason: "conditional AlsoLead gated on BOTH players' turn-roll skill; RollWasSkill has no who-side (needs schema field)"
+  - '@type': AlsoLead
+    condition:
+      '@type': And
+      items:
+      - '@type': RollWasSkill
+        skill: Power
+        who: SELF
+      - '@type': RollWasSkill
+        skill: Power
+        who: OPP
+    order: Lead
   duration: INSTANT
   frequency:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
   raw_clause: if both players rolled Power for their turn roll, this card is also a Lead
+  source: card
+  optional: false
+
+# Tomato Tomato Jr. — Tomato Tomato Tornado Tornado (#29 Grapple finish): "+1 to
+# Technique / +1 to Grapple / If either player rolled Power for their turn roll,
+# draw 2 cards. / If you rolled Agility or Strike for your Finish roll, you may
+# draw 1 card to re-roll your Finish roll." The either-player draw gates on the
+# turn roll via Or[RollWasSkill{Power,SELF|OPP}] (schema v75; roll ctx now threaded
+# into OnPlay/OnHit). The finish-roll reroll rider stays explicit-Unsupported —
+# it needs a gated "draw-then-reroll the FINISH roll" mechanic (own task).
+b6896677acfb4ccc998b1a0e36102838:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Technique
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Grapple
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    order: null
+    atk_type: null
+    name_contains: []
+    text_contains: []
+    on_any: false
+    who: SELF
+  condition:
+    '@type': Or
+    items:
+    - '@type': RollWasSkill
+      skill: Power
+      who: SELF
+    - '@type': RollWasSkill
+      skill: Power
+      who: OPP
+  actions:
+  - '@type': Draw
+    n: 2
+    source: TOP
+    who: SELF
+    per: null
+    per_who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if either player rolled Power for their turn roll, draw 2 cards
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Unsupported
+    raw_text: "If you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll."
+    reason: "gated draw-then-reroll of the FINISH roll; no such mechanic yet (Reroll{when:This} is the turn-roll path)"
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if you rolled Agility or Strike for your Finish roll, you may draw 1 card to re-roll your Finish roll
   source: card
   optional: false

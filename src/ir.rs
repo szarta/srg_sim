@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 74;
+pub const SCHEMA_VERSION: i64 = 75;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -660,6 +660,13 @@ pub enum Condition {
     },
     RollWasSkill {
         skill: Skill,
+        /// Whose turn-roll skill this checks. `SELF` (default) = the owner's rolled
+        /// skill; `OPP` reads the other side's skill from the roll context's
+        /// `opp_skill`. Composed under And/Or, this expresses "if **both** players
+        /// rolled X" / "if **either** player rolled X for their turn roll" (Tomato
+        /// Tomato Jr.). schema v75
+        #[serde(default)]
+        who: Who,
     },
     RollGapExactly {
         k: i64,
@@ -1590,6 +1597,13 @@ pub enum IrNode {
     },
     RollWasSkill {
         skill: Skill,
+        /// Whose turn-roll skill this checks. `SELF` (default) = the owner's rolled
+        /// skill; `OPP` reads the other side's skill from the roll context's
+        /// `opp_skill`. Composed under And/Or, this expresses "if **both** players
+        /// rolled X" / "if **either** player rolled X for their turn roll" (Tomato
+        /// Tomato Jr.). schema v75
+        #[serde(default)]
+        who: Who,
     },
     RollGapExactly {
         k: i64,

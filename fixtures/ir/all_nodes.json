@@ -629,7 +629,8 @@
   },
   {
     "@type": "RollWasSkill",
-    "skill": "Power"
+    "skill": "Power",
+    "who": "SELF"
   },
   {
     "@type": "Search",

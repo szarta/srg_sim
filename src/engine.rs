@@ -3551,7 +3551,12 @@ impl Engine {
             e.extend(self.injected_text(active, &card));
             e
         };
-        self.run_effects(&effects, "OnPlay", active, None)?;
+        // This turn's roll context (both sides' rolled skills via `opp_skill`) so a
+        // card's own OnPlay/OnHit rider can gate on it — "if either/both players
+        // rolled Power for their turn roll, …" (Tomato Tomato Jr.). No existing card
+        // carries a roll condition on OnPlay/OnHit, so this only enables new riders.
+        let roll = self.roll_ctx.get(active).cloned();
+        self.run_effects(&effects, "OnPlay", active, roll.as_ref())?;
         if self.ended() {
             return Ok(false);
         }
@@ -3564,7 +3569,7 @@ impl Engine {
             p.in_play.push(card.clone());
             p.hits_this_turn += 1; // a landed card is a hit this turn (Condition::HitThisTurn)
         }
-        self.run_effects(&effects, "OnHit", active, None)?; // the card's own "when this hits"
+        self.run_effects(&effects, "OnHit", active, roll.as_ref())?; // the card's own "when this hits"
         self.run_hit_gimmicks(&card, active)?; // owner gimmick "when you hit a <type>" (D1)
         self.enforce_hand_caps()?; // a new Static max-handsize mod may force a discard
         Ok(!self.ended())
@@ -8525,6 +8530,49 @@ mod flip_percount_tests {
         assert!(
             !engine.also_lead_now("A", &card_with),
             "rolled Strike, not Agility → grant does not apply"
+        );
+    }
+
+    /// `RollWasSkill { who }` reads a specific side's turn roll (via the roll
+    /// context's `opp_skill` for OPP). Under And it is Tomato Tomato Jr.'s Vine
+    /// Time! "if BOTH players rolled Power, this card is also a Lead". schema v75
+    #[test]
+    fn also_lead_gates_on_both_players_turn_roll() {
+        let vine_time: Card = serde_json::from_value(json!({
+            "atk_type":"Submission","db_uuid":"vt","name":"Vine Time!","number":30,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect","trigger":{"@type":"OnPlay"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"AlsoLead","order":"Lead","condition":{"@type":"And","items":[
+                    {"@type":"RollWasSkill","skill":"Power","who":"SELF"},
+                    {"@type":"RollWasSkill","skill":"Power","who":"OPP"}]}}],
+                "duration":"INSTANT","optional":false,"raw_clause":"",
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},"source":"card"}]
+        }))
+        .unwrap();
+        let mut engine = engine();
+        let ctx = |mine, theirs| crate::conditions::RollContext {
+            skill: Some(mine),
+            gap: None,
+            value: None,
+            opp_skill: Some(theirs),
+        };
+
+        // Only the owner rolled Power → the AND fails.
+        engine
+            .roll_ctx
+            .insert("A".into(), ctx(Skill::Power, Skill::Strike));
+        assert!(
+            !engine.also_lead_now("A", &vine_time),
+            "only SELF rolled Power → not both"
+        );
+
+        // Both sides rolled Power → the AND (SELF via skill, OPP via opp_skill) holds.
+        engine
+            .roll_ctx
+            .insert("A".into(), ctx(Skill::Power, Skill::Power));
+        assert!(
+            engine.also_lead_now("A", &vine_time),
+            "both players rolled Power → also a Lead"
         );
     }
 }

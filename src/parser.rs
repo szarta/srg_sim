@@ -875,6 +875,7 @@ fn stop_condition(text: &str) -> Option<Condition> {
     if let Some(c) = ROLL_SK.captures(t) {
         return Some(Condition::RollWasSkill {
             skill: skill(&c[1]),
+            who: Who::SelfSide,
         });
     }
     if t == "you and your opponent rolled the same skill for your turn roll" {
@@ -2400,6 +2401,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     vec![Action::AlsoLead {
                         condition: Condition::RollWasSkill {
                             skill: skill(&c[1]),
+                            who: Who::SelfSide,
                         },
                         order: PlayOrder::Followup,
                     }],
