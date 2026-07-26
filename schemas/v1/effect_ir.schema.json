@@ -88,6 +88,22 @@
       ],
       "type": "object"
     },
+    "AlsoAtkType": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "AlsoAtkType"
+        },
+        "atk_type": {
+          "$ref": "#/$defs/AtkType"
+        }
+      },
+      "required": [
+        "@type",
+        "atk_type"
+      ],
+      "type": "object"
+    },
     "AlsoLead": {
       "additionalProperties": false,
       "properties": {
@@ -934,6 +950,9 @@
               },
               {
                 "$ref": "#/$defs/RequireStops"
+              },
+              {
+                "$ref": "#/$defs/AlsoAtkType"
               }
             ]
           },
@@ -1733,6 +1752,9 @@
               },
               {
                 "$ref": "#/$defs/RequireStops"
+              },
+              {
+                "$ref": "#/$defs/AlsoAtkType"
               }
             ]
           },
@@ -2717,6 +2739,9 @@
         },
         {
           "$ref": "#/$defs/RequireStops"
+        },
+        {
+          "$ref": "#/$defs/AlsoAtkType"
         }
       ]
     },
@@ -4577,5 +4602,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 80
+  "version": 81
 }

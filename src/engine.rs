@@ -2771,7 +2771,7 @@ impl Engine {
         // Parity predicate (Smart Mark's odd/even guess) overrides the atk_type one.
         let matched = match match_parity {
             Some(even) => (card.number % 2 == 0) == even,
-            None => card.atk_type == match_atk,
+            None => card.counts_as_atk_type(match_atk),
         };
         self.log_effect(
             key,
@@ -3688,7 +3688,7 @@ impl Engine {
             if atk_type.is_none() && !has_name_gate && order.is_none() && !on_any {
                 continue;
             }
-            let type_ok = atk_type.is_none_or(|want| want == card.atk_type);
+            let type_ok = atk_type.is_none_or(|want| card.counts_as_atk_type(want));
             // "When you hit a Lead" — the play-order gate on the HIT card (ANDed).
             let order_ok = order.is_none_or(|want| want == card.play_order);
             let name_gate = CardFilter {
@@ -3882,7 +3882,7 @@ impl Engine {
         let target_ok = target
             .as_ref()
             .is_none_or(|f| conditions::card_matches(attack, f));
-        order_ok && (atk_type.is_none() || *atk_type == Some(attack.atk_type)) && target_ok
+        order_ok && atk_type.is_none_or(|want| attack.counts_as_atk_type(want)) && target_ok
     }
 
     /// Apply a stop: the stopped ATTACK goes to the attacker's discard; the stopping
@@ -5592,6 +5592,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::DoubleFinishIfBumped => "DoubleFinishIfBumped",
         Action::DoubleFinishIf { .. } => "DoubleFinishIf",
         Action::RequireStops { .. } => "RequireStops",
+        Action::AlsoAtkType { .. } => "AlsoAtkType",
         Action::Choice { .. } => "Choice",
         Action::Unsupported { .. } => "Unsupported",
     }
@@ -8795,6 +8796,75 @@ mod require_stops_tests {
             1,
             "both committed stops left the defender's hand (3 → 1)"
         );
+    }
+
+    /// A Grapple-typed Finish stop with deck `number`.
+    fn grapple_finish_stop(number: i64) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": format!("gstop{number}"), "name": "gstop",
+            "number": number, "play_order": "Lead", "raw_text": "", "tags": [],
+            "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": "Finish", "atk_type": "Grapple",
+                             "source_is_skillreq": false}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("gstop")
+    }
+
+    /// A Strike Finish; `also_grapple` adds an `AlsoAtkType{Grapple}` alias.
+    fn strike_finish(also_grapple: bool) -> Card {
+        let effects = if also_grapple {
+            json!([{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "AlsoAtkType", "atk_type": "Grapple"}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "also grapple", "source": "card", "optional": false
+            }])
+        } else {
+            json!([])
+        };
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "sfin", "name": "sfin", "number": 28,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": effects
+        }))
+        .expect("strike finish")
+    }
+
+    #[test]
+    fn counts_as_atk_type_reads_the_alias() {
+        let atk = strike_finish(true);
+        assert!(
+            atk.counts_as_atk_type(AtkType::Strike),
+            "printed type still counts"
+        );
+        assert!(
+            atk.counts_as_atk_type(AtkType::Grapple),
+            "aliased type counts"
+        );
+        assert!(
+            !atk.counts_as_atk_type(AtkType::Submission),
+            "an unrelated type does not"
+        );
+        assert!(
+            !strike_finish(false).counts_as_atk_type(AtkType::Grapple),
+            "no alias → no Grapple"
+        );
+    }
+
+    #[test]
+    fn also_atk_type_lets_a_grapple_stop_catch_a_strike_finish() {
+        let e = engine();
+        // "Also a Finish Grapple" → a Grapple-typed Finish stop now matches.
+        assert!(e.card_can_stop("B", &grapple_finish_stop(1), &strike_finish(true)));
+        // Without the alias, a Grapple stop cannot catch a plain Strike finish.
+        assert!(!e.card_can_stop("B", &grapple_finish_stop(1), &strike_finish(false)));
     }
 }
 

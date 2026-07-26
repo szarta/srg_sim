@@ -1412,6 +1412,16 @@ class RequireStops(IRNode):
 
 
 @dataclass(frozen=True)
+class AlsoAtkType(IRNode):
+    """This card ALSO counts as attack type ``atk_type`` in addition to its printed
+    type ("This card is also a Finish Grapple" — King Brian Cage). Read at every
+    atk-type test (stop-matching, CardFilter, hit gimmicks); a no-op to execute.
+    schema v81"""
+
+    atk_type: str = "Grapple"
+
+
+@dataclass(frozen=True)
 class RevealAndDiscard(IRNode):
     """Reveal ``count`` random cards from ``who``'s hand and discard those that can
     act as Stops ("Your opponent randomly reveals 3 cards in their hand and discards
@@ -1941,6 +1951,7 @@ Action = (
     | DoubleFinishIfBumped
     | DoubleFinishIf
     | RequireStops
+    | AlsoAtkType
     | Choice
 )
 

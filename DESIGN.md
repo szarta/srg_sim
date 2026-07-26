@@ -283,6 +283,9 @@ DoubleFinishIf(condition)     # conditional generalization: double THIS card's F
                               # card_finish_bonus against the owner's turn-roll ctx (so RollWasSkill resolves). schema v77
 RequireStops(count)           # this card can only be stopped by `count` Stops at once — the defender must commit
                               # `count` legal stops or it lands (King Brian Cage). Read in offer_stop. schema v80
+AlsoAtkType(atk_type)         # this card ALSO counts as attack type `atk_type` beyond its printed type ("also a
+                              # Finish Grapple", King Brian Cage). Read via Card::counts_as_atk_type at every
+                              # atk-type test (stop-matching, CardFilter, hit gimmicks). schema v81
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
 `Bury(selector, count, who, random, source)` moves `count` cards to the **bottom of the

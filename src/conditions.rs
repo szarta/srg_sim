@@ -108,8 +108,10 @@ pub fn card_matches(card: &Card, filt: &CardFilter) -> bool {
     if filt.number.is_some() && Some(card.number) != filt.number {
         return false;
     }
-    if filt.atk_type.is_some() && Some(card.atk_type) != filt.atk_type {
-        return false;
+    if let Some(want) = filt.atk_type {
+        if !card.counts_as_atk_type(want) {
+            return false;
+        }
     }
     if filt.play_order.is_some() && Some(card.play_order) != filt.play_order {
         return false;

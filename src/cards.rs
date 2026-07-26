@@ -7,7 +7,7 @@
 //! with the same field names the Python `to_dict()` emits, so snapshots and the
 //! embedded fixture decks round-trip unchanged.
 
-use crate::ir::{AtkType, Effect, PlayOrder, Skill};
+use crate::ir::{Action, AtkType, Effect, PlayOrder, Skill};
 use crate::skills::Skills;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -73,6 +73,19 @@ impl Card {
     /// True iff `atk_type` agrees with `number` (the loader logs mismatches).
     pub fn atk_type_matches_number(&self) -> bool {
         self.atk_type == self.expected_atk_type()
+    }
+
+    /// Whether this card counts as attack type `want` — its printed type, or an
+    /// additional type granted by an `AlsoAtkType` effect ("this card is also a
+    /// Finish Grapple", King Brian Cage). Used at every atk-type test so an aliased
+    /// type is stoppable/countable/hit-gimmick-triggering like the printed one.
+    pub fn counts_as_atk_type(&self, want: AtkType) -> bool {
+        self.atk_type == want
+            || self
+                .effects
+                .iter()
+                .flat_map(|e| &e.actions)
+                .any(|a| matches!(a, Action::AlsoAtkType { atk_type } if *atk_type == want))
     }
 }
 

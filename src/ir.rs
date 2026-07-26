@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 80;
+pub const SCHEMA_VERSION: i64 = 81;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1389,6 +1389,13 @@ pub enum Action {
     RequireStops {
         count: i64,
     },
+    /// This card ALSO counts as attack type `atk_type` in addition to its printed
+    /// type — "This card is also a Finish Grapple" (King Brian Cage). A Static
+    /// self-effect read via `Card::counts_as_atk_type` at every atk-type test
+    /// (stop-matching, CardFilter, hit gimmicks); never executed. schema v81
+    AlsoAtkType {
+        atk_type: AtkType,
+    },
     Choice {
         options: Vec<ChoiceOption>,
     },
@@ -2346,6 +2353,11 @@ pub enum IrNode {
     /// Static self-effect read in `offer_stop`; never executed. schema v80
     RequireStops {
         count: i64,
+    },
+    /// This card ALSO counts as attack type `atk_type` (King Brian Cage's "also a
+    /// Finish Grapple"). Read via `Card::counts_as_atk_type`; never executed. schema v81
+    AlsoAtkType {
+        atk_type: AtkType,
     },
     Choice {
         options: Vec<ChoiceOption>,

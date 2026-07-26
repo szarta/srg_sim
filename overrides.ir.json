@@ -3321,15 +3321,14 @@
       "@type": "Effect",
       "actions": [
         {
-          "@type": "Unsupported",
-          "raw_text": "This card is also a Finish Grapple.",
-          "reason": "atk-type alias (also a Finish Grapple) \u2014 inert vs Mastermind's type-agnostic finish stops; sole DB occurrence"
+          "@type": "AlsoAtkType",
+          "atk_type": "Grapple"
         }
       ],
       "condition": {
         "@type": "Always"
       },
-      "duration": "INSTANT",
+      "duration": "WHILE_IN_PLAY",
       "frequency": {
         "@type": "FrequencyGuard",
         "kind": "UNLIMITED",
@@ -3463,6 +3462,42 @@
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Unstoppable",
+          "by_name": "Apocalypse",
+          "by_order": null,
+          "by_skillreq": false
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "RollWasSkill",
+            "skill": "Power",
+            "who": "SELF"
+          },
+          {
+            "@type": "RerolledTurnRoll"
+          }
+        ]
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if you rolled Power or re-rolled your turn roll, this card cannot be stopped by \"Apocalypse\"",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],

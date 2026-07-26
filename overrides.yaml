@@ -11712,16 +11712,17 @@ dc2ccd83babb45c1b44616489c3fe841:
 # parses to Reroll{when:Next}. All three finishes read "if you rolled Power for
 # your turn roll OR you re-rolled your turn roll" -> Or{RollWasSkill{Power,SELF},
 # RerolledTurnRoll} (v80; the reroll half is stamped in offer_rerolls when any
-# turn die is re-rolled). #28's "also a Finish Grapple" is left an explicit
-# Unsupported node: it is INERT vs Mastermind (his finish defense is skill-based
-# and type-agnostic, and adding a type can only make a card MORE stoppable), and
-# no other DB card carries the shape — not worth an atk-type-alias subsystem.
+# turn die is re-rolled). #28's "also a Finish Grapple" is a real atk-type alias
+# (AlsoAtkType, v81) and #29's "cannot be stopped by 'Apocalypse'" a real name-
+# gated Unstoppable — both modeled fully (not dropped as inert-vs-MM), since the
+# engine must adjudicate every card for online play.
 # ---------------------------------------------------------------------------
 
 # King Cage Killer Combo (#28 Strike finish): "This card is also a Finish
 # Grapple. This card will only be stopped by 2 Stops." The 2-stops requirement is
 # the matchup-relevant clause: Mastermind's single-card finish stops cannot stop
-# it — he must commit TWO legal stops or it lands.
+# it — he must commit TWO legal stops or it lands. "Also a Finish Grapple" adds
+# the Grapple type (AlsoAtkType) so Grapple-typed stops/gimmicks also see it.
 3edd63846596493cad8298271e852cd4:
 - '@type': Effect
   trigger: {'@type': Static}
@@ -11737,8 +11738,8 @@ dc2ccd83babb45c1b44616489c3fe841:
   trigger: {'@type': Static}
   condition: {'@type': Always}
   actions:
-  - {'@type': Unsupported, raw_text: This card is also a Finish Grapple., reason: 'atk-type alias (also a Finish Grapple) — inert vs Mastermind''s type-agnostic finish stops; sole DB occurrence'}
-  duration: INSTANT
+  - {'@type': AlsoAtkType, atk_type: Grapple}
+  duration: WHILE_IN_PLAY
   frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
   raw_clause: this card is also a Finish Grapple
   source: card
@@ -11746,8 +11747,9 @@ dc2ccd83babb45c1b44616489c3fe841:
 
 # King Cage Curls (#29 Grapple finish): "+3 to Submission / +1 to Grapple / If
 # you rolled Power for your turn roll or you re-rolled your turn roll, this card
-# is also a Follow Up and cannot be stopped by 'Apocalypse'." The name-specific
-# 'Apocalypse' stop-immunity is inert vs Mastermind and dropped.
+# is also a Follow Up and cannot be stopped by 'Apocalypse'." Both riders share
+# the Or{RollWasSkill{Power}, RerolledTurnRoll} gate: AlsoLead{Followup} and a
+# name-gated Unstoppable{by_name: Apocalypse}.
 3f8d56227d5f4c80acee99d33406188b:
 - '@type': Effect
   trigger: {'@type': Static}
@@ -11783,6 +11785,20 @@ dc2ccd83babb45c1b44616489c3fe841:
   duration: INSTANT
   frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
   raw_clause: if you rolled Power or re-rolled your turn roll, this card is also a Follow Up
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition:
+    '@type': Or
+    items:
+    - {'@type': RollWasSkill, skill: Power, who: SELF}
+    - {'@type': RerolledTurnRoll}
+  actions:
+  - {'@type': Unstoppable, by_order: null, by_name: Apocalypse, by_skillreq: false}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if you rolled Power or re-rolled your turn roll, this card cannot be stopped by "Apocalypse"
   source: card
   optional: false
 
