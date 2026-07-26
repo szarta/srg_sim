@@ -10884,3 +10884,131 @@ dedc0e6d0bd14f6388c0b0e5191ffa72:
   raw_clause: "When this card is in your discard pile, your opponent's Finish cards cannot be other card types."
   source: card
   optional: false
+
+# ---------------------------------------------------------------------------
+# Website-played opponents (Brock Smith / Ref Dave). Task #130 tranche:
+# Defector + Tomato Tomato Jr. gimmicks & finishes.
+# ---------------------------------------------------------------------------
+
+# Defector (Intergalactic) GIMMICK: "After you discard any number of cards from
+# your hand for a card effect or Gimmick, add 1 card from your discard pile to
+# your hand." The recur-on-discard engine — same OnBury trigger family as Tommy
+# Stillwell (from_hand_only + also_discard), but recurs a card instead of drawing.
+# Fires on his own hand-discard finishes (Disruptor/Dismantler) too, netting -1.
+fc7f7efc0f914eb88a42db65b9778ab6:
+- '@type': Effect
+  trigger:
+    '@type': OnBury
+    who: SELF
+    from_hand_only: true
+    also_discard: true
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: after you discard any number of cards from your hand for a card effect or Gimmick, add 1 card from your discard pile to your hand
+  source: gimmick
+  optional: false
+
+# Tomato Tomato Jr. — Vine Time! (#30 Submission finish): "+1 to Submission /
+# +2 to Grapple / Add 1 card from yoru discard pile to your hand. / If both
+# players rolled Power for their turn roll, this card is also a Lead."
+# Override needed ONLY because the DB typo "yoru" blocks the (182-card) grammar
+# for "add 1 card from your discard pile to your hand"; the finish bonuses parse
+# fine but an override replaces the whole card, so they are reproduced here. The
+# conditional "also a Lead" rider stays explicit-Unsupported: it gates on BOTH
+# players' turn-roll skill, and RollWasSkill has no who-side (needs a schema field).
+cafd810652ea41c4b628e7cb2a1f583b:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Submission
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Grapple
+    delta: 2
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +2 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+    order: null
+    atk_type: null
+    name_contains: []
+    text_contains: []
+    on_any: false
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: add 1 card from your discard pile to your hand (DB typo "yoru")
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Unsupported
+    raw_text: "If both players rolled Power for their turn roll, this card is also a Lead."
+    reason: "conditional AlsoLead gated on BOTH players' turn-roll skill; RollWasSkill has no who-side (needs schema field)"
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: if both players rolled Power for their turn roll, this card is also a Lead
+  source: card
+  optional: false

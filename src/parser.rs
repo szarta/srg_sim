@@ -1262,6 +1262,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // "Each player randomly discards N cards from their hand" (Defector's
+        // Disruptor + 5 more) — symmetric random hand loss; `Who` has no EACH, so
+        // it is two Discard actions in one effect.
+        rule(
+            r"Each player randomly discards (\d+) cards? from their hand",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        discard(num(c, 1), Who::SelfSide, true, None, Who::SelfSide),
+                        discard(num(c, 1), Who::Opp, true, None, Who::SelfSide),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Impact is Family (V2) entrance: blank the opponent's Spotlight Finishes
         // (continuous selector scan; mirrors A Trip to the Upside Down's Spotlight
         // blank). V1's broader "Spotlight cards" variant stays its own clause.
