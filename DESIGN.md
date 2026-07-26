@@ -175,6 +175,9 @@ SameRolledSkill              # you and your target rolled the SAME skill this tu
                              # RollContext.skill == .opp_skill (new field carrying the other side's rolled skill,
                              # set only in the post-roll/pair contexts). Needs a roll ctx. schema v18
 OppWonLastRoll               # the opponent won the PREVIOUS turn's roll-off (GameState.last_roll_winner); false on turn 1 (Dunn re-roll). schema v3.
+EndedTurnNoPlay              # the owner ended the PREVIOUS turn without playing a card — roll-off winner on turn_no-1 who
+                             # passed (PlayerState.flags["last_pass_turn"]); false on turn 1 / after a play or lost roll-off.
+                             # Gates The SRG Boss's finish riders. schema v78
 DuringTurn(who)              # it is currently who's turn (GameState.active == who-side) — gates a continuous
                              # effect to a turn phase ("during your opponent's turn: …" — La Fenix). schema v19
 Always

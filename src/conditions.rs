@@ -359,6 +359,13 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             state.last_roll_winner.as_deref() == Some(state.opponent_of(owner).as_str())
         }
         Condition::BumpedLastTurnRoll => state.last_turn_bumped,
+        Condition::EndedTurnNoPlay => {
+            state.players[owner]
+                .flags
+                .get("last_pass_turn")
+                .and_then(serde_json::Value::as_i64)
+                == Some(state.turn_no - 1)
+        }
         Condition::GimmickFlipped { who } => {
             let subject = who_key(state, owner, *who);
             state.players[&subject].gimmick_flipped

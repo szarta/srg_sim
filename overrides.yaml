@@ -11555,6 +11555,134 @@ c042f762f1a545d082db24282f08e3c2:
   source: card
   optional: false
 
+# ---------------------------------------------------------------------------
+# Olympics opponent (Mastermind matchup sweep): The SRG Boss (Greatest American).
+# All three finishes share the rider "if you ended the last turn without playing
+# a card, …", modeled with the new nullary Condition::EndedTurnNoPlay (v78, reads
+# flags["last_pass_turn"] stamped by do_pass). Each rider reuses an EXISTING action:
+# #28 -> AlsoLead{Followup}; #29 -> Reroll{finish}; #30 -> DoubleFinishIf. The
+# start-of-match borrow-a-gimmick competitor gimmick stays Unsupported (no logo
+# cards in a headless deck; inert vs Mastermind).
+# ---------------------------------------------------------------------------
+
+# The Boss Hammer (#28 Strike finish): "+3 to Agility / +1 to Power / If you ended
+# the last turn without playing a card, this card is also a Follow Up."
+dc2ccd83babb45c1b44616489c3fe841:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Agility, delta: 3}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +3 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Power, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnPlay}
+  condition: {'@type': Always}
+  actions:
+  - '@type': AlsoLead
+    order: Followup
+    condition: {'@type': EndedTurnNoPlay}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if you ended the last turn without playing a card, this card is also a Follow Up
+  source: card
+  optional: false
+
+# The Grand Grappling (#29 Grapple finish): "+2 to Agility / +2 to Grapple / If you
+# ended the last turn without playing a card, you may re-roll your Finish roll."
+8eaa9062ab254dc3a982d360be505977:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Agility, delta: 2}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Grapple, delta: 2}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': EndedTurnNoPlay}
+  actions:
+  - {'@type': Reroll, who: SELF, once: true, choose: false, when: THIS, cost: null, finish: true}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: ONCE_PER_TURN, n: null}
+  raw_clause: if you ended the last turn without playing a card, you may re-roll your Finish roll
+  source: card
+  optional: true
+
+# Throw in the Towels (#30 Submission finish): "+2 to Technique / +1 to Submission /
+# Add 1 card from your discard pile to your hand. / If you ended the last turn without
+# playing a card, double these bonuses." DoubleFinishIf doubles only the FinishBonus
+# stat riders (card_finish_bonus), not the AddFromDiscard.
+67c80af7d2654cb5bf744cefee698736:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Technique, delta: 2}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Submission, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnPlay}
+  condition: {'@type': Always}
+  actions:
+  - '@type': AddFromDiscard
+    filter: {'@type': CardFilter, number: null, atk_type: null, play_order: null, tag: null, name: null, raw: null}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: add 1 card from your discard pile to your hand
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': DoubleFinishIf
+    condition: {'@type': EndedTurnNoPlay}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if you ended the last turn without playing a card, double these bonuses
+  source: card
+  optional: false
+
 # ============================================================================
 # Mastermind "Pate" build (decks/mastermind-pate.yaml) — Cassandra-relevant
 # riders the grammar dropped. Anti-D2 clauses (#9 bury-recur, #10/#12 draw-steal)

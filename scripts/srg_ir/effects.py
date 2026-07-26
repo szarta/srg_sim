@@ -723,6 +723,15 @@ class BumpedLastTurnRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class EndedTurnNoPlay(IRNode):
+    """True iff the owner ended the PREVIOUS turn without playing a card — roll-off
+    winner on ``turn_no - 1`` who passed (``flags["last_pass_turn"]``). False before
+    turn 1 and whenever they instead played or lost the previous roll-off. Gates The
+    SRG Boss's finish riders ("if you ended the last turn without playing a card, …").
+    schema v78"""
+
+
+@dataclass(frozen=True)
 class GimmickFlipped(IRNode):
     """True iff ``who``'s competitor card has been turned over to its back side (by
     :class:`FlipGimmick`). Gates a two-sided gimmick's front effects (``Not(...)``)
@@ -1841,6 +1850,7 @@ Condition = (
     | SameRolledSkill
     | OppWonLastRoll
     | BumpedLastTurnRoll
+    | EndedTurnNoPlay
     | GimmickFlipped
     | DuringTurn
     | CompetitorIs

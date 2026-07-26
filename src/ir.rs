@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 77;
+pub const SCHEMA_VERSION: i64 = 78;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -701,6 +701,13 @@ pub enum Condition {
     /// The PREVIOUS turn's roll-off bumped (`GameState.last_turn_bumped`); false before
     /// turn 1. Gates Mack-a-Tack's "if you bumped on the last turn roll" re-roll.
     BumpedLastTurnRoll,
+    /// The owner ended the **previous** turn without playing a card — they were the
+    /// roll-off winner on turn `turn_no - 1` and passed (chose not to play, or had
+    /// nothing playable). Reads `PlayerState.flags["last_pass_turn"]`, stamped by
+    /// `do_pass`; false before turn 1 and whenever the owner instead played a card or
+    /// lost the previous roll-off. Gates The SRG Boss's finish riders ("if you ended
+    /// the last turn without playing a card, …"). schema v78
+    EndedTurnNoPlay,
     GimmickFlipped {
         who: Who,
     },
@@ -1662,6 +1669,9 @@ pub enum IrNode {
     /// The PREVIOUS turn's roll-off bumped (`GameState.last_turn_bumped`); false before
     /// turn 1. Gates Mack-a-Tack's "if you bumped on the last turn roll" re-roll.
     BumpedLastTurnRoll,
+    /// The owner ended the previous turn without playing a card (roll-off winner on
+    /// `turn_no - 1` who passed). Reads `flags["last_pass_turn"]`. schema v78
+    EndedTurnNoPlay,
     GimmickFlipped {
         who: Who,
     },

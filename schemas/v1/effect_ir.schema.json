@@ -170,6 +170,9 @@
             },
             {
               "$ref": "#/$defs/HitThisTurn"
+            },
+            {
+              "$ref": "#/$defs/EndedTurnNoPlay"
             }
           ]
         },
@@ -279,6 +282,9 @@
               },
               {
                 "$ref": "#/$defs/HitThisTurn"
+              },
+              {
+                "$ref": "#/$defs/EndedTurnNoPlay"
               }
             ]
           },
@@ -1354,6 +1360,9 @@
             },
             {
               "$ref": "#/$defs/HitThisTurn"
+            },
+            {
+              "$ref": "#/$defs/EndedTurnNoPlay"
             }
           ]
         }
@@ -1780,6 +1789,9 @@
             },
             {
               "$ref": "#/$defs/HitThisTurn"
+            },
+            {
+              "$ref": "#/$defs/EndedTurnNoPlay"
             }
           ]
         },
@@ -1897,6 +1909,18 @@
       "required": [
         "@type",
         "uses"
+      ],
+      "type": "object"
+    },
+    "EndedTurnNoPlay": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "EndedTurnNoPlay"
+        }
+      },
+      "required": [
+        "@type"
       ],
       "type": "object"
     },
@@ -2625,6 +2649,9 @@
           "$ref": "#/$defs/HitThisTurn"
         },
         {
+          "$ref": "#/$defs/EndedTurnNoPlay"
+        },
+        {
           "$ref": "#/$defs/ReturnToHand"
         },
         {
@@ -2942,6 +2969,9 @@
             },
             {
               "$ref": "#/$defs/HitThisTurn"
+            },
+            {
+              "$ref": "#/$defs/EndedTurnNoPlay"
             }
           ]
         }
@@ -3392,6 +3422,9 @@
               },
               {
                 "$ref": "#/$defs/HitThisTurn"
+              },
+              {
+                "$ref": "#/$defs/EndedTurnNoPlay"
               }
             ]
           },
@@ -4010,6 +4043,9 @@
             },
             {
               "$ref": "#/$defs/HitThisTurn"
+            },
+            {
+              "$ref": "#/$defs/EndedTurnNoPlay"
             }
           ]
         },
@@ -4470,5 +4506,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 77
+  "version": 78
 }

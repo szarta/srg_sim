@@ -3527,8 +3527,17 @@ impl Engine {
         Ok(())
     }
 
-    /// Passing recycles one card from discard to the bottom of the deck (§6).
+    /// Passing recycles one card from discard to the bottom of the deck (§6). Stamps
+    /// `last_pass_turn` so `Condition::EndedTurnNoPlay` ("if you ended the last turn
+    /// without playing a card", The SRG Boss) reads it on the following turn.
     fn do_pass(&mut self, active: &str) -> Eng<()> {
+        let turn = self.state.turn_no;
+        self.state
+            .players
+            .get_mut(active)
+            .unwrap()
+            .flags
+            .insert("last_pass_turn".to_owned(), json!(turn));
         let pool: Vec<Card> = self.state.players[active].discard.clone();
         if pool.is_empty() {
             return Ok(());
@@ -8424,6 +8433,60 @@ mod man_from_it_tests {
             engine.card_finish_bonus(&cutter, Skill::Power, "A"),
             4,
             "another Submission in play → doubled"
+        );
+    }
+
+    #[test]
+    fn ended_turn_no_play_gates_the_boss_finish_double() {
+        // The SRG Boss "Throw in the Towels": double the finish bonus if you ended the
+        // last turn without playing a card (flags["last_pass_turn"] == turn_no - 1).
+        let towels: Card = serde_json::from_value(json!({
+            "atk_type":"Submission","db_uuid":"towels","name":"Throw in the Towels","number":30,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{"Submission":1},
+            "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"DoubleFinishIf","condition":{"@type":"EndedTurnNoPlay"}}],
+                "duration":"WHILE_IN_PLAY","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let mut engine = engine_with(json!([]));
+        engine.state.turn_no = 5;
+        engine.state.players.get_mut("A").unwrap().in_play = vec![towels.clone()];
+
+        // Played (or lost the roll) last turn → not doubled.
+        assert_eq!(
+            engine.card_finish_bonus(&towels, Skill::Submission, "A"),
+            1,
+            "no recorded pass on turn 4 → EndedTurnNoPlay false → not doubled"
+        );
+
+        // Passed on the immediately-previous turn → doubled.
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flags
+            .insert("last_pass_turn".to_owned(), json!(4));
+        assert_eq!(
+            engine.card_finish_bonus(&towels, Skill::Submission, "A"),
+            2,
+            "passed on turn 4 (turn_no-1) → EndedTurnNoPlay true → doubled"
+        );
+
+        // A pass two turns ago does not count — only the immediately previous turn.
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flags
+            .insert("last_pass_turn".to_owned(), json!(3));
+        assert_eq!(
+            engine.card_finish_bonus(&towels, Skill::Submission, "A"),
+            1,
+            "pass on turn 3 (not turn_no-1) → not doubled"
         );
     }
 }
