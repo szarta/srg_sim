@@ -272,7 +272,7 @@ ConsideredCompare(domain=SKILL|HAND, order=GREATER|LESS)  # Static meta-override
 SuppressOpponentDraw         # Static decl (schema v21): "your opponent does not draw for your card effects"
                              # (Sami "The Draw") — a Draw(who=OPP) resolved by the declaring player is voided at act_draw.
 CrowdMeter(delta)             PlayExtraCard(order?)         SetFinishRoll(value, condition)
-FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?)
+FinishBonus(skill, delta)     BreakoutModifier(delta, attempts?, when_skill?)  # when_skill gates to the rolled breakout skill (v79)
 FinishRollBonus(delta, when_skill?, either=False, per?, per_who=SELF, per_zone=IN_PLAY, per_divisor?)  # +delta to a Finish roll; when_skill gates on the rolled skill. `per` set = delta * floor((count of per_who's cards in per_zone matching the filter) / per_divisor) — "+1 per Spotlight in your opponent's discard" (schema v28); per_zone=FLIPPED_THIS_TURN for "+1 for each Strike card flipped", per_divisor=3 for "+1 for every 3 Strikes in play" (schema v74)
 DoubleFinishIfBumped          # Static self-decl: double THIS card's Finish bonuses if the finisher bumped
 DoubleFinishIf(condition)     # conditional generalization: double THIS card's Finish bonuses when `condition`

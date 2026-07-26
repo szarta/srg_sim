@@ -8196,11 +8196,13 @@ b70afdfa287e4ca6be73ee9f03c863ea:
 # Choice branch as AbsorbGimmick{effects}, which appends the chosen variant's
 # effects to this competitor's own (fired as standing effects, blanked together).
 # Branches are baked from each variant's CURRENT parsed IR: V2 = OnRoll(Strike|
-# Submission)->+1 next (modeled); V1 (reveal extra entrances, deck-construction),
-# V3 (Power +1 during Finish/breakout), V4 (Boss+Chop buff) parse to Unsupported
-# today -> absorbing them is honestly inert until those gimmicks are modeled;
-# RE-BAKE this override then. Order: V2 first so the heuristic's index-0 default
-# absorbs the one live gimmick. Mandatory choose-1 (optional: false).
+# Submission)->+1 next (modeled); V3 = Power +1 on Finish + breakout rolls (modeled,
+# schema v79 — FinishRollBonus/BreakoutModifier keyed on Power). V1 (reveal extra
+# entrances, deck-construction) and V4 (Boss+Chop buff) still parse to Unsupported ->
+# absorbing them is inert until modeled; RE-BAKE those branches then. Order: V2 first
+# so the heuristic's index-0 default absorbs it — the stronger borrow here, since SRG
+# Boss's high Strike(10)/Submission(8) make its "next turn roll +1" fire often, vs V3
+# which only helps on a Power-rolled Finish or breakout (~1/6). Choose-1 (mandatory).
 8f2c00bb6fdd44a4aa6742ddd90650eb:
 - '@type': Effect
   trigger:
@@ -8286,23 +8288,44 @@ b70afdfa287e4ca6be73ee9f03c863ea:
       actions:
       - '@type': AbsorbGimmick
         effects:
+        # RE-BAKED (schema v79): the finish half is a rolled-skill-gated FinishRollBonus,
+        # the breakout half a rolled-skill-gated BreakoutModifier (both keyed on Power).
         - '@type': Effect
           actions:
-          - '@type': Unsupported
-            raw_text: Your Power is +1 during your Finish rolls and breakout rolls.
-            reason: no grammar match
+          - '@type': FinishRollBonus
+            delta: 1
+            when_skill: Power
+            either: false
           condition:
             '@type': Always
-          duration: INSTANT
+          duration: WHILE_IN_PLAY
           frequency:
             '@type': FrequencyGuard
             kind: UNLIMITED
             n: null
           optional: false
-          raw_clause: Your Power is +1 during your Finish rolls and breakout rolls.
+          raw_clause: your Power is +1 during your Finish rolls
           source: gimmick
           trigger:
-            '@type': OnPlay
+            '@type': Static
+        - '@type': Effect
+          actions:
+          - '@type': BreakoutModifier
+            delta: 1
+            attempts: null
+            when_skill: Power
+          condition:
+            '@type': Always
+          duration: WHILE_IN_PLAY
+          frequency:
+            '@type': FrequencyGuard
+            kind: UNLIMITED
+            n: null
+          optional: false
+          raw_clause: your Power is +1 during your breakout rolls
+          source: gimmick
+          trigger:
+            '@type': Static
     - '@type': ChoiceOption
       label: add The SRG Boss (V4)'s Gimmick
       actions:

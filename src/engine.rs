@@ -285,9 +285,14 @@ fn negate_action(action: &Action) -> Action {
             per_zone: *per_zone,
             per_divisor: *per_divisor,
         },
-        Action::BreakoutModifier { delta, attempts } => Action::BreakoutModifier {
+        Action::BreakoutModifier {
+            delta,
+            attempts,
+            when_skill,
+        } => Action::BreakoutModifier {
             delta: -*delta,
             attempts: *attempts,
+            when_skill: *when_skill,
         },
         other => other.clone(),
     }
@@ -4198,15 +4203,22 @@ impl Engine {
     /// ("your 3rd breakout roll each turn is +2"); `None` applies to every attempt
     /// ("your breakout rolls are +1"). Scans the same standing set as
     /// [`finish_roll_bonus`](Self::finish_roll_bonus).
-    fn breakout_bonus(&self, defender: &str, attempt_no: i64) -> i64 {
+    fn breakout_bonus(&self, defender: &str, attempt_no: i64, rolled: Skill) -> i64 {
         let mut total = 0;
         for eff in self.standing_effects(defender) {
             if !conditions::holds(&eff.condition, &self.state, defender, None) {
                 continue;
             }
             for a in &eff.actions {
-                if let Action::BreakoutModifier { delta, attempts } = a {
-                    if attempts.is_none() || *attempts == Some(attempt_no) {
+                if let Action::BreakoutModifier {
+                    delta,
+                    attempts,
+                    when_skill,
+                } = a
+                {
+                    let attempt_ok = attempts.is_none() || *attempts == Some(attempt_no);
+                    let skill_ok = when_skill.is_none() || *when_skill == Some(rolled);
+                    if attempt_ok && skill_ok {
                         total += *delta;
                     }
                 }
@@ -4228,7 +4240,7 @@ impl Engine {
             // NEGATIVE `penalty` keeps the raw-10-always-breaks rule on the unboosted
             // value (a boosted 8->10 is not a "raw 10"). No modifier -> penalty 0 ->
             // byte-identical to before (the frozen corpus has none).
-            let penalty = -self.breakout_bonus(defender, i as i64 + 1);
+            let penalty = -self.breakout_bonus(defender, i as i64 + 1, skill);
             let success = crate::finish::stat_breaks_out(val, finish_value, penalty, cm);
             rolls.push(BreakoutRoll {
                 skill: skill.name().to_owned(),
@@ -5598,9 +5610,9 @@ mod breakout_modifier_tests {
             "A",
             breakout_mod(2, json!(3), json!({"@type": "Always"})),
         );
-        assert_eq!(engine.breakout_bonus("A", 1), 0);
-        assert_eq!(engine.breakout_bonus("A", 2), 0);
-        assert_eq!(engine.breakout_bonus("A", 3), 2);
+        assert_eq!(engine.breakout_bonus("A", 1, Skill::Strike), 0);
+        assert_eq!(engine.breakout_bonus("A", 2, Skill::Strike), 0);
+        assert_eq!(engine.breakout_bonus("A", 3, Skill::Strike), 2);
     }
 
     #[test]
@@ -5618,8 +5630,35 @@ mod breakout_modifier_tests {
             "A",
             breakout_mod(2, json!(3), json!({"@type": "Always"})),
         );
-        assert_eq!(engine.breakout_bonus("A", 1), 1);
-        assert_eq!(engine.breakout_bonus("A", 3), 3);
+        assert_eq!(engine.breakout_bonus("A", 1, Skill::Strike), 1);
+        assert_eq!(engine.breakout_bonus("A", 3, Skill::Strike), 3);
+    }
+
+    #[test]
+    fn when_skill_gates_the_modifier_to_the_rolled_breakout_skill() {
+        // The SRG Boss V3 / Pineapple: "Power is +1 during your breakout rolls" applies
+        // only when the defender's breakout roll came up Power, not on the other five.
+        let mut engine = engine();
+        let modifier = json!({
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "BreakoutModifier", "delta": 1, "attempts": null,
+                "when_skill": "Power"}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "t", "source": "gimmick", "optional": false
+        });
+        push_gimmick(&mut engine, "A", modifier);
+        assert_eq!(
+            engine.breakout_bonus("A", 1, Skill::Power),
+            1,
+            "rolled Power → gated bonus applies"
+        );
+        assert_eq!(
+            engine.breakout_bonus("A", 1, Skill::Agility),
+            0,
+            "rolled Agility → gated bonus does not apply"
+        );
     }
 
     fn strike_cards(n: usize) -> Vec<Card> {
@@ -5705,8 +5744,8 @@ mod breakout_modifier_tests {
             "B",
             breakout_mod(4, Value::Null, json!({"@type": "Always"})),
         );
-        assert_eq!(engine.breakout_bonus("A", 1), 0);
-        assert_eq!(engine.breakout_bonus("B", 1), 4);
+        assert_eq!(engine.breakout_bonus("A", 1, Skill::Strike), 0);
+        assert_eq!(engine.breakout_bonus("B", 1, Skill::Strike), 4);
     }
 
     #[test]
@@ -5719,7 +5758,7 @@ mod breakout_modifier_tests {
             breakout_mod(2, json!(3), json!({"@type": "Always"})),
         );
         engine.state.players.get_mut("A").unwrap().gimmick_blanked = true;
-        assert_eq!(engine.breakout_bonus("A", 3), 0);
+        assert_eq!(engine.breakout_bonus("A", 3, Skill::Strike), 0);
     }
 
     #[test]

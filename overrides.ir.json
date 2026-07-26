@@ -4746,7 +4746,8 @@
         {
           "@type": "BreakoutModifier",
           "attempts": 3,
-          "delta": 2
+          "delta": 2,
+          "when_skill": null
         }
       ],
       "condition": {
@@ -8477,25 +8478,57 @@
                       "@type": "Effect",
                       "actions": [
                         {
-                          "@type": "Unsupported",
-                          "raw_text": "Your Power is +1 during your Finish rolls and breakout rolls.",
-                          "reason": "no grammar match"
+                          "@type": "FinishRollBonus",
+                          "delta": 1,
+                          "either": false,
+                          "per": null,
+                          "per_who": "SELF",
+                          "per_zone": "IN_PLAY",
+                          "when_base_ge": null,
+                          "when_base_le": null,
+                          "when_skill": "Power"
                         }
                       ],
                       "condition": {
                         "@type": "Always"
                       },
-                      "duration": "INSTANT",
+                      "duration": "WHILE_IN_PLAY",
                       "frequency": {
                         "@type": "FrequencyGuard",
                         "kind": "UNLIMITED",
                         "n": null
                       },
                       "optional": false,
-                      "raw_clause": "Your Power is +1 during your Finish rolls and breakout rolls.",
+                      "raw_clause": "your Power is +1 during your Finish rolls",
                       "source": "gimmick",
                       "trigger": {
-                        "@type": "OnPlay"
+                        "@type": "Static"
+                      }
+                    },
+                    {
+                      "@type": "Effect",
+                      "actions": [
+                        {
+                          "@type": "BreakoutModifier",
+                          "attempts": null,
+                          "delta": 1,
+                          "when_skill": "Power"
+                        }
+                      ],
+                      "condition": {
+                        "@type": "Always"
+                      },
+                      "duration": "WHILE_IN_PLAY",
+                      "frequency": {
+                        "@type": "FrequencyGuard",
+                        "kind": "UNLIMITED",
+                        "n": null
+                      },
+                      "optional": false,
+                      "raw_clause": "your Power is +1 during your breakout rolls",
+                      "source": "gimmick",
+                      "trigger": {
+                        "@type": "Static"
                       }
                     }
                   ]

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 78;
+pub const SCHEMA_VERSION: i64 = 79;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1316,6 +1316,12 @@ pub enum Action {
     BreakoutModifier {
         delta: i64,
         attempts: Option<i64>,
+        /// Skill gate on the breakout roll — the bonus applies only when the defender's
+        /// rolled breakout skill equals `when_skill` ("+1 to Strike during your breakout
+        /// rolls", Pineapple; "Power is +1 during your breakout rolls", The SRG Boss V3).
+        /// `None` = every breakout roll regardless of the rolled skill. schema v79
+        #[serde(default)]
+        when_skill: Option<Skill>,
     },
     LowestRollWins,
     FlipGimmickSigns {
@@ -2260,6 +2266,12 @@ pub enum IrNode {
     BreakoutModifier {
         delta: i64,
         attempts: Option<i64>,
+        /// Skill gate on the breakout roll — the bonus applies only when the defender's
+        /// rolled breakout skill equals `when_skill` ("+1 to Strike during your breakout
+        /// rolls", Pineapple; "Power is +1 during your breakout rolls", The SRG Boss V3).
+        /// `None` = every breakout roll regardless of the rolled skill. schema v79
+        #[serde(default)]
+        when_skill: Option<Skill>,
     },
     LowestRollWins,
     FlipGimmickSigns {

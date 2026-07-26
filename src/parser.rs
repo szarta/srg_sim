@@ -1034,6 +1034,16 @@ fn finish_bonus(delta: i64, when_skill: Option<Skill>, either: bool) -> Action {
     }
 }
 
+/// A rolled-skill-gated breakout-roll bonus ("+1 to Strike during your breakout
+/// rolls", Pineapple). `when_skill` = None applies to every breakout roll. schema v79
+fn breakout_mod(delta: i64, when_skill: Option<Skill>) -> Action {
+    Action::BreakoutModifier {
+        delta,
+        attempts: None,
+        when_skill,
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 fn build_rules() -> Vec<(Regex, Builder)> {
     vec![
@@ -2473,6 +2483,34 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     Trigger::Static,
                     vec![finish_bonus(num(c, 2), Some(skill(&c[1])), false)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // "+N to <S> during your breakout rolls" — a rolled-skill-gated breakout bonus
+        // (Pineapple/Trash Can/Sledgehammer). Mirror of the Finish-roll rules above but
+        // keyed on the breakout roll (BreakoutModifier.when_skill, v79). Self only; a
+        // bare "+N" is unsigned (add) — breakout modifiers are always positive help.
+        rule(
+            &format!(r"\+(\d+) to {SK} during your [Bb]reakout [Rr]olls"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![breakout_mod(num(c, 1), Some(skill(&c[2])))],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // "Your <S> (skill) is +N during (your) breakout rolls" — same bonus, alternate
+        // phrasing (The SRG Boss V3's "Your Power is +N during … breakout rolls").
+        rule(
+            &format!(r"Your {SK} (?:skill )?is ([+-]\d+) during (?:your )?[Bb]reakout [Rr]olls"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![breakout_mod(num(c, 2), Some(skill(&c[1])))],
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))

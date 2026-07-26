@@ -1655,6 +1655,9 @@ class FinishRollBonus(IRNode):
 class BreakoutModifier(IRNode):
     delta: int = 0
     attempts: int | None = None
+    # Skill gate on the rolled breakout skill ("+1 to Strike during your breakout
+    # rolls"); None = every breakout roll regardless of the rolled skill. schema v79
+    when_skill: str | None = None
 
 
 @dataclass(frozen=True)
