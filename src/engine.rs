@@ -1244,6 +1244,8 @@ impl Engine {
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::BuryThisCard => self.act_bury_this_card(key),
             Action::AddSelfToHand => self.act_add_self_to_hand(key),
+            Action::ShuffleSelfIntoDeck => self.act_shuffle_self_into_deck(key)?,
+            Action::PlaySelf => self.act_play_self(key)?,
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
                 who,
@@ -3128,6 +3130,44 @@ impl Engine {
         let card = player.discard.remove(pos);
         player.hand.push(card);
         self.log_effect(key, "AddSelfToHand", None, json!({"card": uuid}));
+    }
+
+    /// Shuffle the triggering (flipped) card back into `key`'s deck — move it from their
+    /// discard pile to the deck, then shuffle (firing `OnShuffle`). The referent is
+    /// [`Engine::flipped_card`]. A no-op outside a flip context or if the card has
+    /// already left the discard. See [`Action::ShuffleSelfIntoDeck`].
+    fn act_shuffle_self_into_deck(&mut self, key: &str) -> Eng<()> {
+        let Some(uuid) = self.flipped_card.clone() else {
+            return Ok(());
+        };
+        let player = self.state.players.get_mut(key).unwrap();
+        let Some(pos) = player.discard.iter().position(|c| c.db_uuid == uuid) else {
+            return Ok(());
+        };
+        let card = player.discard.remove(pos);
+        player.deck.push(card);
+        self.log_effect(key, "ShuffleSelfIntoDeck", None, json!({"card": uuid}));
+        self.shuffle_deck(key)
+    }
+
+    /// Play the triggering (flipped) card immediately — pull it from `key`'s discard and
+    /// resolve it as a normal play by `key` (stop window, OnPlay/OnHit), a bonus action
+    /// outside the turn's one-card play. The referent is [`Engine::flipped_card`]. A
+    /// no-op outside a flip context or if the card has already left the discard. See
+    /// [`Action::PlaySelf`].
+    fn act_play_self(&mut self, key: &str) -> Eng<()> {
+        let Some(uuid) = self.flipped_card.clone() else {
+            return Ok(());
+        };
+        let player = self.state.players.get_mut(key).unwrap();
+        let Some(pos) = player.discard.iter().position(|c| c.db_uuid == uuid) else {
+            return Ok(());
+        };
+        let card = player.discard.remove(pos);
+        let defender = self.state.opponent_of(key);
+        self.log_effect(key, "PlaySelf", None, json!({"card": uuid}));
+        self.resolve_play(key, &defender, card)?;
+        Ok(())
     }
 
     /// Drop everything scoped "until the end of the turn" by the turn just finished:
@@ -5600,6 +5640,8 @@ fn action_name(action: &Action) -> &'static str {
         Action::BlankStoppedText => "BlankStoppedText",
         Action::BuryThisCard => "BuryThisCard",
         Action::AddSelfToHand => "AddSelfToHand",
+        Action::ShuffleSelfIntoDeck => "ShuffleSelfIntoDeck",
+        Action::PlaySelf => "PlaySelf",
         Action::ChooseName { .. } => "ChooseName",
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
@@ -9127,20 +9169,24 @@ mod cardona_mechanism_tests {
         );
     }
 
-    /// A card carrying its own `OnFlip{SELF}` + `AddSelfToHand` ("If this card is
-    /// flipped, add it to your hand") lands in hand when flipped; a plain card flipped
-    /// alongside it goes to the discard as usual.
-    fn flip_self_card(uuid: &str) -> Card {
+    /// A card carrying its own `OnFlip{SELF}` self-trigger with `action` ("If this card
+    /// is flipped, <action>"). Used to exercise each flip self-action.
+    fn flip_self_card_with(uuid: &str, action: Value) -> Card {
         serde_json::from_value(json!({"atk_type":"Strike","db_uuid":uuid,"name":uuid,
             "number":1,"play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
             "effects":[{"@type":"Effect",
                 "trigger":{"@type":"OnFlip","who":"SELF","count":null},
                 "condition":{"@type":"Always"},
-                "actions":[{"@type":"AddSelfToHand"}],
+                "actions":[action],
                 "duration":"INSTANT","optional":false,
                 "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
-                "raw_clause":"If this card is flipped, add it to your hand","source":"card"}]}))
+                "raw_clause":"flip self-trigger","source":"card"}]}))
         .unwrap()
+    }
+
+    /// A card that adds itself to hand when flipped.
+    fn flip_self_card(uuid: &str) -> Card {
+        flip_self_card_with(uuid, json!({"@type":"AddSelfToHand"}))
     }
 
     #[test]
@@ -9182,6 +9228,42 @@ mod cardona_mechanism_tests {
             "declined 'you may' → card stays in the discard"
         );
         assert!(p.hand.is_empty(), "nothing entered the hand");
+    }
+
+    #[test]
+    fn self_flip_shuffles_itself_back_into_the_deck() {
+        let mut e = engine();
+        let c = flip_self_card_with("sh", json!({"@type":"ShuffleSelfIntoDeck"}));
+        // Give A a small deck so the card has somewhere to shuffle back into.
+        e.state.players.get_mut("A").unwrap().deck = vec![c, card("filler", "Lead")];
+        e.act_flip(1, Who::SelfSide, "A").unwrap();
+        let p = &e.state.players["A"];
+        assert!(
+            p.deck.iter().any(|c| c.db_uuid == "sh"),
+            "the flipped card returned to the deck"
+        );
+        assert!(
+            !p.discard.iter().any(|c| c.db_uuid == "sh"),
+            "it is no longer in the discard"
+        );
+    }
+
+    #[test]
+    fn self_flip_plays_itself_into_play() {
+        let mut e = engine();
+        let c = flip_self_card_with("pl", json!({"@type":"PlaySelf"}));
+        e.state.players.get_mut("A").unwrap().deck = vec![c];
+        // B holds no stops, so the play resolves onto the board.
+        e.act_flip(1, Who::SelfSide, "A").unwrap();
+        let p = &e.state.players["A"];
+        assert!(
+            p.in_play.iter().any(|c| c.db_uuid == "pl"),
+            "the flipped card resolved into play"
+        );
+        assert!(
+            !p.discard.iter().any(|c| c.db_uuid == "pl"),
+            "it left the discard when played"
+        );
     }
 }
 

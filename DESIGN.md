@@ -209,6 +209,10 @@ SwapHandDiscard               # "switch 1 card in your hand with 1 in your disca
 AddSelfToHand                 # "If this card is flipped, [you may] add it to your hand": moves the just-flipped
                              # referent (Engine::flipped_card, bound per-card in run_self_flips) from discard -> its owner's
                              # hand. Paired with an OnFlip{SELF} trigger; "you may" -> Effect.optional. schema v85
+ShuffleSelfIntoDeck           # "If this card is flipped, [you may] shuffle it [back] into your deck": flipped referent
+                             # discard -> deck, then shuffle (fires OnShuffle). Sibling of AddSelfToHand. schema v86
+PlaySelf                      # "If this card is flipped, [you may] play it[ as an additional card this turn]": flipped
+                             # referent discard -> resolve_play by its owner (stop window, OnPlay/OnHit), a bonus play. schema v86
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
 RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
 RevealForDraw(who=OPP, count=1, draw=2, match_on=STOP|ROLLED_SKILL)  # reveal `count` random from hand; actor draws `draw` per revealed card matched by `match_on` — a Stop (Bartholomew) or one whose move type == the actor's just-rolled skill (The Winning Ticket, reads roll ctx). schema v24

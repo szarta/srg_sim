@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 85;
+pub const SCHEMA_VERSION: i64 = 86;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -838,6 +838,18 @@ pub enum Action {
     /// A no-op outside a flip context or if the card has already left the discard.
     /// schema v85
     AddSelfToHand,
+    /// Shuffle the TRIGGERING (flipped) card back into its owner's deck — "If this card
+    /// is flipped, [you may] shuffle it [back] into your deck." Sibling of
+    /// [`Action::AddSelfToHand`]: the referent is [`Engine::flipped_card`]; the card
+    /// moves from the discard pile to the deck, which is then shuffled (firing
+    /// `OnShuffle`). "you may" lives on [`Effect::optional`]. schema v86
+    ShuffleSelfIntoDeck,
+    /// Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
+    /// may] play it[ as an additional card this turn]." The referent is
+    /// [`Engine::flipped_card`]; the card leaves the discard pile and resolves as a
+    /// normal play by its owner (stop window, OnPlay/OnHit), a bonus action outside the
+    /// turn's one-card play. "you may" lives on [`Effect::optional`]. schema v86
+    PlaySelf,
     /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
     /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
     /// (→ hand). A no-op if either zone is empty. The "you may" lives on
@@ -1846,6 +1858,18 @@ pub enum IrNode {
     /// A no-op outside a flip context or if the card has already left the discard.
     /// schema v85
     AddSelfToHand,
+    /// Shuffle the TRIGGERING (flipped) card back into its owner's deck — "If this card
+    /// is flipped, [you may] shuffle it [back] into your deck." Sibling of
+    /// [`Action::AddSelfToHand`]: the referent is [`Engine::flipped_card`]; the card
+    /// moves from the discard pile to the deck, which is then shuffled (firing
+    /// `OnShuffle`). "you may" lives on [`Effect::optional`]. schema v86
+    ShuffleSelfIntoDeck,
+    /// Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
+    /// may] play it[ as an additional card this turn]." The referent is
+    /// [`Engine::flipped_card`]; the card leaves the discard pile and resolves as a
+    /// normal play by its owner (stop window, OnPlay/OnHit), a bonus action outside the
+    /// turn's one-card play. "you may" lives on [`Effect::optional`]. schema v86
+    PlaySelf,
     /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
     /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
     /// (→ hand). A no-op if either zone is empty. The "you may" lives on

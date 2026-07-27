@@ -90,6 +90,12 @@
     "@type": "AddSelfToHand"
   },
   {
+    "@type": "ShuffleSelfIntoDeck"
+  },
+  {
+    "@type": "PlaySelf"
+  },
+  {
     "@type": "ChooseName",
     "options": [
       "Kendo Stick",

@@ -227,11 +227,13 @@ fn flip(n: i64, who: Who) -> Action {
     }
 }
 
-/// "If this card is flipped, [you may] add it to your hand" — the per-card flip
-/// self-trigger. `OnFlip{who:SELF}` (no count gate) fires per flipped card during
-/// `run_self_flips`; [`Action::AddSelfToHand`] moves the just-flipped referent from
-/// the discard back to its owner's hand. The "you may" rides on [`Effect::optional`].
-fn flip_self_to_hand(optional: bool) -> Effect {
+/// "If this card is flipped, [you may] <self-action>" — the per-card flip
+/// self-trigger family. `OnFlip{who:SELF}` (no count gate) fires per flipped card
+/// during `run_self_flips`; the paired self-action ([`Action::AddSelfToHand`] /
+/// `ShuffleSelfIntoDeck` / `PlaySelf`) acts on the just-flipped referent. `cond`
+/// gates the fire ("during your turn" -> `DuringTurn{SELF}`); the "you may" rides on
+/// [`Effect::optional`].
+fn flip_self(action: Action, optional: bool, cond: Condition) -> Effect {
     Effect {
         optional,
         ..eff(
@@ -239,8 +241,8 @@ fn flip_self_to_hand(optional: bool) -> Effect {
                 who: Who::SelfSide,
                 count: None,
             },
-            vec![Action::AddSelfToHand],
-            Condition::Always,
+            vec![action],
+            cond,
             Duration::Instant,
         )
     }
@@ -1783,13 +1785,66 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        // Per-card flip self-trigger: "If this card is flipped, [you may] add it to
-        // your hand." Trigger OnFlip{SELF} fires per flipped card; AddSelfToHand pulls
-        // the referent back to hand. "you may" -> Effect::optional. (Comma optional;
-        // "flipped you may" appears both with and without it.)
+        // Per-card flip self-trigger: "If this card is flipped, [you may] <self-action>."
+        // Trigger OnFlip{SELF} fires per flipped card; the self-action acts on the
+        // referent. "you may" -> Effect::optional. (Comma optional; "flipped you may"
+        // appears both with and without it.)
         rule(
             r"If this card is flipped,?(?: (you may))? add it to your hand",
-            |c| Some(flip_self_to_hand(c.get(1).is_some())),
+            |c| {
+                Some(flip_self(
+                    Action::AddSelfToHand,
+                    c.get(1).is_some(),
+                    Condition::Always,
+                ))
+            },
+        ),
+        // "shuffle it [back] into your deck" / "shuffle it from your discard pile back
+        // into your deck" (mandatory) / the "shuffleit" typo. -> ShuffleSelfIntoDeck.
+        rule(
+            r"If this card is flipped,?(?: (you may))? shuffle ?it(?: from your discard pile)?(?: back)? into your deck",
+            |c| {
+                Some(flip_self(
+                    Action::ShuffleSelfIntoDeck,
+                    c.get(1).is_some(),
+                    Condition::Always,
+                ))
+            },
+        ),
+        // "you may play it[ as an additional card this turn]" -> PlaySelf (the play is
+        // itself the bonus action, so "as an additional card" folds in).
+        rule(
+            r"If this card is flipped,?(?: (you may))? play it(?: as an additional card this turn)?",
+            |c| {
+                Some(flip_self(
+                    Action::PlaySelf,
+                    c.get(1).is_some(),
+                    Condition::Always,
+                ))
+            },
+        ),
+        // "If this card is flipped during your turn, you may play it" -> gated on
+        // DuringTurn{SELF} (the flip must land on the owner's turn). Also the
+        // "During your turn, if this card is flipped …" prefix form (same semantics).
+        rule(
+            r"If this card is flipped during your turn,?(?: (you may))? play it",
+            |c| {
+                Some(flip_self(
+                    Action::PlaySelf,
+                    c.get(1).is_some(),
+                    Condition::DuringTurn { who: Who::SelfSide },
+                ))
+            },
+        ),
+        rule(
+            r"During your turn, if this card is flipped,?(?: (you may))? play it",
+            |c| {
+                Some(flip_self(
+                    Action::PlaySelf,
+                    c.get(1).is_some(),
+                    Condition::DuringTurn { who: Who::SelfSide },
+                ))
+            },
         ),
         rule(
             r"Flip (\d+) cards? for each (?:other )?(.+?) you have in play",

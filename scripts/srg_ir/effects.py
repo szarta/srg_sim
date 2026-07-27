@@ -1562,6 +1562,23 @@ class AddSelfToHand(IRNode):
 
 
 @dataclass(frozen=True)
+class ShuffleSelfIntoDeck(IRNode):
+    """Shuffle the TRIGGERING (flipped) card back into its owner's deck — "If this card
+    is flipped, [you may] shuffle it [back] into your deck." Sibling of ``AddSelfToHand``:
+    the referent (``Engine.flipped_card``) moves from the discard pile to the deck, which
+    is then shuffled. The "you may" lives on ``Effect.optional``."""
+
+
+@dataclass(frozen=True)
+class PlaySelf(IRNode):
+    """Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
+    may] play it[ as an additional card this turn]." The referent (``Engine.flipped_card``)
+    leaves the discard pile and resolves as a normal play by its owner (stop window,
+    OnPlay/OnHit), a bonus action outside the turn's one-card play. The "you may" lives on
+    ``Effect.optional``."""
+
+
+@dataclass(frozen=True)
 class ChooseName(IRNode):
     """"Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
     ``options`` for the rest of the match, stored as ``PlayerState.chosen_name``.
@@ -1981,6 +1998,8 @@ Action = (
     | BlankStoppedText
     | BuryThisCard
     | AddSelfToHand
+    | ShuffleSelfIntoDeck
+    | PlaySelf
     | ChooseName
     | LoseBy
     | ConsideredCompare

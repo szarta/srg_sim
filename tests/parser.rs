@@ -828,6 +828,35 @@ fn flip_self_to_hand_grammar() {
     // "you may" without the comma (the DB has both).
     let e = one("If this card is flipped you may add it to your hand.");
     assert_eq!(e["optional"], true);
+
+    // shuffle-self: "back into your deck" (optional) and the mandatory "from your
+    // discard pile back into your deck".
+    let e = one("If this card is flipped, you may shuffle it back into your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+    assert_eq!(e["optional"], true);
+    let e = one("If this card is flipped, shuffle it from your discard pile back into your deck.");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+    assert_eq!(e["optional"], false);
+    // the "shuffleit" typo (real DB text).
+    let e = one("If this card is flipped, you may shuffleit into your deck.");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+
+    // play-self: plain, "as an additional card", and the "during your turn" gate.
+    let e = one("If this card is flipped, you may play it.");
+    assert_eq!(e["actions"][0]["@type"], "PlaySelf");
+    assert_eq!(e["condition"]["@type"], "Always");
+    assert_eq!(e["optional"], true);
+    let e = one("If this card is flipped, you may play it as an additional card this turn.");
+    assert_eq!(e["actions"][0]["@type"], "PlaySelf");
+    let e = one("If this card is flipped during your turn, you may play it.");
+    assert_eq!(e["actions"][0]["@type"], "PlaySelf");
+    assert_eq!(e["condition"]["@type"], "DuringTurn");
+    assert_eq!(e["condition"]["who"], "SELF");
+    // The "During your turn, if this card is flipped …" prefix form.
+    let e = one("During your turn, if this card is flipped you may play it.");
+    assert_eq!(e["actions"][0]["@type"], "PlaySelf");
+    assert_eq!(e["condition"]["@type"], "DuringTurn");
 }
 
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"

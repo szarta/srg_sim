@@ -887,6 +887,12 @@
                 "$ref": "#/$defs/AddSelfToHand"
               },
               {
+                "$ref": "#/$defs/ShuffleSelfIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/PlaySelf"
+              },
+              {
                 "$ref": "#/$defs/ChooseName"
               },
               {
@@ -1718,6 +1724,12 @@
                 "$ref": "#/$defs/AddSelfToHand"
               },
               {
+                "$ref": "#/$defs/ShuffleSelfIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/PlaySelf"
+              },
+              {
                 "$ref": "#/$defs/ChooseName"
               },
               {
@@ -2484,6 +2496,12 @@
         },
         {
           "$ref": "#/$defs/AddSelfToHand"
+        },
+        {
+          "$ref": "#/$defs/ShuffleSelfIntoDeck"
+        },
+        {
+          "$ref": "#/$defs/PlaySelf"
         },
         {
           "$ref": "#/$defs/ChooseName"
@@ -3693,6 +3711,18 @@
       ],
       "type": "string"
     },
+    "PlaySelf": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "PlaySelf"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "PrintedRollValue": {
       "additionalProperties": false,
       "properties": {
@@ -4375,6 +4405,18 @@
       ],
       "type": "object"
     },
+    "ShuffleSelfIntoDeck": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ShuffleSelfIntoDeck"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "ShuffleSource": {
       "enum": [
         "DISCARD",
@@ -4761,5 +4803,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 85
+  "version": 86
 }
