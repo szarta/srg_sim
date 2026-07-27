@@ -289,6 +289,45 @@ fn trigger_body(trigger: Trigger, body: &str) -> Option<Effect> {
     Some(effect)
 }
 
+/// `a AND b`, dropping a trivially-true `b` ("the body has no gate of its own").
+fn and_conds(a: Condition, b: Condition) -> Condition {
+    match b {
+        Condition::Always => a,
+        other => Condition::And {
+            items: vec![a, other],
+        },
+    }
+}
+
+/// [`trigger_body`] with an extra gate AND-ed onto the body's own condition — used by
+/// the multi-skill roll split, where the trigger fires on any roll (`OnRoll{None}`) and
+/// `cond` restricts it to the named skills.
+fn trigger_body_cond(trigger: Trigger, cond: Condition, body: &str) -> Option<Effect> {
+    let mut effect = trigger_body(trigger, body)?;
+    effect.condition = and_conds(cond, effect.condition);
+    Some(effect)
+}
+
+/// "Strike, Submission, or Grapple" -> `RollWasSkill` OR-set for a `who=SELF` turn roll
+/// (used as the gate on an `OnRoll{None}` multi-skill trigger). `None` if fewer than two
+/// skills parse.
+fn roll_was_any(list: &str) -> Option<Condition> {
+    let normalized = list.replace(", or ", ", ").replace(" or ", ", ");
+    let skills = skill_list(&normalized);
+    if skills.len() < 2 {
+        return None;
+    }
+    Some(Condition::Or {
+        items: skills
+            .into_iter()
+            .map(|s| Condition::RollWasSkill {
+                skill: s,
+                who: Who::SelfSide,
+            })
+            .collect(),
+    })
+}
+
 /// "If this card is flipped for your Gimmick, <action>" — a per-card flip self-trigger
 /// gated on the flip being gimmick-caused ([`Condition::FlippedForGimmick`], read from
 /// `GameState::flip_provenance`).
@@ -1150,6 +1189,9 @@ fn remove_opp_play(count: i64, selector: CardFilter) -> Option<Effect> {
 type Builder = fn(&Captures) -> Option<Effect>;
 
 const SK: &str = r"(Power|Technique|Agility|Strike|Submission|Grapple)";
+/// Non-capturing skill alternation — for patterns that repeat a skill (multi-skill OR
+/// lists) where capturing groups would shift the body's index.
+const SKNC: &str = r"(?:Power|Technique|Agility|Strike|Submission|Grapple)";
 const ATK: &str = r"(Strike|Grapple|Submission)";
 
 fn rule(pattern: &str, builder: Builder) -> (Regex, Builder) {
@@ -3209,6 +3251,28 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(
             &format!(r"[Ww]hen you roll {SK}(?: for your turn roll)?[:,] (.+)"),
             |c| trigger_body(on_roll(skill(&c[1]), Who::SelfSide), &c[2]),
+        ),
+        // Multi-skill OR: "When you roll <S1>[, <S2>], or <Sn> [for your turn roll][:,]
+        // <body>" -> OnRoll{None} (fires on any roll) gated by an OR of RollWasSkill on
+        // the named skills, so the body fires on any of them. Requires 2+ skills; the
+        // "for your Finish/Breakout roll" variants don't match (they aren't turn-roll
+        // OnRoll) and stay tail. `SKNC` is a NON-capturing skill so groups stay 1=list,
+        // 2=body. Placed after the single-skill rule.
+        rule(
+            &format!(
+                r"[Ww]hen you roll ({SKNC}(?:,? (?:or )?{SKNC})+)(?: for your turn roll)?[:,] (.+)"
+            ),
+            |c| {
+                let cond = roll_was_any(&c[1])?;
+                trigger_body_cond(
+                    Trigger::OnRoll {
+                        skill: None,
+                        who: Who::SelfSide,
+                    },
+                    cond,
+                    &c[2],
+                )
+            },
         ),
     ]
 }

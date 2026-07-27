@@ -1057,7 +1057,9 @@ fn roll_trigger_body_split() {
     assert_eq!(e["actions"][0]["@type"], "Scry");
 
     // "for your turn roll" is absorbed; the body's own who (OPP) survives the split.
-    let e = one("When you roll Submission for your turn roll, your opponent buries 1 card in their hand.");
+    let e = one(
+        "When you roll Submission for your turn roll, your opponent buries 1 card in their hand.",
+    );
     assert_eq!(e["trigger"]["@type"], "OnRoll");
     assert_eq!(e["trigger"]["skill"], "Submission");
     assert_eq!(e["actions"][0]["@type"], "Bury");
@@ -1065,6 +1067,47 @@ fn roll_trigger_body_split() {
 
     // A body with no grammar -> whole clause Unsupported (not a stray OnRoll).
     let e = one("When you roll Power, ponder your legacy.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
+/// Multi-skill roll OR (task #119): "When you roll <S1>, … or <Sn>, <body>" -> a single
+/// OnRoll{None} effect gated by an Or of RollWasSkill on the named skills.
+#[test]
+fn multi_skill_roll_body_split() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Two-skill "X or Y" -> OnRoll{None} + Or of two RollWasSkill; body ModifyRoll.
+    let e =
+        one("When you roll Technique or Submission for your turn roll, your next turn roll is +1.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], Value::Null);
+    assert_eq!(e["condition"]["@type"], "Or");
+    let skills: Vec<&str> = e["condition"]["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| {
+            assert_eq!(c["@type"], "RollWasSkill");
+            c["skill"].as_str().unwrap()
+        })
+        .collect();
+    assert_eq!(skills, ["Technique", "Submission"]);
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+
+    // Three-skill "X, Y, or Z" -> three RollWasSkill; the body's own who survives.
+    let e = one("When you roll Strike, Submission, or Grapple for your turn roll, your opponent buries 1 card in their hand.");
+    assert_eq!(e["condition"]["items"].as_array().unwrap().len(), 3);
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+
+    // "for your Finish roll" is NOT a turn-roll OnRoll -> stays Unsupported here.
+    let e =
+        one("When you roll Technique or Submission for your Finish roll, your Finish roll is +1.");
+    assert_eq!(e["trigger"]["@type"], "OnPlay");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
