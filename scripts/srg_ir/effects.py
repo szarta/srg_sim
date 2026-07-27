@@ -623,6 +623,16 @@ class CrowdMeterCompare(IRNode):
 
 
 @dataclass(frozen=True)
+class DeckSizeCompare(IRNode):
+    """``who``'s remaining deck size compared to ``value`` — "if you have 0 cards in
+    your deck" (Foxworthy V3). Reads ``PlayerState.deck``. schema v82"""
+
+    cmp: Comparator
+    value: int
+    who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
 class HasInPlay(IRNode):
     who: Who
     filter: CardFilter = CardFilter()
@@ -1867,6 +1877,7 @@ Condition = (
     | SkillCompare
     | HandSizeCompare
     | CrowdMeterCompare
+    | DeckSizeCompare
     | HasInPlay
     | HasInHand
     | HasInDiscard

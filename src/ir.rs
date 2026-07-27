@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 81;
+pub const SCHEMA_VERSION: i64 = 82;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -623,6 +623,14 @@ pub enum Condition {
     CrowdMeterCompare {
         cmp: Comparator,
         value: i64,
+    },
+    /// `who`'s remaining deck size compared to `value` — "if you have 0 cards in your
+    /// deck" (Foxworthy V3's finish double). Reads `PlayerState.deck.len()`. schema v82
+    DeckSizeCompare {
+        cmp: Comparator,
+        value: i64,
+        #[serde(default)]
+        who: Who,
     },
     HasInPlay {
         who: Who,
@@ -1618,6 +1626,14 @@ pub enum IrNode {
     CrowdMeterCompare {
         cmp: Comparator,
         value: i64,
+    },
+    /// `who`'s remaining deck size compared to `value` — "if you have 0 cards in your
+    /// deck" (Foxworthy V3's finish double). Reads `PlayerState.deck.len()`. schema v82
+    DeckSizeCompare {
+        cmp: Comparator,
+        value: i64,
+        #[serde(default)]
+        who: Who,
     },
     HasInPlay {
         who: Who,

@@ -8672,6 +8672,43 @@ mod man_from_it_tests {
             "re-rolled → doubled"
         );
     }
+
+    /// Foxworthy V3 Bell Cracker: "if you have 0 cards in your deck, double these
+    /// bonuses" — `DoubleFinishIf{DeckSizeCompare{=, 0, SELF}}`.
+    #[test]
+    fn foxworthy_double_fires_only_on_an_empty_deck() {
+        let bell: Card = serde_json::from_value(json!({
+            "atk_type":"Grapple","db_uuid":"bell","name":"Bell Cracker","number":29,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{"Agility":2},
+            "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"DoubleFinishIf","condition":{"@type":"DeckSizeCompare",
+                    "cmp":"=","value":0,"who":"SELF"}}],
+                "duration":"WHILE_IN_PLAY","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let filler: Card = serde_json::from_value(json!({"atk_type":"Strike","db_uuid":"f",
+            "name":"f","number":1,"play_order":"Lead","raw_text":"","tags":[],
+            "finish_bonuses":{},"effects":[]}))
+        .unwrap();
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().in_play = vec![bell.clone()];
+
+        engine.state.players.get_mut("A").unwrap().deck = vec![filler];
+        assert_eq!(
+            engine.card_finish_bonus(&bell, Skill::Agility, "A"),
+            2,
+            "deck not empty → not doubled"
+        );
+
+        engine.state.players.get_mut("A").unwrap().deck = vec![];
+        assert_eq!(
+            engine.card_finish_bonus(&bell, Skill::Agility, "A"),
+            4,
+            "0 cards in deck → doubled"
+        );
+    }
 }
 
 #[cfg(test)]

@@ -292,6 +292,10 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             cmp_apply(*cmp, left, right)
         }
         Condition::CrowdMeterCompare { cmp, value } => cmp_apply(*cmp, state.crowd_meter, *value),
+        Condition::DeckSizeCompare { cmp, value, who } => {
+            let subject = who_key(state, owner, *who);
+            cmp_apply(*cmp, state.players[&subject].deck.len() as i64, *value)
+        }
         Condition::HasInPlay {
             who,
             filter,

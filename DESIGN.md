@@ -159,6 +159,7 @@ its buffs return. Blanked gimmicks contribute no effects (incl. no `Static` buff
 SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?, vs_skill?)  # vs_skill: compare to a DIFFERENT opponent skill ("your Strike > opp Agility")
 HandSizeCompare(cmp, vs=OPP|VALUE, value?)
 CrowdMeterCompare(cmp, value)
+DeckSizeCompare(cmp, value, who=SELF)  # who's remaining deck size vs value — "if you have 0 cards in your deck" (Foxworthy V3). schema v82
 HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
 ChosenNameIs(name, who)      # who's ChooseName binding == name; the gate that resolves "that" name into one concrete effect per
                              # option (Raven). False until a choice is bound. schema v37

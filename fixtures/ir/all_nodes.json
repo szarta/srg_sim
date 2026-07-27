@@ -185,6 +185,12 @@
     "value": 0
   },
   {
+    "@type": "DeckSizeCompare",
+    "cmp": "=",
+    "value": 0,
+    "who": "SELF"
+  },
+  {
     "@type": "Discard",
     "choose": true,
     "count": 0,

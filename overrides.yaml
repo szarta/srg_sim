@@ -11842,6 +11842,125 @@ dc2ccd83babb45c1b44616489c3fe841:
   source: card
   optional: false
 
+# ---------------------------------------------------------------------------
+# Olympics opponent (Mastermind matchup sweep): Foxworthy (V3) (stat game).
+# Finishes reuse existing nodes plus the new DeckSizeCompare condition (v82).
+# The competitor gimmick ("your cards #04-06 without Stops are also #07-09") is a
+# bespoke conditional card-NUMBER alias — left as its natural Unsupported node
+# (needs a number-alias subsystem; sole DB occurrence, queued). #30's "if flipped
+# for your Gimmick, play as a Follow Up" is also queued as Unsupported: the flip
+# model sends cards to the discard, so playing a flipped card as a Follow Up needs
+# a play-from-flipped mechanism not yet built.
+# ---------------------------------------------------------------------------
+
+# Road to Victory (#28 Strike finish): "+2 to Power / If stopped, shuffle 3 cards
+# from your discard pile into your deck." (ShuffleIntoDeck simplifies the count,
+# as the whole shuffle-from-discard family does.)
+73a97bd4f06046f5a915e327e97c6860:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Power, delta: 2}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnStop, dir: YOURS, order: null}
+  condition: {'@type': Always}
+  actions:
+  - '@type': ShuffleIntoDeck
+    selector: {'@type': CardFilter, number: null, atk_type: null, play_order: null, tag: null, name: null, raw: null}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if stopped, shuffle 3 cards from your discard pile into your deck
+  source: card
+  optional: false
+
+# Bell Cracker (#29 Grapple finish): "+2 to Technique / +2 to Agility / Your
+# opponent's Gimmick is blank. / If you have 0 cards in your deck, double these
+# bonuses." BlankGimmick(OPP) is Static/WhileInPlay so blank_scan blanks the
+# opponent while this finish is in play; the double gates on DeckSizeCompare 0.
+8ce1bf4844eb4125ab9123b4a001aea6:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Technique, delta: 2}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Agility, delta: 2}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': BlankGimmick, who: OPP, duration: WHILE_IN_PLAY}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: your opponent's Gimmick is blank
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': DoubleFinishIf
+    condition: {'@type': DeckSizeCompare, cmp: '=', value: 0, who: SELF}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if you have 0 cards in your deck, double these bonuses
+  source: card
+  optional: false
+
+# Philly Special (#30 Submission finish): "+1 to Submission / If this card is
+# flipped for your Gimmick, you may play it as a Follow Up. / If your opponent
+# breaks out, choose 5 cards in your discard pile and randomly bury them."
+5ac82a5c168049469edf19480eafc1e6:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Submission, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': Unsupported, raw_text: 'If this card is flipped for your Gimmick, you may play it as a Follow Up.', reason: 'flipped-for-gimmick play — flips go to discard; playing a flipped card as a Follow Up needs a play-from-flipped mechanism, queued'}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if this card is flipped for your Gimmick, you may play it as a Follow Up
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnBreakout, who: OPP}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': Bury, selector: {'@type': CardFilter, number: null, atk_type: null, play_order: null, tag: null, name: null, raw: null}, count: 5, who: SELF, random: true, source: DISCARD, choose: false}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if your opponent breaks out, choose 5 cards in your discard pile and randomly bury them
+  source: card
+  optional: false
+
 # ============================================================================
 # Mastermind "Pate" build (decks/mastermind-pate.yaml) — Cassandra-relevant
 # riders the grammar dropped. Anti-D2 clauses (#9 bury-recur, #10/#12 draw-steal)

@@ -192,6 +192,9 @@
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
+            },
+            {
+              "$ref": "#/$defs/DeckSizeCompare"
             }
           ]
         },
@@ -307,6 +310,9 @@
               },
               {
                 "$ref": "#/$defs/RerolledTurnRoll"
+              },
+              {
+                "$ref": "#/$defs/DeckSizeCompare"
               }
             ]
           },
@@ -1222,6 +1228,29 @@
       ],
       "type": "string"
     },
+    "DeckSizeCompare": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "DeckSizeCompare"
+        },
+        "cmp": {
+          "$ref": "#/$defs/Comparator"
+        },
+        "value": {
+          "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "cmp",
+        "value"
+      ],
+      "type": "object"
+    },
     "Dest": {
       "enum": [
         "HAND",
@@ -1404,6 +1433,9 @@
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
+            },
+            {
+              "$ref": "#/$defs/DeckSizeCompare"
             }
           ]
         }
@@ -1842,6 +1874,9 @@
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
+            },
+            {
+              "$ref": "#/$defs/DeckSizeCompare"
             }
           ]
         },
@@ -2742,6 +2777,9 @@
         },
         {
           "$ref": "#/$defs/AlsoAtkType"
+        },
+        {
+          "$ref": "#/$defs/DeckSizeCompare"
         }
       ]
     },
@@ -3034,6 +3072,9 @@
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
+            },
+            {
+              "$ref": "#/$defs/DeckSizeCompare"
             }
           ]
         }
@@ -3490,6 +3531,9 @@
               },
               {
                 "$ref": "#/$defs/RerolledTurnRoll"
+              },
+              {
+                "$ref": "#/$defs/DeckSizeCompare"
               }
             ]
           },
@@ -4142,6 +4186,9 @@
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
+            },
+            {
+              "$ref": "#/$defs/DeckSizeCompare"
             }
           ]
         },
@@ -4602,5 +4649,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 81
+  "version": 82
 }
