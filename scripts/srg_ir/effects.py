@@ -562,6 +562,16 @@ class OnShuffle(IRNode):
 
 
 @dataclass(frozen=True)
+class OnFlip(IRNode):
+    """Fires when the ``who``-side flips one or more cards (Flip mills deck→discard).
+    ``count`` = an exact-size gate: 3 fires only on a flip of exactly 3 ("When you flip
+    exactly 3 cards, …" — Evee Laveaux), None on any flip. schema v84"""
+
+    who: Who = Who.SELF
+    count: int | None = None
+
+
+@dataclass(frozen=True)
 class OnDiscardMove(IRNode):
     """Fires when one or more cards LEAVE the ``who``-side's discard pile because of a
     card/gimmick EFFECT — "when your opponent moves any number of cards from their
@@ -1885,6 +1895,7 @@ Trigger = (
     | OnBreakout
     | OnBreakoutRoll
     | OnShuffle
+    | OnFlip
     | OnDiscardMove
     | Static
 )

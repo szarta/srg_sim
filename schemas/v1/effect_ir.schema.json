@@ -1981,6 +1981,9 @@
             },
             {
               "$ref": "#/$defs/OnBury"
+            },
+            {
+              "$ref": "#/$defs/OnFlip"
             }
           ]
         }
@@ -2808,6 +2811,9 @@
         },
         {
           "$ref": "#/$defs/MatchHasNoDisqualifications"
+        },
+        {
+          "$ref": "#/$defs/OnFlip"
         }
       ]
     },
@@ -3242,6 +3248,32 @@
       "required": [
         "@type",
         "skill",
+        "who"
+      ],
+      "type": "object"
+    },
+    "OnFlip": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnFlip"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
         "who"
       ],
       "type": "object"
@@ -4708,5 +4740,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 83
+  "version": 84
 }

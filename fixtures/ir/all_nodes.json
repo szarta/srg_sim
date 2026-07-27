@@ -465,6 +465,11 @@
     "who": "OPP"
   },
   {
+    "@type": "OnFlip",
+    "who": "SELF",
+    "count": 3
+  },
+  {
     "@type": "OnDiscardMove",
     "who": "OPP"
   },

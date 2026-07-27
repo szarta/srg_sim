@@ -11979,10 +11979,25 @@ f2a6fa1ed1cb46a49f1fa65e19190a4c: []
 # #29 Spell Breaker (per-"Breaker" buff + shuffle-3-from-discard) and #30 Li
 # Grand Zombi (stat riders + Flip 3) are already GRAMMAR-covered. #28 below is a
 # bespoke "flip-or-shuffle" Choice. The competitor GIMMICK ("flip/shuffle exactly
-# 3 cards -> draw 2") is left an explicit tracked Unsupported: it needs an OnFlip
-# trigger with a flip-count gate (act_flip fires no trigger today; task #119), and
-# its shuffle-half is degenerate under the simplified shuffle-into-deck count.
+# 3 cards -> draw 2") is now modeled via the new OnFlip{who:SELF, count:3} trigger
+# (schema v84) -> Draw 2. The "shuffle exactly 3" half of the OR is intentionally
+# dropped: ShuffleIntoDeck simplifies its count to 1, so "shuffle exactly 3" can
+# never fire — inert, not a coverage gap.
 # ---------------------------------------------------------------------------
+
+# Competitor gimmick: "When you flip exactly 3 cards or shuffle exactly 3 cards
+# into your deck, draw 2 cards." (flip-3 half modeled; shuffle-3 half degenerate)
+cc42c7a9d4834a03836944558edd39cc:
+- '@type': Effect
+  trigger: {'@type': OnFlip, who: SELF, count: 3}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': Draw, n: 2, source: TOP, who: SELF, per: null, per_who: SELF, cap: null, per_excludes_trigger: false}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: when you flip exactly 3 cards, draw 2 cards
+  source: gimmick
+  optional: false
 
 # Mississippi Valley Voodoo (#28 Strike finish): "+1 to Agility / +1 to Strike /
 # If stopped, flip 3 cards or shuffle 3 cards from your discard pile into your deck."

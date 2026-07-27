@@ -14349,6 +14349,40 @@
       }
     }
   ],
+  "cc42c7a9d4834a03836944558edd39cc": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 2,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "when you flip exactly 3 cards, draw 2 cards",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnFlip",
+        "count": 3,
+        "who": "SELF"
+      }
+    }
+  ],
   "cc6fbc06c4ac4d8480f3a5367a0120a0": [
     {
       "@type": "Effect",

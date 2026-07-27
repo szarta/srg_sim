@@ -1083,7 +1083,7 @@ impl Engine {
                     if let Some(per) = per {
                         count *= self.per_multiplier(per, *per_who, key, None);
                     }
-                    self.act_flip(count, *who, key);
+                    self.act_flip(count, *who, key)?;
                 }
             }
             Action::Discard {
@@ -1675,7 +1675,7 @@ impl Engine {
         Ok(n)
     }
 
-    fn act_flip(&mut self, n: i64, who: Who, key: &str) {
+    fn act_flip(&mut self, n: i64, who: Who, key: &str) -> Eng<()> {
         let target = self.target(who, key);
         let flipped: Vec<Card> = {
             let deck = &mut self.state.players.get_mut(&target).unwrap().deck;
@@ -1683,8 +1683,9 @@ impl Engine {
             deck.drain(..take).collect()
         };
         if flipped.is_empty() {
-            return;
+            return Ok(());
         }
+        let count = flipped.len() as i64;
         let uuids = flipped.iter().map(|c| c.db_uuid.clone()).collect();
         let player = self.state.players.get_mut(&target).unwrap();
         // Record this turn's flips (read by CountZone::FlippedThisTurn) before they
@@ -1694,11 +1695,35 @@ impl Engine {
         let t = self.state.turn_no;
         self.log(Event::Discard(CardMovement {
             t,
-            player: target,
+            player: target.clone(),
             cards: uuids,
             source: Some("deck".to_owned()),
             hidden: false,
         }));
+        // Fire OnFlip AFTER the cards land in the discard (an "add a flipped card"
+        // rider needs them present). `count` is how many actually flipped.
+        self.run_on_flip(&target, count)
+    }
+
+    /// Fire standing `OnFlip` gimmicks after `flipped_side` flipped `count` cards.
+    /// Scans BOTH players so a `who=OPP` variant works; a `count` gate on the trigger
+    /// restricts firing to an exact flip size ("when you flip exactly 3 cards" — Evee).
+    fn run_on_flip(&mut self, flipped_side: &str, count: i64) -> Eng<()> {
+        let opp = self.state.opponent_of(flipped_side);
+        for owner in [flipped_side.to_owned(), opp] {
+            let effects = self.standing_effects(&owner);
+            for eff in &effects {
+                let Trigger::OnFlip { who, count: gate } = &eff.trigger else {
+                    continue;
+                };
+                let dir_ok = (*who == Who::SelfSide) == (owner.as_str() == flipped_side);
+                let count_ok = gate.is_none_or(|g| g == count);
+                if dir_ok && count_ok {
+                    self.fire_if_ready(eff, &owner, None)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Flip-until: mill the target's deck one card at a time until a flipped card
@@ -5320,6 +5345,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnBreakout { .. } => "OnBreakout",
         Trigger::OnBreakoutRoll { .. } => "OnBreakoutRoll",
         Trigger::OnShuffle { .. } => "OnShuffle",
+        Trigger::OnFlip { .. } => "OnFlip",
         Trigger::OnDiscardMove { .. } => "OnDiscardMove",
         Trigger::Static => "Static",
     }
@@ -8974,6 +9000,45 @@ mod cardona_mechanism_tests {
             "only the Lead remains in play"
         );
         assert_eq!(e.state.players["A"].in_play[0].db_uuid, "lead");
+    }
+
+    #[test]
+    fn on_flip_gimmick_fires_only_on_the_exact_count() {
+        // Evee Laveaux: "when you flip exactly 3 cards, draw 2." OnFlip{who:SELF,count:3}.
+        let mut e = engine();
+        let gimmick: Effect = serde_json::from_value(json!({
+            "@type":"Effect","trigger":{"@type":"OnFlip","who":"SELF","count":3},
+            "condition":{"@type":"Always"},
+            "actions":[{"@type":"Draw","n":2,"source":"TOP","who":"SELF","per":null,
+                "per_who":"SELF","cap":null,"per_excludes_trigger":false}],
+            "duration":"INSTANT","optional":false,
+            "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+            "raw_clause":"","source":"gimmick"
+        }))
+        .unwrap();
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .competitor
+            .effects
+            .push(gimmick);
+        e.state.players.get_mut("A").unwrap().deck =
+            (0..10).map(|i| card(&format!("d{i}"), "Lead")).collect();
+
+        let h0 = e.state.players["A"].hand.len();
+        e.act_flip(2, Who::SelfSide, "A").unwrap();
+        assert_eq!(
+            e.state.players["A"].hand.len(),
+            h0,
+            "flip 2 → gimmick silent"
+        );
+        e.act_flip(3, Who::SelfSide, "A").unwrap();
+        assert_eq!(
+            e.state.players["A"].hand.len(),
+            h0 + 2,
+            "flip exactly 3 → draw 2"
+        );
     }
 }
 

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 83;
+pub const SCHEMA_VERSION: i64 = 84;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -583,6 +583,15 @@ pub enum Trigger {
     /// Memes Dealer V2). Override-only.
     OnShuffle {
         who: Who,
+    },
+    /// Fires when the `who`-side flips one or more cards (`Flip` mills deck→discard).
+    /// `count` = an exact-size gate: `Some(3)` fires only on a flip of exactly 3 cards
+    /// ("When you flip exactly 3 cards, …" — Evee Laveaux), `None` on any flip. `who`
+    /// follows the shuffle convention (SELF = you flipped). Fired by `run_on_flip`. schema v84
+    OnFlip {
+        who: Who,
+        #[serde(default)]
+        count: Option<i64>,
     },
     /// Fires when one or more cards LEAVE the `who`-side's discard pile because of a
     /// card/gimmick EFFECT — "when your opponent moves any number of cards from their
@@ -1610,6 +1619,15 @@ pub enum IrNode {
     /// Memes Dealer V2). Override-only.
     OnShuffle {
         who: Who,
+    },
+    /// Fires when the `who`-side flips one or more cards (`Flip` mills deck→discard).
+    /// `count` = an exact-size gate: `Some(3)` fires only on a flip of exactly 3 cards
+    /// ("When you flip exactly 3 cards, …" — Evee Laveaux), `None` on any flip. `who`
+    /// follows the shuffle convention (SELF = you flipped). Fired by `run_on_flip`. schema v84
+    OnFlip {
+        who: Who,
+        #[serde(default)]
+        count: Option<i64>,
     },
     /// Fires when one or more cards LEAVE the `who`-side's discard pile because of a
     /// card/gimmick EFFECT — "when your opponent moves any number of cards from their
