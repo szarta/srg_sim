@@ -380,6 +380,15 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .and_then(serde_json::Value::as_i64)
                 == Some(state.turn_no)
         }
+        Condition::FlippedForGimmick => state
+            .flip_provenance
+            .as_ref()
+            .is_some_and(|p| p.from_gimmick),
+        Condition::FlippedByName { names } => state
+            .flip_provenance
+            .as_ref()
+            .and_then(|p| p.source_name.as_deref())
+            .is_some_and(|name| any_substr_ci(names, name)),
         Condition::GimmickFlipped { who } => {
             let subject = who_key(state, owner, *who);
             state.players[&subject].gimmick_flipped

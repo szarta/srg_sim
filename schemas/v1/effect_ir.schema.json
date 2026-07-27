@@ -206,6 +206,12 @@
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
+              "$ref": "#/$defs/FlippedForGimmick"
+            },
+            {
+              "$ref": "#/$defs/FlippedByName"
+            },
+            {
               "$ref": "#/$defs/DeckSizeCompare"
             },
             {
@@ -325,6 +331,12 @@
               },
               {
                 "$ref": "#/$defs/RerolledTurnRoll"
+              },
+              {
+                "$ref": "#/$defs/FlippedForGimmick"
+              },
+              {
+                "$ref": "#/$defs/FlippedByName"
               },
               {
                 "$ref": "#/$defs/DeckSizeCompare"
@@ -1475,6 +1487,12 @@
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
+              "$ref": "#/$defs/FlippedForGimmick"
+            },
+            {
+              "$ref": "#/$defs/FlippedByName"
+            },
+            {
               "$ref": "#/$defs/DeckSizeCompare"
             },
             {
@@ -1928,6 +1946,12 @@
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
+              "$ref": "#/$defs/FlippedForGimmick"
+            },
+            {
+              "$ref": "#/$defs/FlippedByName"
+            },
+            {
               "$ref": "#/$defs/DeckSizeCompare"
             },
             {
@@ -2249,6 +2273,37 @@
       "required": [
         "@type",
         "who"
+      ],
+      "type": "object"
+    },
+    "FlippedByName": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FlippedByName"
+        },
+        "names": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "names"
+      ],
+      "type": "object"
+    },
+    "FlippedForGimmick": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FlippedForGimmick"
+        }
+      },
+      "required": [
+        "@type"
       ],
       "type": "object"
     },
@@ -2840,6 +2895,12 @@
           "$ref": "#/$defs/RerolledTurnRoll"
         },
         {
+          "$ref": "#/$defs/FlippedForGimmick"
+        },
+        {
+          "$ref": "#/$defs/FlippedByName"
+        },
+        {
           "$ref": "#/$defs/RequireStops"
         },
         {
@@ -3157,6 +3218,12 @@
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
+            },
+            {
+              "$ref": "#/$defs/FlippedForGimmick"
+            },
+            {
+              "$ref": "#/$defs/FlippedByName"
             },
             {
               "$ref": "#/$defs/DeckSizeCompare"
@@ -3645,6 +3712,12 @@
               },
               {
                 "$ref": "#/$defs/RerolledTurnRoll"
+              },
+              {
+                "$ref": "#/$defs/FlippedForGimmick"
+              },
+              {
+                "$ref": "#/$defs/FlippedByName"
               },
               {
                 "$ref": "#/$defs/DeckSizeCompare"
@@ -4317,6 +4390,12 @@
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
+              "$ref": "#/$defs/FlippedForGimmick"
+            },
+            {
+              "$ref": "#/$defs/FlippedByName"
+            },
+            {
               "$ref": "#/$defs/DeckSizeCompare"
             },
             {
@@ -4803,5 +4882,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 86
+  "version": 87
 }

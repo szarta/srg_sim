@@ -186,6 +186,10 @@ RerolledTurnRoll             # the owner re-rolled their turn roll THIS turn (an
                              # RollWasSkill{Power}. schema v80
 DuringTurn(who)              # it is currently who's turn (GameState.active == who-side) — gates a continuous
                              # effect to a turn phase ("during your opponent's turn: …" — La Fenix). schema v19
+FlippedForGimmick            # the flip now resolving was caused by a Gimmick-source effect ("flipped for your
+                             # Gimmick"). Reads GameState.flip_provenance; only meaningful on a flipped card's OnFlip{SELF}. schema v87
+FlippedByName(names)         # the flip now resolving was caused by a card whose name contains one of `names` (CI
+                             # OR-substring; the Set-Up-the-Ladder cards). Reads flip_provenance.source_name. schema v87
 Always
 ```
 

@@ -5064,13 +5064,11 @@
       "@type": "Effect",
       "actions": [
         {
-          "@type": "Unsupported",
-          "raw_text": "If this card is flipped for your Gimmick, you may play it as a Follow Up.",
-          "reason": "flipped-for-gimmick play \u2014 flips go to discard; playing a flipped card as a Follow Up needs a play-from-flipped mechanism, queued"
+          "@type": "PlaySelf"
         }
       ],
       "condition": {
-        "@type": "Always"
+        "@type": "FlippedForGimmick"
       },
       "duration": "INSTANT",
       "frequency": {
@@ -5078,11 +5076,13 @@
         "kind": "UNLIMITED",
         "n": null
       },
-      "optional": false,
+      "optional": true,
       "raw_clause": "if this card is flipped for your Gimmick, you may play it as a Follow Up",
       "source": "card",
       "trigger": {
-        "@type": "Static"
+        "@type": "OnFlip",
+        "count": null,
+        "who": "SELF"
       }
     },
     {

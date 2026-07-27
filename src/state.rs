@@ -211,6 +211,22 @@ pub struct GameState {
     /// never serialized.
     #[serde(skip)]
     copy_guard: RefCell<HashSet<String>>,
+    /// Provenance of the flip currently being resolved — set by `Engine::act_flip`
+    /// around the per-card `OnFlip` self-trigger dispatch so a flipped card's
+    /// `FlippedForGimmick` / `FlippedByName` gate can read what caused its flip.
+    /// `None` outside a flip. Transient — never serialized.
+    #[serde(skip)]
+    pub flip_provenance: Option<FlipProvenance>,
+}
+
+/// What caused the flip currently being resolved (see [`GameState::flip_provenance`]).
+#[derive(Debug, Clone, Default)]
+pub struct FlipProvenance {
+    /// The flip-causing effect was a Gimmick effect ("flipped for your Gimmick").
+    pub from_gimmick: bool,
+    /// The name of the card whose effect caused the flip, when a card ("flipped by
+    /// \"Set Up the Ladder\""); `None` for gimmick/entrance-caused flips.
+    pub source_name: Option<String>,
 }
 
 fn default_active() -> String {
@@ -233,6 +249,7 @@ impl GameState {
             play_seq: 0,
             blank_guard: RefCell::new(HashSet::new()),
             copy_guard: RefCell::new(HashSet::new()),
+            flip_provenance: None,
         }
     }
 

@@ -544,6 +544,15 @@
     "@type": "RerolledTurnRoll"
   },
   {
+    "@type": "FlippedForGimmick"
+  },
+  {
+    "@type": "FlippedByName",
+    "names": [
+      "Set Up the Ladder"
+    ]
+  },
+  {
     "@type": "Or",
     "items": []
   },

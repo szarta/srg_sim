@@ -775,6 +775,22 @@ class RerolledTurnRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class FlippedForGimmick(IRNode):
+    """"flipped for your Gimmick" — the flip currently resolving was caused by a
+    Gimmick-source effect (``GameState.flip_provenance``). Only meaningful on a flipped
+    card's own ``OnFlip{SELF}`` self-trigger. schema v87"""
+
+
+@dataclass(frozen=True)
+class FlippedByName(IRNode):
+    """"flipped by \\"<X>\\"" — the flip currently resolving was caused by a card whose
+    name contains one of ``names`` (case-insensitive OR-substring; the Set-Up-the-Ladder
+    ladder-match cards). Reads ``GameState.flip_provenance.source_name``. schema v87"""
+
+    names: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class GimmickFlipped(IRNode):
     """True iff ``who``'s competitor card has been turned over to its back side (by
     :class:`FlipGimmick`). Gates a two-sided gimmick's front effects (``Not(...)``)
@@ -1952,6 +1968,8 @@ Condition = (
     | BumpedLastTurnRoll
     | EndedTurnNoPlay
     | RerolledTurnRoll
+    | FlippedForGimmick
+    | FlippedByName
     | GimmickFlipped
     | DuringTurn
     | CompetitorIs

@@ -19,12 +19,12 @@ use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, CountZone, DeckEnd, Dest,
-    Direction, Duration, Effect, LoseKind, PlayOrder, RevealDest, RevealFrom, RevealMatch,
-    RollWhen, ScryRest, ShuffleSource, Skill, Trigger, Who,
+    Direction, Duration, Effect, EffectSource, LoseKind, PlayOrder, RevealDest, RevealFrom,
+    RevealMatch, RollWhen, ScryRest, ShuffleSource, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
-use crate::state::{GameState, PendingText, PlayerState, TimedBuff};
+use crate::state::{FlipProvenance, GameState, PendingText, PlayerState, TimedBuff};
 use serde_json::{json, Value};
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
@@ -391,6 +391,14 @@ pub struct Engine {
     /// per-card while `act_flip` fires a just-flipped card's own effects so
     /// `AddSelfToHand` knows its referent. Transient, never serialized.
     flipped_card: Option<String>,
+    /// `EffectSource` of the effect whose actions are currently being applied, set
+    /// around `apply_actions`. `act_flip` reads it to record whether a flip was caused
+    /// by a Gimmick effect ("flipped for your Gimmick"). Transient, never serialized.
+    firing_source: EffectSource,
+    /// Name of the card whose effect is currently resolving a play, set around
+    /// `resolve_play`. `act_flip` reads it as the flip's `source_name` ("flipped by
+    /// \"Set Up the Ladder\""). `None` outside a play. Transient, never serialized.
+    firing_card_name: Option<String>,
     /// In-roll boost accumulated by a `RollBoost` action during an `offer_roll_boost`
     /// call (El Super Hombre V3's "or your roll is +1" choice branch). Reset before each
     /// effect's actions run and read back into the roll value. Transient, never serialized.
@@ -464,6 +472,8 @@ impl Engine {
             stopped_card: None,
             hit_card: None,
             flipped_card: None,
+            firing_source: EffectSource::Card,
+            firing_card_name: None,
             pending_roll_boost: 0,
             decider,
             decision_index: 0,
@@ -1009,6 +1019,16 @@ impl Engine {
     }
 
     fn apply_actions(&mut self, eff: &Effect, key: &str) -> Eng<()> {
+        // Record this effect's source for the duration of its actions so a flip it
+        // causes can tell "flipped for your Gimmick" apart (restored for nesting).
+        let prev_source = self.firing_source;
+        self.firing_source = eff.source;
+        let result = self.apply_actions_inner(eff, key);
+        self.firing_source = prev_source;
+        result
+    }
+
+    fn apply_actions_inner(&mut self, eff: &Effect, key: &str) -> Eng<()> {
         for action in &eff.actions {
             self.apply_action(action, key, &eff.raw_clause)?;
             if self.resolve_pending() {
@@ -1715,10 +1735,22 @@ impl Engine {
             source: Some("deck".to_owned()),
             hidden: false,
         }));
+        // Record what caused this flip so a flipped card's `FlippedForGimmick` /
+        // `FlippedByName` gate resolves; saved/restored for nested flips (a PlaySelf
+        // self-trigger can flip again). `firing_source`/`firing_card_name` reflect the
+        // effect currently applying its actions — the flip's cause.
+        let saved = self.state.flip_provenance.take();
+        self.state.flip_provenance = Some(FlipProvenance {
+            from_gimmick: self.firing_source == EffectSource::Gimmick,
+            source_name: self.firing_card_name.clone(),
+        });
         // Fire OnFlip AFTER the cards land in the discard (an "add a flipped card"
         // rider needs them present). `count` is how many actually flipped.
-        self.run_on_flip(&target, count)?;
-        self.run_self_flips(&target, &self_flips)
+        let result = self
+            .run_on_flip(&target, count)
+            .and_then(|()| self.run_self_flips(&target, &self_flips));
+        self.state.flip_provenance = saved;
+        result
     }
 
     /// Fire standing `OnFlip` gimmicks after `flipped_side` flipped `count` cards.
@@ -3643,6 +3675,16 @@ impl Engine {
     /// gimmicks, and re-check hand caps. `Ok(true)` iff the card landed and the
     /// match is still live.
     fn resolve_play(&mut self, active: &str, defender: &str, card: Card) -> Eng<bool> {
+        // Record the card's name for the duration of its resolution so a flip its own
+        // effect causes can gate "flipped by \"<name>\"" (restored for nesting — a
+        // PlaySelf during a flip resolves another card).
+        let prev_name = self.firing_card_name.replace(card.name.clone());
+        let result = self.resolve_play_inner(active, defender, card);
+        self.firing_card_name = prev_name;
+        result
+    }
+
+    fn resolve_play_inner(&mut self, active: &str, defender: &str, card: Card) -> Eng<bool> {
         // Poison: fold any queued "added text" onto the card BEFORE the stop window,
         // so an "If stopped, …" injection reaches `apply_stop`.
         let mut card = card;
@@ -9264,6 +9306,78 @@ mod cardona_mechanism_tests {
             !p.discard.iter().any(|c| c.db_uuid == "pl"),
             "it left the discard when played"
         );
+    }
+
+    /// A flip self-trigger carrying a condition (e.g. `FlippedForGimmick`).
+    fn flip_self_card_gated(uuid: &str, condition: Value) -> Card {
+        serde_json::from_value(json!({"atk_type":"Strike","db_uuid":uuid,"name":uuid,
+            "number":1,"play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect",
+                "trigger":{"@type":"OnFlip","who":"SELF","count":null},
+                "condition":condition,
+                "actions":[{"@type":"AddSelfToHand"}],
+                "duration":"INSTANT","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"gated flip self-trigger","source":"card"}]}))
+        .unwrap()
+    }
+
+    /// A flip-causing effect from a given `source` ("gimmick"/"card"), so `act_flip`
+    /// records the right provenance when applied via `apply_actions`.
+    fn flip_effect(source: &str) -> Effect {
+        serde_json::from_value(json!({"@type":"Effect",
+            "trigger":{"@type":"OnHit","order":null,"atk_type":null,"name_contains":[],
+                "text_contains":[],"on_any":false,"who":"SELF"},
+            "condition":{"@type":"Always"},
+            "actions":[{"@type":"Flip","n":1,"who":"SELF","per":null,"per_who":"SELF",
+                "until":null,"until_to_hand":false}],
+            "duration":"INSTANT","optional":false,
+            "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+            "raw_clause":"Flip 1 card","source":source}))
+        .unwrap()
+    }
+
+    #[test]
+    fn flipped_for_gimmick_gate_reads_flip_source() {
+        // A gimmick-source flip fires the FlippedForGimmick self-trigger; a card-source
+        // flip of the same card does not.
+        for (source, fires) in [("gimmick", true), ("card", false)] {
+            let mut e = engine();
+            let c = flip_self_card_gated("g", json!({"@type":"FlippedForGimmick"}));
+            e.state.players.get_mut("A").unwrap().deck = vec![c];
+            e.apply_actions(&flip_effect(source), "A").unwrap();
+            let p = &e.state.players["A"];
+            assert_eq!(
+                p.hand.iter().any(|c| c.db_uuid == "g"),
+                fires,
+                "source={source}: add-to-hand fired == {fires}"
+            );
+        }
+    }
+
+    #[test]
+    fn flipped_by_name_gate_matches_the_flipping_card() {
+        // The flip's source_name (set around resolve_play) drives FlippedByName; a CI
+        // substring of the flipping card's name matches, a different name does not.
+        for (flipper, fires) in [
+            ("Set Up the Steel Chain", true),
+            ("Set Up the Ladder", false),
+        ] {
+            let mut e = engine();
+            let c = flip_self_card_gated(
+                "n",
+                json!({"@type":"FlippedByName","names":["Steel Chain"]}),
+            );
+            e.state.players.get_mut("A").unwrap().deck = vec![c];
+            e.firing_card_name = Some(flipper.to_owned());
+            e.act_flip(1, Who::SelfSide, "A").unwrap();
+            let p = &e.state.players["A"];
+            assert_eq!(
+                p.hand.iter().any(|c| c.db_uuid == "n"),
+                fires,
+                "flipper={flipper:?}: add-to-hand fired == {fires}"
+            );
+        }
     }
 }
 

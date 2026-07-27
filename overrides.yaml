@@ -11949,16 +11949,20 @@ f2a6fa1ed1cb46a49f1fa65e19190a4c: []
   raw_clause: +1 to Submission
   source: card
   optional: false
+# flipped-for-gimmick play is now modeled (schema v87: OnFlip{SELF} self-trigger +
+# FlippedForGimmick gate + PlaySelf). The "as a Follow Up" play-order override is
+# dropped (PlaySelf resolves it at its printed order). This override entry survives
+# only because clause 3 below (OnBreakout choose-and-bury) is not yet grammar-covered.
 - '@type': Effect
-  trigger: {'@type': Static}
-  condition: {'@type': Always}
+  trigger: {'@type': OnFlip, who: SELF, count: null}
+  condition: {'@type': FlippedForGimmick}
   actions:
-  - {'@type': Unsupported, raw_text: 'If this card is flipped for your Gimmick, you may play it as a Follow Up.', reason: 'flipped-for-gimmick play — flips go to discard; playing a flipped card as a Follow Up needs a play-from-flipped mechanism, queued'}
+  - {'@type': PlaySelf}
   duration: INSTANT
   frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
   raw_clause: if this card is flipped for your Gimmick, you may play it as a Follow Up
   source: card
-  optional: false
+  optional: true
 - '@type': Effect
   trigger: {'@type': OnBreakout, who: OPP}
   condition: {'@type': Always}

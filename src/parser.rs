@@ -248,6 +248,13 @@ fn flip_self(action: Action, optional: bool, cond: Condition) -> Effect {
     }
 }
 
+/// "If this card is flipped for your Gimmick, <action>" — a per-card flip self-trigger
+/// gated on the flip being gimmick-caused ([`Condition::FlippedForGimmick`], read from
+/// `GameState::flip_provenance`).
+fn flip_self_gimmick(action: Action, optional: bool) -> Effect {
+    flip_self(action, optional, Condition::FlippedForGimmick)
+}
+
 /// "<flipper> flips N cards for each <desc> <per_who> ha(s|ve) in play" — the
 /// per-count flip family, mirroring [`per_draw`].
 fn per_flip(n: i64, who: Who, desc: &str, per_who: Who) -> Option<Effect> {
@@ -1843,6 +1850,62 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Action::PlaySelf,
                     c.get(1).is_some(),
                     Condition::DuringTurn { who: Who::SelfSide },
+                ))
+            },
+        ),
+        // Provenance-gated flip self-trigger (schema v87). "flipped by \"<X>\"": the
+        // flip must have been caused by a card whose name matches -> FlippedByName. All
+        // are the Set-Up-the-Ladder ladder-match cards; add-to-hand. (Comma optional.)
+        rule(
+            r#"If this card is flipped by ("[^"]+"),? add it to your hand"#,
+            |c| {
+                Some(flip_self(
+                    Action::AddSelfToHand,
+                    false,
+                    Condition::FlippedByName {
+                        names: quoted_names(&c[1]),
+                    },
+                ))
+            },
+        ),
+        // "flipped for your Gimmick, <action>" -> FlippedForGimmick gate. The action
+        // varies per card; each reuses an existing node. ("If flipped …" drops "this
+        // card is"; "play it as a Follow Up" folds into PlaySelf, order-override
+        // dropped.)
+        rule(
+            r"If flipped for your Gimmick,?(?: (you may))? shuffle your deck",
+            |c| {
+                Some(flip_self_gimmick(
+                    Action::ShuffleDeck { who: Who::SelfSide },
+                    c.get(1).is_some(),
+                ))
+            },
+        ),
+        rule(
+            r"[Ii]f this card is flipped for your Gimmick,?(?: (you may))? play it(?: as a Follow Up)?",
+            |c| Some(flip_self_gimmick(Action::PlaySelf, c.get(1).is_some())),
+        ),
+        rule(
+            r"If this card is flipped for your Gimmick, your opponent randomly discards (\d+) cards? (?:from|in) their hand",
+            |c| {
+                Some(flip_self_gimmick(
+                    discard(num(c, 1), Who::Opp, true, None, Who::SelfSide),
+                    false,
+                ))
+            },
+        ),
+        rule(
+            r"If this card is flipped for your Gimmick your turn roll is \+(\d+)",
+            |c| {
+                Some(flip_self_gimmick(
+                    modify_roll(
+                        Who::SelfSide,
+                        num(c, 1),
+                        RollWhen::Next,
+                        None,
+                        Who::SelfSide,
+                    ),
+                    false,
                 ))
             },
         ),

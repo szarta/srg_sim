@@ -859,6 +859,47 @@ fn flip_self_to_hand_grammar() {
     assert_eq!(e["condition"]["@type"], "DuringTurn");
 }
 
+/// Provenance-gated flip self-trigger grammar (task #119, schema v87): "flipped by
+/// \"<X>\"" -> FlippedByName; "flipped for your Gimmick, <action>" -> FlippedForGimmick.
+#[test]
+fn flip_provenance_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "flipped by \"<name>\"" -> FlippedByName gate + AddSelfToHand (comma optional,
+    // case variance in the DB handled by the CI substring match at eval time).
+    let e = one("If this card is flipped by \"Set Up the Steel Chain\", add it to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["condition"]["@type"], "FlippedByName");
+    assert_eq!(e["condition"]["names"][0], "Set Up the Steel Chain");
+    assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
+    let e = one("If this card is flipped by \"Set up the Table\" add it to your hand.");
+    assert_eq!(e["condition"]["names"][0], "Set up the Table");
+
+    // "flipped for your Gimmick, <action>" -> FlippedForGimmick gate; each maps to a
+    // distinct existing action.
+    let e = one("If this card is flipped for your Gimmick, you may play it.");
+    assert_eq!(e["condition"]["@type"], "FlippedForGimmick");
+    assert_eq!(e["actions"][0]["@type"], "PlaySelf");
+    assert_eq!(e["optional"], true);
+    let e = one("If flipped for your Gimmick, you may shuffle your deck.");
+    assert_eq!(e["condition"]["@type"], "FlippedForGimmick");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleDeck");
+    let e = one("If this card is flipped for your Gimmick, your opponent randomly discards 1 card in their hand.");
+    assert_eq!(e["condition"]["@type"], "FlippedForGimmick");
+    assert_eq!(e["actions"][0]["@type"], "Discard");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["random"], true);
+    let e = one("If this card is flipped for your Gimmick your turn roll is +1.");
+    assert_eq!(e["condition"]["@type"], "FlippedForGimmick");
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][0]["delta"], 1);
+    assert_eq!(e["actions"][0]["when"], "NEXT");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!

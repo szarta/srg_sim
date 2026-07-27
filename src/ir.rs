@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 86;
+pub const SCHEMA_VERSION: i64 = 87;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -747,6 +747,16 @@ pub enum Condition {
     /// Brian Cage's finish riders ("if you rolled Power for your turn roll or you
     /// re-rolled your turn roll, …"), OR'd with `RollWasSkill{Power}`. schema v80
     RerolledTurnRoll,
+    /// "flipped for your Gimmick" — the flip currently resolving was caused by a
+    /// Gimmick-source effect. Reads [`GameState::flip_provenance`]; only meaningful on a
+    /// flipped card's own `OnFlip{SELF}` self-trigger. schema v87
+    FlippedForGimmick,
+    /// "flipped by \"<X>\"" — the flip currently resolving was caused by a card whose
+    /// name contains one of `names` (case-insensitive OR-substring; the Set-Up-the-Ladder
+    /// ladder-match cards). Reads [`GameState::flip_provenance.source_name`]. schema v87
+    FlippedByName {
+        names: Vec<String>,
+    },
     GimmickFlipped {
         who: Who,
     },
@@ -1787,6 +1797,13 @@ pub enum IrNode {
     /// The owner re-rolled their turn roll this turn. Reads `flags["rerolled_turn"]`,
     /// stamped in `offer_rerolls`. Gates King Brian Cage's finish riders. schema v80
     RerolledTurnRoll,
+    /// The flip currently resolving was caused by a Gimmick-source effect. schema v87
+    FlippedForGimmick,
+    /// The flip currently resolving was caused by a card whose name contains one of
+    /// `names` (case-insensitive OR-substring). schema v87
+    FlippedByName {
+        names: Vec<String>,
+    },
     GimmickFlipped {
         who: Who,
     },
