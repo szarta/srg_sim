@@ -16,7 +16,9 @@
 
 use crate::cards::{Card, Competitor, EntranceCard};
 use crate::conditions;
-use crate::ir::{Action, CardFilter, Condition, CountZone, Duration, Effect, Skill, Trigger, Who};
+use crate::ir::{
+    Action, CardFilter, Condition, CountZone, DqScope, Duration, Effect, Skill, Trigger, Who,
+};
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
 use serde::{Deserialize, Serialize};
@@ -329,6 +331,95 @@ impl GameState {
             }
         }
         false
+    }
+
+    /// Whether `loser` is currently immune to a disqualification loss — the most
+    /// recently played applicable `DisqualificationRule` disables DQ (task #93). Shared
+    /// by the engine's DQ-loss point and the `MatchHasNoDisqualifications` condition.
+    pub fn is_dq_immune(&self, loser: &str) -> bool {
+        self.rule_immune(loser, |a| match a {
+            Action::DisqualificationRule { enabled, scope } => Some((*enabled, *scope)),
+            _ => None,
+        })
+    }
+
+    /// Count-out analogue of [`is_dq_immune`](Self::is_dq_immune) over `CountOutRule`.
+    pub fn is_count_out_immune(&self, loser: &str) -> bool {
+        self.rule_immune(loser, |a| match a {
+            Action::CountOutRule { enabled, scope } => Some((*enabled, *scope)),
+            _ => None,
+        })
+    }
+
+    /// True iff the match has no disqualifications — neither player can be DQ'd. A
+    /// `Match`-scoped no-DQ rule immunizes both; two `SelfSide` rules would also count.
+    /// Backs the `MatchHasNoDisqualifications` condition (Cardona's Pizza Cutter).
+    pub fn match_has_no_dq(&self) -> bool {
+        self.players.keys().all(|k| self.is_dq_immune(k))
+    }
+
+    /// Resolve a standing match-rule toggle for `loser` by LAST-PLAYED order (task #93);
+    /// `extract` pulls `(enabled, scope)` from the toggle of interest. The loss is
+    /// DISABLED iff the most-recently-played applicable toggle sets `enabled=false`.
+    fn rule_immune<F>(&self, loser: &str, extract: F) -> bool
+    where
+        F: Fn(&Action) -> Option<(bool, DqScope)>,
+    {
+        let mut best: Option<(u64, bool)> = None;
+        for (owner, player) in &self.players {
+            let gimmick: &[Effect] = if self.is_gimmick_blanked(owner) {
+                &[]
+            } else {
+                &player.competitor.effects
+            };
+            // (effects, play sequence, is this the discard zone?)
+            let sources = std::iter::once((gimmick, 0u64, false))
+                .chain(std::iter::once((
+                    player.entrance.effects.as_slice(),
+                    0,
+                    false,
+                )))
+                .chain(
+                    player
+                        .in_play
+                        .iter()
+                        .map(|c| (c.effects.as_slice(), c.played_seq.unwrap_or(0), false)),
+                )
+                .chain(
+                    player
+                        .discard
+                        .iter()
+                        .map(|c| (c.effects.as_slice(), c.played_seq.unwrap_or(0), true)),
+                );
+            for (effects, seq, is_discard) in sources {
+                for eff in effects {
+                    if !matches!(eff.trigger, Trigger::Static) {
+                        continue;
+                    }
+                    if (eff.duration == Duration::WhileInDiscard) != is_discard {
+                        continue; // a discard-scoped toggle fires only from the discard
+                    }
+                    for action in &eff.actions {
+                        let Some((enabled, scope)) = extract(action) else {
+                            continue;
+                        };
+                        let applies = scope == DqScope::Match || owner == loser;
+                        if !applies || !conditions::holds(&eff.condition, self, owner, None) {
+                            continue;
+                        }
+                        let win = match best {
+                            None => true,
+                            Some((s, _)) if seq > s => true,
+                            Some((s, prev)) => seq == s && prev && !enabled,
+                        };
+                        if win {
+                            best = Some((seq, enabled));
+                        }
+                    }
+                }
+            }
+        }
+        best.map(|(_, enabled)| !enabled).unwrap_or(false)
     }
 
     /// Whether `card` (owned by `owner`) has its printed text blanked — some player

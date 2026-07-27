@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 82;
+pub const SCHEMA_VERSION: i64 = 83;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -203,6 +203,17 @@ pub enum BuryFrom {
     #[default]
     Discard,
     Hand,
+}
+
+/// Source zone a [`Action::ShuffleIntoDeck`] draws from. `Discard` (the default) is
+/// the recur-from-discard shuffle; `InPlay` returns one of the owner's in-play cards
+/// to the deck — "shuffle 1 Follow Up you have in play into your deck" (Cardona).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ShuffleSource {
+    #[default]
+    Discard,
+    InPlay,
 }
 
 /// Which zone a [`Action::BuffSkill`] `per`-count ranges over — "for each card
@@ -632,6 +643,10 @@ pub enum Condition {
         #[serde(default)]
         who: Who,
     },
+    /// The match currently has no disqualifications — neither player can be DQ'd
+    /// (`GameState.match_has_no_dq`). "If this match has No Disqualifications, your
+    /// Finish roll is +1" (Cardona's Pizza Cutter; a 16-clause family). schema v83
+    MatchHasNoDisqualifications,
     HasInPlay {
         who: Who,
         filter: CardFilter,
@@ -791,6 +806,14 @@ pub enum Action {
         /// set, and the card returns to ITS OWNER's deck bottom. schema v39
         #[serde(default)]
         choose: bool,
+        /// Per-count scaling like [`Action::Draw::per`]: when set, `count` is multiplied
+        /// by the number of `per_who`'s in-play cards matching this filter — "bury 1 card
+        /// in your opponent's discard pile for each Strike you have in play" / "…for each
+        /// Lead you have in play" (Cardona; a 34-clause family). schema v83
+        #[serde(default)]
+        per: Option<CardFilter>,
+        #[serde(default)]
+        per_who: Who,
     },
     /// Bury the TRIGGERING card — "bury this card" on an `OnStop` clause (task #94:
     /// "If stopped, discard 1 card from your hand and bury this card or lose ..."). The
@@ -856,6 +879,10 @@ pub enum Action {
     },
     ShuffleIntoDeck {
         selector: CardFilter,
+        /// Which zone the shuffled card comes from — `Discard` (default) or `InPlay`
+        /// ("shuffle 1 Follow Up you have in play into your deck"). schema v83
+        #[serde(default)]
+        source: ShuffleSource,
     },
     AddFromDiscard {
         filter: CardFilter,
@@ -1635,6 +1662,10 @@ pub enum IrNode {
         #[serde(default)]
         who: Who,
     },
+    /// The match currently has no disqualifications — neither player can be DQ'd
+    /// (`GameState.match_has_no_dq`). "If this match has No Disqualifications, your
+    /// Finish roll is +1" (Cardona's Pizza Cutter; a 16-clause family). schema v83
+    MatchHasNoDisqualifications,
     HasInPlay {
         who: Who,
         filter: CardFilter,
@@ -1766,6 +1797,14 @@ pub enum IrNode {
         /// set, and the card returns to ITS OWNER's deck bottom. schema v39
         #[serde(default)]
         choose: bool,
+        /// Per-count scaling like [`Action::Draw::per`]: when set, `count` is multiplied
+        /// by the number of `per_who`'s in-play cards matching this filter — "bury 1 card
+        /// in your opponent's discard pile for each Strike you have in play" / "…for each
+        /// Lead you have in play" (Cardona; a 34-clause family). schema v83
+        #[serde(default)]
+        per: Option<CardFilter>,
+        #[serde(default)]
+        per_who: Who,
     },
     /// Bury the TRIGGERING card — "bury this card" on an `OnStop` clause (task #94:
     /// "If stopped, discard 1 card from your hand and bury this card or lose ..."). The
@@ -1831,6 +1870,10 @@ pub enum IrNode {
     },
     ShuffleIntoDeck {
         selector: CardFilter,
+        /// Which zone the shuffled card comes from — `Discard` (default) or `InPlay`
+        /// ("shuffle 1 Follow Up you have in play into your deck"). schema v83
+        #[serde(default)]
+        source: ShuffleSource,
     },
     AddFromDiscard {
         filter: CardFilter,

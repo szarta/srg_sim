@@ -792,7 +792,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       }
     ],
     "condition": {
@@ -2188,7 +2189,9 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP"
+        "who": "OPP",
+        "per": null,
+        "per_who": "SELF"
       },
       {
         "@type": "Bury",
@@ -2209,7 +2212,9 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF"
+        "who": "SELF",
+        "per": null,
+        "per_who": "SELF"
       }
     ],
     "condition": {
@@ -2550,7 +2555,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       }
     ],
     "condition": {
@@ -2726,7 +2732,9 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP"
+        "who": "OPP",
+        "per": null,
+        "per_who": "SELF"
       },
       {
         "@type": "Bury",
@@ -2747,7 +2755,9 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF"
+        "who": "SELF",
+        "per": null,
+        "per_who": "SELF"
       }
     ],
     "condition": {
@@ -2939,7 +2949,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "Draw",
@@ -3179,7 +3190,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -3195,7 +3207,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       }
     ],
     "condition": {
@@ -3286,7 +3299,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -3302,7 +3316,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "Draw",
@@ -3421,7 +3436,9 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP"
+        "who": "OPP",
+        "per": null,
+        "per_who": "SELF"
       }
     ],
     "condition": {
@@ -3504,7 +3521,9 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "SELF"
+        "who": "SELF",
+        "per": null,
+        "per_who": "SELF"
       }
     ],
     "condition": {
@@ -3736,7 +3755,9 @@
           "text_contains": []
         },
         "source": "DISCARD",
-        "who": "OPP"
+        "who": "OPP",
+        "per": null,
+        "per_who": "SELF"
       }
     ],
     "condition": {
@@ -4558,7 +4579,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       }
     ],
     "condition": {
@@ -7025,7 +7047,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -7041,7 +7064,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "Draw",
@@ -8348,7 +8372,8 @@
                   "raw": null,
                   "tag": null,
                   "text_contains": []
-                }
+                },
+                "source": "DISCARD"
               },
               {
                 "@type": "ShuffleIntoDeck",
@@ -8364,7 +8389,8 @@
                   "raw": null,
                   "tag": null,
                   "text_contains": []
-                }
+                },
+                "source": "DISCARD"
               },
               {
                 "@type": "ShuffleIntoDeck",
@@ -8380,7 +8406,8 @@
                   "raw": null,
                   "tag": null,
                   "text_contains": []
-                }
+                },
+                "source": "DISCARD"
               }
             ],
             "label": "shuffle up to 3 from discard into deck"
@@ -9508,7 +9535,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -9524,7 +9552,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "Draw",
@@ -11658,7 +11687,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "ShuffleIntoDeck",
@@ -11674,7 +11704,8 @@
           "raw": null,
           "tag": null,
           "text_contains": []
-        }
+        },
+        "source": "DISCARD"
       },
       {
         "@type": "Draw",

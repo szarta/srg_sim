@@ -134,7 +134,9 @@
       "text_contains": []
     },
     "source": "DISCARD",
-    "who": "SELF"
+    "who": "SELF",
+    "per": null,
+    "per_who": "SELF"
   },
   {
     "@type": "CardFilter",
@@ -189,6 +191,9 @@
     "cmp": "=",
     "value": 0,
     "who": "SELF"
+  },
+  {
+    "@type": "MatchHasNoDisqualifications"
   },
   {
     "@type": "Discard",
@@ -694,7 +699,8 @@
       "raw": null,
       "tag": null,
       "text_contains": []
-    }
+    },
+    "source": "DISCARD"
   },
   {
     "@type": "SkillCompare",

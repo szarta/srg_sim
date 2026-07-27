@@ -19,8 +19,8 @@ use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, CountZone, DeckEnd, Dest,
-    Direction, DqScope, Duration, Effect, LoseKind, PlayOrder, RevealDest, RevealFrom, RevealMatch,
-    RollWhen, ScryRest, Skill, Trigger, Who,
+    Direction, Duration, Effect, LoseKind, PlayOrder, RevealDest, RevealFrom, RevealMatch,
+    RollWhen, ScryRest, ShuffleSource, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -1048,17 +1048,26 @@ impl Engine {
                 random,
                 source,
                 choose,
-            } => self.act_bury(
-                BurySpec {
-                    selector: selector.clone(),
-                    count: *count,
-                    who: *who,
-                    random: *random,
-                    source: *source,
-                    choose: *choose,
-                },
-                key,
-            )?,
+                per,
+                per_who,
+            } => {
+                // "bury 1 … for each <X> you have in play" scales the count by the
+                // per-filter match count (Cardona), mirroring Draw/Flip.
+                let count = per
+                    .as_ref()
+                    .map_or(*count, |p| *count * self.per_multiplier(p, *per_who, key, None));
+                self.act_bury(
+                    BurySpec {
+                        selector: selector.clone(),
+                        count,
+                        who: *who,
+                        random: *random,
+                        source: *source,
+                        choose: *choose,
+                    },
+                    key,
+                )?
+            }
             Action::Flip {
                 n,
                 who,
@@ -1101,7 +1110,9 @@ impl Engine {
                 count,
             } => self.act_search(filter, *dest, *count, key)?,
             Action::ShuffleDeck { who } => self.act_shuffle_deck(*who, key)?,
-            Action::ShuffleIntoDeck { selector } => self.act_shuffle_into_deck(selector, key)?,
+            Action::ShuffleIntoDeck { selector, source } => {
+                self.act_shuffle_into_deck(selector, *source, key)?
+            }
             Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
             Action::SwapHandDiscard => self.act_swap_hand_discard(key)?,
             Action::GrantSwapNextTurn { who } => self.act_grant_swap_next_turn(*who, key),
@@ -1886,23 +1897,36 @@ impl Engine {
 
     /// Recur one matching card from discard into the deck, then shuffle ("shuffle N
     /// cards" is authored as repeated actions; DESIGN.md §3 review gate).
-    fn act_shuffle_into_deck(&mut self, selector: &CardFilter, key: &str) -> Eng<()> {
-        let matches: Vec<Card> = self.state.players[key]
-            .discard
-            .iter()
-            .filter(|c| conditions::card_matches(c, selector))
-            .cloned()
-            .collect();
+    fn act_shuffle_into_deck(
+        &mut self,
+        selector: &CardFilter,
+        source: ShuffleSource,
+        key: &str,
+    ) -> Eng<()> {
+        let from_discard = source == ShuffleSource::Discard;
+        let matches: Vec<Card> = {
+            let player = &self.state.players[key];
+            let zone = if from_discard {
+                &player.discard
+            } else {
+                &player.in_play
+            };
+            zone.iter()
+                .filter(|c| conditions::card_matches(c, selector))
+                .cloned()
+                .collect()
+        };
         if !matches.is_empty() {
             let card = self.pick_from(key, &matches, "target")?;
             {
                 let player = self.state.players.get_mut(key).unwrap();
-                if let Some(pos) = player
-                    .discard
-                    .iter()
-                    .position(|c| c.db_uuid == card.db_uuid)
-                {
-                    player.discard.remove(pos);
+                let zone = if from_discard {
+                    &mut player.discard
+                } else {
+                    &mut player.in_play
+                };
+                if let Some(pos) = zone.iter().position(|c| c.db_uuid == card.db_uuid) {
+                    zone.remove(pos);
                 }
                 player.deck.push(card.clone());
             }
@@ -1911,11 +1935,14 @@ impl Engine {
                 t,
                 player: key.to_owned(),
                 cards: vec![card.db_uuid],
-                source: Some("discard".to_owned()),
+                source: Some(if from_discard { "discard" } else { "play" }.to_owned()),
                 hidden: false,
             }));
-            // The card has left the pile; fires ahead of the shuffle's own OnShuffle.
-            self.run_on_discard_move(key)?;
+            // A discard recur fires the discard-move hook ahead of the shuffle's own
+            // OnShuffle; an in-play return has no such hook.
+            if from_discard {
+                self.run_on_discard_move(key)?;
+            }
         }
         self.shuffle_deck(key)
     }
@@ -3156,105 +3183,17 @@ impl Engine {
         self.log_effect(key, "LoseBy", Some(&loser), json!({"kind": kind_name}));
     }
 
-    /// True iff `loser` is currently immune to a disqualification loss: the
-    /// most-recently-played active `DisqualificationRule` that applies to them
-    /// disables DQ. A rule applies when its scope is `Match` (any owner) or `SelfSide`
-    /// (owner == loser). A standing no-DQ and a "this match has Disqualifications"
-    /// re-enable are resolved by last-played order in [`rule_immune`](Self::rule_immune).
+    /// True iff `loser` is currently immune to a disqualification loss — delegates to
+    /// [`GameState::is_dq_immune`], where the last-played (#93) resolution now lives so
+    /// the `MatchHasNoDisqualifications` condition can share it.
     fn is_dq_immune(&self, loser: &str) -> bool {
-        self.rule_immune(loser, |a| match a {
-            Action::DisqualificationRule { enabled, scope } => Some((*enabled, *scope)),
-            _ => None,
-        })
+        self.state.is_dq_immune(loser)
     }
 
-    /// True iff `loser` is currently immune to a count-out loss — the count-out
-    /// analogue of [`is_dq_immune`](Self::is_dq_immune), resolved by the same
-    /// last-played [`rule_immune`](Self::rule_immune) machinery over `CountOutRule`
-    /// toggles (no re-enable card is modeled for count-outs, so in practice this
-    /// still reduces to "any active disable → immune").
+    /// True iff `loser` is currently immune to a count-out loss — delegates to
+    /// [`GameState::is_count_out_immune`].
     fn is_count_out_immune(&self, loser: &str) -> bool {
-        self.rule_immune(loser, |a| match a {
-            Action::CountOutRule { enabled, scope } => Some((*enabled, *scope)),
-            _ => None,
-        })
-    }
-
-    /// Resolve a standing match-rule toggle for `loser` by LAST-PLAYED order (task
-    /// #93). `extract` pulls `(enabled, scope)` from the toggle of interest
-    /// (`DisqualificationRule` / `CountOutRule`). The loss is DISABLED — `loser`
-    /// immune — iff the most-recently-played *applicable* toggle sets `enabled=false`;
-    /// with no toggle active the loss stands (rules default-on). A `Match`-scoped
-    /// toggle from any owner reaches everyone, a `SelfSide` one only its owner.
-    ///
-    /// Both players' gimmick, entrance, in-play and discard zones are scanned. Gimmick
-    /// and entrance declarations predate all play, so they resolve at the baseline
-    /// sequence 0; a played card carries the `played_seq` stamped when it hit the
-    /// board (and kept into the discard). A `WhileInDiscard` toggle — the lone "this
-    /// match has Disqualifications" re-enable — fires only from the discard pile;
-    /// every other toggle only while its card is in play. A blanked gimmick declares
-    /// nothing. Sequence ties (only possible among setup declarations, never between
-    /// two distinct played cards) resolve conservatively to the disable.
-    fn rule_immune<F>(&self, loser: &str, extract: F) -> bool
-    where
-        F: Fn(&Action) -> Option<(bool, DqScope)>,
-    {
-        let mut best: Option<(u64, bool)> = None;
-        for (owner, player) in &self.state.players {
-            let gimmick: &[Effect] = if self.state.is_gimmick_blanked(owner) {
-                &[]
-            } else {
-                &player.competitor.effects
-            };
-            // (effects, play sequence, is this the discard zone?)
-            let sources = std::iter::once((gimmick, 0u64, false))
-                .chain(std::iter::once((
-                    player.entrance.effects.as_slice(),
-                    0,
-                    false,
-                )))
-                .chain(
-                    player
-                        .in_play
-                        .iter()
-                        .map(|c| (c.effects.as_slice(), c.played_seq.unwrap_or(0), false)),
-                )
-                .chain(
-                    player
-                        .discard
-                        .iter()
-                        .map(|c| (c.effects.as_slice(), c.played_seq.unwrap_or(0), true)),
-                );
-            for (effects, seq, is_discard) in sources {
-                for eff in effects {
-                    if !matches!(eff.trigger, Trigger::Static) {
-                        continue;
-                    }
-                    if (eff.duration == Duration::WhileInDiscard) != is_discard {
-                        continue; // a discard-scoped toggle fires only from the discard
-                    }
-                    for action in &eff.actions {
-                        let Some((enabled, scope)) = extract(action) else {
-                            continue;
-                        };
-                        let applies = scope == DqScope::Match || owner == loser;
-                        if !applies || !conditions::holds(&eff.condition, &self.state, owner, None)
-                        {
-                            continue;
-                        }
-                        let win = match best {
-                            None => true,
-                            Some((s, _)) if seq > s => true,
-                            Some((s, prev)) => seq == s && prev && !enabled,
-                        };
-                        if win {
-                            best = Some((seq, enabled));
-                        }
-                    }
-                }
-            }
-        }
-        best.map(|(_, enabled)| !enabled).unwrap_or(false)
+        self.state.is_count_out_immune(loser)
     }
 
     /// Swap the Crowd Meter to a match type (GM Calace V1): append `effects` to the
@@ -6204,7 +6143,9 @@ mod on_discard_move_tests {
         ] {
             let mut engine = brumeister_engine();
             match exit {
-                "shuffle_into_deck" => engine.act_shuffle_into_deck(&any_card(), "B").unwrap(),
+                "shuffle_into_deck" => engine
+                    .act_shuffle_into_deck(&any_card(), ShuffleSource::Discard, "B")
+                    .unwrap(),
                 "recur_to_deck_top" => engine.act_recur_to_deck_top(&any_card(), 2, "B").unwrap(),
                 _ => engine.act_swap_hand_discard("B").unwrap(),
             }
@@ -7377,6 +7318,8 @@ mod suppress_hand_loss_tests {
             random: true,
             source: BuryFrom::Hand,
             choose: false,
+            per: None,
+            per_who: Who::SelfSide,
         };
         let before = hand_len(&engine, "A");
         engine.apply_action(&bury, "A", "").unwrap();
@@ -7502,6 +7445,22 @@ mod dq_immunity_tests {
         let engine = engine_with(json!([]), no_dq("MATCH"));
         assert!(engine.is_dq_immune("A"));
         assert!(engine.is_dq_immune("B"));
+    }
+
+    #[test]
+    fn match_has_no_dq_needs_both_sides_immune() {
+        // MatchHasNoDisqualifications (Cardona's Pizza Cutter): true only when NEITHER
+        // player can be DQ'd. A lone SelfSide gimmick (Cardona's own) is not enough.
+        let self_only = engine_with(no_dq("SELF"), json!([]));
+        assert!(
+            !self_only.state.match_has_no_dq(),
+            "one side's SelfSide immunity does not make it a No-DQ match"
+        );
+        let match_wide = engine_with(json!([]), no_dq("MATCH"));
+        assert!(
+            match_wide.state.match_has_no_dq(),
+            "a Match-scoped rule immunizes both → No-DQ match"
+        );
     }
 
     #[test]
@@ -8902,6 +8861,119 @@ mod require_stops_tests {
         assert!(e.card_can_stop("B", &grapple_finish_stop(1), &strike_finish(true)));
         // Without the alias, a Grapple stop cannot catch a plain Strike finish.
         assert!(!e.card_can_stop("B", &grapple_finish_stop(1), &strike_finish(false)));
+    }
+}
+
+#[cfg(test)]
+mod cardona_mechanism_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    struct PickFirst;
+    impl Decider for PickFirst {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            legal: &[Value],
+            _: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "pick".into()
+        }
+    }
+
+    fn card(uuid: &str, order: &str) -> Card {
+        serde_json::from_value(
+            json!({"atk_type":"Strike","db_uuid":uuid,"name":uuid,"number":1,
+            "play_order":order,"raw_text":"","tags":[],"finish_bonuses":{},"effects":[]}),
+        )
+        .unwrap()
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .unwrap()
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(PickFirst),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn bury_per_scales_by_leads_in_play() {
+        // Cardona Radio Silence: "opponent buries 1 from hand for each Lead you have in
+        // play." A has 2 Leads (+ 1 Follow Up) in play → bury 2 from B's 3-card hand.
+        let mut e = engine();
+        e.state.players.get_mut("A").unwrap().in_play = vec![
+            card("l1", "Lead"),
+            card("l2", "Lead"),
+            card("f1", "Followup"),
+        ];
+        e.state.players.get_mut("B").unwrap().hand =
+            vec![card("h1", "Lead"), card("h2", "Lead"), card("h3", "Lead")];
+        let bury = Action::Bury {
+            selector: CardFilter::default(),
+            count: 1,
+            who: Who::Opp,
+            random: true,
+            source: BuryFrom::Hand,
+            choose: false,
+            per: Some(CardFilter {
+                play_order: Some(PlayOrder::Lead),
+                ..Default::default()
+            }),
+            per_who: Who::SelfSide,
+        };
+        e.apply_action(&bury, "A", "").unwrap();
+        assert_eq!(
+            e.state.players["B"].hand.len(),
+            1,
+            "2 Leads in play → bury 2 from the opponent's hand (3 → 1)"
+        );
+    }
+
+    #[test]
+    fn shuffle_into_deck_from_in_play_returns_the_followup() {
+        // Cardona Re-boot: "shuffle 1 Follow Up you have in play into your deck."
+        let mut e = engine();
+        e.state.players.get_mut("A").unwrap().in_play =
+            vec![card("lead", "Lead"), card("fu", "Followup")];
+        e.state.players.get_mut("A").unwrap().deck = vec![];
+        let shuffle = Action::ShuffleIntoDeck {
+            selector: CardFilter {
+                play_order: Some(PlayOrder::Followup),
+                ..Default::default()
+            },
+            source: ShuffleSource::InPlay,
+        };
+        e.apply_action(&shuffle, "A", "").unwrap();
+        assert_eq!(
+            e.state.players["A"].deck.len(),
+            1,
+            "the Follow Up returned to the deck"
+        );
+        assert_eq!(e.state.players["A"].deck[0].db_uuid, "fu");
+        assert_eq!(
+            e.state.players["A"].in_play.len(),
+            1,
+            "only the Lead remains in play"
+        );
+        assert_eq!(e.state.players["A"].in_play[0].db_uuid, "lead");
     }
 }
 

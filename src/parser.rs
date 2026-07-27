@@ -18,8 +18,8 @@ use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
     CountZone, DeckEnd, Direction, Duration, Effect, EffectSource, EffectTag, Frequency,
-    FrequencyGuard, FrequencyGuardTag, LoseKind, PlayOrder, RollWhen, ScryRest, Skill, Trigger, Vs,
-    Who,
+    FrequencyGuard, FrequencyGuardTag, LoseKind, PlayOrder, RollWhen, ScryRest, ShuffleSource,
+    Skill, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -291,6 +291,8 @@ fn bury(count: i64, who: Who) -> Action {
         who,
         random: false,
         source: BuryFrom::Discard,
+        per: None,
+        per_who: Who::SelfSide,
     }
 }
 
@@ -305,6 +307,8 @@ fn bury_hand(count: i64, who: Who, random: bool, choose: bool) -> Action {
         who,
         random,
         source: BuryFrom::Hand,
+        per: None,
+        per_who: Who::SelfSide,
     }
 }
 
@@ -320,6 +324,8 @@ fn bury_whole_discard(who: Who) -> Action {
         who,
         random: true,
         source: BuryFrom::Discard,
+        per: None,
+        per_who: Who::SelfSide,
     }
 }
 
@@ -2027,6 +2033,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![Action::ShuffleIntoDeck {
                         selector: CardFilter::default(),
+                        source: ShuffleSource::Discard,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -2042,6 +2049,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![Action::ShuffleIntoDeck {
                         selector: CardFilter::default(),
+                        source: ShuffleSource::Discard,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -2084,6 +2092,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Trigger::OnPlay,
                     vec![Action::ShuffleIntoDeck {
                         selector: recur_filter(&c[3])?,
+                        source: ShuffleSource::Discard,
                     }],
                     has_in_play_desc(&c[1])?,
                     Duration::Instant,

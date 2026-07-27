@@ -219,6 +219,15 @@ class BuryFrom(Enum):
     HAND = "HAND"
 
 
+class ShuffleSource(Enum):
+    """Source zone a :class:`ShuffleIntoDeck` draws from. ``DISCARD`` (default) recurs
+    from the discard pile; ``IN_PLAY`` returns an in-play card ("shuffle 1 Follow Up
+    you have in play into your deck")."""
+
+    DISCARD = "DISCARD"
+    IN_PLAY = "IN_PLAY"
+
+
 class CountZone(Enum):
     """Zone a :class:`BuffSkill` ``per``-count ranges over — "for each card you have
     **in play**" vs "in your **discard** pile"."""
@@ -633,6 +642,12 @@ class DeckSizeCompare(IRNode):
 
 
 @dataclass(frozen=True)
+class MatchHasNoDisqualifications(IRNode):
+    """The match currently has no disqualifications — neither player can be DQ'd. "If
+    this match has No Disqualifications, your Finish roll is +1" (Cardona). schema v83"""
+
+
+@dataclass(frozen=True)
 class HasInPlay(IRNode):
     who: Who
     filter: CardFilter = CardFilter()
@@ -850,6 +865,10 @@ class Bury(IRNode):
     # this one is a targeted choice. `who` is ignored; the card returns to ITS OWNER's
     # deck bottom.
     choose: bool = False
+    # Per-count scaling like Draw.per: `count` multiplied by the number of `per_who`'s
+    # in-play cards matching this filter ("bury 1 ... for each Lead you have in play").
+    per: CardFilter | None = None
+    per_who: Who = Who.SELF
 
 
 @dataclass(frozen=True)
@@ -911,6 +930,7 @@ class ShuffleDeck(IRNode):
 @dataclass(frozen=True)
 class ShuffleIntoDeck(IRNode):
     selector: CardFilter = CardFilter()
+    source: ShuffleSource = ShuffleSource.DISCARD
 
 
 @dataclass(frozen=True)
@@ -1878,6 +1898,7 @@ Condition = (
     | HandSizeCompare
     | CrowdMeterCompare
     | DeckSizeCompare
+    | MatchHasNoDisqualifications
     | HasInPlay
     | HasInHand
     | HasInDiscard

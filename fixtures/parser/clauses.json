@@ -717,7 +717,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "ShuffleIntoDeck",
@@ -733,7 +734,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "ShuffleIntoDeck",
@@ -749,7 +751,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             }
           ],
           "condition": {
@@ -890,7 +893,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "Draw",
@@ -1262,6 +1266,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 1,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -1372,7 +1378,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             }
           ],
           "condition": {
@@ -1648,6 +1655,8 @@
               "@type": "Bury",
               "choose": true,
               "count": 2,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -1783,6 +1792,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 1,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -1927,7 +1938,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "ShuffleIntoDeck",
@@ -1943,7 +1955,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "Draw",
@@ -2395,7 +2408,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "ShuffleIntoDeck",
@@ -2411,7 +2425,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             }
           ],
           "condition": {
@@ -3545,6 +3560,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 1,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -3566,6 +3583,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 1,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -3971,7 +3990,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             }
           ],
           "condition": {
@@ -4153,6 +4173,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 1,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -4174,6 +4196,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 1,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -4409,7 +4433,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "Draw",
@@ -4677,7 +4702,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "ShuffleIntoDeck",
@@ -4693,7 +4719,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             }
           ],
           "condition": {
@@ -4791,7 +4818,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "ShuffleIntoDeck",
@@ -4807,7 +4835,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "Draw",
@@ -4925,6 +4954,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 3,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -5015,6 +5046,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 1,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -5292,6 +5325,8 @@
               "@type": "Bury",
               "choose": false,
               "count": 4,
+              "per": null,
+              "per_who": "SELF",
               "random": false,
               "selector": {
                 "@type": "CardFilter",
@@ -6920,7 +6955,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "ShuffleIntoDeck",
@@ -6936,7 +6972,8 @@
                 "raw": null,
                 "tag": null,
                 "text_contains": []
-              }
+              },
+              "source": "DISCARD"
             },
             {
               "@type": "Draw",
@@ -8137,7 +8174,8 @@
                         "raw": null,
                         "tag": null,
                         "text_contains": []
-                      }
+                      },
+                      "source": "DISCARD"
                     },
                     {
                       "@type": "ShuffleIntoDeck",
@@ -8153,7 +8191,8 @@
                         "raw": null,
                         "tag": null,
                         "text_contains": []
-                      }
+                      },
+                      "source": "DISCARD"
                     },
                     {
                       "@type": "ShuffleIntoDeck",
@@ -8169,7 +8208,8 @@
                         "raw": null,
                         "tag": null,
                         "text_contains": []
-                      }
+                      },
+                      "source": "DISCARD"
                     }
                   ],
                   "label": "shuffle up to 3 from discard into deck"

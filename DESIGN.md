@@ -160,6 +160,7 @@ SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?, vs_skill?
 HandSizeCompare(cmp, vs=OPP|VALUE, value?)
 CrowdMeterCompare(cmp, value)
 DeckSizeCompare(cmp, value, who=SELF)  # who's remaining deck size vs value — "if you have 0 cards in your deck" (Foxworthy V3). schema v82
+MatchHasNoDisqualifications  # the match currently has no disqualifications (neither player can be DQ'd; GameState.match_has_no_dq) — Cardona's Pizza Cutter. schema v83
 HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
 ChosenNameIs(name, who)      # who's ChooseName binding == name; the gate that resolves "that" name into one concrete effect per
                              # option (Raven). False until a choice is bound. schema v37
@@ -189,8 +190,8 @@ Always
 
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
-Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF)  Bury(selector, count)   Discard(selector, count, who, per?, per_who=SELF)
-Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1)  ShuffleIntoDeck(selector)
+Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF)  Bury(selector, count, per?, per_who=SELF)   Discard(selector, count, who, per?, per_who=SELF)
+Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1)  ShuffleIntoDeck(selector, source=DISCARD|IN_PLAY)
                               # until (schema v68): flip-until — ignore n, mill one card at a time until a flipped card
                               # matches `until`; that card -> hand if until_to_hand, else discard ("Flip cards until you flip a Submission[, add it to your hand]")
                               # dest=DECK_TOP (schema v22): search, shuffle the deck, put the card on TOP (Heartache Kid)
@@ -289,16 +290,20 @@ AlsoAtkType(atk_type)         # this card ALSO counts as attack type `atk_type` 
                               # atk-type test (stop-matching, CardFilter, hit gimmicks). schema v81
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
-`Bury(selector, count, who, random, source)` moves `count` cards to the **bottom of the
-deck** (schema v4). `source=DISCARD` (default) recycles the top `count` of the **discard
-pile** (the pass-and-recycle bury); `source=HAND` is the card-text bury — "bury N cards in
-[your/their] hand" — where the **hand owner chooses which** unless `random`. `Flip(n)` moves
+`Bury(selector, count, who, random, source, per?, per_who=SELF)` moves `count` cards to the
+**bottom of the deck** (schema v4). `source=DISCARD` (default) recycles the top `count` of the
+**discard pile** (the pass-and-recycle bury); `source=HAND` is the card-text bury — "bury N cards
+in [your/their] hand" — where the **hand owner chooses which** unless `random`. `per` scales
+`count` by the count of `per_who`'s matching in-play cards ("bury 1 …for each Lead you have in
+play" — Cardona; schema v83), mirroring `Draw`/`Discard`. `Flip(n)` moves
 the **top `n` cards of the deck to the discard pile** (there is no "buried" zone — see §5). `RemoveFromPlay(selector, who, count)` moves up to `count` cards from
 a player's **`in_play` board to their discard** ("Discard 1 card your opponent has in play");
 the **acting** player chooses which matching card(s) — an aimed disruption, not random — and a
 no-match board is a no-op. `RecurToDeckTop(selector, count)` puts **up to** `count` matching
 cards from the **discard pile onto the top of the deck** (the owner picks how many and which);
-it is the redraw-next-turn recycle, distinct from `ShuffleIntoDeck` (bottom + reshuffle).
+it is the redraw-next-turn recycle, distinct from `ShuffleIntoDeck(selector, source)` which shuffles
+one card into the deck from the **discard** (default) or, with `source=IN_PLAY`, from the owner's
+**in-play** board ("shuffle 1 Follow Up you have in play into your deck" — Cardona; schema v83).
 `PlayExtraCard` grants the active player one more turn action this turn (consumed by the turn
 loop, reset each turn). `BuffSkill` applies to the **unified derived-stats view** — i.e. it
 affects turn rolls, stops, *and* breakout rolls alike; there is no per-context scope, only

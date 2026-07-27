@@ -195,6 +195,9 @@
             },
             {
               "$ref": "#/$defs/DeckSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/MatchHasNoDisqualifications"
             }
           ]
         },
@@ -313,6 +316,9 @@
               },
               {
                 "$ref": "#/$defs/DeckSizeCompare"
+              },
+              {
+                "$ref": "#/$defs/MatchHasNoDisqualifications"
               }
             ]
           },
@@ -556,6 +562,19 @@
         },
         "count": {
           "type": "integer"
+        },
+        "per": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_who": {
+          "$ref": "#/$defs/Who"
         },
         "random": {
           "type": "boolean"
@@ -1436,6 +1455,9 @@
             },
             {
               "$ref": "#/$defs/DeckSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/MatchHasNoDisqualifications"
             }
           ]
         }
@@ -1877,6 +1899,9 @@
             },
             {
               "$ref": "#/$defs/DeckSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/MatchHasNoDisqualifications"
             }
           ]
         },
@@ -2780,6 +2805,9 @@
         },
         {
           "$ref": "#/$defs/DeckSizeCompare"
+        },
+        {
+          "$ref": "#/$defs/MatchHasNoDisqualifications"
         }
       ]
     },
@@ -2874,6 +2902,18 @@
       "properties": {
         "@type": {
           "const": "LowestRollWins"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "MatchHasNoDisqualifications": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "MatchHasNoDisqualifications"
         }
       },
       "required": [
@@ -3075,6 +3115,9 @@
             },
             {
               "$ref": "#/$defs/DeckSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/MatchHasNoDisqualifications"
             }
           ]
         }
@@ -3534,6 +3577,9 @@
               },
               {
                 "$ref": "#/$defs/DeckSizeCompare"
+              },
+              {
+                "$ref": "#/$defs/MatchHasNoDisqualifications"
               }
             ]
           },
@@ -4189,6 +4235,9 @@
             },
             {
               "$ref": "#/$defs/DeckSizeCompare"
+            },
+            {
+              "$ref": "#/$defs/MatchHasNoDisqualifications"
             }
           ]
         },
@@ -4262,6 +4311,9 @@
         },
         "selector": {
           "$ref": "#/$defs/CardFilter"
+        },
+        "source": {
+          "$ref": "#/$defs/ShuffleSource"
         }
       },
       "required": [
@@ -4269,6 +4321,13 @@
         "selector"
       ],
       "type": "object"
+    },
+    "ShuffleSource": {
+      "enum": [
+        "DISCARD",
+        "IN_PLAY"
+      ],
+      "type": "string"
     },
     "Skill": {
       "enum": [
@@ -4649,5 +4708,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 82
+  "version": 83
 }

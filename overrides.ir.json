@@ -357,6 +357,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -609,6 +611,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": true,
           "selector": {
             "@type": "CardFilter",
@@ -946,7 +950,8 @@
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -962,7 +967,8 @@
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -978,7 +984,8 @@
             "raw": null,
             "tag": "Spotlight",
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         }
       ],
       "condition": {
@@ -1184,6 +1191,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -2408,6 +2417,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 3,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -2588,7 +2599,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         }
       ],
       "condition": {
@@ -3081,6 +3093,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -3958,6 +3972,8 @@
           "@type": "Bury",
           "choose": true,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -4008,6 +4024,8 @@
           "@type": "Bury",
           "choose": true,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -4297,7 +4315,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -4400,7 +4419,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -4416,7 +4436,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -4859,6 +4880,8 @@
                   "@type": "Bury",
                   "choose": false,
                   "count": 2,
+                  "per": null,
+                  "per_who": "SELF",
                   "random": false,
                   "selector": {
                     "@type": "CardFilter",
@@ -5069,6 +5092,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 5,
+          "per": null,
+          "per_who": "SELF",
           "random": true,
           "selector": {
             "@type": "CardFilter",
@@ -6060,6 +6085,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -6216,6 +6243,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 2,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -6735,7 +6764,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         }
       ],
       "condition": {
@@ -6775,7 +6805,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -6791,7 +6822,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         }
       ],
       "condition": {
@@ -6844,6 +6876,64 @@
       "source": "card",
       "trigger": {
         "@type": "OnPlay"
+      }
+    }
+  ],
+  "760f078624e44cec97bfb09ee5eb1a13": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 4,
+          "skill": "Submission"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+4 to Submission",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishRollBonus",
+          "delta": 1,
+          "either": false,
+          "per": null,
+          "per_who": "SELF",
+          "per_zone": "IN_PLAY",
+          "when_base_ge": null,
+          "when_base_le": null,
+          "when_skill": null
+        }
+      ],
+      "condition": {
+        "@type": "MatchHasNoDisqualifications"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if this match has no disqualifications, your Finish roll is +1",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
       }
     }
   ],
@@ -7378,7 +7468,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -7394,7 +7485,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -7859,6 +7951,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 2,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -7958,6 +8052,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -8410,6 +8506,8 @@
           "@type": "Bury",
           "choose": true,
           "count": 2,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -9072,6 +9170,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -9163,7 +9263,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -9179,7 +9280,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -9195,7 +9297,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         }
       ],
       "condition": {
@@ -9544,6 +9647,202 @@
       "source": "card",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "96925c47a74240b3b5d628e72c7668df": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Power",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Agility"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Agility",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleIntoDeck",
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": "Followup",
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "IN_PLAY"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "shuffle 1 Follow Up you have in play into your deck",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
+  "96cb6e7c88a34b43ac8d9de699f50b69": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Agility"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Agility",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Bury",
+          "choose": false,
+          "count": 1,
+          "per": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": "Lead",
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_who": "SELF",
+          "random": true,
+          "selector": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "source": "HAND",
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "your opponent buries 1 card in their hand for each Lead you have in play",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
       }
     }
   ],
@@ -10158,6 +10457,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -10467,7 +10768,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -10483,7 +10785,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -11200,7 +11503,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -11216,7 +11520,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         }
       ],
       "condition": {
@@ -11258,7 +11563,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -12779,7 +13085,8 @@
                     "raw": null,
                     "tag": null,
                     "text_contains": []
-                  }
+                  },
+                  "source": "DISCARD"
                 }
               ],
               "label": "Shuffle 2 cards from your discard pile into your deck"
@@ -12908,6 +13215,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 10,
+          "per": null,
+          "per_who": "SELF",
           "random": true,
           "selector": {
             "@type": "CardFilter",
@@ -13316,6 +13625,8 @@
                   "@type": "Bury",
                   "choose": false,
                   "count": 1,
+                  "per": null,
+                  "per_who": "SELF",
                   "random": true,
                   "selector": {
                     "@type": "CardFilter",
@@ -13645,7 +13956,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -13730,6 +14042,8 @@
                   "@type": "Bury",
                   "choose": true,
                   "count": 1,
+                  "per": null,
+                  "per_who": "SELF",
                   "random": false,
                   "selector": {
                     "@type": "CardFilter",
@@ -13809,6 +14123,8 @@
                   "@type": "Bury",
                   "choose": true,
                   "count": 1,
+                  "per": null,
+                  "per_who": "SELF",
                   "random": false,
                   "selector": {
                     "@type": "CardFilter",
@@ -14104,7 +14420,8 @@
                     "raw": null,
                     "tag": null,
                     "text_contains": []
-                  }
+                  },
+                  "source": "DISCARD"
                 },
                 {
                   "@type": "ShuffleIntoDeck",
@@ -14120,7 +14437,8 @@
                     "raw": null,
                     "tag": null,
                     "text_contains": []
-                  }
+                  },
+                  "source": "DISCARD"
                 },
                 {
                   "@type": "ShuffleIntoDeck",
@@ -14136,7 +14454,8 @@
                     "raw": null,
                     "tag": null,
                     "text_contains": []
-                  }
+                  },
+                  "source": "DISCARD"
                 }
               ],
               "label": "shuffle up to 3 from discard into deck"
@@ -14520,7 +14839,8 @@
                     "raw": null,
                     "tag": null,
                     "text_contains": []
-                  }
+                  },
+                  "source": "DISCARD"
                 },
                 {
                   "@type": "ShuffleIntoDeck",
@@ -14536,7 +14856,8 @@
                     "raw": null,
                     "tag": null,
                     "text_contains": []
-                  }
+                  },
+                  "source": "DISCARD"
                 }
               ],
               "label": "shuffle 2 from discard into deck"
@@ -14605,7 +14926,8 @@
                     "raw": null,
                     "tag": null,
                     "text_contains": []
-                  }
+                  },
+                  "source": "DISCARD"
                 },
                 {
                   "@type": "ShuffleIntoDeck",
@@ -14621,7 +14943,8 @@
                     "raw": null,
                     "tag": null,
                     "text_contains": []
-                  }
+                  },
+                  "source": "DISCARD"
                 }
               ],
               "label": "shuffle 2 from discard into deck"
@@ -15298,7 +15621,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -15348,7 +15672,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -15701,7 +16026,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "ShuffleIntoDeck",
@@ -15717,7 +16043,8 @@
             "raw": null,
             "tag": null,
             "text_contains": []
-          }
+          },
+          "source": "DISCARD"
         },
         {
           "@type": "Draw",
@@ -15755,6 +16082,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 1,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
@@ -16805,6 +17134,8 @@
                   "@type": "Bury",
                   "choose": false,
                   "count": 1,
+                  "per": null,
+                  "per_who": "SELF",
                   "random": true,
                   "selector": {
                     "@type": "CardFilter",
@@ -17015,6 +17346,8 @@
           "@type": "Bury",
           "choose": false,
           "count": 2,
+          "per": null,
+          "per_who": "SELF",
           "random": false,
           "selector": {
             "@type": "CardFilter",
