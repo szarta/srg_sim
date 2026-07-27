@@ -262,6 +262,33 @@ fn on_flip_standing(count: Option<i64>, at_least: bool) -> Trigger {
     }
 }
 
+/// Uppercase the first character (body clauses are lowercase mid-sentence, but the
+/// grammar's rules expect sentence case).
+fn capitalize_first(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
+        None => String::new(),
+    }
+}
+
+/// Trigger-body split: re-parse a clause's BODY through the whole grammar and attach
+/// `trigger`, so a "<trigger prefix>, <body>" clause reuses every body rule (draw /
+/// bury / turn-roll / recur / …). A leading "you may " sets [`Effect::optional`]; the
+/// body's first letter is capitalized before matching. Returns `None` when the body
+/// itself has no grammar (the whole clause then falls through to `Unsupported`).
+fn trigger_body(trigger: Trigger, body: &str) -> Option<Effect> {
+    let body = body.trim();
+    let (optional, body) = match body.strip_prefix("you may ") {
+        Some(rest) => (true, rest),
+        None => (false, body),
+    };
+    let mut effect = match_grammar(&capitalize_first(body))?;
+    effect.trigger = trigger;
+    effect.optional = effect.optional || optional;
+    Some(effect)
+}
+
 /// "If this card is flipped for your Gimmick, <action>" — a per-card flip self-trigger
 /// gated on the flip being gimmick-caused ([`Condition::FlippedForGimmick`], read from
 /// `GameState::flip_provenance`).
@@ -1956,6 +1983,17 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 })
             },
         ),
+        // Generic flip trigger-body split (schema v89 on_self): "When/After you flip
+        // <count>, <body>" -> the body re-parsed through the grammar with a standing
+        // OnFlip attached. Reuses every body rule (draw / bury / turn-roll / recur / …).
+        // Placed AFTER the specific flip-add rules above, so those still claim the
+        // add-flipped body; this catches the rest. A body with no grammar -> Unsupported.
+        rule(r"(?:When|After) you flip any number of cards,? (.+)", |c| {
+            trigger_body(on_flip_standing(None, false), &c[1])
+        }),
+        rule(r"(?:When|After) you flip (\d+) or more cards,? (.+)", |c| {
+            trigger_body(on_flip_standing(Some(num(c, 1)), true), &c[2])
+        }),
         // Provenance-gated flip self-trigger (schema v87). "flipped by \"<X>\"": the
         // flip must have been caused by a card whose name matches -> FlippedByName. All
         // are the Set-Up-the-Ladder ladder-match cards; add-to-hand. (Comma optional.)

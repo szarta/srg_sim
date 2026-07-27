@@ -11954,7 +11954,7 @@ f2a6fa1ed1cb46a49f1fa65e19190a4c: []
 # dropped (PlaySelf resolves it at its printed order). This override entry survives
 # only because clause 3 below (OnBreakout choose-and-bury) is not yet grammar-covered.
 - '@type': Effect
-  trigger: {'@type': OnFlip, who: SELF, count: null}
+  trigger: {'@type': OnFlip, who: SELF, count: null, on_self: true}
   condition: {'@type': FlippedForGimmick}
   actions:
   - {'@type': PlaySelf}

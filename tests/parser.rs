@@ -998,6 +998,41 @@ fn standing_flip_add_grammar() {
     assert_eq!(e["actions"][0]["@type"], "AddFlippedToHand");
 }
 
+/// Generic flip trigger-body split (task #119, schema v89): "When/After you flip
+/// <count>, <body>" re-parses <body> through the grammar and attaches a standing
+/// OnFlip, reusing every body rule.
+#[test]
+fn flip_trigger_body_split() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Body "draw 1 card" (lowercase, mid-sentence) reuses the Draw rule.
+    let e = one("After you flip any number of cards, draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["trigger"]["count"], Value::Null);
+    assert_eq!(e["trigger"]["on_self"], false);
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+
+    // Body "your next turn roll is +1" reuses the ModifyRoll rule.
+    let e = one("After you flip any number of cards, your next turn roll is +1.");
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][0]["delta"], 1);
+
+    // "N or more" prefix + opponent-bury body -> at_least threshold trigger + Bury.
+    let e = one("When you flip 2 or more cards your opponent buries 1 card in their hand.");
+    assert_eq!(e["trigger"]["count"], 2);
+    assert_eq!(e["trigger"]["at_least"], true);
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+
+    // A body with no grammar leaves the whole clause Unsupported.
+    let e = one("After you flip any number of cards, contemplate the void.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!

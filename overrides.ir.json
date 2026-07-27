@@ -5083,7 +5083,7 @@
         "@type": "OnFlip",
         "at_least": false,
         "count": null,
-        "on_self": false,
+        "on_self": true,
         "who": "SELF"
       }
     },
