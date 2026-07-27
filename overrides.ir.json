@@ -11069,6 +11069,123 @@
       }
     }
   ],
+  "af0927e5632942ee8bfb374c2f3cf5aa": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Agility"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Agility",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Strike"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Strike",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "Flip",
+                  "n": 3,
+                  "per": null,
+                  "per_who": "SELF",
+                  "until": null,
+                  "until_to_hand": false,
+                  "who": "SELF"
+                }
+              ],
+              "label": "flip 3 cards"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "ShuffleIntoDeck",
+                  "selector": {
+                    "@type": "CardFilter",
+                    "atk_type": null,
+                    "is_stop": null,
+                    "name": null,
+                    "name_contains": [],
+                    "number": null,
+                    "play_order": null,
+                    "play_orders": [],
+                    "raw": null,
+                    "tag": null,
+                    "text_contains": []
+                  },
+                  "source": "DISCARD"
+                }
+              ],
+              "label": "shuffle 3 cards from your discard pile into your deck"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if stopped, flip 3 cards or shuffle 3 cards from your discard pile into your deck",
+      "source": "card",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "YOURS",
+        "order": null
+      }
+    }
+  ],
   "b01e49a0967d4506bb09fe6f559c8f40": [
     {
       "@type": "Effect",

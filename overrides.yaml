@@ -11974,6 +11974,59 @@ f2a6fa1ed1cb46a49f1fa65e19190a4c: []
 # (schema v83: MatchHasNoDisqualifications gate, Bury.per "for each … in play",
 # ShuffleIntoDeck source=IN_PLAY) — no bespoke override needed.
 
+# ---------------------------------------------------------------------------
+# Olympics opponent (Mastermind matchup sweep): Evee Laveaux (round game).
+# #29 Spell Breaker (per-"Breaker" buff + shuffle-3-from-discard) and #30 Li
+# Grand Zombi (stat riders + Flip 3) are already GRAMMAR-covered. #28 below is a
+# bespoke "flip-or-shuffle" Choice. The competitor GIMMICK ("flip/shuffle exactly
+# 3 cards -> draw 2") is left an explicit tracked Unsupported: it needs an OnFlip
+# trigger with a flip-count gate (act_flip fires no trigger today; task #119), and
+# its shuffle-half is degenerate under the simplified shuffle-into-deck count.
+# ---------------------------------------------------------------------------
+
+# Mississippi Valley Voodoo (#28 Strike finish): "+1 to Agility / +1 to Strike /
+# If stopped, flip 3 cards or shuffle 3 cards from your discard pile into your deck."
+af0927e5632942ee8bfb374c2f3cf5aa:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Agility, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - {'@type': FinishBonus, skill: Strike, delta: 1}
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Strike
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnStop, dir: YOURS, order: null}
+  condition: {'@type': Always}
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: flip 3 cards
+      actions:
+      - {'@type': Flip, n: 3, who: SELF, per: null, per_who: SELF, until: null, until_to_hand: false}
+    - '@type': ChoiceOption
+      label: shuffle 3 cards from your discard pile into your deck
+      actions:
+      - {'@type': ShuffleIntoDeck, source: DISCARD, selector: {'@type': CardFilter, number: null, atk_type: null, play_order: null, tag: null, name: null, raw: null}}
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: if stopped, flip 3 cards or shuffle 3 cards from your discard pile into your deck
+  source: card
+  optional: false
+
 # ============================================================================
 # Mastermind "Pate" build (decks/mastermind-pate.yaml) — Cassandra-relevant
 # riders the grammar dropped. Anti-D2 clauses (#9 bury-recur, #10/#12 draw-steal)
