@@ -1033,6 +1033,41 @@ fn flip_trigger_body_split() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Generic roll trigger-body split (task #119): "When you roll <Skill>[ for your turn
+/// roll][:,] <body>" re-parses <body> through the grammar with OnRoll{skill} attached.
+#[test]
+fn roll_trigger_body_split() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Comma separator + "your next turn roll is +4" body -> OnRoll{Submission} + ModifyRoll.
+    let e = one("When you roll Submission, your next turn roll is +4.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Submission");
+    assert_eq!(e["trigger"]["who"], "SELF");
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][0]["delta"], 4);
+
+    // Colon separator + scry body.
+    let e = one("When you roll Technique: Look at the top 2 cards of your deck, add 1 to your hand and flip the others.");
+    assert_eq!(e["trigger"]["skill"], "Technique");
+    assert_eq!(e["actions"][0]["@type"], "Scry");
+
+    // "for your turn roll" is absorbed; the body's own who (OPP) survives the split.
+    let e = one("When you roll Submission for your turn roll, your opponent buries 1 card in their hand.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Submission");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+
+    // A body with no grammar -> whole clause Unsupported (not a stray OnRoll).
+    let e = one("When you roll Power, ponder your legacy.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!

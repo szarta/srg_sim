@@ -3201,6 +3201,15 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 )
             },
         ),
+        // Generic roll trigger-body split: "When you roll <Skill>[ for your turn roll]
+        // [:,] <body>" -> the body re-parsed through the grammar with OnRoll{skill}
+        // attached. Single-skill only; the multi-skill OR ("roll Strike, Submission, or
+        // Grapple") needs a multi-effect fan-out and stays tail. Placed LAST so every
+        // specific "When you roll …" rule claims its exact phrasing first.
+        rule(
+            &format!(r"[Ww]hen you roll {SK}(?: for your turn roll)?[:,] (.+)"),
+            |c| trigger_body(on_roll(skill(&c[1]), Who::SelfSide), &c[2]),
+        ),
     ]
 }
 
