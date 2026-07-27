@@ -11845,13 +11845,22 @@ dc2ccd83babb45c1b44616489c3fe841:
 # ---------------------------------------------------------------------------
 # Olympics opponent (Mastermind matchup sweep): Foxworthy (V3) (stat game).
 # Finishes reuse existing nodes plus the new DeckSizeCompare condition (v82).
-# The competitor gimmick ("your cards #04-06 without Stops are also #07-09") is a
-# bespoke conditional card-NUMBER alias — left as its natural Unsupported node
-# (needs a number-alias subsystem; sole DB occurrence, queued). #30's "if flipped
-# for your Gimmick, play as a Follow Up" is also queued as Unsupported: the flip
-# model sends cards to the discard, so playing a flipped card as a Follow Up needs
-# a play-from-flipped mechanism not yet built.
+# The competitor gimmick ("your cards #04, #05, #06 without Stops are also #07,
+# #08, #09") is a DECK-BUILDING rule, not a runtime effect: it relaxes deck
+# validity so a non-Stop #4/#5/#6 card may also fill slot #7/#8/#9. Deck-building
+# formats are OUT OF ENGINE SCOPE by DESIGN.md §2 ("card-pool formats only restrict
+# deck building and are therefore irrelevant to the engine"), and `Deck::validate`
+# checks only structure (30 slots, each 1-30 once), never card-pool legality — so
+# there is nothing to model at runtime. Overridden to EMPTY effects (a documented
+# no-op, not a functional gap); the relaxation itself belongs in a consumer-side
+# deckbuilder validator. #30's "if flipped for your Gimmick, play as a Follow Up"
+# IS a genuine runtime gap, queued as Unsupported: the flip model sends cards to
+# the discard, so playing a flipped card as a Follow Up needs a play-from-flipped
+# mechanism not yet built.
 # ---------------------------------------------------------------------------
+
+# Competitor gimmick — deck-building rule, modeled as an intentional no-op.
+f2a6fa1ed1cb46a49f1fa65e19190a4c: []
 
 # Road to Victory (#28 Strike finish): "+2 to Power / If stopped, shuffle 3 cards
 # from your discard pile into your deck." (ShuffleIntoDeck simplifies the count,
