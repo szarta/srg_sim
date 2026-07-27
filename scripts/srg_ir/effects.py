@@ -564,11 +564,16 @@ class OnShuffle(IRNode):
 @dataclass(frozen=True)
 class OnFlip(IRNode):
     """Fires when the ``who``-side flips one or more cards (Flip mills deck→discard).
-    ``count`` = an exact-size gate: 3 fires only on a flip of exactly 3 ("When you flip
-    exactly 3 cards, …" — Evee Laveaux), None on any flip. schema v84"""
+    ``count`` = a size gate: None on any flip; ``n`` with ``at_least=False`` only on
+    exactly ``n`` (Evee "flip exactly 3"), with ``at_least=True`` on ``n`` or more.
+    ``on_self`` splits the intents: True = a per-card self-trigger ("if THIS card is
+    flipped", fired by run_self_flips); False = a standing trigger ("when YOU flip",
+    fired by run_on_flip). schema v89"""
 
     who: Who = Who.SELF
     count: int | None = None
+    at_least: bool = False
+    on_self: bool = False
 
 
 @dataclass(frozen=True)

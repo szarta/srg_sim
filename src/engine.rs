@@ -1758,19 +1758,29 @@ impl Engine {
         result
     }
 
-    /// Fire standing `OnFlip` gimmicks after `flipped_side` flipped `count` cards.
-    /// Scans BOTH players so a `who=OPP` variant works; a `count` gate on the trigger
-    /// restricts firing to an exact flip size ("when you flip exactly 3 cards" — Evee).
+    /// Fire STANDING (`on_self == false`) `OnFlip` gimmicks after `flipped_side` flipped
+    /// `count` cards. Scans BOTH players so a `who=OPP` variant works; the `count` gate
+    /// fires on any flip (`None`), exactly `n` (Evee), or `n`-or-more (`at_least`).
+    /// Per-card `on_self` triggers are dispatched by `run_self_flips`, not here.
     fn run_on_flip(&mut self, flipped_side: &str, count: i64) -> Eng<()> {
         let opp = self.state.opponent_of(flipped_side);
         for owner in [flipped_side.to_owned(), opp] {
             let effects = self.standing_effects(&owner);
             for eff in &effects {
-                let Trigger::OnFlip { who, count: gate } = &eff.trigger else {
+                let Trigger::OnFlip {
+                    who,
+                    count: gate,
+                    at_least,
+                    on_self,
+                } = &eff.trigger
+                else {
                     continue;
                 };
+                if *on_self {
+                    continue; // a per-card self-trigger; fires via run_self_flips
+                }
                 let dir_ok = (*who == Who::SelfSide) == (owner.as_str() == flipped_side);
-                let count_ok = gate.is_none_or(|g| g == count);
+                let count_ok = gate.is_none_or(|g| if *at_least { count >= g } else { count == g });
                 if dir_ok && count_ok {
                     self.fire_if_ready(eff, &owner, None)?;
                 }
@@ -5505,16 +5515,17 @@ fn rolled_set_key(eff: &Effect) -> String {
     format!("rollset:{}", eff.raw_clause)
 }
 
-/// Whether `eff` is a card's own per-flip self-trigger — `OnFlip{who:SELF}` with no
-/// `count` gate ("If this card is flipped, add it to your hand"). Count-gated OnFlip
-/// clauses are aggregate/gimmick triggers (Evee's "flip exactly 3"), dispatched via
-/// `run_on_flip`, not per flipped card.
+/// Whether `eff` is a card's own per-flip self-trigger — `OnFlip{on_self: true}` ("If
+/// this card is flipped, …"), dispatched per just-flipped card by `run_self_flips`.
+/// Standing `OnFlip` triggers (`on_self: false`, e.g. Evee's "flip exactly 3", or "when
+/// you flip any number of cards, …") fire via `run_on_flip` instead.
 fn is_on_flip_self(eff: &Effect) -> bool {
     matches!(
         eff.trigger,
         Trigger::OnFlip {
             who: Who::SelfSide,
-            count: None
+            on_self: true,
+            ..
         }
     )
 }
@@ -9283,7 +9294,7 @@ mod cardona_mechanism_tests {
         serde_json::from_value(json!({"atk_type":"Strike","db_uuid":uuid,"name":uuid,
             "number":1,"play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
             "effects":[{"@type":"Effect",
-                "trigger":{"@type":"OnFlip","who":"SELF","count":null},
+                "trigger":{"@type":"OnFlip","who":"SELF","count":null,"on_self":true},
                 "condition":{"@type":"Always"},
                 "actions":[action],
                 "duration":"INSTANT","optional":false,
@@ -9379,7 +9390,7 @@ mod cardona_mechanism_tests {
         serde_json::from_value(json!({"atk_type":"Strike","db_uuid":uuid,"name":uuid,
             "number":1,"play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
             "effects":[{"@type":"Effect",
-                "trigger":{"@type":"OnFlip","who":"SELF","count":null},
+                "trigger":{"@type":"OnFlip","who":"SELF","count":null,"on_self":true},
                 "condition":condition,
                 "actions":[{"@type":"AddSelfToHand"}],
                 "duration":"INSTANT","optional":false,
@@ -9506,6 +9517,57 @@ mod cardona_mechanism_tests {
                 .count(),
             2,
             "both flipped Strikes were added"
+        );
+    }
+
+    #[test]
+    fn standing_flip_trigger_fires_from_play_not_when_its_card_is_milled() {
+        // A card with "when you flip any number of cards, draw 1" (standing OnFlip,
+        // on_self=false). It fires when in play and a flip happens; it must NOT fire
+        // merely because the card itself is milled into the discard — the on_self split.
+        let standing: Effect = serde_json::from_value(json!({"@type":"Effect",
+            "trigger":{"@type":"OnFlip","who":"SELF","count":null,"at_least":false,"on_self":false},
+            "condition":{"@type":"Always"},
+            "actions":[{"@type":"Draw","n":1,"source":"TOP","who":"SELF","per":null,
+                "per_who":"SELF","cap":null,"per_excludes_trigger":false}],
+            "duration":"INSTANT","optional":false,
+            "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+            "raw_clause":"when you flip any number of cards, draw 1","source":"card"}))
+        .unwrap();
+
+        // In play: a flip fires the standing trigger -> draw 1.
+        let mut e = engine();
+        e.state.players.get_mut("A").unwrap().in_play =
+            vec![
+                serde_json::from_value(json!({"atk_type":"Strike","db_uuid":"src","name":"src",
+                "number":1,"play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+                "effects":[standing.clone()]}))
+                .unwrap(),
+            ];
+        e.state.players.get_mut("A").unwrap().deck =
+            (0..5).map(|i| card(&format!("d{i}"), "Lead")).collect();
+        let h0 = e.state.players["A"].hand.len();
+        e.act_flip(1, Who::SelfSide, "A").unwrap();
+        assert_eq!(
+            e.state.players["A"].hand.len(),
+            h0 + 1, // the flip mills from the deck; the Draw adds 1 to hand
+            "standing trigger drew 1 when a flip happened in play"
+        );
+
+        // Milled: the SAME card sitting in the deck, flipped into discard, must NOT fire.
+        let mut e = engine();
+        e.state.players.get_mut("A").unwrap().deck = vec![serde_json::from_value(
+            json!({"atk_type":"Strike","db_uuid":"src","name":"src","number":1,
+                "play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+                "effects":[standing]}),
+        )
+        .unwrap()];
+        let h0 = e.state.players["A"].hand.len();
+        e.act_flip(1, Who::SelfSide, "A").unwrap();
+        assert_eq!(
+            e.state.players["A"].hand.len(),
+            h0,
+            "a standing 'when you flip' trigger does not fire from being milled"
         );
     }
 }

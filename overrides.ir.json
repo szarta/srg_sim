@@ -5081,7 +5081,9 @@
       "source": "card",
       "trigger": {
         "@type": "OnFlip",
+        "at_least": false,
         "count": null,
+        "on_self": false,
         "who": "SELF"
       }
     },
@@ -14378,7 +14380,9 @@
       "source": "gimmick",
       "trigger": {
         "@type": "OnFlip",
+        "at_least": false,
         "count": 3,
+        "on_self": false,
         "who": "SELF"
       }
     }

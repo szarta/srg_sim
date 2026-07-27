@@ -494,7 +494,9 @@
   {
     "@type": "OnFlip",
     "who": "SELF",
-    "count": 3
+    "count": 3,
+    "at_least": false,
+    "on_self": false
   },
   {
     "@type": "OnDiscardMove",

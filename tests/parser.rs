@@ -965,6 +965,39 @@ fn add_flipped_to_hand_grammar() {
     assert_eq!(a[1]["filter"]["atk_type"], "Strike");
 }
 
+/// Standing flip-trigger grammar (task #119, schema v89 on_self split): "When/After you
+/// flip [any number of | N or more] cards, [you may] add M of the flipped cards to your
+/// hand" -> standing OnFlip (on_self=false) firing AddFlippedToHand.
+#[test]
+fn standing_flip_add_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "any number" -> count None, on_self false (standing), not random.
+    let e = one("When you flip any number of cards, add 1 of the flipped cards to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["trigger"]["count"], Value::Null);
+    assert_eq!(e["trigger"]["on_self"], false);
+    assert_eq!(e["actions"][0]["@type"], "AddFlippedToHand");
+    assert_eq!(e["actions"][0]["random"], false);
+
+    // "randomly" rider.
+    let e =
+        one("When you flip any number of cards, randomly add 1 of the flipped cards to your hand.");
+    assert_eq!(e["actions"][0]["random"], true);
+
+    // "N or more" -> at_least threshold; "you may" -> optional.
+    let e = one("After you flip 3 or more cards, you may add 1 of the flipped cards to your hand.");
+    assert_eq!(e["trigger"]["count"], 3);
+    assert_eq!(e["trigger"]["at_least"], true);
+    assert_eq!(e["trigger"]["on_self"], false);
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "AddFlippedToHand");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!

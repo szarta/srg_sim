@@ -3400,6 +3400,9 @@
         "@type": {
           "const": "OnFlip"
         },
+        "at_least": {
+          "type": "boolean"
+        },
         "count": {
           "anyOf": [
             {
@@ -3410,13 +3413,18 @@
             }
           ]
         },
+        "on_self": {
+          "type": "boolean"
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
       },
       "required": [
         "@type",
-        "who"
+        "who",
+        "at_least",
+        "on_self"
       ],
       "type": "object"
     },
@@ -4918,5 +4926,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 88
+  "version": 89
 }

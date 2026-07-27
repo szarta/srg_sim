@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 88;
+pub const SCHEMA_VERSION: i64 = 89;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -585,13 +585,24 @@ pub enum Trigger {
         who: Who,
     },
     /// Fires when the `who`-side flips one or more cards (`Flip` mills deck→discard).
-    /// `count` = an exact-size gate: `Some(3)` fires only on a flip of exactly 3 cards
-    /// ("When you flip exactly 3 cards, …" — Evee Laveaux), `None` on any flip. `who`
-    /// follows the shuffle convention (SELF = you flipped). Fired by `run_on_flip`. schema v84
+    /// `count` = a size gate: `None` fires on any flip; `Some(n)` with `at_least = false`
+    /// only on exactly `n` ("flip exactly 3 cards" — Evee Laveaux), with `at_least = true`
+    /// on `n` or more ("flip 2 or more cards"). `who` follows the shuffle convention
+    /// (SELF = you flipped).
+    ///
+    /// `on_self` splits the two intents that share this trigger: `true` = a per-card
+    /// self-trigger ("if THIS card is flipped, …"), fired by `run_self_flips` for each
+    /// just-flipped card carrying it; `false` = a standing trigger ("when YOU flip …"),
+    /// fired by `run_on_flip` from in-play/gimmick effects. The split keeps a standing
+    /// "when you flip" effect from firing merely because its own card was milled. schema v89
     OnFlip {
         who: Who,
         #[serde(default)]
         count: Option<i64>,
+        #[serde(default)]
+        at_least: bool,
+        #[serde(default)]
+        on_self: bool,
     },
     /// Fires when one or more cards LEAVE the `who`-side's discard pile because of a
     /// card/gimmick EFFECT — "when your opponent moves any number of cards from their
@@ -1666,13 +1677,24 @@ pub enum IrNode {
         who: Who,
     },
     /// Fires when the `who`-side flips one or more cards (`Flip` mills deck→discard).
-    /// `count` = an exact-size gate: `Some(3)` fires only on a flip of exactly 3 cards
-    /// ("When you flip exactly 3 cards, …" — Evee Laveaux), `None` on any flip. `who`
-    /// follows the shuffle convention (SELF = you flipped). Fired by `run_on_flip`. schema v84
+    /// `count` = a size gate: `None` fires on any flip; `Some(n)` with `at_least = false`
+    /// only on exactly `n` ("flip exactly 3 cards" — Evee Laveaux), with `at_least = true`
+    /// on `n` or more ("flip 2 or more cards"). `who` follows the shuffle convention
+    /// (SELF = you flipped).
+    ///
+    /// `on_self` splits the two intents that share this trigger: `true` = a per-card
+    /// self-trigger ("if THIS card is flipped, …"), fired by `run_self_flips` for each
+    /// just-flipped card carrying it; `false` = a standing trigger ("when YOU flip …"),
+    /// fired by `run_on_flip` from in-play/gimmick effects. The split keeps a standing
+    /// "when you flip" effect from firing merely because its own card was milled. schema v89
     OnFlip {
         who: Who,
         #[serde(default)]
         count: Option<i64>,
+        #[serde(default)]
+        at_least: bool,
+        #[serde(default)]
+        on_self: bool,
     },
     /// Fires when one or more cards LEAVE the `who`-side's discard pile because of a
     /// card/gimmick EFFECT — "when your opponent moves any number of cards from their

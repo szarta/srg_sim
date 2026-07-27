@@ -240,11 +240,25 @@ fn flip_self(action: Action, optional: bool, cond: Condition) -> Effect {
             Trigger::OnFlip {
                 who: Who::SelfSide,
                 count: None,
+                at_least: false,
+                on_self: true, // per-card "if THIS card is flipped"
             },
             vec![action],
             cond,
             Duration::Instant,
         )
+    }
+}
+
+/// "When you flip [any number of | N or more] cards, <action>" — a STANDING flip
+/// trigger (`on_self: false`), fired by `run_on_flip` from an in-play card. `count`
+/// = `None` for "any number", `Some(n)` with `at_least` for an "n or more" threshold.
+fn on_flip_standing(count: Option<i64>, at_least: bool) -> Trigger {
+    Trigger::OnFlip {
+        who: Who::SelfSide,
+        count,
+        at_least,
+        on_self: false,
     }
 }
 
@@ -1896,8 +1910,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         // Flip-pool select (schema v88): "Flip N cards, [randomly] add M of the flipped
         // cards to your hand" / "Flip 6, add all flipped Strikes to your hand" — the flip
         // fills the pool (flipped_this_turn), then AddFlippedToHand pulls M matching from
-        // it. ("all"/"the" -> all matching; "randomly" -> RNG pick.) Trigger-prefixed
-        // ("When you flip …") and stat-gated variants are the deferred tail.
+        // it. ("all"/"the" -> all matching; "randomly" -> RNG pick.)
         rule(
             r"Flip (\d+)(?: cards?)?,? (?:and |then )?(randomly )?add (\d+|all|the|[Oo]ne) (?:of the )?flipped (cards?|Strikes?|Grapples?|Submissions?) to your hand",
             |c| {
@@ -1910,6 +1923,37 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Condition::Always,
                     Duration::Instant,
                 ))
+            },
+        ),
+        // Standing flip trigger (schema v89 on_self split): "When/After you flip any
+        // number of cards, [randomly] add M of the flipped cards to your hand" -> a
+        // standing OnFlip (on_self=false, count=None) firing AddFlippedToHand. Distinct
+        // from the per-card "if this card is flipped" self-trigger.
+        rule(
+            r"(?:When|After) you flip any number of cards,? (randomly )?add (\d+|all|the|[Oo]ne) (?:of the )?flipped (cards?|Strikes?|Grapples?|Submissions?) to your hand",
+            |c| {
+                Some(eff(
+                    on_flip_standing(None, false),
+                    vec![add_flipped_action(&c[2], &c[3], c.get(1).is_some())],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "When/After you flip N or more cards, [you may] add M of the flipped cards to
+        // your hand" -> standing OnFlip with an at_least threshold; "you may" -> optional.
+        rule(
+            r"(?:When|After) you flip (\d+) or more cards,? (?:(you may) )?add (\d+|all|the|[Oo]ne) (?:of the )?flipped (cards?|Strikes?|Grapples?|Submissions?) to your hand",
+            |c| {
+                Some(Effect {
+                    optional: c.get(2).is_some(),
+                    ..eff(
+                        on_flip_standing(Some(num(c, 1)), true),
+                        vec![add_flipped_action(&c[3], &c[4], false)],
+                        Condition::Always,
+                        Duration::Instant,
+                    )
+                })
             },
         ),
         // Provenance-gated flip self-trigger (schema v87). "flipped by \"<X>\"": the
