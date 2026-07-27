@@ -296,6 +296,53 @@ fn bury(count: i64, who: Who) -> Action {
     }
 }
 
+/// "Bury `count` per `per`-matching card you have in play" (schema v83). `random` is
+/// forced on for a HAND source (the hand owner sheds without choosing). The per-count
+/// always ranges over the SELF board ("… for each `<X>` you have in play").
+fn bury_per(count: i64, who: Who, source: BuryFrom, per: CardFilter, random: bool) -> Action {
+    Action::Bury {
+        choose: false,
+        selector: CardFilter::default(),
+        count,
+        who,
+        random: random || source == BuryFrom::Hand,
+        source,
+        per: Some(per),
+        per_who: Who::SelfSide,
+    }
+}
+
+/// The per-count / shuffle selector for a "… `<pre>` you have in play [with `<names>`
+/// in the name]" clause — a name-substring filter when the name qualifier is present,
+/// else the `<pre>` descriptor via [`recur_filter`] (card / type / order). `None` for
+/// a descriptor with no CardFilter.
+fn in_play_filter(pre: &str, names: Option<&str>) -> Option<CardFilter> {
+    if let Some(n) = names {
+        let names = quoted_names(n);
+        return (!names.is_empty()).then(|| cf_name(names));
+    }
+    recur_filter(pre)
+}
+
+/// An `OnPlay` per-count bury effect (Cardona family); `None` if the per-descriptor
+/// has no CardFilter.
+fn per_bury(
+    count: i64,
+    who: Who,
+    source: BuryFrom,
+    pre: &str,
+    names: Option<&str>,
+    random: bool,
+) -> Option<Effect> {
+    let per = in_play_filter(pre, names)?;
+    Some(eff(
+        Trigger::OnPlay,
+        vec![bury_per(count, who, source, per, random)],
+        Condition::Always,
+        Duration::Instant,
+    ))
+}
+
 /// Bury `count` card(s) from a player's HAND (SRG hand disruption). `random` = the
 /// hand owner loses a random card; `choose` = the EFFECT OWNER looks and picks (only
 /// meaningful with `who == Opp`). Routes to the engine's `bury_from_hand`.
@@ -1053,6 +1100,48 @@ fn breakout_mod(delta: i64, when_skill: Option<Skill>) -> Action {
 #[allow(clippy::too_many_lines)]
 fn build_rules() -> Vec<(Regex, Builder)> {
     vec![
+        // "If this match has [No] [Dd]isqualifications, <effect>" — the DQ-state gate
+        // (schema v83, MatchHasNoDisqualifications). Cardona's Pizza Cutter family; the
+        // compound "…and the Crowd Meter is N or greater, …" variants fall to Unsupported.
+        rule(
+            r"If this match has [Nn]o [Dd]isqualifications,? your next turn roll is \+(\d+)",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![modify_roll(
+                        Who::SelfSide,
+                        num(c, 1),
+                        RollWhen::Next,
+                        None,
+                        Who::Opp,
+                    )],
+                    Condition::MatchHasNoDisqualifications,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"If this match has [Nn]o [Dd]isqualifications,? your Finish rolls? (?:is|are) \+(\d+)",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    finish_roll_bonus(num(c, 1)),
+                    Condition::MatchHasNoDisqualifications,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(
+            &format!(r"If this match has [Nn]o [Dd]isqualifications,? \+(\d+) to {SK}"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![finish_bonus(num(c, 1), Some(skill(&c[2])), false)],
+                    Condition::MatchHasNoDisqualifications,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         rule(r"\+(\d+) to (?:your )?Finish rolls?", |c| {
             Some(eff(
                 Trigger::Static,
@@ -1683,6 +1772,32 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             r"Your opponent flips (\d+) cards? for each (?:other )?(.+?) you have in play",
             |c| per_flip(num(c, 1), Who::Opp, &c[2], Who::SelfSide),
         ),
+        // Per-count buries "… for each <X> you have in play" (schema v83, Bury.per).
+        // The count scales by the SELF board's matching cards; "other" is dropped (the
+        // finish card is not yet in play at OnPlay time). Placed before the plain bury
+        // rules — full-anchored, so these only claim the "for each" phrasings.
+        rule(
+            r"Bury (\d+) cards? in your opponent's discard pile for each (?:other )?(.+?) you have in play",
+            |c| per_bury(num(c, 1), Who::Opp, BuryFrom::Discard, &c[2], None, false),
+        ),
+        rule(
+            r"Your opponent (randomly )?buries (\d+) cards? in their hand for each (?:other )?(.+?) you have in play(?: with (.+?) in the name)?",
+            |c| {
+                let random = c.get(1).is_some();
+                per_bury(
+                    num(c, 2),
+                    Who::Opp,
+                    BuryFrom::Hand,
+                    &c[3],
+                    c.get(4).map(|m| m.as_str()),
+                    random,
+                )
+            },
+        ),
+        rule(
+            r"Bury (\d+) cards? in your hand for each (?:other )?(.+?) you have in play",
+            |c| per_bury(num(c, 1), Who::SelfSide, BuryFrom::Hand, &c[2], None, false),
+        ),
         rule(
             r"Bury (?:up to )?(\d+) cards? in your opponent's discard pile",
             |c| {
@@ -2034,6 +2149,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     vec![Action::ShuffleIntoDeck {
                         selector: CardFilter::default(),
                         source: ShuffleSource::Discard,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "Shuffle N <X> you have in play into your deck" (schema v83, ShuffleSource::
+        // InPlay) — return a matching in-play card to the deck (Cardona Re-boot). Count
+        // simplified to one, as the whole shuffle-into-deck family does.
+        rule(
+            r"Shuffle (?:up to )?\d+ (?:other )?(.+?) you have in play into your deck",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::ShuffleIntoDeck {
+                        selector: recur_filter(&c[1])?,
+                        source: ShuffleSource::InPlay,
                     }],
                     Condition::Always,
                     Duration::Instant,

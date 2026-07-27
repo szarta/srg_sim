@@ -249,6 +249,69 @@ fn hand_bury_grammar() {
     assert_eq!(bury(&e["actions"][0]).0, "OPP");
 }
 
+/// Schema-v83 grammar families (Cardona): the match-no-DQ condition gate, per-count
+/// bury "for each … in play", and shuffle-a-card-you-have-in-play. Asserted against
+/// the whole-DB grammar directly (absent from the frozen sample decks).
+#[test]
+fn v83_grammar_families() {
+    fn only(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // --- match-no-DQ condition gate ---
+    let e = only("If this match has no disqualifications, your next turn roll is +1.");
+    assert_eq!(e["condition"]["@type"], "MatchHasNoDisqualifications");
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][0]["when"], "NEXT");
+    // Case-insensitive "No Disqualifications" + a Finish-roll bonus.
+    let e = only("If this match has No Disqualifications, your Finish roll is +1.");
+    assert_eq!(e["condition"]["@type"], "MatchHasNoDisqualifications");
+    assert_eq!(e["actions"][0]["@type"], "FinishRollBonus");
+    // "+N to <Skill>" gated → FinishRollBonus{when_skill} (a conditional FinishBonus
+    // would be summed unconditionally into the finish-bonus map).
+    let e = only("If this match has no disqualifications, +5 to Power.");
+    assert_eq!(e["condition"]["@type"], "MatchHasNoDisqualifications");
+    assert_eq!(e["actions"][0]["@type"], "FinishRollBonus");
+    assert_eq!(e["actions"][0]["when_skill"], "Power");
+    assert_eq!(e["actions"][0]["delta"], 5);
+
+    // --- bury per-count "for each … in play" ---
+    let a = only("Bury 1 card in your opponent's discard pile for each Strike you have in play.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["@type"], "Bury");
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(a["source"], "DISCARD");
+    assert_eq!(a["per"]["atk_type"], "Strike");
+    assert_eq!(a["per_who"], "SELF");
+    // Opponent hand-bury per Lead; "randomly" sets the random flag.
+    let a = only("Your opponent buries 1 card in their hand for each Lead you have in play.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["source"], "HAND");
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(a["per"]["play_order"], "Lead");
+    // Name-filter variant.
+    let a = only(
+        "Your opponent randomly buries 1 card in their hand for each card you have in play with \"Hammer\" in the name.",
+    )["actions"][0]
+        .clone();
+    assert_eq!(a["random"], true);
+    assert_eq!(a["per"]["name_contains"][0], "Hammer");
+
+    // --- shuffle a card you have in play into your deck ---
+    let a = only("Shuffle 1 Follow Up you have in play into your deck.")["actions"][0].clone();
+    assert_eq!(a["@type"], "ShuffleIntoDeck");
+    assert_eq!(a["source"], "IN_PLAY");
+    assert_eq!(a["selector"]["play_order"], "Followup");
+    // "other card" → any card, still IN_PLAY.
+    let a = only("Shuffle 1 other card you have in play into your deck.")["actions"][0].clone();
+    assert_eq!(a["source"], "IN_PLAY");
+    assert_eq!(a["selector"]["play_order"], Value::Null);
+}
+
 /// DQ-CAUSE family grammar (task #94): the "if stopped, you lose via
 /// disqualification" self-loss and its casing / conditional-escape / pay-or-lose
 /// variants. Asserted against the whole-DB grammar directly.
