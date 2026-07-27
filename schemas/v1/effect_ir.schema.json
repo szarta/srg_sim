@@ -35,6 +35,18 @@
       ],
       "type": "object"
     },
+    "AddSelfToHand": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "AddSelfToHand"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "AddText": {
       "additionalProperties": false,
       "properties": {
@@ -872,6 +884,9 @@
                 "$ref": "#/$defs/BuryThisCard"
               },
               {
+                "$ref": "#/$defs/AddSelfToHand"
+              },
+              {
                 "$ref": "#/$defs/ChooseName"
               },
               {
@@ -1700,6 +1715,9 @@
                 "$ref": "#/$defs/BuryThisCard"
               },
               {
+                "$ref": "#/$defs/AddSelfToHand"
+              },
+              {
                 "$ref": "#/$defs/ChooseName"
               },
               {
@@ -2463,6 +2481,9 @@
         },
         {
           "$ref": "#/$defs/BuryThisCard"
+        },
+        {
+          "$ref": "#/$defs/AddSelfToHand"
         },
         {
           "$ref": "#/$defs/ChooseName"
@@ -4740,5 +4761,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 84
+  "version": 85
 }

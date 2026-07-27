@@ -227,6 +227,25 @@ fn flip(n: i64, who: Who) -> Action {
     }
 }
 
+/// "If this card is flipped, [you may] add it to your hand" — the per-card flip
+/// self-trigger. `OnFlip{who:SELF}` (no count gate) fires per flipped card during
+/// `run_self_flips`; [`Action::AddSelfToHand`] moves the just-flipped referent from
+/// the discard back to its owner's hand. The "you may" rides on [`Effect::optional`].
+fn flip_self_to_hand(optional: bool) -> Effect {
+    Effect {
+        optional,
+        ..eff(
+            Trigger::OnFlip {
+                who: Who::SelfSide,
+                count: None,
+            },
+            vec![Action::AddSelfToHand],
+            Condition::Always,
+            Duration::Instant,
+        )
+    }
+}
+
 /// "<flipper> flips N cards for each <desc> <per_who> ha(s|ve) in play" — the
 /// per-count flip family, mirroring [`per_draw`].
 fn per_flip(n: i64, who: Who, desc: &str, per_who: Who) -> Option<Effect> {
@@ -1763,6 +1782,14 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Duration::Instant,
                 ))
             },
+        ),
+        // Per-card flip self-trigger: "If this card is flipped, [you may] add it to
+        // your hand." Trigger OnFlip{SELF} fires per flipped card; AddSelfToHand pulls
+        // the referent back to hand. "you may" -> Effect::optional. (Comma optional;
+        // "flipped you may" appears both with and without it.)
+        rule(
+            r"If this card is flipped,?(?: (you may))? add it to your hand",
+            |c| Some(flip_self_to_hand(c.get(1).is_some())),
         ),
         rule(
             r"Flip (\d+) cards? for each (?:other )?(.+?) you have in play",

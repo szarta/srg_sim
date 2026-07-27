@@ -1553,6 +1553,15 @@ class BuryThisCard(IRNode):
 
 
 @dataclass(frozen=True)
+class AddSelfToHand(IRNode):
+    """Add the TRIGGERING (flipped) card to its owner's hand — "If this card is flipped,
+    [you may] add it to your hand." The referent is the just-flipped card carrying this
+    ``OnFlip`` clause (``Engine.flipped_card``); it moves from the discard pile (where a
+    flip lands it) to its owner's hand. The "you may" lives on ``Effect.optional``. A
+    no-op outside a flip context or if the card has already left the discard."""
+
+
+@dataclass(frozen=True)
 class ChooseName(IRNode):
     """"Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
     ``options`` for the rest of the match, stored as ``PlayerState.chosen_name``.
@@ -1971,6 +1980,7 @@ Action = (
     | BlankText
     | BlankStoppedText
     | BuryThisCard
+    | AddSelfToHand
     | ChooseName
     | LoseBy
     | ConsideredCompare

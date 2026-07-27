@@ -387,6 +387,10 @@ pub struct Engine {
     /// duration of `run_hit_gimmicks` so a `per_excludes_trigger` count can drop it.
     /// Transient, never serialized.
     hit_card: Option<String>,
+    /// `db_uuid` of the card whose `OnFlip` clause is currently being dispatched, set
+    /// per-card while `act_flip` fires a just-flipped card's own effects so
+    /// `AddSelfToHand` knows its referent. Transient, never serialized.
+    flipped_card: Option<String>,
     /// In-roll boost accumulated by a `RollBoost` action during an `offer_roll_boost`
     /// call (El Super Hombre V3's "or your roll is +1" choice branch). Reset before each
     /// effect's actions run and read back into the roll value. Transient, never serialized.
@@ -459,6 +463,7 @@ impl Engine {
             turn_bumped: false,
             stopped_card: None,
             hit_card: None,
+            flipped_card: None,
             pending_roll_boost: 0,
             decider,
             decision_index: 0,
@@ -1238,6 +1243,7 @@ impl Engine {
             | Action::ScaleEntranceNumbers { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::BuryThisCard => self.act_bury_this_card(key),
+            Action::AddSelfToHand => self.act_add_self_to_hand(key),
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
                 who,
@@ -1686,7 +1692,14 @@ impl Engine {
             return Ok(());
         }
         let count = flipped.len() as i64;
-        let uuids = flipped.iter().map(|c| c.db_uuid.clone()).collect();
+        let uuids: Vec<String> = flipped.iter().map(|c| c.db_uuid.clone()).collect();
+        // Each flipped card's OWN `OnFlip` effects ("If this card is flipped, add it to
+        // your hand") fire per-card; capture them before the cards join the discard.
+        let self_flips: Vec<Card> = flipped
+            .iter()
+            .filter(|c| c.effects.iter().any(is_on_flip_self))
+            .cloned()
+            .collect();
         let player = self.state.players.get_mut(&target).unwrap();
         // Record this turn's flips (read by CountZone::FlippedThisTurn) before they
         // join the discard, so a "+1 for each Strike flipped" rider can count them.
@@ -1702,7 +1715,8 @@ impl Engine {
         }));
         // Fire OnFlip AFTER the cards land in the discard (an "add a flipped card"
         // rider needs them present). `count` is how many actually flipped.
-        self.run_on_flip(&target, count)
+        self.run_on_flip(&target, count)?;
+        self.run_self_flips(&target, &self_flips)
     }
 
     /// Fire standing `OnFlip` gimmicks after `flipped_side` flipped `count` cards.
@@ -1722,6 +1736,23 @@ impl Engine {
                     self.fire_if_ready(eff, &owner, None)?;
                 }
             }
+        }
+        Ok(())
+    }
+
+    /// Dispatch each just-flipped card's OWN `OnFlip{who:SELF}` effects, one card at a
+    /// time — "If this card is flipped, [you may] add it to your hand." `flipped_card`
+    /// binds the referent so `AddSelfToHand` (and any future self-referential flip
+    /// action) knows which card fired, mirroring the `stopped_card` stop context.
+    fn run_self_flips(&mut self, side: &str, cards: &[Card]) -> Eng<()> {
+        for card in cards {
+            self.flipped_card = Some(card.db_uuid.clone());
+            for eff in &card.effects {
+                if is_on_flip_self(eff) {
+                    self.fire_if_ready(eff, side, None)?;
+                }
+            }
+            self.flipped_card = None;
         }
         Ok(())
     }
@@ -3079,6 +3110,24 @@ impl Engine {
         let card = player.discard.remove(pos);
         player.deck.push(card);
         self.log_effect(key, "BuryThisCard", None, json!({"card": uuid}));
+    }
+
+    /// Add the triggering (flipped) card to `key`'s hand — move it from their discard
+    /// pile (where the flip landed it) to their hand. The referent is
+    /// [`Engine::flipped_card`], set per-card during `run_self_flips`. A no-op outside a
+    /// flip context or if the card has already left the discard. See
+    /// [`Action::AddSelfToHand`].
+    fn act_add_self_to_hand(&mut self, key: &str) {
+        let Some(uuid) = self.flipped_card.clone() else {
+            return;
+        };
+        let player = self.state.players.get_mut(key).unwrap();
+        let Some(pos) = player.discard.iter().position(|c| c.db_uuid == uuid) else {
+            return;
+        };
+        let card = player.discard.remove(pos);
+        player.hand.push(card);
+        self.log_effect(key, "AddSelfToHand", None, json!({"card": uuid}));
     }
 
     /// Drop everything scoped "until the end of the turn" by the turn just finished:
@@ -5309,6 +5358,20 @@ fn rolled_set_key(eff: &Effect) -> String {
     format!("rollset:{}", eff.raw_clause)
 }
 
+/// Whether `eff` is a card's own per-flip self-trigger — `OnFlip{who:SELF}` with no
+/// `count` gate ("If this card is flipped, add it to your hand"). Count-gated OnFlip
+/// clauses are aggregate/gimmick triggers (Evee's "flip exactly 3"), dispatched via
+/// `run_on_flip`, not per flipped card.
+fn is_on_flip_self(eff: &Effect) -> bool {
+    matches!(
+        eff.trigger,
+        Trigger::OnFlip {
+            who: Who::SelfSide,
+            count: None
+        }
+    )
+}
+
 /// A single-bit mask for `skill` (its index in [`Skill::ALL`]).
 fn skill_bit(skill: Skill) -> i64 {
     1 << Skill::ALL.iter().position(|&s| s == skill).unwrap()
@@ -5536,6 +5599,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::CopyText { .. } => "CopyText",
         Action::BlankStoppedText => "BlankStoppedText",
         Action::BuryThisCard => "BuryThisCard",
+        Action::AddSelfToHand => "AddSelfToHand",
         Action::ChooseName { .. } => "ChooseName",
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
@@ -8911,6 +8975,28 @@ mod cardona_mechanism_tests {
         }
     }
 
+    /// Declines every "you may" (picks the `kind:"no"` option), else falls back to the
+    /// first legal choice.
+    struct PickDecline;
+    impl Decider for PickDecline {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            legal: &[Value],
+            _: &mut GameState,
+        ) -> Option<Value> {
+            legal
+                .iter()
+                .find(|o| o.get("kind").and_then(Value::as_str) == Some("no"))
+                .or_else(|| legal.first())
+                .cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "decline".into()
+        }
+    }
+
     fn card(uuid: &str, order: &str) -> Card {
         serde_json::from_value(
             json!({"atk_type":"Strike","db_uuid":uuid,"name":uuid,"number":1,
@@ -9039,6 +9125,63 @@ mod cardona_mechanism_tests {
             h0 + 2,
             "flip exactly 3 → draw 2"
         );
+    }
+
+    /// A card carrying its own `OnFlip{SELF}` + `AddSelfToHand` ("If this card is
+    /// flipped, add it to your hand") lands in hand when flipped; a plain card flipped
+    /// alongside it goes to the discard as usual.
+    fn flip_self_card(uuid: &str) -> Card {
+        serde_json::from_value(json!({"atk_type":"Strike","db_uuid":uuid,"name":uuid,
+            "number":1,"play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect",
+                "trigger":{"@type":"OnFlip","who":"SELF","count":null},
+                "condition":{"@type":"Always"},
+                "actions":[{"@type":"AddSelfToHand"}],
+                "duration":"INSTANT","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"If this card is flipped, add it to your hand","source":"card"}]}))
+        .unwrap()
+    }
+
+    #[test]
+    fn self_flip_card_adds_itself_to_hand() {
+        let mut e = engine();
+        // Deck top: the self-flip card, then a plain card. Flip 2.
+        e.state.players.get_mut("A").unwrap().deck =
+            vec![flip_self_card("self"), card("plain", "Lead")];
+        let h0 = e.state.players["A"].hand.len();
+        e.act_flip(2, Who::SelfSide, "A").unwrap();
+        let p = &e.state.players["A"];
+        assert_eq!(p.hand.len(), h0 + 1, "the self-flip card joined the hand");
+        assert!(
+            p.hand.iter().any(|c| c.db_uuid == "self"),
+            "the carrier is the one in hand"
+        );
+        assert!(
+            p.discard.iter().any(|c| c.db_uuid == "plain"),
+            "the plain card went to the discard"
+        );
+        assert!(
+            !p.discard.iter().any(|c| c.db_uuid == "self"),
+            "the carrier was pulled back out of the discard"
+        );
+    }
+
+    #[test]
+    fn self_flip_declined_leaves_the_card_in_discard() {
+        // "you may" (Effect::optional): a decliner keeps it in the discard.
+        let mut e = engine();
+        e.decider = Box::new(PickDecline);
+        let mut c = flip_self_card("opt");
+        c.effects[0].optional = true;
+        e.state.players.get_mut("A").unwrap().deck = vec![c];
+        e.act_flip(1, Who::SelfSide, "A").unwrap();
+        let p = &e.state.players["A"];
+        assert!(
+            p.discard.iter().any(|c| c.db_uuid == "opt"),
+            "declined 'you may' → card stays in the discard"
+        );
+        assert!(p.hand.is_empty(), "nothing entered the hand");
     }
 }
 

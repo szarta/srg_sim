@@ -206,6 +206,9 @@ ReturnToHand(selector, who, count=1, choose=False)  # bounce matching in-play ca
                              # choose=True picks from EITHER board ("any player has in play" — Fox Assassin V2). schema v20
 SwapHandDiscard               # "switch 1 card in your hand with 1 in your discard" (Collin, Mr. Rey): 1 hand card
                              # out (-> discard, shed point) + 1 discard card in (-> hand, tutor point); no-op if a zone is empty. schema v17
+AddSelfToHand                 # "If this card is flipped, [you may] add it to your hand": moves the just-flipped
+                             # referent (Engine::flipped_card, bound per-card in run_self_flips) from discard -> its owner's
+                             # hand. Paired with an OnFlip{SELF} trigger; "you may" -> Effect.optional. schema v85
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
 RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
 RevealForDraw(who=OPP, count=1, draw=2, match_on=STOP|ROLLED_SKILL)  # reveal `count` random from hand; actor draws `draw` per revealed card matched by `match_on` — a Stop (Bartholomew) or one whose move type == the actor's just-rolled skill (The Winning Ticket, reads roll ctx). schema v24

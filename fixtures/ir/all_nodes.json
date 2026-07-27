@@ -87,6 +87,9 @@
     "@type": "BuryThisCard"
   },
   {
+    "@type": "AddSelfToHand"
+  },
+  {
     "@type": "ChooseName",
     "options": [
       "Kendo Stick",

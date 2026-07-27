@@ -802,6 +802,34 @@ fn flip_then_recur_grammar() {
     assert_eq!(a[1]["filter"]["name_contains"][0], "Lariat");
 }
 
+/// Per-card flip self-trigger (task #119): "If this card is flipped, [you may] add
+/// it to your hand" -> OnFlip{SELF} + AddSelfToHand, "you may" on Effect::optional.
+#[test]
+fn flip_self_to_hand_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Mandatory: comma, not optional.
+    let e = one("If this card is flipped, add it to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["trigger"]["who"], "SELF");
+    assert_eq!(e["trigger"]["count"], Value::Null);
+    assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
+    assert_eq!(e["optional"], false);
+
+    // "you may" (with comma) -> optional.
+    let e = one("If this card is flipped, you may add it to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
+    assert_eq!(e["optional"], true);
+
+    // "you may" without the comma (the DB has both).
+    let e = one("If this card is flipped you may add it to your hand.");
+    assert_eq!(e["optional"], true);
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!
