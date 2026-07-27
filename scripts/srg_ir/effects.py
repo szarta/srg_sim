@@ -965,6 +965,17 @@ class AddFromDiscard(IRNode):
 
 
 @dataclass(frozen=True)
+class AddFlippedToHand(IRNode):
+    """Add cards from the just-flipped pool to hand — "add N of the flipped cards to your
+    hand" / "add all flipped Strikes to your hand". Selects from ``flipped_this_turn``
+    (still in the discard) matching ``filter``; ``count`` = how many (``None`` = all
+    matching). Flip-pool-scoped sibling of ``AddFromDiscard``. schema v88"""
+
+    count: int | None = None
+    filter: CardFilter = CardFilter()
+
+
+@dataclass(frozen=True)
 class SwapHandDiscard(IRNode):
     """"Switch 1 card in your hand with 1 card in your discard pile" (Collin, Mr.
     Rey): the owner picks one hand card out (→ discard, via the ``discard``/shed
@@ -1985,6 +1996,7 @@ Action = (
     | ShuffleDeck
     | ShuffleIntoDeck
     | AddFromDiscard
+    | AddFlippedToHand
     | SwapHandDiscard
     | RecurToDeckTop
     | CountsAsInPlay

@@ -1139,6 +1139,11 @@ impl Engine {
                 self.act_shuffle_into_deck(selector, *source, key)?
             }
             Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
+            Action::AddFlippedToHand {
+                count,
+                filter,
+                random,
+            } => self.act_add_flipped_to_hand(*count, filter, *random, key)?,
             Action::SwapHandDiscard => self.act_swap_hand_discard(key)?,
             Action::GrantSwapNextTurn { who } => self.act_grant_swap_next_turn(*who, key),
             Action::RecurToDeckTop { selector, count } => {
@@ -2069,6 +2074,66 @@ impl Engine {
             source: Some("discard".to_owned()),
             hidden: false, // discard (public) -> hand: which card left discard is visible
         }));
+        self.run_on_discard_move(key)?;
+        self.hand_cap(key)
+    }
+
+    /// "Add N of the flipped cards to your hand" — move up to `count` cards (all matching
+    /// when `count` is `None`) from the just-flipped pool to `key`'s hand. The pool is
+    /// this turn's flips (`flipped_this_turn`) that are still in the discard and match
+    /// `filter`; the owner picks which when there is a choice. See
+    /// [`Action::AddFlippedToHand`].
+    fn act_add_flipped_to_hand(
+        &mut self,
+        count: Option<i64>,
+        filter: &CardFilter,
+        random: bool,
+        key: &str,
+    ) -> Eng<()> {
+        let flipped: Vec<String> = self.state.players[key]
+            .flipped_this_turn
+            .iter()
+            .filter(|c| conditions::card_matches(c, filter))
+            .map(|c| c.db_uuid.clone())
+            .collect();
+        let mut pool: Vec<Card> = self.state.players[key]
+            .discard
+            .iter()
+            .filter(|c| flipped.contains(&c.db_uuid))
+            .cloned()
+            .collect();
+        let take = count.map_or(pool.len(), |n| (n.max(0) as usize).min(pool.len()));
+        if take == 0 {
+            return Ok(());
+        }
+        let t = self.state.turn_no;
+        for _ in 0..take {
+            if pool.is_empty() {
+                break;
+            }
+            let card = if random {
+                self.state.rng.reveal(&pool).cloned().unwrap()
+            } else {
+                self.pick_from(key, &pool, "target")?
+            };
+            pool.retain(|c| c.db_uuid != card.db_uuid);
+            let player = self.state.players.get_mut(key).unwrap();
+            if let Some(pos) = player
+                .discard
+                .iter()
+                .position(|c| c.db_uuid == card.db_uuid)
+            {
+                player.discard.remove(pos);
+            }
+            player.hand.push(card.clone());
+            self.log(Event::Search(CardMovement {
+                t,
+                player: key.to_owned(),
+                cards: vec![card.db_uuid],
+                source: Some("discard".to_owned()),
+                hidden: false, // flipped cards are public; which one entered hand is known
+            }));
+        }
         self.run_on_discard_move(key)?;
         self.hand_cap(key)
     }
@@ -5638,6 +5703,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::ShuffleDeck { .. } => "ShuffleDeck",
         Action::ShuffleIntoDeck { .. } => "ShuffleIntoDeck",
         Action::AddFromDiscard { .. } => "AddFromDiscard",
+        Action::AddFlippedToHand { .. } => "AddFlippedToHand",
         Action::SwapHandDiscard => "SwapHandDiscard",
         Action::GrantSwapNextTurn { .. } => "GrantSwapNextTurn",
         Action::RecurToDeckTop { .. } => "RecurToDeckTop",
@@ -9378,6 +9444,69 @@ mod cardona_mechanism_tests {
                 "flipper={flipper:?}: add-to-hand fired == {fires}"
             );
         }
+    }
+
+    #[test]
+    fn add_flipped_to_hand_pulls_matching_from_the_flip_pool() {
+        // "Flip 3 cards, add 1 flipped Strike to your hand": the flip fills the pool,
+        // then only a Strike among the flipped three is eligible.
+        let mut e = engine();
+        // Deck top: a Strike then two Grapples; only the Strike is eligible.
+        let mk = |u: &str, atk: &str| {
+            serde_json::from_value::<Card>(json!({"atk_type":atk,"db_uuid":u,"name":u,
+                "number":1,"play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+                "effects":[]}))
+            .unwrap()
+        };
+        e.state.players.get_mut("A").unwrap().deck =
+            vec![mk("s1", "Strike"), mk("g1", "Grapple"), mk("g2", "Grapple")];
+        e.act_flip(3, Who::SelfSide, "A").unwrap();
+        let filter = CardFilter {
+            atk_type: Some(AtkType::Strike),
+            ..Default::default()
+        };
+        e.act_add_flipped_to_hand(Some(1), &filter, false, "A")
+            .unwrap();
+        let p = &e.state.players["A"];
+        assert!(
+            p.hand.iter().any(|c| c.db_uuid == "s1"),
+            "the flipped Strike joined the hand"
+        );
+        assert!(
+            !p.discard.iter().any(|c| c.db_uuid == "s1"),
+            "it left the discard"
+        );
+        assert_eq!(p.discard.len(), 2, "the two Grapples stay in the discard");
+    }
+
+    #[test]
+    fn add_flipped_to_hand_none_count_takes_all_matching() {
+        // "add all flipped Strikes": count=None pulls every matching flipped card.
+        let mut e = engine();
+        let mk = |u: &str, atk: &str| {
+            serde_json::from_value::<Card>(json!({"atk_type":atk,"db_uuid":u,"name":u,
+                "number":1,"play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+                "effects":[]}))
+            .unwrap()
+        };
+        e.state.players.get_mut("A").unwrap().deck =
+            vec![mk("s1", "Strike"), mk("s2", "Strike"), mk("g1", "Grapple")];
+        e.act_flip(3, Who::SelfSide, "A").unwrap();
+        let filter = CardFilter {
+            atk_type: Some(AtkType::Strike),
+            ..Default::default()
+        };
+        e.act_add_flipped_to_hand(None, &filter, false, "A")
+            .unwrap();
+        let p = &e.state.players["A"];
+        assert_eq!(
+            p.hand
+                .iter()
+                .filter(|c| c.atk_type == AtkType::Strike)
+                .count(),
+            2,
+            "both flipped Strikes were added"
+        );
     }
 }
 

@@ -900,6 +900,41 @@ fn flip_provenance_grammar() {
     assert_eq!(e["actions"][0]["when"], "NEXT");
 }
 
+/// Flip-pool select grammar (task #119, schema v88): "Flip N cards, [randomly] add M
+/// [of the] flipped [<type>] to your hand" -> [Flip, AddFlippedToHand].
+#[test]
+fn add_flipped_to_hand_grammar() {
+    fn acts(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()["actions"].clone()
+    }
+
+    // "add M of the flipped cards" -> count=M, any filter, not random.
+    let a = acts("Flip 2 cards, add 1 of the flipped cards to your hand.");
+    assert_eq!(a[0]["@type"], "Flip");
+    assert_eq!(a[0]["n"], 2);
+    assert_eq!(a[1]["@type"], "AddFlippedToHand");
+    assert_eq!(a[1]["count"], 1);
+    assert_eq!(a[1]["filter"]["atk_type"], Value::Null);
+    assert_eq!(a[1]["random"], false);
+
+    // "randomly add 1" -> random.
+    let a = acts("Flip 2 cards, randomly add 1 of the flipped cards to your hand.");
+    assert_eq!(a[1]["random"], true);
+
+    // Typed filter, no "cards" noun, no "of the".
+    let a = acts("Flip 3 cards, add 1 flipped Strike to your hand.");
+    assert_eq!(a[1]["count"], 1);
+    assert_eq!(a[1]["filter"]["atk_type"], "Strike");
+
+    // "all" -> count null (all matching); "Flip 6" without the "cards" noun.
+    let a = acts("Flip 6, add all flipped Strikes to your hand.");
+    assert_eq!(a[0]["n"], 6);
+    assert_eq!(a[1]["count"], Value::Null);
+    assert_eq!(a[1]["filter"]["atk_type"], "Strike");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!

@@ -206,6 +206,9 @@ Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filte
                               # exactly like ModifyRoll (authored OnPlay for "for each OTHER … in play")
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
 AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
+AddFlippedToHand(count?, filter)  # "add N of the flipped cards to your hand" / "add all flipped Strikes …": move `count`
+                             # (None = all) matching cards from the turn's flip pool (flipped_this_turn ∩ discard) to hand;
+                             # owner picks on a choice. Flip-pool-scoped sibling of AddFromDiscard. schema v88
 ReturnToHand(selector, who, count=1, choose=False)  # bounce matching in-play cards to their OWNER's hand;
                              # choose=True picks from EITHER board ("any player has in play" — Fox Assassin V2). schema v20
 SwapHandDiscard               # "switch 1 card in your hand with 1 in your discard" (Collin, Mr. Rey): 1 hand card

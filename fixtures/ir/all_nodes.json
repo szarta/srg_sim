@@ -16,6 +16,24 @@
     }
   },
   {
+    "@type": "AddFlippedToHand",
+    "count": 1,
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "is_stop": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "play_orders": [],
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    },
+    "random": false
+  },
+  {
     "@type": "AlsoLead",
     "condition": {
       "@type": "Always"

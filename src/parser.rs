@@ -255,6 +255,29 @@ fn flip_self_gimmick(action: Action, optional: bool) -> Effect {
     flip_self(action, optional, Condition::FlippedForGimmick)
 }
 
+/// "[randomly] add N of the flipped cards to your hand" -> [`Action::AddFlippedToHand`].
+/// `count_word` is a number / "one" / "all" / "the" (`all`/`the` -> all matching);
+/// `filter_word` is `cards` (any) or an attack type.
+fn add_flipped_action(count_word: &str, filter_word: &str, random: bool) -> Action {
+    let count = match count_word.to_ascii_lowercase().as_str() {
+        "all" | "the" => None,
+        "one" => Some(1),
+        d => d.parse::<i64>().ok(),
+    };
+    let f = filter_word.to_ascii_lowercase();
+    let f = f.strip_suffix('s').unwrap_or(&f);
+    let filter = if f == "card" {
+        CardFilter::default()
+    } else {
+        cf_atk(count_atk(f))
+    };
+    Action::AddFlippedToHand {
+        count,
+        filter,
+        random,
+    }
+}
+
 /// "<flipper> flips N cards for each <desc> <per_who> ha(s|ve) in play" — the
 /// per-count flip family, mirroring [`per_draw`].
 fn per_flip(n: i64, who: Who, desc: &str, per_who: Who) -> Option<Effect> {
@@ -1850,6 +1873,25 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Action::PlaySelf,
                     c.get(1).is_some(),
                     Condition::DuringTurn { who: Who::SelfSide },
+                ))
+            },
+        ),
+        // Flip-pool select (schema v88): "Flip N cards, [randomly] add M of the flipped
+        // cards to your hand" / "Flip 6, add all flipped Strikes to your hand" — the flip
+        // fills the pool (flipped_this_turn), then AddFlippedToHand pulls M matching from
+        // it. ("all"/"the" -> all matching; "randomly" -> RNG pick.) Trigger-prefixed
+        // ("When you flip …") and stat-gated variants are the deferred tail.
+        rule(
+            r"Flip (\d+)(?: cards?)?,? (?:and |then )?(randomly )?add (\d+|all|the|[Oo]ne) (?:of the )?flipped (cards?|Strikes?|Grapples?|Submissions?) to your hand",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        flip(num(c, 1), Who::SelfSide),
+                        add_flipped_action(&c[3], &c[4], c.get(2).is_some()),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
                 ))
             },
         ),

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 87;
+pub const SCHEMA_VERSION: i64 = 88;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -860,6 +860,21 @@ pub enum Action {
     /// normal play by its owner (stop window, OnPlay/OnHit), a bonus action outside the
     /// turn's one-card play. "you may" lives on [`Effect::optional`]. schema v86
     PlaySelf,
+    /// Add cards from the just-flipped pool to hand — "add N of the flipped cards to
+    /// your hand" / "add all flipped Strikes to your hand" / "randomly add 1 of the
+    /// flipped cards…". Selects from `PlayerState.flipped_this_turn` (the turn's flips,
+    /// recorded by `act_flip`) that are still in the discard and match `filter`; `count`
+    /// = how many (`None` = all matching), `random` picks by RNG instead of by the
+    /// owner. Distinct from [`Action::AddFromDiscard`] (whole discard, one card): this is
+    /// scoped to the flip pool. schema v88
+    AddFlippedToHand {
+        #[serde(default)]
+        count: Option<i64>,
+        #[serde(default)]
+        filter: CardFilter,
+        #[serde(default)]
+        random: bool,
+    },
     /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
     /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
     /// (→ hand). A no-op if either zone is empty. The "you may" lives on
@@ -1887,6 +1902,21 @@ pub enum IrNode {
     /// normal play by its owner (stop window, OnPlay/OnHit), a bonus action outside the
     /// turn's one-card play. "you may" lives on [`Effect::optional`]. schema v86
     PlaySelf,
+    /// Add cards from the just-flipped pool to hand — "add N of the flipped cards to
+    /// your hand" / "add all flipped Strikes to your hand" / "randomly add 1 of the
+    /// flipped cards…". Selects from `PlayerState.flipped_this_turn` (the turn's flips,
+    /// recorded by `act_flip`) that are still in the discard and match `filter`; `count`
+    /// = how many (`None` = all matching), `random` picks by RNG instead of by the
+    /// owner. Distinct from [`Action::AddFromDiscard`] (whole discard, one card): this is
+    /// scoped to the flip pool. schema v88
+    AddFlippedToHand {
+        #[serde(default)]
+        count: Option<i64>,
+        #[serde(default)]
+        filter: CardFilter,
+        #[serde(default)]
+        random: bool,
+    },
     /// "You may switch 1 card in your hand with 1 card in your discard pile" (Collin,
     /// Mr. Rey): the owner picks one hand card out (→ discard) and one discard card in
     /// (→ hand). A no-op if either zone is empty. The "you may" lives on

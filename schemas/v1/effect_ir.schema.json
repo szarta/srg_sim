@@ -19,6 +19,33 @@
       ],
       "type": "object"
     },
+    "AddFlippedToHand": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "AddFlippedToHand"
+        },
+        "count": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "random": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "@type",
+        "count",
+        "filter",
+        "random"
+      ],
+      "type": "object"
+    },
     "AddFromDiscard": {
       "additionalProperties": false,
       "properties": {
@@ -804,6 +831,9 @@
               },
               {
                 "$ref": "#/$defs/AddFromDiscard"
+              },
+              {
+                "$ref": "#/$defs/AddFlippedToHand"
               },
               {
                 "$ref": "#/$defs/RecurToDeckTop"
@@ -1647,6 +1677,9 @@
               },
               {
                 "$ref": "#/$defs/AddFromDiscard"
+              },
+              {
+                "$ref": "#/$defs/AddFlippedToHand"
               },
               {
                 "$ref": "#/$defs/RecurToDeckTop"
@@ -2518,6 +2551,9 @@
       "oneOf": [
         {
           "$ref": "#/$defs/AddFromDiscard"
+        },
+        {
+          "$ref": "#/$defs/AddFlippedToHand"
         },
         {
           "$ref": "#/$defs/AlsoLead"
@@ -4882,5 +4918,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 87
+  "version": 88
 }
