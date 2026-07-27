@@ -900,6 +900,36 @@ fn flip_provenance_grammar() {
     assert_eq!(e["actions"][0]["when"], "NEXT");
 }
 
+/// Gated reveal+flip grammar (task #119): "If you have another <order> in play, look
+/// at the top N cards of your deck; put M in your hand, and flip the others" -> the
+/// scry_flip Scry gated on HasInPlay{<order>}.
+#[test]
+fn gated_reveal_flip_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "another Lead" gate + top-3, put-1, flip others.
+    let e = one("If you have another Lead in play, look at the top 3 cards of your deck; put 1 in your hand, and flip the others.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["filter"]["play_order"], "Lead");
+    assert_eq!(e["actions"][0]["@type"], "Scry");
+    assert_eq!(e["actions"][0]["top"], 3);
+    assert_eq!(e["actions"][0]["to_hand"], 1);
+    assert_eq!(e["actions"][0]["rest"], "FLIP");
+    assert_eq!(e["actions"][0]["reveal"], false);
+
+    // "another Follow Up" gate + top-4; "put 1 in your hand and flip the others" (no
+    // comma before "and").
+    let e = one("If you have another Follow Up in play, look at the top 4 cards of your deck; put 1 in your hand and flip the others.");
+    assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
+    assert_eq!(e["actions"][0]["top"], 4);
+    assert_eq!(e["actions"][0]["to_hand"], 1);
+    assert_eq!(e["actions"][0]["rest"], "FLIP");
+}
+
 /// Flip-pool select grammar (task #119, schema v88): "Flip N cards, [randomly] add M
 /// [of the] flipped [<type>] to your hand" -> [Flip, AddFlippedToHand].
 #[test]

@@ -1796,6 +1796,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Gated reveal+flip: "If you have a(nother) <order> in play, look at the top N
+        // cards of your deck; put M in your hand, and flip the others" -> the same
+        // scry_flip Scry, but condition-gated on HasInPlay{<order>}. Reuses the body
+        // pattern above with a lowercase "look"/"reveal" (mid-sentence).
+        rule(
+            r"If you have a(?:nother)? (.+?) in play, (look at|reveal) the top (\d+) cards? of your deck[,;] ?(?:and )?(?:add|put) (\d+)(?: cards?)? (?:to|in) your hand,?(?: and)? flip the others?",
+            |c| {
+                let cond = has_in_play_desc(&c[1])?;
+                let reveal = c[2].eq_ignore_ascii_case("reveal");
+                Some(eff(
+                    on_hit(),
+                    vec![scry_flip(reveal, num(c, 3), num(c, 4))],
+                    cond,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Compound flip + recur-to-hand: "Flip N cards, then take/add M <filter>
         // from your discard pile [and add it] to your hand" -> Flip then
         // AddFromDiscard (which pulls one, as the standalone recur rule does; the
