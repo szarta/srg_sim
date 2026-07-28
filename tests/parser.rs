@@ -1380,6 +1380,33 @@ fn breakout_roll_bonus() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Gimmick-blank grammar (task #130): "[Your opponent's] Gimmick is blank" -> a Static
+/// BlankGimmick marker (the action pre-existed but was override-only). WhileInPlay.
+#[test]
+fn gimmick_blank_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Opponent's gimmick blanked.
+    let e = one("Your opponent's Gimmick is blank.");
+    assert_eq!(e["actions"][0]["@type"], "BlankGimmick");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["duration"], "WHILE_IN_PLAY");
+    assert_eq!(e["trigger"]["@type"], "Static");
+
+    // Self.
+    let e = one("Your Gimmick is blank.");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+
+    // Gated cascade via the generic gate rule.
+    let e = one("If the Crowd Meter is 5 or greater, your opponent's Gimmick is blank.");
+    assert_eq!(e["actions"][0]["@type"], "BlankGimmick");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.

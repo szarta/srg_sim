@@ -2315,6 +2315,26 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             e.optional = c.get(1).is_some();
             Some(e)
         }),
+        // "[Your opponent's] Gimmick is blank" -> a Static `BlankGimmick` marker (the
+        // action pre-existed but was override-only). Self ("Your Gimmick is blank") vs
+        // opponent; WhileInPlay. Gated variants ("If the Crowd Meter is N or greater, …")
+        // cascade via the generic gate rule.
+        rule(r"Your ([Oo]pponent's )?[Gg]immick is blank", |c| {
+            let who = if c.get(1).is_some() {
+                Who::Opp
+            } else {
+                Who::SelfSide
+            };
+            Some(eff(
+                Trigger::Static,
+                vec![Action::BlankGimmick {
+                    who,
+                    duration: Duration::WhileInPlay,
+                }],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
         rule(
             r"Flip cards? until you(?:r)? flip a (.+?), add (?:that .+?|it) to your hand",
             |c| flip_until(&c[1], true),
