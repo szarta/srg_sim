@@ -960,6 +960,7 @@
               "per_zone": "IN_PLAY",
               "skill": "Grapple",
               "target_highest": false,
+              "target_lowest": false,
               "who": "SELF"
             },
             {
@@ -1042,6 +1043,7 @@
               "per_zone": "IN_PLAY",
               "skill": "Submission",
               "target_highest": false,
+              "target_lowest": false,
               "who": "SELF"
             },
             {
@@ -4268,6 +4270,7 @@
               "per_zone": "IN_PLAY",
               "skill": "Agility",
               "target_highest": false,
+              "target_lowest": false,
               "who": "SELF"
             }
           ],
@@ -4895,6 +4898,7 @@
               "per_zone": "IN_PLAY",
               "skill": "Agility",
               "target_highest": false,
+              "target_lowest": false,
               "who": "OPP"
             }
           ],
@@ -5254,6 +5258,7 @@
               "per_zone": "IN_PLAY",
               "skill": "Agility",
               "target_highest": false,
+              "target_lowest": false,
               "who": "SELF"
             }
           ],
@@ -6522,6 +6527,7 @@
               "per_zone": "IN_PLAY",
               "skill": "Power",
               "target_highest": false,
+              "target_lowest": false,
               "who": "SELF"
             }
           ],
@@ -6601,6 +6607,7 @@
               "per_zone": "IN_PLAY",
               "skill": "Agility",
               "target_highest": false,
+              "target_lowest": false,
               "who": "SELF"
             }
           ],
@@ -7939,6 +7946,7 @@
               "per_zone": "IN_PLAY",
               "skill": "Strike",
               "target_highest": false,
+              "target_lowest": false,
               "who": "SELF"
             }
           ],

@@ -1258,6 +1258,7 @@ class BuffSkill(IRNode):
     who: Who = Who.SELF
     duration: Duration = Duration.WHILE_IN_PLAY
     target_highest: bool = False
+    target_lowest: bool = False
     per_crowd: bool = False
     cap: int | None = None
     # When set, the bonus is ``delta * (count of the target's cards in ``per_zone``

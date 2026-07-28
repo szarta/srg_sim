@@ -536,6 +536,10 @@
         "target_highest": {
           "type": "boolean"
         },
+        "target_lowest": {
+          "default": false,
+          "type": "boolean"
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
@@ -5037,5 +5041,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 92
+  "version": 93
 }

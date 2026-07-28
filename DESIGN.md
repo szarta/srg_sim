@@ -247,7 +247,8 @@ ShuffleHandDraw(who, count, choose=False)  # schema v13: shuffle a player's hand
 CountsAsInPlay(selector, count=2)  # Static self-decl: this card counts as `count` cards matching `selector`
 ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP, per_zone=IN_PLAY)  # delta scales by count of `per` cards
                               # in `per_zone` (IN_PLAY, or DISCARD for "+2 for each Finish in your discard pile"; schema v70)
-BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, per_crowd?, cap?, per?, per_zone=IN_PLAY)
+BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, target_lowest?, per_crowd?, cap?, per?, per_zone=IN_PLAY)
+                                                 # target_lowest -> retarget to the LOWEST base skill ("+N to your lowest skill"); mirrors target_highest. schema v93
                                                  # per=CardFilter -> bonus = delta * (count of the target's cards
                                                  # in per_zone {IN_PLAY|DISCARD|FLIPPED_THIS_TURN} matching per), clamped to cap
                                                  # ("+1 for each card in play with 'Chin' in the name, Max +3"; FLIPPED_THIS_TURN

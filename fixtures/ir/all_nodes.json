@@ -136,7 +136,8 @@
     "per_zone": "IN_PLAY",
     "skill": "Power",
     "target_highest": false,
-    "who": "SELF"
+    "who": "SELF",
+    "target_lowest": true
   },
   {
     "@type": "Bump",

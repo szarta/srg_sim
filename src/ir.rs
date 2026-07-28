@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 92;
+pub const SCHEMA_VERSION: i64 = 93;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1170,6 +1170,11 @@ pub enum Action {
         who: Who,
         duration: Duration,
         target_highest: bool,
+        /// Retarget the buff to the target's LOWEST base skill (ties -> earlier in
+        /// canonical order), mirroring `target_highest`. "+N to your lowest skill".
+        /// schema v93
+        #[serde(default)]
+        target_lowest: bool,
         per_crowd: bool,
         /// Clamps the bonus. Under a `While*` duration this bounds the per-read
         /// `per`/`per_crowd` product (see `per`). Under a TIMED duration
@@ -2249,6 +2254,11 @@ pub enum IrNode {
         who: Who,
         duration: Duration,
         target_highest: bool,
+        /// Retarget the buff to the target's LOWEST base skill (ties -> earlier in
+        /// canonical order), mirroring `target_highest`. "+N to your lowest skill".
+        /// schema v93
+        #[serde(default)]
+        target_lowest: bool,
         per_crowd: bool,
         /// Clamps the bonus. Under a `While*` duration this bounds the per-read
         /// `per`/`per_crowd` product (see `per`). Under a TIMED duration

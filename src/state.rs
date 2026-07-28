@@ -702,6 +702,7 @@ impl GameState {
                     delta,
                     who,
                     target_highest,
+                    target_lowest,
                     per_crowd,
                     cap,
                     per,
@@ -713,6 +714,7 @@ impl GameState {
                         let (sk, d) = self.resolve_buff(
                             *skill,
                             *target_highest,
+                            *target_lowest,
                             *per_crowd,
                             *cap,
                             *delta,
@@ -736,6 +738,7 @@ impl GameState {
         &self,
         skill: Skill,
         target_highest: bool,
+        target_lowest: bool,
         per_crowd: bool,
         cap: Option<i64>,
         delta: i64,
@@ -743,12 +746,18 @@ impl GameState {
         per_zone: CountZone,
         target: &str,
     ) -> (Skill, i64) {
-        let sk = if target_highest {
+        let sk = if target_highest || target_lowest {
             let base = self.players[target].competitor.stats;
             let mut best = Skill::ALL[0];
             for &s in &Skill::ALL[1..] {
-                if base.get(s) > base.get(best) {
-                    best = s; // strictly greater keeps the first max (ties -> earlier)
+                // strictly-better keeps the FIRST extreme (ties -> earlier in order).
+                let better = if target_highest {
+                    base.get(s) > base.get(best)
+                } else {
+                    base.get(s) < base.get(best)
+                };
+                if better {
+                    best = s;
                 }
             }
             best

@@ -1289,6 +1289,38 @@ fn crowd_meter_swing() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Dynamic-target skill buff (task #130): "+N to your lowest/highest skill" and "Your
+/// lowest/highest skill is +N" -> BuffSkill with target_lowest/target_highest, resolved
+/// to the extreme base skill at derived-stats time. schema v93.
+#[test]
+fn lowest_highest_skill_buff() {
+    fn buff(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        let e = serde_json::to_value(&effs[0]).unwrap();
+        assert_eq!(e["actions"][0]["@type"], "BuffSkill", "{text:?}");
+        e["actions"][0].clone()
+    }
+
+    // "+N to your lowest skill" -> target_lowest, static WhileInPlay.
+    let a = buff("+2 to your lowest skill.");
+    assert_eq!(a["target_lowest"], true);
+    assert_eq!(a["target_highest"], false);
+    assert_eq!(a["delta"], 2);
+
+    // "Your lowest skill is +N" -> same.
+    let a = buff("Your lowest skill is +1.");
+    assert_eq!(a["target_lowest"], true);
+    assert_eq!(a["delta"], 1);
+
+    // Highest mirror.
+    let a = buff("+3 to your highest skill.");
+    assert_eq!(a["target_highest"], true);
+    assert_eq!(a["target_lowest"], false);
+    let a = buff("Your highest skill is +2.");
+    assert_eq!(a["target_highest"], true);
+}
+
 /// "[If/When <gate>,] this card is also a <order>" (task #130): the card gains an extra
 /// play-order slot via AlsoLead, whose OWN condition carries the gate. gate_condition now
 /// falls back to the rich stop_condition parser (Crowd Meter, skill/hand compare, …).

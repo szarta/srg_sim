@@ -834,6 +834,25 @@ fn buff(skill: Skill, delta: i64, who: Who) -> Action {
         who,
         duration: Duration::WhileInPlay,
         target_highest: false,
+        target_lowest: false,
+        per_crowd: false,
+        cap: None,
+        per: None,
+        per_zone: CountZone::InPlay,
+    }
+}
+
+/// "+N to your lowest/highest skill" -> a [`Action::BuffSkill`] whose target skill is
+/// resolved dynamically at derived-stats time (`resolve_buff`). The `skill` field is a
+/// placeholder (never read when `target_lowest`/`target_highest` is set).
+fn buff_extreme(highest: bool, delta: i64, who: Who) -> Action {
+    Action::BuffSkill {
+        skill: Skill::ALL[0],
+        delta,
+        who,
+        duration: Duration::WhileInPlay,
+        target_highest: highest,
+        target_lowest: !highest,
         per_crowd: false,
         cap: None,
         per: None,
@@ -851,6 +870,7 @@ fn buff_per(skill: Skill, delta: i64, per: Option<CardFilter>, cap: Option<i64>)
         who: Who::SelfSide,
         duration: Duration::WhileInPlay,
         target_highest: false,
+        target_lowest: false,
         per_crowd: false,
         cap,
         per,
@@ -1646,6 +1666,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         who: Who::SelfSide,
                         duration: Duration::WhileInPlay,
                         target_highest: false,
+                        target_lowest: false,
                         per_crowd: false,
                         cap,
                         per: Some(cf_name(names)),
@@ -1660,6 +1681,25 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             Some(eff(
                 Trigger::Static,
                 vec![buff(skill(&c[1]), num(c, 2), Who::SelfSide)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
+        // "+N to your lowest/highest skill" and "Your lowest/highest skill is +N" -> a
+        // dynamic-target skill buff, resolved to the extreme BASE skill at derived-stats
+        // time (`resolve_buff`), mirroring Copy Kat's `target_highest`.
+        rule(r"\+(\d+) to your (lowest|highest) skill", |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![buff_extreme(&c[2] == "highest", num(c, 1), Who::SelfSide)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
+        rule(r"Your (lowest|highest) skill is \+(\d+)", |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![buff_extreme(&c[1] == "highest", num(c, 2), Who::SelfSide)],
                 Condition::Always,
                 Duration::WhileInPlay,
             ))
@@ -3490,6 +3530,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     who: Who::SelfSide,
                     duration: Duration::WhileInPlay,
                     target_highest: false,
+                    target_lowest: false,
                     per_crowd: false,
                     cap: None,
                     per: Some(per.clone()),

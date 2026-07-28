@@ -6587,6 +6587,7 @@
                           "per_zone": "IN_PLAY",
                           "skill": "Grapple",
                           "target_highest": false,
+                          "target_lowest": false,
                           "who": "SELF"
                         },
                         {
@@ -8273,6 +8274,7 @@
                           "per_zone": "IN_PLAY",
                           "skill": "Grapple",
                           "target_highest": false,
+                          "target_lowest": false,
                           "who": "SELF"
                         },
                         {
@@ -9833,6 +9835,7 @@
                           "per_zone": "IN_PLAY",
                           "skill": "Grapple",
                           "target_highest": false,
+                          "target_lowest": false,
                           "who": "SELF"
                         },
                         {
@@ -11560,6 +11563,7 @@
                           "per_zone": "IN_PLAY",
                           "skill": "Grapple",
                           "target_highest": false,
+                          "target_lowest": false,
                           "who": "SELF"
                         },
                         {
@@ -13548,6 +13552,7 @@
                           "per_zone": "IN_PLAY",
                           "skill": "Grapple",
                           "target_highest": false,
+                          "target_lowest": false,
                           "who": "SELF"
                         },
                         {
@@ -15828,6 +15833,7 @@
                           "per_zone": "IN_PLAY",
                           "skill": "Grapple",
                           "target_highest": false,
+                          "target_lowest": false,
                           "who": "SELF"
                         },
                         {
@@ -18199,6 +18205,7 @@
                           "per_zone": "IN_PLAY",
                           "skill": "Grapple",
                           "target_highest": false,
+                          "target_lowest": false,
                           "who": "SELF"
                         },
                         {

@@ -133,3 +133,41 @@ fn direction_matters() {
         None
     ));
 }
+
+/// A `target_lowest` / `target_highest` BuffSkill resolves to A's extreme BASE skill at
+/// derived-stats time. bull_fae_fresh base: Agility 5 (lowest), Power 10 (highest).
+#[test]
+fn extreme_target_buff_resolves_to_base_extreme() {
+    fn state_with_buff(target: &str) -> GameState {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("fixtures/state/positions.json");
+        let doc: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let mut state = doc["positions"][0]["state"].clone();
+        let eff = json!({
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{
+                "@type": "BuffSkill", "skill": "Power", "delta": 2, "who": "SELF",
+                "duration": "WHILE_IN_PLAY", "target_highest": target == "highest",
+                "target_lowest": target == "lowest", "per_crowd": false,
+                "cap": null, "per": null, "per_zone": "IN_PLAY"
+            }],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "test", "source": "gimmick", "optional": false
+        });
+        state["players"]["A"]["competitor"]["effects"]
+            .as_array_mut()
+            .unwrap()
+            .push(eff);
+        GameState::from_dict(state).expect("from_dict")
+    }
+    let low = state_with_buff("lowest");
+    // Agility (5) is the lowest base skill -> +2 makes it 7; Power (10) is untouched.
+    assert_eq!(low.effective_stats("A", None).get(Skill::Agility), 7);
+    assert_eq!(low.effective_stats("A", None).get(Skill::Power), 10);
+
+    let high = state_with_buff("highest");
+    // Power (10) is the highest -> +2 makes it 12; Agility stays 5.
+    assert_eq!(high.effective_stats("A", None).get(Skill::Power), 12);
+    assert_eq!(high.effective_stats("A", None).get(Skill::Agility), 5);
+}

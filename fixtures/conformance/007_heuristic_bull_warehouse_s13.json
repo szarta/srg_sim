@@ -991,7 +991,8 @@
                   "per_zone": "IN_PLAY",
                   "skill": "Grapple",
                   "target_highest": false,
-                  "who": "SELF"
+                  "who": "SELF",
+                  "target_lowest": false
                 },
                 {
                   "@type": "AlsoLead",
@@ -1078,7 +1079,8 @@
                   "per_zone": "IN_PLAY",
                   "skill": "Submission",
                   "target_highest": false,
-                  "who": "SELF"
+                  "who": "SELF",
+                  "target_lowest": false
                 },
                 {
                   "@type": "AlsoLead",
