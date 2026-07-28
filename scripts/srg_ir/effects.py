@@ -1826,6 +1826,9 @@ class BreakoutModifier(IRNode):
     # Skill gate on the rolled breakout skill ("+1 to Strike during your breakout
     # rolls"); None = every breakout roll regardless of the rolled skill. schema v79
     when_skill: str | None = None
+    # Whose breakout rolls this modifies (owner's POV): SELF = the owner's own,
+    # OPP = "your opponent's breakout rolls …". schema v94
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)

@@ -1577,14 +1577,27 @@ fn finish_bonus(delta: i64, when_skill: Option<Skill>, either: bool) -> Action {
     }
 }
 
-/// A rolled-skill-gated breakout-roll bonus ("+1 to Strike during your breakout
-/// rolls", Pineapple). `when_skill` = None applies to every breakout roll. schema v79
-fn breakout_mod(delta: i64, when_skill: Option<Skill>) -> Action {
+/// A breakout-roll modifier on `who`'s breakout rolls (`SelfSide` = the owner's own,
+/// `Opp` = "your opponent's breakout rolls …"), gated to `attempts` (a single attempt
+/// index; `None` = every attempt) and `when_skill` (`None` = any rolled skill). schema v94
+fn breakout_mod_who(
+    delta: i64,
+    who: Who,
+    attempts: Option<i64>,
+    when_skill: Option<Skill>,
+) -> Action {
     Action::BreakoutModifier {
         delta,
-        attempts: None,
+        attempts,
         when_skill,
+        who,
     }
+}
+
+/// A rolled-skill-gated SELF breakout-roll bonus ("+1 to Strike during your breakout
+/// rolls", Pineapple). `when_skill` = None applies to every breakout roll. schema v79
+fn breakout_mod(delta: i64, when_skill: Option<Skill>) -> Action {
+    breakout_mod_who(delta, Who::SelfSide, None, when_skill)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -3501,18 +3514,25 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        // Flat SELF breakout-roll bonus (no skill gate): "Your breakout rolls are +N" /
-        // "+N to your breakout rolls". `BreakoutModifier` is inherently self-directed
-        // (breakout_bonus scans the defender's OWN standing effects); opponent-directed
-        // breakout mods have no `who` field yet and stay Unsupported.
-        rule(r"Your [Bb]reakout [Rr]olls? (?:is|are) ([+-]\d+)", |c| {
-            Some(eff(
-                Trigger::Static,
-                vec![breakout_mod(c[1].parse().ok()?, None)],
-                Condition::Always,
-                Duration::WhileInPlay,
-            ))
-        }),
+        // Flat breakout-roll bonus (no skill gate): "[Your opponent's] breakout rolls are
+        // +N" / "+N to your breakout rolls". `who` picks whose breakout rolls; the "for
+        // each …" per-count forms have no per-count on this action and stay Unsupported.
+        rule(
+            r"Your ([Oo]pponent's )?[Bb]reakout [Rr]olls? (?:is|are) ([+-]\d+)",
+            |c| {
+                let who = if c.get(1).is_some() {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
+                Some(eff(
+                    Trigger::Static,
+                    vec![breakout_mod_who(c[2].parse().ok()?, who, None, None)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         rule(r"\+(\d+) to your [Bb]reakout [Rr]olls?", |c| {
             Some(eff(
                 Trigger::Static,
@@ -3521,18 +3541,24 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
-        // Attempt-indexed SELF bonus: "Your 3rd breakout roll is +N" -> the bonus applies
-        // only on that attempt (BreakoutModifier.attempts, an attempt-index gate).
+        // Attempt-indexed bonus: "[Your opponent's] 3rd breakout roll is +N" -> the bonus
+        // applies only on that attempt (BreakoutModifier.attempts, an attempt-index gate).
         rule(
-            r"Your (\d+)(?:st|nd|rd|th) [Bb]reakout [Rr]oll is ([+-]\d+)",
+            r"Your ([Oo]pponent's )?(\d+)(?:st|nd|rd|th) [Bb]reakout [Rr]oll is ([+-]\d+)",
             |c| {
+                let who = if c.get(1).is_some() {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
                 Some(eff(
                     Trigger::Static,
-                    vec![Action::BreakoutModifier {
-                        delta: c[2].parse().ok()?,
-                        attempts: Some(num(c, 1)),
-                        when_skill: None,
-                    }],
+                    vec![breakout_mod_who(
+                        c[3].parse().ok()?,
+                        who,
+                        Some(num(c, 2)),
+                        None,
+                    )],
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))

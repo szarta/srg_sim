@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 93;
+pub const SCHEMA_VERSION: i64 = 94;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1483,6 +1483,13 @@ pub enum Action {
         /// `None` = every breakout roll regardless of the rolled skill. schema v79
         #[serde(default)]
         when_skill: Option<Skill>,
+        /// Whose breakout rolls this modifies, from the OWNER's point of view. `SelfSide`
+        /// (the default) = the owner's own breakout rolls ("your breakout rolls are +N");
+        /// `Opp` = the owner's opponent's ("your opponent's breakout rolls are -N"). Read
+        /// by `breakout_bonus`, which sums a defender's own `SelfSide` mods with their
+        /// opponent's `Opp` mods. schema v94
+        #[serde(default)]
+        who: Who,
     },
     LowestRollWins,
     FlipGimmickSigns {
@@ -2567,6 +2574,13 @@ pub enum IrNode {
         /// `None` = every breakout roll regardless of the rolled skill. schema v79
         #[serde(default)]
         when_skill: Option<Skill>,
+        /// Whose breakout rolls this modifies, from the OWNER's point of view. `SelfSide`
+        /// (the default) = the owner's own breakout rolls ("your breakout rolls are +N");
+        /// `Opp` = the owner's opponent's ("your opponent's breakout rolls are -N"). Read
+        /// by `breakout_bonus`, which sums a defender's own `SelfSide` mods with their
+        /// opponent's `Opp` mods. schema v94
+        #[serde(default)]
+        who: Who,
     },
     LowestRollWins,
     FlipGimmickSigns {

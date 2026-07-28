@@ -291,10 +291,12 @@ fn negate_action(action: &Action) -> Action {
             delta,
             attempts,
             when_skill,
+            who,
         } => Action::BreakoutModifier {
             delta: -*delta,
             attempts: *attempts,
             when_skill: *when_skill,
+            who: *who,
         },
         other => other.clone(),
     }
@@ -4439,9 +4441,21 @@ impl Engine {
     /// ("your breakout rolls are +1"). Scans the same standing set as
     /// [`finish_roll_bonus`](Self::finish_roll_bonus).
     fn breakout_bonus(&self, defender: &str, attempt_no: i64, rolled: Skill) -> i64 {
+        // The defender's own `SelfSide` mods plus their opponent's `Opp` mods both land on
+        // the defender's breakout roll ("your breakout rolls are +1" from the defender;
+        // "your opponent's breakout rolls are -1" from the other side).
+        let opp = self.state.opponent_of(defender);
+        self.breakout_mods_from(defender, attempt_no, rolled, Who::SelfSide)
+            + self.breakout_mods_from(&opp, attempt_no, rolled, Who::Opp)
+    }
+
+    /// Sum the `BreakoutModifier` deltas in `owner`'s standing effects whose `who` equals
+    /// `want` and whose attempt/skill gates admit `(attempt_no, rolled)`. Each effect's
+    /// condition is evaluated from `owner`'s point of view (they declared it).
+    fn breakout_mods_from(&self, owner: &str, attempt_no: i64, rolled: Skill, want: Who) -> i64 {
         let mut total = 0;
-        for eff in self.standing_effects(defender) {
-            if !conditions::holds(&eff.condition, &self.state, defender, None) {
+        for eff in self.standing_effects(owner) {
+            if !conditions::holds(&eff.condition, &self.state, owner, None) {
                 continue;
             }
             for a in &eff.actions {
@@ -4449,11 +4463,12 @@ impl Engine {
                     delta,
                     attempts,
                     when_skill,
+                    who,
                 } = a
                 {
                     let attempt_ok = attempts.is_none() || *attempts == Some(attempt_no);
                     let skill_ok = when_skill.is_none() || *when_skill == Some(rolled);
-                    if attempt_ok && skill_ok {
+                    if *who == want && attempt_ok && skill_ok {
                         total += *delta;
                     }
                 }
@@ -5925,6 +5940,31 @@ mod breakout_modifier_tests {
             0,
             "rolled Agility → gated bonus does not apply"
         );
+    }
+
+    #[test]
+    fn opp_directed_modifier_lands_on_the_defender() {
+        // "Your opponent's breakout rolls are -2": a `who:OPP` modifier on B lowers A's
+        // (the defender's) breakout roll, while a `who:SELF` mod on B does not touch A.
+        let mut engine = engine();
+        let opp_mod = json!({
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "BreakoutModifier", "delta": -2, "attempts": null,
+                "when_skill": null, "who": "OPP"}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "t", "source": "gimmick", "optional": false
+        });
+        push_gimmick(&mut engine, "B", opp_mod);
+        assert_eq!(
+            engine.breakout_bonus("A", 1, Skill::Strike),
+            -2,
+            "B's OPP-directed mod lowers A's breakout roll"
+        );
+        // A's own board carries no SelfSide mod, and B's mod is OPP-directed, so B's own
+        // breakout roll is unaffected.
+        assert_eq!(engine.breakout_bonus("B", 1, Skill::Strike), 0);
     }
 
     fn strike_cards(n: usize) -> Vec<Card> {

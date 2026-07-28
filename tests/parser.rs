@@ -1359,8 +1359,24 @@ fn breakout_roll_bonus() {
         assert_eq!(e["condition"]["@type"], "CrowdMeterCompare", "{prefix}");
     }
 
-    // Opponent-directed has no who field -> declines cleanly.
+    // Opponent-directed: who=OPP (schema v94).
     let e = one("Your opponent's breakout rolls are -1.");
+    assert_eq!(e["actions"][0]["@type"], "BreakoutModifier");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["delta"], -1);
+
+    // Opponent, attempt-indexed.
+    let e = one("Your opponent's 2nd breakout roll is -2.");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["attempts"], 2);
+    assert_eq!(e["actions"][0]["delta"], -2);
+
+    // The self forms stay who=SELF.
+    let e = one("Your breakout rolls are +1.");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+
+    // Per-count opp form ("for each …") has no per-count on this action -> declines.
+    let e = one("Your opponent's breakout rolls are -1 for each Stop they have in play.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 

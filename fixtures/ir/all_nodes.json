@@ -124,7 +124,8 @@
     "@type": "BreakoutModifier",
     "attempts": null,
     "delta": 0,
-    "when_skill": null
+    "when_skill": null,
+    "who": "OPP"
   },
   {
     "@type": "BuffSkill",
