@@ -1150,6 +1150,52 @@ fn trigger_prefix_body_splits() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// OnBreakoutRoll(Opp) trigger-body split (task #130): "Each time your opponent rolls for
+/// a Breakout roll, <body>". The body dispatches through the whole grammar; a leading
+/// third-person "they <verb>" resolves to the opponent (the roller) via the opp-subject
+/// grammar aliases.
+#[test]
+fn breakout_roll_body_split() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Self-side draw body.
+    let e = one("Each time your opponent rolls for a Breakout roll, draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "OnBreakoutRoll");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+
+    // "they randomly bury N" -> opponent buries from hand at random.
+    let e =
+        one("Each time your opponent rolls for a Breakout roll, they randomly bury 1 card in their hand.");
+    assert_eq!(e["trigger"]["@type"], "OnBreakoutRoll");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["random"], true);
+
+    // "they flip N cards" -> opponent flips.
+    let e = one("Each time your opponent rolls for a breakout roll, they flip 3 cards.");
+    assert_eq!(e["actions"][0]["@type"], "Flip");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+
+    // Compound body under the trigger.
+    let e = one(
+        "Each time your opponent rolls for a Breakout roll, draw 2 cards and your opponent discards 2 cards.",
+    );
+    assert_eq!(e["trigger"]["@type"], "OnBreakoutRoll");
+    let kinds: Vec<&str> = e["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| a["@type"].as_str().unwrap())
+        .collect();
+    assert_eq!(kinds, ["Draw", "Discard"]);
+}
+
 /// Compound trigger bodies (task #119): "<action A> and/then <action B>" under a trigger
 /// prefix folds into one effect with a concatenated action list.
 #[test]
@@ -1284,7 +1330,9 @@ fn choice_body_split() {
     assert_eq!(branch_types(&e), ["Draw", "ShuffleIntoDeck"]);
 
     // Under a trigger prefix: OnRoll{Agility} carrying the Choice.
-    let e = one("When you roll Agility, flip 3 cards or add 1 Strike from your discard pile to your hand.");
+    let e = one(
+        "When you roll Agility, flip 3 cards or add 1 Strike from your discard pile to your hand.",
+    );
     assert_eq!(e["trigger"]["@type"], "OnRoll");
     assert_eq!(e["trigger"]["skill"], "Agility");
     assert_eq!(e["actions"][0]["@type"], "Choice");

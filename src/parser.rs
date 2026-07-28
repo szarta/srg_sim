@@ -1945,14 +1945,17 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
-        rule(r"Your opponent flips (\d+) cards?", |c| {
-            Some(eff(
-                on_hit(),
-                vec![flip(num(c, 1), Who::Opp)],
-                Condition::Always,
-                Duration::Instant,
-            ))
-        }),
+        rule(
+            r"(?:[Yy]our opponent flips|[Tt]hey flip) (\d+) cards?",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![flip(num(c, 1), Who::Opp)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"Each player flips (\d+) cards?", |c| {
             let n = num(c, 1);
             Some(eff(
@@ -2399,7 +2402,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         // Opponent-hand-bury. Random variants first (word-order both ways),
         // then the plain (hand owner sheds), then the look-and-choose form.
         rule(
-            r"[Yy]our opponent randomly buries (\d+) cards? in their hand",
+            r"(?:[Yy]our opponent randomly buries|[Tt]hey randomly bury) (\d+) cards? in their hand",
             |c| {
                 Some(eff(
                     on_hit(),
@@ -2420,14 +2423,17 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        rule(r"[Yy]our opponent buries (\d+) cards? in their hand", |c| {
-            Some(eff(
-                on_hit(),
-                vec![bury_hand(num(c, 1), Who::Opp, false, false)],
-                Condition::Always,
-                Duration::Instant,
-            ))
-        }),
+        rule(
+            r"(?:[Yy]our opponent buries|[Tt]hey bury) (\d+) cards? in their hand",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![bury_hand(num(c, 1), Who::Opp, false, false)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"[Ll]ook at your opponent'?s hand, choose (\d+) cards? and bury (?:it|them)",
             |c| {
@@ -3414,6 +3420,10 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 &c[1],
             )
         }),
+        rule(
+            r"Each time your opponent rolls for a [Bb]reakout roll[,:] (.+)",
+            |c| trigger_body(Trigger::OnBreakoutRoll { who: Who::Opp }, &c[1]),
+        ),
         rule(r"At the start of the match[,:] (.+)", |c| {
             trigger_body(Trigger::StartOfMatch, &c[1])
         }),
