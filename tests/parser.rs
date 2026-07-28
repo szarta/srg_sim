@@ -1404,6 +1404,13 @@ fn opp_next_roll_per_count() {
     assert_eq!(e["actions"][0]["per"]["atk_type"], "Grapple");
     let e = one("Your opponent's next turn roll is -1 for each Stop you have in play.");
     assert_eq!(e["actions"][0]["per"]["is_stop"], true);
+
+    // The self per-count rule now accepts a negative delta too ("-N for each other Lead").
+    let e = one("Your next turn roll is -1 for each other Lead you have in play.");
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+    assert_eq!(e["actions"][0]["delta"], -1);
+    assert_eq!(e["actions"][0]["per"]["play_order"], "Lead");
 }
 
 /// Gimmick-blank grammar (task #130): "[Your opponent's] Gimmick is blank" -> a Static

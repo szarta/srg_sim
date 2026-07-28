@@ -1982,14 +1982,14 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             ))
         }),
         rule(
-            r"Your next turn roll is \+(\d+) for each (?:other )?(.+?) you have in play",
+            r"Your next turn roll is ([+-]\d+) for each (?:other )?(.+?) you have in play",
             |c| {
                 let per = count_filter(&c[2])?;
                 Some(eff(
                     on_hit(),
                     vec![modify_roll(
                         Who::SelfSide,
-                        num(c, 1),
+                        c[1].parse().ok()?,
                         RollWhen::Next,
                         Some(per),
                         Who::SelfSide,
