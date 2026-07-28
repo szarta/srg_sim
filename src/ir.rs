@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 94;
+pub const SCHEMA_VERSION: i64 = 95;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -334,6 +334,18 @@ pub enum RevealFrom {
     Top,
     Bottom,
     Choose,
+}
+
+/// Where a [`Action::RevealMatch`] reveals its card from. `DeckTop` / `DeckBottom` =
+/// the owner's own deck (non-destructive peek, the card stays unless `take_matched`);
+/// `HandRandom` = a uniformly-random card in the owner's hand. schema v95
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RevealSource {
+    #[default]
+    DeckTop,
+    DeckBottom,
+    HandRandom,
 }
 
 /// Direction of a stop relative to the acting player.
@@ -1129,6 +1141,28 @@ pub enum Action {
         /// Sterling). `None` keeps the `atk_type == match_atk` predicate.
         #[serde(default)]
         match_parity: Option<bool>,
+    },
+    /// Reveal card(s) and conditionally fire a nested consequence. Reveal `count`
+    /// card(s) from `from` — the top/bottom of the owner's deck (a non-destructive
+    /// peek; the card stays unless taken) or a uniformly-random card in the owner's
+    /// hand; if a revealed card matches `filter` (name substring / attack type), run
+    /// the consequence: move that card to the owner's hand when `take_matched` ("add
+    /// that card to your hand"), then apply `then` (extra actions parsed from the
+    /// tail — draw, roll bonus, bury, re-roll, …). `then_optional` makes the whole
+    /// consequence a "you may". A non-match reveals nothing further and leaves every
+    /// card in place. Covers "Reveal the top card of your deck: if it has 'X' in the
+    /// name, add that card to your hand" and "Randomly reveal 1 card in your hand: if
+    /// it has 'X' in the name, draw 1 card". schema v95
+    RevealThen {
+        reveal_from: RevealSource,
+        count: i64,
+        filter: CardFilter,
+        #[serde(default)]
+        take_matched: bool,
+        #[serde(default)]
+        then: Vec<Action>,
+        #[serde(default)]
+        then_optional: bool,
     },
     /// Shuffle a player's hand back into their deck, shuffle it, then draw `count`
     /// fresh cards — a mid-match hand refresh (Cyclone V2, on a bump). `choose`
@@ -2220,6 +2254,28 @@ pub enum IrNode {
         /// Sterling). `None` keeps the `atk_type == match_atk` predicate.
         #[serde(default)]
         match_parity: Option<bool>,
+    },
+    /// Reveal card(s) and conditionally fire a nested consequence. Reveal `count`
+    /// card(s) from `from` — the top/bottom of the owner's deck (a non-destructive
+    /// peek; the card stays unless taken) or a uniformly-random card in the owner's
+    /// hand; if a revealed card matches `filter` (name substring / attack type), run
+    /// the consequence: move that card to the owner's hand when `take_matched` ("add
+    /// that card to your hand"), then apply `then` (extra actions parsed from the
+    /// tail — draw, roll bonus, bury, re-roll, …). `then_optional` makes the whole
+    /// consequence a "you may". A non-match reveals nothing further and leaves every
+    /// card in place. Covers "Reveal the top card of your deck: if it has 'X' in the
+    /// name, add that card to your hand" and "Randomly reveal 1 card in your hand: if
+    /// it has 'X' in the name, draw 1 card". schema v95
+    RevealThen {
+        reveal_from: RevealSource,
+        count: i64,
+        filter: CardFilter,
+        #[serde(default)]
+        take_matched: bool,
+        #[serde(default)]
+        then: Vec<Action>,
+        #[serde(default)]
+        then_optional: bool,
     },
     /// Shuffle a player's hand back into their deck, shuffle it, then draw `count`
     /// fresh cards — a mid-match hand refresh (Cyclone V2, on a bump). `choose`

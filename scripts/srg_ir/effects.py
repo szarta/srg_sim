@@ -320,6 +320,16 @@ class RevealFrom(Enum):
     CHOOSE = "CHOOSE"
 
 
+class RevealSource(Enum):
+    """Where a :class:`RevealThen` reveals its card from. ``DECK_TOP`` / ``DECK_BOTTOM``
+    peek the owner's own deck non-destructively (the card stays unless ``take_matched``);
+    ``HAND_RANDOM`` reveals a uniformly-random card in the owner's hand."""
+
+    DECK_TOP = "DECK_TOP"
+    DECK_BOTTOM = "DECK_BOTTOM"
+    HAND_RANDOM = "HAND_RANDOM"
+
+
 class EffectSource(Enum):
     CARD = "card"
     GIMMICK = "gimmick"
@@ -1208,6 +1218,26 @@ class RevealRoute(IRNode):
 
 
 @dataclass(frozen=True)
+class RevealThen(IRNode):
+    """Reveal card(s) and conditionally fire a nested consequence. Reveal ``count``
+    card(s) from ``from_`` — the top/bottom of the owner's deck (a non-destructive
+    peek; the card stays unless taken) or a uniformly-random card in the owner's hand;
+    if a revealed card matches ``filter`` (name substring / attack type), run the
+    consequence: move that card to the owner's hand when ``take_matched`` ("add that
+    card to your hand"), then apply ``then`` (extra actions from the tail). ``then_optional``
+    makes the whole consequence a "you may". A non-match leaves every card in place.
+    Covers "Reveal the top card of your deck: if it has 'X' in the name, add that card
+    to your hand" and "Randomly reveal 1 card in your hand: if it has 'X', draw 1 card"."""
+
+    reveal_from: RevealSource
+    count: int
+    filter: CardFilter
+    take_matched: bool = False
+    then: tuple[Action, ...] = ()
+    then_optional: bool = False
+
+
+@dataclass(frozen=True)
 class ShuffleHandDraw(IRNode):
     """Shuffle a player's hand back into their deck, shuffle it, then draw ``count``
     fresh cards — a mid-match hand refresh (Cyclone V2, on a bump). ``choose`` lets
@@ -2058,6 +2088,7 @@ Action = (
     | ReturnToHand
     | RevealAndDiscard
     | RevealForDraw
+    | RevealThen
     | Peek
     | ModifyRoll
     | RollBoost

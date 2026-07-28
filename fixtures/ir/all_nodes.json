@@ -1031,5 +1031,39 @@
     },
     "who": "SELF",
     "last_turn": true
+  },
+  {
+    "@type": "RevealThen",
+    "reveal_from": "DECK_TOP",
+    "count": 1,
+    "filter": {
+      "@type": "CardFilter",
+      "number": null,
+      "atk_type": null,
+      "play_order": null,
+      "play_orders": [],
+      "tag": null,
+      "name": null,
+      "raw": null,
+      "name_contains": [
+        "Barbed Wire"
+      ],
+      "text_contains": [],
+      "is_stop": null
+    },
+    "take_matched": true,
+    "then": [
+      {
+        "@type": "Draw",
+        "n": 1,
+        "source": "TOP",
+        "who": "SELF",
+        "per": null,
+        "per_who": "SELF",
+        "cap": null,
+        "per_excludes_trigger": false
+      }
+    ],
+    "then_optional": true
   }
 ]

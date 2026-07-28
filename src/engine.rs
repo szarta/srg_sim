@@ -20,7 +20,7 @@ use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerI
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, CountZone, DeckEnd, Dest,
     Direction, Duration, Effect, EffectSource, LoseKind, PlayOrder, RevealDest, RevealFrom,
-    RevealMatch, RollWhen, ScryRest, ShuffleSource, Skill, Trigger, Who,
+    RevealMatch, RevealSource, RollWhen, ScryRest, ShuffleSource, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -1217,6 +1217,22 @@ impl Engine {
                 *reveal,
                 *reveal_from,
                 *match_parity,
+                key,
+            )?,
+            Action::RevealThen {
+                reveal_from,
+                count,
+                filter,
+                take_matched,
+                then,
+                then_optional,
+            } => self.act_reveal_then(
+                *reveal_from,
+                *count,
+                filter,
+                *take_matched,
+                then,
+                *then_optional,
                 key,
             )?,
             Action::ShuffleHandDraw {
@@ -3006,6 +3022,124 @@ impl Engine {
             on_fail
         };
         self.route_revealed(&owner, card, dest)
+    }
+
+    /// `RevealThen`: reveal card(s) from the owner's deck/hand, and if one matches
+    /// `filter` run the consequence (take the matched card to hand when `take_matched`,
+    /// then apply `then`; the whole consequence is a "you may" when `then_optional`).
+    /// The reveal is a non-destructive peek — only the matched card moves, only when
+    /// taken. The owner is always the effect owner ("your deck / your hand").
+    #[allow(clippy::too_many_arguments)]
+    fn act_reveal_then(
+        &mut self,
+        reveal_from: RevealSource,
+        count: i64,
+        filter: &CardFilter,
+        take_matched: bool,
+        then: &[Action],
+        then_optional: bool,
+        key: &str,
+    ) -> Eng<()> {
+        let n = (count.max(1) as usize).min(1_000);
+        let revealed = self.reveal_peek(reveal_from, n, key);
+        if revealed.is_empty() {
+            return Ok(());
+        }
+        let matched = revealed
+            .iter()
+            .find(|c| conditions::card_matches(c, filter))
+            .cloned();
+        self.log_effect(
+            key,
+            "RevealThen",
+            Some(key),
+            json!({
+                "revealed": revealed.iter().map(|c| c.db_uuid.clone()).collect::<Vec<_>>(),
+                "matched": matched.as_ref().map(|c| c.db_uuid.clone()),
+            }),
+        );
+        let Some(card) = matched else {
+            return Ok(()); // no revealed card matched -> nothing further
+        };
+        // "Add that card to your hand" is mandatory on a match; only the extra `then`
+        // actions carry the "you may" (e.g. "…, and you may re-roll your next turn roll").
+        if take_matched {
+            self.take_revealed_to_hand(reveal_from, &card, key);
+        }
+        if then.is_empty() {
+            return Ok(());
+        }
+        if then_optional {
+            let legal = vec![json!({"kind": "yes"}), json!({"kind": "no"})];
+            if self.decide("optional", key, legal)?["kind"] != "yes" {
+                return Ok(());
+            }
+        }
+        for action in then {
+            self.apply_action(action, key, "")?;
+            if self.resolve_pending() {
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    /// Non-destructively read up to `n` cards for a [`RevealSource`]: the top/bottom of
+    /// the owner's deck, or `n` uniformly-random cards from the owner's hand. Cards stay
+    /// in place (the caller moves only a matched card, only when it takes it).
+    fn reveal_peek(&mut self, from: RevealSource, n: usize, key: &str) -> Vec<Card> {
+        match from {
+            RevealSource::DeckTop => self.state.players[key]
+                .deck
+                .iter()
+                .take(n)
+                .cloned()
+                .collect(),
+            RevealSource::DeckBottom => self.state.players[key]
+                .deck
+                .iter()
+                .rev()
+                .take(n)
+                .cloned()
+                .collect(),
+            RevealSource::HandRandom => {
+                let mut pool: Vec<Card> = self.state.players[key].hand.clone();
+                let mut out = Vec::new();
+                for _ in 0..n.min(pool.len()) {
+                    let Some(card) = self.state.rng.reveal(&pool).cloned() else {
+                        break;
+                    };
+                    let pos = pool.iter().position(|c| c.db_uuid == card.db_uuid).unwrap();
+                    pool.remove(pos);
+                    out.push(card);
+                }
+                out
+            }
+        }
+    }
+
+    /// Move a matched revealed deck card to the owner's hand ("add that card to your
+    /// hand"). A hand reveal is a no-op — the card is already in hand.
+    fn take_revealed_to_hand(&mut self, from: RevealSource, card: &Card, key: &str) {
+        if matches!(from, RevealSource::HandRandom) {
+            return;
+        }
+        let player = self.state.players.get_mut(key).unwrap();
+        let Some(pos) = player.deck.iter().position(|c| c.db_uuid == card.db_uuid) else {
+            return;
+        };
+        let taken = player.deck.remove(pos);
+        let uuid = taken.db_uuid.clone();
+        player.hand.push(taken);
+        let t = self.state.turn_no;
+        let owner = key.to_owned();
+        self.log(Event::Search(CardMovement {
+            t,
+            player: owner,
+            cards: vec![uuid],
+            source: None,
+            hidden: false,
+        }));
     }
 
     /// Land a single revealed card in its chosen destination and log the move.
@@ -5760,6 +5894,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::CopyEntrance { .. } => "CopyEntrance",
         Action::Scry { .. } => "Scry",
         Action::RevealRoute { .. } => "RevealRoute",
+        Action::RevealThen { .. } => "RevealThen",
         Action::ShuffleHandDraw { .. } => "ShuffleHandDraw",
         Action::ModifyRoll { .. } => "ModifyRoll",
         Action::BuffSkill { .. } => "BuffSkill",
@@ -11740,5 +11875,49 @@ mod gm_calace_tests {
         // A Triad match is not in the set.
         engine.state.match_type = MatchType::Triad;
         assert!(!conditions::holds(&gate, &engine.state, "A", None));
+    }
+
+    /// `RevealThen` peeks the deck top and, on a name match, moves that card to the
+    /// owner's hand ("add that card to your hand"); a non-matching top is left in place.
+    #[test]
+    fn reveal_then_takes_matched_deck_card_to_hand() {
+        let card = |name: &str| -> Card {
+            serde_json::from_value(json!({
+                "atk_type": "Strike", "db_uuid": name, "effects": [],
+                "finish_bonuses": {}, "name": name, "number": 1,
+                "play_order": "Lead", "raw_text": "", "tags": []
+            }))
+            .expect("card")
+        };
+        let take = |name_frag: &str| Action::RevealThen {
+            reveal_from: RevealSource::DeckTop,
+            count: 1,
+            filter: CardFilter {
+                name_contains: vec![name_frag.to_owned()],
+                ..Default::default()
+            },
+            take_matched: true,
+            then: Vec::new(),
+            then_optional: false,
+        };
+        let mut e = engine();
+        {
+            let d = &mut e.state.players.get_mut("A").unwrap().deck;
+            d.clear();
+            d.push(card("Barbed Wire Bat")); // top
+            d.push(card("Plain Jane"));
+        }
+        // Match on top -> the card is pulled to hand; the card beneath stays on the deck.
+        e.apply_action(&take("Barbed Wire"), "A", "").unwrap();
+        let p = &e.state.players["A"];
+        assert!(p.hand.iter().any(|c| c.db_uuid == "Barbed Wire Bat"));
+        assert_eq!(p.deck.len(), 1);
+        assert_eq!(p.deck[0].db_uuid, "Plain Jane");
+
+        // No match on the new top -> nothing moves.
+        let hand_before = e.state.players["A"].hand.len();
+        e.apply_action(&take("Nonexistent"), "A", "").unwrap();
+        assert_eq!(e.state.players["A"].hand.len(), hand_before);
+        assert_eq!(e.state.players["A"].deck.len(), 1);
     }
 }

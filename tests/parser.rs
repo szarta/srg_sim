@@ -2346,3 +2346,53 @@ fn minimum_handsize_mods() {
     assert_eq!(acts.len(), 2);
     assert_eq!(acts[0]["@type"], "MinHandSize");
 }
+
+/// Reveal-then family (RevealThen, schema v95): deck top/bottom and random-hand reveals
+/// with a name/atk filter, the "add that card to your hand" take, and a parsed +
+/// optionally-gated consequence tail.
+#[test]
+fn reveal_then_family() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    // Deck top, name match, take-to-hand + optional re-roll rider.
+    let e = a1("Reveal the top card of your deck: if it has \"Baseball Bat\" in the name, add that card to your hand, and you may re-roll your next turn roll.");
+    let a = &e["actions"][0];
+    assert_eq!(a["@type"], "RevealThen");
+    assert_eq!(a["reveal_from"], "DECK_TOP");
+    assert_eq!(a["filter"]["name_contains"][0], "Baseball Bat");
+    assert_eq!(a["take_matched"], true);
+    assert_eq!(a["then_optional"], true);
+    assert_eq!(a["then"][0]["@type"], "Reroll");
+
+    // Random hand, name match, mandatory draw (no take).
+    let a =
+        a1("Randomly reveal 1 card in your hand: if it has \"Guitar\" in the name, draw 1 card.")
+            ["actions"][0]
+            .clone();
+    assert_eq!(a["reveal_from"], "HAND_RANDOM");
+    assert_eq!(a["take_matched"], false);
+    assert_eq!(a["then_optional"], false);
+    assert_eq!(a["then"][0]["@type"], "Draw");
+
+    // Attack-type filter (deck bottom).
+    let a = a1("Reveal the bottom card of your deck, if it is a Strike, draw 1 card.")["actions"]
+        [0]
+    .clone();
+    assert_eq!(a["reveal_from"], "DECK_BOTTOM");
+    assert_eq!(a["filter"]["atk_type"], "Strike");
+    assert_eq!(a["then"][0]["@type"], "Draw");
+
+    // A consequence with no grammar (bury into "any player's discard pile") declines.
+    let a = a1("Randomly reveal 1 card in your hand: if it has \"Drumstick\" in the name, bury 1 card in any player's discard pile.")["actions"][0].clone();
+    assert_eq!(a["@type"], "Unsupported");
+
+    // The bare header with no inline "if" stays Unsupported (its consequence is a
+    // separate follow-up clause).
+    assert_eq!(
+        a1("Reveal the top card of your deck:")["actions"][0]["@type"],
+        "Unsupported"
+    );
+}

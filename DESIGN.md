@@ -242,6 +242,15 @@ RevealRoute(deck, match_atk, on_match, on_fail, fail_optional=False, reveal=Fals
                               # an opponent's). Predicate = revealed.atk_type==match_atk, OR match_parity (Some(true)
                               # = even) for the odd/even guess. Dest {HAND, FLIP=mill, BURY=bottom, LEAVE=on top}.
                               # Candy MaM / Flame Fighter (atk, per rolled skill) / Smart Mark (parity)
+RevealThen(reveal_from, count, filter, take_matched=False, then=[], then_optional=False)  # schema v95
+                              # Reveal `count` card(s) from reveal_from (DECK_TOP|DECK_BOTTOM peek, non-destructive;
+                              # HAND_RANDOM = uniformly-random hand card); if a revealed card matches `filter` (name
+                              # substring / atk type) run the consequence: take that card to hand when take_matched
+                              # ("add that card to your hand", mandatory), then apply `then` (extra parsed actions —
+                              # draw / roll bonus / re-roll / …), the whole `then` gated by then_optional ("… and you
+                              # may re-roll"). Non-match leaves every card in place. "Reveal the top card of your deck:
+                              # if it has 'X' in the name, add that card to your hand"; "Randomly reveal 1 card in your
+                              # hand: if it has 'X', draw 1 card". Owner is always the effect owner (your deck/hand).
 ShuffleHandDraw(who, count, choose=False)  # schema v13: shuffle a player's hand into their deck, shuffle, draw
                               # `count`; choose=actor picks the player ("either player"). Cyclone V2, on a bump
 CountsAsInPlay(selector, count=2)  # Static self-decl: this card counts as `count` cards matching `selector`

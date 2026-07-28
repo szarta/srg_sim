@@ -18,8 +18,8 @@ use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
     CountZone, DeckEnd, Dest, Direction, DqScope, Duration, Effect, EffectSource, EffectTag,
-    Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RollWhen,
-    ScryRest, ShuffleSource, Skill, Trigger, Vs, Who,
+    Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RevealSource,
+    RollWhen, ScryRest, ShuffleSource, Skill, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -133,6 +133,67 @@ fn cf_name(names: Vec<String>) -> CardFilter {
         name_contains: names,
         ..Default::default()
     }
+}
+
+/// The match test inside a reveal-then clause — the "`<X>`" in "if `<X>`, `<consequence>`":
+/// a name/text substring ("it has \"Guitar\" in the name") or an attack type ("it is a
+/// Strike"). `None` for a predicate this node can't express (parity, number), so the
+/// clause stays Unsupported.
+fn reveal_filter(phrase: &str) -> Option<CardFilter> {
+    let p = phrase.trim();
+    if p.contains("in the name") || p.contains("in the text") {
+        let names = quoted_names(p);
+        if names.is_empty() {
+            return None;
+        }
+        let attr = if p.contains("in the text") {
+            "text"
+        } else {
+            "name"
+        };
+        return Some(name_or_text_filter(attr, names));
+    }
+    static IS_ATK: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^(?:it|the card|that card) is an? (Strike|Grapple|Submission)$").unwrap()
+    });
+    IS_ATK
+        .captures(p)
+        .map(|m| cf_atk(count_atk(&m[1].to_lowercase())))
+}
+
+/// Parse a reveal-then CONSEQUENCE ("`<consequence>`" in "if `<X>`, `<consequence>`") into
+/// `(take_matched, then, then_optional)`: a leading "add that card to your hand" sets
+/// `take_matched` (mandatory on a match), any remaining body is parsed through the normal
+/// grammar for the extra actions, and a "you may" prefix on that body sets `then_optional`.
+/// `None` if a non-empty body has no grammar, so the whole clause stays Unsupported.
+fn reveal_consequence(text: &str) -> Option<(bool, Vec<Action>, bool)> {
+    static TAKE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^(?:you )?add (?:that card|the revealed card) to your hand").unwrap()
+    });
+    let c = text.trim().trim_end_matches('.').trim();
+    let (take, rest) = match TAKE.find(c) {
+        Some(m) => {
+            let r = c[m.end()..].trim().trim_start_matches(',').trim();
+            (true, r.strip_prefix("and ").unwrap_or(r).trim())
+        }
+        None => (false, c),
+    };
+    let (opt, body) = match rest
+        .strip_prefix("you may ")
+        .or_else(|| rest.strip_prefix("You may "))
+    {
+        Some(b) => (true, b.trim()),
+        None => (false, rest),
+    };
+    if body.is_empty() {
+        return take.then_some((true, Vec::new(), false));
+    }
+    // Body clauses are lowercase mid-sentence; the grammar expects sentence case.
+    let cap = capitalize_first(body);
+    let eff = match_grammar(&cap)
+        .or_else(|| compound_body(&cap))
+        .or_else(|| choice_body(&cap))?;
+    Some((take, eff.actions, opt || eff.optional))
 }
 
 /// A card-substring filter over the title (`"X" in the name`) or the rules text
@@ -1997,6 +2058,58 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         // Impact is Family (V2) entrance: blank the opponent's Spotlight Finishes
+        // Reveal-then family (RevealThen, schema v95): "Reveal the top/bottom card of
+        // your deck[:,] if <filter>, <consequence>" and "Randomly reveal N card(s) in
+        // your hand[:;] if <filter>, <consequence>". `reveal_filter` parses the name/atk
+        // match; `reveal_consequence` splits off a "add that card to your hand" take and
+        // parses the rest through the grammar (declines if that body has none). The bare
+        // "Reveal the … card of your deck:" header (no inline "if") stays Unsupported —
+        // it splits from its consequence across a newline (a separate follow-up).
+        rule(
+            r"Reveal the (top|bottom) card of your deck[:,] [Ii]f (.+?), (.+)",
+            |c| {
+                let reveal_from = if &c[1] == "bottom" {
+                    RevealSource::DeckBottom
+                } else {
+                    RevealSource::DeckTop
+                };
+                let filter = reveal_filter(&c[2])?;
+                let (take_matched, then, then_optional) = reveal_consequence(&c[3])?;
+                Some(eff(
+                    on_hit(),
+                    vec![Action::RevealThen {
+                        reveal_from,
+                        count: 1,
+                        filter,
+                        take_matched,
+                        then,
+                        then_optional,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"Randomly reveal (\d+) cards? in your hand[:;,] [Ii]f (.+?), (.+)",
+            |c| {
+                let filter = reveal_filter(&c[2])?;
+                let (take_matched, then, then_optional) = reveal_consequence(&c[3])?;
+                Some(eff(
+                    on_hit(),
+                    vec![Action::RevealThen {
+                        reveal_from: RevealSource::HandRandom,
+                        count: num(c, 1),
+                        filter,
+                        take_matched,
+                        then,
+                        then_optional,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // (continuous selector scan; mirrors A Trip to the Upside Down's Spotlight
         // blank). V1's broader "Spotlight cards" variant stays its own clause.
         rule(
