@@ -1222,6 +1222,44 @@ fn top_level_compound_clause() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Name/text-gated OnHit (task #119): "When you hit a [<type>] card with 'X' [or 'Y']
+/// in the name/text, <body>" -> OnHit gated on the hit card + body via trigger_body.
+#[test]
+fn name_gated_on_hit() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Single name, "in the name" explicit.
+    let e = one("When you hit a card with \"Lightning\" in the name, draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["name_contains"][0], "Lightning");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+
+    // OR-list of names, comma form (no "in the name").
+    let e = one("When you hit a card with \"Bird\" or \"Press\", draw 1 card.");
+    let names: Vec<&str> = e["trigger"]["name_contains"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|n| n.as_str().unwrap())
+        .collect();
+    assert_eq!(names, ["Bird", "Press"]);
+
+    // "in the text" -> text_contains, not name_contains.
+    let e = one("When you hit a card with \"Disqualification\" in the text, draw 2 cards.");
+    assert_eq!(e["trigger"]["name_contains"].as_array().unwrap().len(), 0);
+    assert_eq!(e["trigger"]["text_contains"][0], "Disqualification");
+
+    // Type + name gate.
+    let e = one("When you hit a Grapple with \"Guitar\" in the name, add 1 card from your discard pile to your hand.");
+    assert_eq!(e["trigger"]["atk_type"], "Grapple");
+    assert_eq!(e["trigger"]["name_contains"][0], "Guitar");
+    assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!

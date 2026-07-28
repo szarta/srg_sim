@@ -78,6 +78,25 @@ fn on_hit_type(atk_type: AtkType) -> Trigger {
     }
 }
 
+/// "When you hit a [`<atk_type>`] card with 'X' [or 'Y'] in the name/text" — an
+/// [`Trigger::OnHit`] gated on the hit card's title (`in_text = false`) or rules text
+/// (`in_text = true`), optionally AND-ed with an attack type.
+fn on_hit_named(atk_type: Option<AtkType>, names: Vec<String>, in_text: bool) -> Trigger {
+    let (name_contains, text_contains) = if in_text {
+        (Vec::new(), names)
+    } else {
+        (names, Vec::new())
+    };
+    Trigger::OnHit {
+        atk_type,
+        order: None,
+        name_contains,
+        text_contains,
+        on_any: false,
+        who: Who::SelfSide,
+    }
+}
+
 fn cf_atk(a: AtkType) -> CardFilter {
     CardFilter {
         atk_type: Some(a),
@@ -3323,6 +3342,21 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(&format!(r"When you hit (?:an? )?{ATK}[,:] (.+)"), |c| {
             trigger_body(on_hit_type(atk(&c[1])), &c[2])
         }),
+        // Name/text-gated OnHit: "When you hit a [<type>] card with 'X' [or 'Y'] in the
+        // name/text, <body>" -> OnHit{name_contains|text_contains[, atk_type]} + body.
+        // "in the name" is the default when omitted. Group 1 = optional type, 2 = quoted
+        // list, 3 = name|text, 4 = body.
+        rule(
+            &format!(
+                r#"When you hit (?:an? )?(?:{ATK} )?(?:card )?with ("[^"]+"(?: or "[^"]+")*)(?: in the (name|text))?[,:] (.+)"#
+            ),
+            |c| {
+                let atk_type = c.get(1).map(|m| atk(m.as_str()));
+                let names = quoted_names(&c[2]);
+                let in_text = c.get(3).is_some_and(|m| m.as_str() == "text");
+                trigger_body(on_hit_named(atk_type, names, in_text), &c[4])
+            },
+        ),
         rule(r"[Ii]f your opponent breaks out[,:] (.+)", |c| {
             trigger_body(
                 Trigger::OnBreakout {
