@@ -2259,3 +2259,30 @@ fn search_deck_tutor() {
     let e = a1("Search your deck for a Spotlight card and add it to your hand.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
+
+/// No-DQ match rule (DisqualificationRule, previously override-only): "the match has no
+/// disqualifications" (Match scope) and "you cannot be disqualified" (SELF scope), each
+/// a Static WhileInPlay toggle, with the redundant static-window prefixes accepted.
+#[test]
+fn no_disqualifications_rule() {
+    fn dq(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        let v = serde_json::to_value(&effs[0]).unwrap();
+        assert_eq!(v["trigger"]["@type"], "Static", "{text:?}");
+        assert_eq!(v["duration"], "WHILE_IN_PLAY", "{text:?}");
+        let a = v["actions"][0].clone();
+        assert_eq!(a["@type"], "DisqualificationRule", "{text:?}");
+        assert_eq!(a["enabled"], false, "{text:?}");
+        a
+    }
+    for text in [
+        "This match has no disqualifications.",
+        "When this card is in play the match has no disqualifications.",
+        "When this card is in play, the match has no disqualifications.",
+        "For the rest of the match, this match now has no disqualifications.",
+    ] {
+        assert_eq!(dq(text)["scope"], "MATCH", "{text:?}");
+    }
+    assert_eq!(dq("You cannot be disqualified.")["scope"], "SELF");
+}

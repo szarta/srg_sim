@@ -17,9 +17,9 @@
 use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
-    CountZone, DeckEnd, Dest, Direction, Duration, Effect, EffectSource, EffectTag, Frequency,
-    FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RollWhen, ScryRest,
-    ShuffleSource, Skill, Trigger, Vs, Who,
+    CountZone, DeckEnd, Dest, Direction, DqScope, Duration, Effect, EffectSource, EffectTag,
+    Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RollWhen,
+    ScryRest, ShuffleSource, Skill, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -916,6 +916,21 @@ fn buff_per(skill: Skill, delta: i64, per: Option<CardFilter>, cap: Option<i64>)
         per,
         per_zone: CountZone::InPlay,
     }
+}
+
+/// A Static "no disqualifications" match-rule toggle (`DisqualificationRule` was
+/// previously override-only). `Match` scope = "the match has no disqualifications";
+/// `SelfSide` = "you cannot be disqualified".
+fn dq_rule(scope: DqScope) -> Effect {
+    eff(
+        Trigger::Static,
+        vec![Action::DisqualificationRule {
+            enabled: false,
+            scope,
+        }],
+        Condition::Always,
+        Duration::WhileInPlay,
+    )
 }
 
 fn max_hand(delta: i64, who: Who) -> Action {
@@ -3539,6 +3554,18 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // No-DQ match rule (DisqualificationRule, previously override-only). "The/This
+        // match has no disqualifications", optionally prefixed by the redundant static
+        // window "When this card is in play" or "For the rest of the match" (a main-deck
+        // card's Static already applies only while in play). Match scope.
+        rule(
+            r"(?:When this card is in play,? |For the rest of the match,? )?[Tt]h(?:is|e) match (?:now )?has no [Dd]isqualifications",
+            |_| Some(dq_rule(DqScope::Match)),
+        ),
+        // "You cannot be disqualified" — the SELF-scope form.
+        rule(r"You cannot be disqualified", |_| {
+            Some(dq_rule(DqScope::SelfSide))
+        }),
         rule(
             r"If you bumped on the last turn roll, double these bonuses",
             |_| {
