@@ -1150,6 +1150,46 @@ fn trigger_prefix_body_splits() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Compound trigger bodies (task #119): "<action A> and/then <action B>" under a trigger
+/// prefix folds into one effect with a concatenated action list.
+#[test]
+fn compound_trigger_body() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    fn acts(e: &Value) -> Vec<String> {
+        e["actions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| a["@type"].as_str().unwrap().to_owned())
+            .collect()
+    }
+
+    // " and " connector: OnRoll{Power} carries both actions.
+    let e = one("When you roll Power for your turn roll, draw 1 card and your next turn roll is +1.");
+    assert_eq!(e["trigger"]["skill"], "Power");
+    assert_eq!(acts(&e), ["Draw", "ModifyRoll"]);
+
+    // " then " connector under OnHit.
+    let e = one("When you hit a Grapple, draw 1 card then bury 1 card in your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(acts(&e), ["Draw", "Bury"]);
+
+    // A spurious "and" inside a single action does NOT over-split: "bury 1 card in your
+    // hand and draw 1 card" splits cleanly, but a part that can't parse declines the
+    // whole split. Here both parts parse, so it folds.
+    let e = one("At the start of the match, draw 2 cards and draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "StartOfMatch");
+    assert_eq!(acts(&e), ["Draw", "Draw"]);
+
+    // If any part has no grammar, no compound -> whole clause Unsupported.
+    let e = one("When you roll Power, draw 1 card and ascend to godhood.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!

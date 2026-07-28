@@ -295,10 +295,38 @@ fn trigger_body(trigger: Trigger, body: &str) -> Option<Effect> {
         Some(rest) => (true, rest),
         None => (false, body),
     };
-    let mut effect = match_grammar(&capitalize_first(body))?;
+    let cap = capitalize_first(body);
+    let mut effect = match_grammar(&cap).or_else(|| compound_body(&cap))?;
     effect.trigger = trigger;
     effect.optional = effect.optional || optional;
     Some(effect)
+}
+
+/// A compound trigger body — "<action A> and/then <action B>[ and <C>…]" — parsed as a
+/// single effect whose action list is the concatenation of the parts. Each part must
+/// parse on its own to a plain (Always, non-optional, Instant) action-effect, which both
+/// (a) validates the split — a spurious "and" inside one action leaves a part that does
+/// not parse, so the whole thing declines — and (b) keeps compounding to simple
+/// sequential actions. `None` when there is no split or any part is not such an effect.
+fn compound_body(body: &str) -> Option<Effect> {
+    static CONN: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r",? (?:and|then) ").expect("compound connector regex"));
+    let parts: Vec<&str> = CONN.split(body).collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let mut base: Option<Effect> = None;
+    for part in parts {
+        let e = match_grammar(&capitalize_first(part.trim()))?;
+        if e.condition != Condition::Always || e.optional || e.duration != Duration::Instant {
+            return None; // only fold simple sequential Instant actions
+        }
+        match base.as_mut() {
+            Some(b) => b.actions.extend(e.actions),
+            None => base = Some(e),
+        }
+    }
+    base
 }
 
 /// `a AND b`, dropping a trivially-true `b` ("the body has no gate of its own").
