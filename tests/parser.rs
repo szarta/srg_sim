@@ -2396,3 +2396,53 @@ fn reveal_then_family() {
         "Unsupported"
     );
 }
+
+/// Split-clause reveal: a bare "Reveal the top/bottom card of your deck:" header whose
+/// "If <filter>, <consequence>" lands on the NEXT clause is combined into one RevealThen;
+/// a header with no valid follow-up stays Unsupported (never silently dropped).
+#[test]
+fn reveal_then_split_clause() {
+    // Header + follow-up across a newline -> one combined RevealThen (deck bottom, take).
+    let effs = parse_text(
+        "Reveal the bottom card of your deck:\nIf it has \"Wrapping Paper\" in the name, add that card to your hand.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "the two clauses fold into one effect");
+    let a = serde_json::to_value(&effs[0]).unwrap()["actions"][0].clone();
+    assert_eq!(a["@type"], "RevealThen");
+    assert_eq!(a["reveal_from"], "DECK_BOTTOM");
+    assert_eq!(a["filter"]["name_contains"][0], "Wrapping Paper");
+    assert_eq!(a["take_matched"], true);
+
+    // Play-order filter + "add it to your hand" (the "it" refers to the revealed card),
+    // with a mandatory roll rider.
+    let effs = parse_text(
+        "Reveal the top card of your deck:\nIf it is a Strike, add it to your hand and your next turn roll is +1.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let a = serde_json::to_value(&effs[0]).unwrap()["actions"][0].clone();
+    assert_eq!(a["@type"], "RevealThen");
+    assert_eq!(a["filter"]["atk_type"], "Strike");
+    assert_eq!(a["take_matched"], true);
+    assert_eq!(a["then"][0]["@type"], "ModifyRoll");
+
+    // A header whose next clause ISN'T a filtered consequence: the header stays
+    // Unsupported and the next clause is compiled on its own.
+    let effs = parse_text(
+        "Reveal the top card of your deck:\nDraw 1 card.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2);
+    let v0 = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v0["actions"][0]["@type"], "Unsupported");
+    assert_eq!(
+        serde_json::to_value(&effs[1]).unwrap()["actions"][0]["@type"],
+        "Draw"
+    );
+}

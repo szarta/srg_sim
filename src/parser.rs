@@ -153,12 +153,12 @@ fn reveal_filter(phrase: &str) -> Option<CardFilter> {
         };
         return Some(name_or_text_filter(attr, names));
     }
-    static IS_ATK: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"(?i)^(?:it|the card|that card) is an? (Strike|Grapple|Submission)$").unwrap()
-    });
-    IS_ATK
-        .captures(p)
-        .map(|m| cf_atk(count_atk(&m[1].to_lowercase())))
+    // "it is a[n] <type>" / "the card is a <type>" — an attack type, play order, or
+    // stop, routed through `count_filter` (Strike/Grapple/Submission/Lead/Follow Up/
+    // Finish/Stop). Anything it can't type ("non-finish", "odd-numbered") declines.
+    static IS: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^(?:it|the card|that card) is an? (.+)$").unwrap());
+    count_filter(&IS.captures(p)?[1])
 }
 
 /// Parse a reveal-then CONSEQUENCE ("`<consequence>`" in "if `<X>`, `<consequence>`") into
@@ -167,8 +167,10 @@ fn reveal_filter(phrase: &str) -> Option<CardFilter> {
 /// grammar for the extra actions, and a "you may" prefix on that body sets `then_optional`.
 /// `None` if a non-empty body has no grammar, so the whole clause stays Unsupported.
 fn reveal_consequence(text: &str) -> Option<(bool, Vec<Action>, bool)> {
+    // "add that card / the revealed card / it to your hand" — the matched revealed card
+    // to hand. In a reveal-then consequence "it" always refers to the revealed card.
     static TAKE: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"(?i)^(?:you )?add (?:that card|the revealed card) to your hand").unwrap()
+        Regex::new(r"(?i)^(?:you )?add (?:that card|the revealed card|it) to your hand").unwrap()
     });
     let c = text.trim().trim_end_matches('.').trim();
     let (take, rest) = match TAKE.find(c) {
@@ -194,6 +196,56 @@ fn reveal_consequence(text: &str) -> Option<(bool, Vec<Action>, bool)> {
         .or_else(|| compound_body(&cap))
         .or_else(|| choice_body(&cap))?;
     Some((take, eff.actions, opt || eff.optional))
+}
+
+/// Build the `RevealThen` effect shared by the inline colon form and the split
+/// follow-up clause: reveal `count` from `reveal_from`, match a `<filter phrase>`, and
+/// run a `<consequence>`. `None` if either the filter or the consequence has no grammar.
+fn reveal_then_effect(
+    reveal_from: RevealSource,
+    count: i64,
+    filter_phrase: &str,
+    consequence: &str,
+) -> Option<Effect> {
+    let filter = reveal_filter(filter_phrase)?;
+    let (take_matched, then, then_optional) = reveal_consequence(consequence)?;
+    Some(eff(
+        on_hit(),
+        vec![Action::RevealThen {
+            reveal_from,
+            count,
+            filter,
+            take_matched,
+            then,
+            then_optional,
+        }],
+        Condition::Always,
+        Duration::Instant,
+    ))
+}
+
+/// A bare "Reveal the top/bottom card of your deck:" header carrying NO inline
+/// consequence — the split form whose "If `<filter>`, `<consequence>`" lands on the
+/// next clause. Returns the reveal source it opens.
+fn reveal_header(clause: &str) -> Option<RevealSource> {
+    static H: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^Reveal the (top|bottom) card of your deck:?$").unwrap());
+    H.captures(clause.trim()).map(|c| {
+        if c[1].eq_ignore_ascii_case("bottom") {
+            RevealSource::DeckBottom
+        } else {
+            RevealSource::DeckTop
+        }
+    })
+}
+
+/// The follow-up clause of a split reveal header: "If `<filter>`, `<consequence>`",
+/// built into a deck `RevealThen` under the header's `reveal_from`. `None` when the
+/// clause isn't a filtered consequence (so the header falls through to Unsupported).
+fn reveal_followup(reveal_from: RevealSource, clause: &str) -> Option<Effect> {
+    static F: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^If (.+?), (.+)$").unwrap());
+    let c = F.captures(clause.trim().trim_end_matches('.').trim())?;
+    reveal_then_effect(reveal_from, 1, &c[1], &c[2])
 }
 
 /// A card-substring filter over the title (`"X" in the name`) or the rules text
@@ -2073,42 +2125,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 } else {
                     RevealSource::DeckTop
                 };
-                let filter = reveal_filter(&c[2])?;
-                let (take_matched, then, then_optional) = reveal_consequence(&c[3])?;
-                Some(eff(
-                    on_hit(),
-                    vec![Action::RevealThen {
-                        reveal_from,
-                        count: 1,
-                        filter,
-                        take_matched,
-                        then,
-                        then_optional,
-                    }],
-                    Condition::Always,
-                    Duration::Instant,
-                ))
+                reveal_then_effect(reveal_from, 1, &c[2], &c[3])
             },
         ),
         rule(
             r"Randomly reveal (\d+) cards? in your hand[:;,] [Ii]f (.+?), (.+)",
-            |c| {
-                let filter = reveal_filter(&c[2])?;
-                let (take_matched, then, then_optional) = reveal_consequence(&c[3])?;
-                Some(eff(
-                    on_hit(),
-                    vec![Action::RevealThen {
-                        reveal_from: RevealSource::HandRandom,
-                        count: num(c, 1),
-                        filter,
-                        take_matched,
-                        then,
-                        then_optional,
-                    }],
-                    Condition::Always,
-                    Duration::Instant,
-                ))
-            },
+            |c| reveal_then_effect(RevealSource::HandRandom, num(c, 1), &c[2], &c[3]),
         ),
         // (continuous selector scan; mirrors A Trip to the Upside Down's Spotlight
         // blank). V1's broader "Spotlight cards" variant stays its own clause.
@@ -4409,28 +4431,56 @@ pub fn parse_text(
             return entries.clone();
         }
     }
+    let clauses = split_clauses(text);
     let mut effects = Vec::new();
     let mut freq = Frequency::Unlimited;
     let mut n = None;
     let mut window = Condition::Always;
-    for clause in split_clauses(text) {
-        if let Some((f, nn)) = freq_header(&clause) {
-            freq = f;
-            n = nn;
-            continue;
-        }
-        if let Some(cond) = window_header(&clause) {
-            window = cond;
-            continue;
-        }
-        if is_metadata(&clause) {
-            continue;
-        }
-        let mut eff = compile(&clause, source, freq, n);
+    // AND the active turn-window onto an effect's condition (a no-op when Always).
+    let scope = |mut eff: Effect, window: &Condition| {
         if !matches!(window, Condition::Always) {
             eff.condition = and_conds(window.clone(), eff.condition);
         }
-        effects.push(eff);
+        eff
+    };
+    let mut i = 0;
+    while i < clauses.len() {
+        let clause = &clauses[i];
+        if let Some((f, nn)) = freq_header(clause) {
+            freq = f;
+            n = nn;
+            i += 1;
+            continue;
+        }
+        if let Some(cond) = window_header(clause) {
+            window = cond;
+            i += 1;
+            continue;
+        }
+        if is_metadata(clause) {
+            i += 1;
+            continue;
+        }
+        // Split reveal-then: a bare "Reveal the … card of your deck:" header whose
+        // "If <filter>, <consequence>" lands on the NEXT clause. Consume both into one
+        // RevealThen; if the follow-up doesn't parse, the header falls through below
+        // (compiled to Unsupported, never silently dropped).
+        if let Some(src) = reveal_header(clause) {
+            if let Some(mut eff) = clauses.get(i + 1).and_then(|nxt| reveal_followup(src, nxt)) {
+                eff.raw_clause = format!("{clause} {}", clauses[i + 1]);
+                eff.source = source;
+                eff.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(eff, &window));
+                i += 2;
+                continue;
+            }
+        }
+        effects.push(scope(compile(clause, source, freq, n), &window));
+        i += 1;
     }
     effects
 }
