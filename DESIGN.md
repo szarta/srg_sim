@@ -184,6 +184,9 @@ EndedTurnNoPlay              # the owner ended the PREVIOUS turn without playing
 RerolledTurnRoll             # the owner re-rolled their turn roll THIS turn (any turn die re-rolled at the roll-off;
                              # PlayerState.flags["rerolled_turn"]). Gates King Brian Cage's finish riders, OR'd with
                              # RollWasSkill{Power}. schema v80
+HitCard(filter, who?, last_turn?)  # who hit a card matching `filter` this turn (last_turn=False) or the previous turn
+                             # (True) — "if you hit a Grapple last turn". Reads PlayerState.hit_this_turn/hit_last_turn
+                             # (by-card, rotated at turn start); empty filter = any hit. Filtered sibling of HitThisTurn. schema v91
 DuringTurn(who)              # it is currently who's turn (GameState.active == who-side) — gates a continuous
                              # effect to a turn phase ("during your opponent's turn: …" — La Fenix). schema v19
 FlippedForGimmick            # the flip now resolving was caused by a Gimmick-source effect ("flipped for your

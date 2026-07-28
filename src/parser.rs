@@ -465,8 +465,18 @@ fn gate_condition(text: &str) -> Option<Condition> {
     static HAVE_INPLAY: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(?i)^you have (?:another |(\d+) (?:or more )?)?(.+?) in play$").unwrap()
     });
+    static HIT: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^you hit (?:a |an |another )?(.+?) (this|last) turn$").unwrap()
+    });
 
     let t = text.trim().trim_end_matches([',', ';', '.']).trim();
+    if let Some(c) = HIT.captures(t) {
+        return Some(Condition::HitCard {
+            filter: recur_filter(c[1].trim())?,
+            who: Who::SelfSide,
+            last_turn: c[2].eq_ignore_ascii_case("last"),
+        });
+    }
     if let Some(c) = ROLL_SELF.captures(t) {
         return Some(Condition::RollWasSkill {
             skill: skill(&c[1]),
@@ -3668,6 +3678,17 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Condition::Always,
                 Duration::Instant,
             ))
+        }),
+        // Generic condition gate: "If <gate>[;,] <body>" — parse the gate via
+        // `gate_condition` and the body via `gate_body` (natural trigger kept, gate
+        // AND-ed on). Placed LAST so every specific rule wins first; it fires only when
+        // BOTH the gate and the body are modelled, so it strictly adds coverage. The
+        // non-greedy gate stops at the first `,`/`;`; a gate with an internal comma
+        // (e.g. a multi-name list) fails `gate_condition` and the clause stays
+        // Unsupported. Subsumes the roll-gate / name-in-play prefixes above; those
+        // remain as they are more specific and produce identical output.
+        rule(r"If (.+?)[;,] (.+)", |c| {
+            gate_body(gate_condition(&c[1])?, &c[2])
         }),
     ]
 }

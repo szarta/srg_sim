@@ -832,6 +832,18 @@ class HitThisTurn(IRNode):
 
 
 @dataclass(frozen=True)
+class HitCard(IRNode):
+    """``who`` hit a card matching ``filter`` this turn (``last_turn=False``) or the
+    previous turn (``last_turn=True``) — "if you hit a Grapple last turn". Reads the
+    by-card ``PlayerState.hit_this_turn`` / ``hit_last_turn`` (empty filter = any hit).
+    Distinct from :class:`HitThisTurn` (a count with no filter)."""
+
+    filter: CardFilter = CardFilter()
+    who: Who = Who.SELF
+    last_turn: bool = False
+
+
+@dataclass(frozen=True)
 class RollValue(IRNode):
     """The rolled value of the current turn roll compared against ``value`` — gates on
     the **actual number rolled** this turn (not a static stat), read from the
@@ -1996,6 +2008,7 @@ Condition = (
     | DuringTurn
     | CompetitorIs
     | HitThisTurn
+    | HitCard
 )
 
 Action = (

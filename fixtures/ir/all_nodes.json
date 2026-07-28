@@ -1004,5 +1004,23 @@
   {
     "@type": "StopRequiresTag",
     "tag": "Spotlight"
+  },
+  {
+    "@type": "HitCard",
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "is_stop": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "play_orders": [],
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    },
+    "who": "SELF",
+    "last_turn": true
   }
 ]

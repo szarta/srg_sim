@@ -1178,6 +1178,58 @@ fn take_from_discard_recall() {
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Followup");
 }
 
+/// Hit-history gate (task #130): "If you hit <filter> (this|last) turn, <body>" and the
+/// generic "If <gate>, <body>" rule that keeps the body's trigger and AND-s the gate.
+#[test]
+fn hit_history_and_generic_gate() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Hit-history condition feeds the double-bonuses rule (via gate_condition).
+    let e = one("If you hit a Grapple last turn, double these bonuses.");
+    assert_eq!(e["actions"][0]["@type"], "DoubleFinishIf");
+    let c = &e["actions"][0]["condition"];
+    assert_eq!(c["@type"], "HitCard");
+    assert_eq!(c["last_turn"], true);
+    assert_eq!(c["filter"]["atk_type"], "Grapple");
+
+    // Hit-history gate over a non-double body, via the generic gate rule; the body keeps
+    // its natural trigger and the HitCard gate is AND-ed on.
+    let e = one("If you hit a card with \"Dragon\" in the name last turn, draw 4 cards.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["n"], 4);
+    assert_eq!(e["condition"]["@type"], "HitCard");
+    assert_eq!(e["condition"]["filter"]["name_contains"][0], "Dragon");
+    assert_eq!(e["condition"]["last_turn"], true);
+
+    // "this turn" hit + any-card ("another card").
+    let e = one("If you hit another card this turn, draw 1 card.");
+    assert_eq!(e["condition"]["@type"], "HitCard");
+    assert_eq!(e["condition"]["last_turn"], false);
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+
+    // Generic gate with a roll gate over a compound body.
+    let e =
+        one("If you rolled Power for your turn roll, draw 1 card and bury 1 card in your hand.");
+    assert_eq!(e["condition"]["@type"], "RollWasSkill");
+    let kinds: Vec<&str> = e["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| a["@type"].as_str().unwrap())
+        .collect();
+    assert_eq!(kinds, ["Draw", "Bury"]);
+
+    // A gate with an internal comma (multi-name list) fails gate_condition -> Unsupported.
+    let e = one(
+        "If you hit a card with \"Barricade\", \"Beatdown\", or \"Blindside\" in the name last turn, draw 1 card.",
+    );
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// "If <gate>, double these bonuses" (task #130): a 137-clause family mapping to
 /// DoubleFinishIf{condition}, where gate_condition parses the common turn-roll / flag /
 /// in-play gates. Only the ×2 "double" form maps; unmodeled gates stay Unsupported.
@@ -1230,7 +1282,7 @@ fn double_these_bonuses_gates() {
     assert_eq!(c["value"], 10);
 
     // An unmodeled gate leaves the whole clause Unsupported (no partial DoubleFinishIf).
-    let e = one("If you hit a Grapple last turn, double these bonuses.");
+    let e = one("If this is a Tag Team match, double these bonuses.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
     // "triple" is not the ×2 form -> stays Unsupported.
     let e = one("If you rolled Submission for your turn roll, triple these bonuses.");

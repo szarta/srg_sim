@@ -243,6 +243,9 @@
             },
             {
               "$ref": "#/$defs/MatchHasNoDisqualifications"
+            },
+            {
+              "$ref": "#/$defs/HitCard"
             }
           ]
         },
@@ -370,6 +373,9 @@
               },
               {
                 "$ref": "#/$defs/MatchHasNoDisqualifications"
+              },
+              {
+                "$ref": "#/$defs/HitCard"
               }
             ]
           },
@@ -1535,6 +1541,9 @@
             },
             {
               "$ref": "#/$defs/MatchHasNoDisqualifications"
+            },
+            {
+              "$ref": "#/$defs/HitCard"
             }
           ]
         }
@@ -1997,6 +2006,9 @@
             },
             {
               "$ref": "#/$defs/MatchHasNoDisqualifications"
+            },
+            {
+              "$ref": "#/$defs/HitCard"
             }
           ]
         },
@@ -2539,6 +2551,29 @@
       ],
       "type": "object"
     },
+    "HitCard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "HitCard"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "last_turn": {
+          "default": false,
+          "type": "boolean"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "filter"
+      ],
+      "type": "object"
+    },
     "HitThisTurn": {
       "additionalProperties": false,
       "properties": {
@@ -2958,6 +2993,9 @@
         },
         {
           "$ref": "#/$defs/OnFlip"
+        },
+        {
+          "$ref": "#/$defs/HitCard"
         }
       ]
     },
@@ -3274,6 +3312,9 @@
             },
             {
               "$ref": "#/$defs/MatchHasNoDisqualifications"
+            },
+            {
+              "$ref": "#/$defs/HitCard"
             }
           ]
         }
@@ -3776,6 +3817,9 @@
               },
               {
                 "$ref": "#/$defs/MatchHasNoDisqualifications"
+              },
+              {
+                "$ref": "#/$defs/HitCard"
               }
             ]
           },
@@ -4452,6 +4496,9 @@
             },
             {
               "$ref": "#/$defs/MatchHasNoDisqualifications"
+            },
+            {
+              "$ref": "#/$defs/HitCard"
             }
           ]
         },
@@ -4934,5 +4981,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 90
+  "version": 91
 }

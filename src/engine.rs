@@ -455,6 +455,8 @@ impl Engine {
                         gimmick_flipped: false,
                         hits_this_turn: 0,
                         flipped_this_turn: Vec::new(),
+                        hit_this_turn: Vec::new(),
+                        hit_last_turn: Vec::new(),
                         flags: serde_json::Map::new(),
                     },
                 )
@@ -3470,6 +3472,7 @@ impl Engine {
         for player in self.state.players.values_mut() {
             player.flags.remove("extra_plays"); // "additional card this turn" is per-turn
             player.hits_this_turn = 0; // reset the per-turn hit count (HitThisTurn)
+            player.hit_last_turn = std::mem::take(&mut player.hit_this_turn); // rotate hit history
             player.flipped_this_turn.clear(); // reset per-turn flips (FlippedThisTurn)
                                               // Promote a "re-roll your next turn roll" grant to this turn (SET, not
                                               // accumulate); an unused grant expires.
@@ -3813,6 +3816,7 @@ impl Engine {
             let p = self.state.players.get_mut(active).unwrap();
             p.in_play.push(card.clone());
             p.hits_this_turn += 1; // a landed card is a hit this turn (Condition::HitThisTurn)
+            p.hit_this_turn.push(card.clone()); // by-card, for a filtered HitCard query
         }
         self.run_effects(&effects, "OnHit", active, roll.as_ref())?; // the card's own "when this hits"
         self.run_hit_gimmicks(&card, active)?; // owner gimmick "when you hit a <type>" (D1)
@@ -9261,6 +9265,42 @@ mod cardona_mechanism_tests {
         let hand = &e.state.players["B"].hand;
         assert_eq!(hand.len(), 1, "both Leads buried, Follow Up stays");
         assert_eq!(hand[0].db_uuid, "fu");
+    }
+
+    #[test]
+    fn hit_card_reads_this_and_last_turn_history() {
+        use crate::conditions::holds;
+        let mut e = engine();
+        // A hit a Lead this turn (all cards in this module are atk_type Strike).
+        e.state.players.get_mut("A").unwrap().hit_this_turn = vec![card("l1", "Lead")];
+        let lead_filter = CardFilter {
+            play_order: Some(PlayOrder::Lead),
+            ..Default::default()
+        };
+        let lead = Condition::HitCard {
+            filter: lead_filter.clone(),
+            who: Who::SelfSide,
+            last_turn: false,
+        };
+        let lead_last = Condition::HitCard {
+            filter: lead_filter,
+            who: Who::SelfSide,
+            last_turn: true,
+        };
+        assert!(holds(&lead, &e.state, "A", None), "hit a Lead this turn");
+        assert!(!holds(&lead_last, &e.state, "A", None), "not yet last turn");
+
+        // A turn boundary rotates this-turn history into last-turn.
+        e.state.players.get_mut("A").unwrap().hit_last_turn =
+            std::mem::take(&mut e.state.players.get_mut("A").unwrap().hit_this_turn);
+        assert!(
+            !holds(&lead, &e.state, "A", None),
+            "cleared for the new turn"
+        );
+        assert!(
+            holds(&lead_last, &e.state, "A", None),
+            "now a last-turn hit"
+        );
     }
 
     #[test]

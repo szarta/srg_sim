@@ -148,6 +148,15 @@ pub struct PlayerState {
     /// start. Transient turn state, never serialized (re-derives on replay).
     #[serde(skip)]
     pub flipped_this_turn: Vec<Card>,
+    /// Cards this player HIT (landed) this turn / the PREVIOUS turn, by full card so a
+    /// type/order/name filter can query them. Read by [`Condition::HitCard`] ("if you
+    /// hit a Grapple last turn" / "if you hit a card with 'X' in the name this turn").
+    /// At each turn start `hit_this_turn` rotates into `hit_last_turn` and clears.
+    /// Transient turn state, never serialized (re-derives on replay).
+    #[serde(skip)]
+    pub hit_this_turn: Vec<Card>,
+    #[serde(skip)]
+    pub hit_last_turn: Vec<Card>,
     #[serde(default)]
     pub flags: Map<String, Value>,
 }

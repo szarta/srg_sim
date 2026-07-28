@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 90;
+pub const SCHEMA_VERSION: i64 = 91;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -788,6 +788,18 @@ pub enum Condition {
     /// start; the current (stopped) card is not yet counted. schema v72
     HitThisTurn {
         who: Who,
+    },
+    /// `who` hit (landed) a card matching `filter` this turn (`last_turn = false`) or the
+    /// PREVIOUS turn (`last_turn = true`) — "if you hit a Grapple last turn, …" / "if you
+    /// hit a card with 'Dragon' in the name this turn, …". Reads `PlayerState.hit_this_turn`
+    /// / `hit_last_turn` (full cards, rotated at turn start); a bare/empty `filter` matches
+    /// any hit. Distinct from [`Self::HitThisTurn`] (a count with no filter). schema v91
+    HitCard {
+        filter: CardFilter,
+        #[serde(default)]
+        who: Who,
+        #[serde(default)]
+        last_turn: bool,
     },
 }
 
@@ -1865,6 +1877,13 @@ pub enum IrNode {
     },
     HitThisTurn {
         who: Who,
+    },
+    HitCard {
+        filter: CardFilter,
+        #[serde(default)]
+        who: Who,
+        #[serde(default)]
+        last_turn: bool,
     },
 
     // Actions
