@@ -2417,6 +2417,28 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             e.optional = c.get(1).is_some();
             Some(e)
         }),
+        // Extra-card grant (PlayExtraCard, previously override-only): "You may play an
+        // additional card this turn". `order=None` (any card); N>1 grants loop as N
+        // separate PlayExtraCard actions (each bumps the extra-plays counter). The
+        // optional "You may" makes the effect optional; this base rule cascades through
+        // the generic gate rule for the "If <gate>, you may play …" forms.
+        rule(
+            r"(?:(You may) )?[Pp]lay (an?|\d+) (?:additional|extra) cards? this turn",
+            |c| {
+                let count = match &c[2].to_lowercase()[..] {
+                    "a" | "an" => 1usize,
+                    n => n.parse().ok()?,
+                };
+                let mut e = eff(
+                    on_hit(),
+                    vec![Action::PlayExtraCard { order: None }; count],
+                    Condition::Always,
+                    Duration::Instant,
+                );
+                e.optional = c.get(1).is_some();
+                Some(e)
+            },
+        ),
         // "[Your opponent's] Gimmick is blank" -> a Static `BlankGimmick` marker (the
         // action pre-existed but was override-only). Self ("Your Gimmick is blank") vs
         // opponent; WhileInPlay. Gated variants ("If the Crowd Meter is N or greater, …")

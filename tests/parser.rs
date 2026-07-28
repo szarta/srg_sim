@@ -2286,3 +2286,35 @@ fn no_disqualifications_rule() {
     }
     assert_eq!(dq("You cannot be disqualified.")["scope"], "SELF");
 }
+
+/// Extra-card grant (PlayExtraCard, previously override-only): "You may play an
+/// additional card this turn", the N-copy count, and the gated "If <gate>, …" cascade.
+#[test]
+fn play_extra_card_grant() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    let e = one("You may play an additional card this turn.");
+    assert_eq!(e["actions"][0]["@type"], "PlayExtraCard");
+    assert_eq!(e["actions"][0]["order"], Value::Null);
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["condition"]["@type"], "Always");
+
+    // "2 additional cards" -> two grants (each bumps the extra-plays counter).
+    let e = one("You may play 2 additional cards this turn.");
+    assert_eq!(e["actions"].as_array().unwrap().len(), 2);
+
+    // "extra" is a synonym for "additional".
+    assert_eq!(
+        one("Play 1 extra card this turn.")["actions"][0]["@type"],
+        "PlayExtraCard"
+    );
+
+    // Cascades through the generic gate rule: the gate rides on the condition.
+    let e = one("If the Crowd Meter is 3 or greater, you may play an additional card this turn.");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["actions"][0]["@type"], "PlayExtraCard");
+    assert_eq!(e["optional"], true);
+}
