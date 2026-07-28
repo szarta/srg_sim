@@ -224,6 +224,13 @@
     "@type": "MatchHasNoDisqualifications"
   },
   {
+    "@type": "IsMatchType",
+    "types": [
+      "STEEL_CAGE",
+      "LIGERS_DEN"
+    ]
+  },
+  {
     "@type": "Discard",
     "choose": true,
     "count": 0,

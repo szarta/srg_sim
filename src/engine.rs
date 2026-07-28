@@ -11680,4 +11680,23 @@ mod gm_calace_tests {
         assert_eq!(engine.state.effective_hand_cap("A", HAND_CAP, None), 6);
         assert_eq!(engine.state.effective_hand_cap("B", HAND_CAP, None), 6);
     }
+
+    #[test]
+    fn is_match_type_reads_the_stipulation() {
+        use crate::ir::MatchType;
+        let mut engine = engine();
+        let gate = Condition::IsMatchType {
+            types: vec![MatchType::SteelCage, MatchType::LigersDen],
+        };
+        // Default Standard match: the gate is inert.
+        assert!(!conditions::holds(&gate, &engine.state, "A", None));
+        // In a Steel Cage match, the OR-set holds; a Liger's Den match too.
+        engine.state.match_type = MatchType::SteelCage;
+        assert!(conditions::holds(&gate, &engine.state, "A", None));
+        engine.state.match_type = MatchType::LigersDen;
+        assert!(conditions::holds(&gate, &engine.state, "A", None));
+        // A Triad match is not in the set.
+        engine.state.match_type = MatchType::Triad;
+        assert!(!conditions::holds(&gate, &engine.state, "A", None));
+    }
 }

@@ -1217,6 +1217,41 @@ fn cannot_be_stopped_gates() {
     assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
 }
 
+/// Match-stipulation gate (task #130): "this is a <X> Match" -> IsMatchType, an OR-set
+/// when disjoined ("Steel Cage or Liger's Den"). Cascades through every gated family —
+/// generic body, double-bonuses, also-a, cannot-be-stopped. schema v92.
+#[test]
+fn match_type_gates() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Generic body gate: "If this is a Steel Cage Match, draw 2 cards."
+    let e = one("If this is a Steel Cage Match, draw 2 cards.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["condition"]["@type"], "IsMatchType");
+    assert_eq!(e["condition"]["types"][0], "STEEL_CAGE");
+
+    // Disjunction -> OR-set of two types, cannot-be-stopped body.
+    let e = one("If this is a Steel Cage or Liger's Den Match, this card cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["condition"]["@type"], "IsMatchType");
+    assert_eq!(e["condition"]["types"][0], "STEEL_CAGE");
+    assert_eq!(e["condition"]["types"][1], "LIGERS_DEN");
+
+    // also-a body, Tag Team.
+    let e = one("If this is a Tag Team Match, this card is also a Finish.");
+    assert_eq!(e["actions"][0]["@type"], "AlsoLead");
+    assert_eq!(e["actions"][0]["condition"]["@type"], "IsMatchType");
+    assert_eq!(e["actions"][0]["condition"]["types"][0], "TAG_TEAM");
+
+    // An unrecognized stipulation ("Singles") declines cleanly -> Unsupported.
+    let e = one("If this is a Singles Match, draw 2 cards.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// "[If/When <gate>,] this card is also a <order>" (task #130): the card gains an extra
 /// play-order slot via AlsoLead, whose OWN condition carries the gate. gate_condition now
 /// falls back to the rich stop_condition parser (Crowd Meter, skill/hand compare, …).
@@ -1360,8 +1395,13 @@ fn double_these_bonuses_gates() {
     assert_eq!(c["@type"], "RollValue");
     assert_eq!(c["value"], 10);
 
+    // A Tag Team match now parses as a match-type gate (schema v92).
+    let c = cond("If this is a Tag Team match, double these bonuses.");
+    assert_eq!(c["@type"], "IsMatchType");
+    assert_eq!(c["types"][0], "TAG_TEAM");
+
     // An unmodeled gate leaves the whole clause Unsupported (no partial DoubleFinishIf).
-    let e = one("If this is a Tag Team match, double these bonuses.");
+    let e = one("If it is the first turn of the game, double these bonuses.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
     // "triple" is not the ×2 form -> stays Unsupported.
     let e = one("If you rolled Submission for your turn roll, triple these bonuses.");

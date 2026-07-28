@@ -297,6 +297,7 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             cmp_apply(*cmp, state.players[&subject].deck.len() as i64, *value)
         }
         Condition::MatchHasNoDisqualifications => state.match_has_no_dq(),
+        Condition::IsMatchType { types } => types.contains(&state.match_type),
         Condition::HasInPlay {
             who,
             filter,

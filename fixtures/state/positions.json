@@ -1238,7 +1238,8 @@
           "seed": 7,
           "state": 7
         },
-        "turn_no": 0
+        "turn_no": 0,
+        "match_type": "STANDARD"
       }
     },
     {
@@ -3917,7 +3918,8 @@
           "seed": 42,
           "state": 42
         },
-        "turn_no": 4
+        "turn_no": 4,
+        "match_type": "STANDARD"
       }
     },
     {
@@ -5676,7 +5678,8 @@
           "seed": 99,
           "state": 99
         },
-        "turn_no": 2
+        "turn_no": 2,
+        "match_type": "STANDARD"
       }
     }
   ]

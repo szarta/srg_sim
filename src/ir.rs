@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 91;
+pub const SCHEMA_VERSION: i64 = 92;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -214,6 +214,24 @@ pub enum ShuffleSource {
     #[default]
     Discard,
     InPlay,
+}
+
+/// A match stipulation ("this is a Steel Cage Match"). The default `Standard` is a
+/// normal singles match; the rest are the recurring special-match keywords that gate
+/// card text ("if this is a Steel Cage or Liger's Den Match, …"). Read by the
+/// [`Condition::IsMatchType`] gate against `GameState.match_type`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum MatchType {
+    #[default]
+    Standard,
+    SteelCage,
+    LigersDen,
+    RingOfFire,
+    Triad,
+    TagTeam,
+    SteelChain,
+    Lumberjack,
 }
 
 /// Which zone a [`Action::BuffSkill`] `per`-count ranges over — "for each card
@@ -667,6 +685,12 @@ pub enum Condition {
     /// (`GameState.match_has_no_dq`). "If this match has No Disqualifications, your
     /// Finish roll is +1" (Cardona's Pizza Cutter; a 16-clause family). schema v83
     MatchHasNoDisqualifications,
+    /// The current match is one of the listed stipulations ("if this is a Steel Cage
+    /// or Liger's Den Match, …"). Holds iff `GameState.match_type` is in `types`; a
+    /// disjunction over the OR-joined keywords. A 156-clause gate family. schema v92
+    IsMatchType {
+        types: Vec<MatchType>,
+    },
     HasInPlay {
         who: Who,
         filter: CardFilter,
@@ -1776,6 +1800,12 @@ pub enum IrNode {
     /// (`GameState.match_has_no_dq`). "If this match has No Disqualifications, your
     /// Finish roll is +1" (Cardona's Pizza Cutter; a 16-clause family). schema v83
     MatchHasNoDisqualifications,
+    /// The current match is one of the listed stipulations ("if this is a Steel Cage
+    /// or Liger's Den Match, …"). Holds iff `GameState.match_type` is in `types`; a
+    /// disjunction over the OR-joined keywords. A 156-clause gate family. schema v92
+    IsMatchType {
+        types: Vec<MatchType>,
+    },
     HasInPlay {
         who: Who,
         filter: CardFilter,

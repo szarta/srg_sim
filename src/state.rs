@@ -226,6 +226,12 @@ pub struct GameState {
     /// `None` outside a flip. Transient — never serialized.
     #[serde(skip)]
     pub flip_provenance: Option<FlipProvenance>,
+    /// The match stipulation in force ("Steel Cage", "Ring of Fire", …). Read by the
+    /// [`Condition::IsMatchType`] gate on card text that only fires in a special match.
+    /// Defaults to `Standard` (a normal singles match), so those gates are inert unless
+    /// the match is explicitly set up as a stipulation.
+    #[serde(default)]
+    pub match_type: crate::ir::MatchType,
 }
 
 /// What caused the flip currently being resolved (see [`GameState::flip_provenance`]).
@@ -259,6 +265,7 @@ impl GameState {
             blank_guard: RefCell::new(HashSet::new()),
             copy_guard: RefCell::new(HashSet::new()),
             flip_provenance: None,
+            match_type: crate::ir::MatchType::Standard,
         }
     }
 

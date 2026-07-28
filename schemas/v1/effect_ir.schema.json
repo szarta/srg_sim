@@ -245,6 +245,9 @@
               "$ref": "#/$defs/MatchHasNoDisqualifications"
             },
             {
+              "$ref": "#/$defs/IsMatchType"
+            },
+            {
               "$ref": "#/$defs/HitCard"
             }
           ]
@@ -373,6 +376,9 @@
               },
               {
                 "$ref": "#/$defs/MatchHasNoDisqualifications"
+              },
+              {
+                "$ref": "#/$defs/IsMatchType"
               },
               {
                 "$ref": "#/$defs/HitCard"
@@ -1543,6 +1549,9 @@
               "$ref": "#/$defs/MatchHasNoDisqualifications"
             },
             {
+              "$ref": "#/$defs/IsMatchType"
+            },
+            {
               "$ref": "#/$defs/HitCard"
             }
           ]
@@ -2006,6 +2015,9 @@
             },
             {
               "$ref": "#/$defs/MatchHasNoDisqualifications"
+            },
+            {
+              "$ref": "#/$defs/IsMatchType"
             },
             {
               "$ref": "#/$defs/HitCard"
@@ -2992,6 +3004,9 @@
           "$ref": "#/$defs/MatchHasNoDisqualifications"
         },
         {
+          "$ref": "#/$defs/IsMatchType"
+        },
+        {
           "$ref": "#/$defs/OnFlip"
         },
         {
@@ -3058,6 +3073,25 @@
       ],
       "type": "object"
     },
+    "IsMatchType": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "IsMatchType"
+        },
+        "types": {
+          "items": {
+            "$ref": "#/$defs/MatchType"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "types"
+      ],
+      "type": "object"
+    },
     "LoseBy": {
       "additionalProperties": false,
       "properties": {
@@ -3108,6 +3142,19 @@
         "@type"
       ],
       "type": "object"
+    },
+    "MatchType": {
+      "enum": [
+        "STANDARD",
+        "STEEL_CAGE",
+        "LIGERS_DEN",
+        "RING_OF_FIRE",
+        "TRIAD",
+        "TAG_TEAM",
+        "STEEL_CHAIN",
+        "LUMBERJACK"
+      ],
+      "type": "string"
     },
     "MaxHandSize": {
       "additionalProperties": false,
@@ -3312,6 +3359,9 @@
             },
             {
               "$ref": "#/$defs/MatchHasNoDisqualifications"
+            },
+            {
+              "$ref": "#/$defs/IsMatchType"
             },
             {
               "$ref": "#/$defs/HitCard"
@@ -3817,6 +3867,9 @@
               },
               {
                 "$ref": "#/$defs/MatchHasNoDisqualifications"
+              },
+              {
+                "$ref": "#/$defs/IsMatchType"
               },
               {
                 "$ref": "#/$defs/HitCard"
@@ -4498,6 +4551,9 @@
               "$ref": "#/$defs/MatchHasNoDisqualifications"
             },
             {
+              "$ref": "#/$defs/IsMatchType"
+            },
+            {
               "$ref": "#/$defs/HitCard"
             }
           ]
@@ -4981,5 +5037,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 91
+  "version": 92
 }

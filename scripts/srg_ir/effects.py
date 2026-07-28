@@ -228,6 +228,21 @@ class ShuffleSource(Enum):
     IN_PLAY = "IN_PLAY"
 
 
+class MatchType(Enum):
+    """A match stipulation ("this is a Steel Cage Match"). ``STANDARD`` is a normal
+    singles match; the rest are the recurring special-match keywords that gate card
+    text. Read by :class:`IsMatchType`."""
+
+    STANDARD = "STANDARD"
+    STEEL_CAGE = "STEEL_CAGE"
+    LIGERS_DEN = "LIGERS_DEN"
+    RING_OF_FIRE = "RING_OF_FIRE"
+    TRIAD = "TRIAD"
+    TAG_TEAM = "TAG_TEAM"
+    STEEL_CHAIN = "STEEL_CHAIN"
+    LUMBERJACK = "LUMBERJACK"
+
+
 class CountZone(Enum):
     """Zone a :class:`BuffSkill` ``per``-count ranges over — "for each card you have
     **in play**" vs "in your **discard** pile"."""
@@ -660,6 +675,14 @@ class DeckSizeCompare(IRNode):
 class MatchHasNoDisqualifications(IRNode):
     """The match currently has no disqualifications — neither player can be DQ'd. "If
     this match has No Disqualifications, your Finish roll is +1" (Cardona). schema v83"""
+
+
+@dataclass(frozen=True)
+class IsMatchType(IRNode):
+    """The current match is one of the listed stipulations ("if this is a Steel Cage or
+    Liger's Den Match, …"). Holds iff the match type is in ``types``. schema v92"""
+
+    types: tuple[MatchType, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1986,6 +2009,7 @@ Condition = (
     | CrowdMeterCompare
     | DeckSizeCompare
     | MatchHasNoDisqualifications
+    | IsMatchType
     | HasInPlay
     | HasInHand
     | HasInDiscard

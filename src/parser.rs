@@ -18,8 +18,8 @@ use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
     CountZone, DeckEnd, Direction, Duration, Effect, EffectSource, EffectTag, Frequency,
-    FrequencyGuard, FrequencyGuardTag, LoseKind, PlayOrder, RollWhen, ScryRest, ShuffleSource,
-    Skill, Trigger, Vs, Who,
+    FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RollWhen, ScryRest,
+    ShuffleSource, Skill, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -473,6 +473,8 @@ fn gate_condition(text: &str) -> Option<Condition> {
     });
     static OPP_PLAY_NONE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^your opponent has (?:no|0) (.+?) in play$").unwrap());
+    static MATCH_TYPE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^this is an? (.+?) match$").unwrap());
 
     // Each regex-then-`recur_filter` branch FALLS THROUGH when the inner descriptor
     // doesn't parse (rather than `?`-returning), so a shape one branch's regex loosely
@@ -537,6 +539,11 @@ fn gate_condition(text: &str) -> Option<Condition> {
         "this is a no dq match" => return Some(Condition::MatchHasNoDisqualifications),
         _ => {}
     }
+    if let Some(c) = MATCH_TYPE.captures(t) {
+        if let Some(types) = match_type_set(&c[1]) {
+            return Some(Condition::IsMatchType { types });
+        }
+    }
     if let Some(c) = HAVE_NAME.captures(t) {
         return Some(has_in_play(
             Who::SelfSide,
@@ -557,6 +564,32 @@ fn gate_condition(text: &str) -> Option<Condition> {
     // family that routes through `gate_condition` (double-bonuses, the generic gate
     // rule, "also a <order>") shares its whole vocabulary.
     stop_condition(t)
+}
+
+/// Map one match-stipulation keyword to its [`MatchType`]. Handles the recurring
+/// canonical names and their obvious spelling variants ("liger's den" / "ligers den",
+/// "lumber jack"). Player-count / billing phrases ("singles", "main event") aren't
+/// stipulations and return `None`, so their clauses stay `Unsupported`.
+fn match_type_name(word: &str) -> Option<MatchType> {
+    match word.trim().to_lowercase().replace('\'', "").as_str() {
+        "steel cage" => Some(MatchType::SteelCage),
+        "ligers den" | "liger den" => Some(MatchType::LigersDen),
+        "ring of fire" => Some(MatchType::RingOfFire),
+        "triad" => Some(MatchType::Triad),
+        "tag team" => Some(MatchType::TagTeam),
+        "steel chain" => Some(MatchType::SteelChain),
+        "lumberjack" | "lumber jack" => Some(MatchType::Lumberjack),
+        _ => None,
+    }
+}
+
+/// Parse a match-stipulation phrase — the "`<X>`" in "this is a `<X>` Match" — into the
+/// set of [`MatchType`]s it names, splitting an OR-list ("Steel Cage or Liger's Den").
+/// `None` if ANY keyword is unrecognized, so a mixed phrase declines cleanly.
+fn match_type_set(phrase: &str) -> Option<Vec<MatchType>> {
+    let parts: Vec<&str> = phrase.split(" or ").collect();
+    let types: Vec<MatchType> = parts.iter().filter_map(|p| match_type_name(p)).collect();
+    (types.len() == parts.len() && !types.is_empty()).then_some(types)
 }
 
 /// "Strike, Submission, or Grapple" -> `RollWasSkill` OR-set for a `who=SELF` turn roll

@@ -162,6 +162,7 @@ HandSizeCompare(cmp, vs=OPP|VALUE, value?)
 CrowdMeterCompare(cmp, value)
 DeckSizeCompare(cmp, value, who=SELF)  # who's remaining deck size vs value — "if you have 0 cards in your deck" (Foxworthy V3). schema v82
 MatchHasNoDisqualifications  # the match currently has no disqualifications (neither player can be DQ'd; GameState.match_has_no_dq) — Cardona's Pizza Cutter. schema v83
+IsMatchType(types)  # the match stipulation is one of `types` ("if this is a Steel Cage or Liger's Den Match, …"); disjunction over GameState.match_type. 156-clause gate family. schema v92
 HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
 ChosenNameIs(name, who)      # who's ChooseName binding == name; the gate that resolves "that" name into one concrete effect per
                              # option (Raven). False until a choice is bound. schema v37
