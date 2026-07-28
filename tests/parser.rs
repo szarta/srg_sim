@@ -1178,6 +1178,45 @@ fn take_from_discard_recall() {
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Followup");
 }
 
+/// "[If/When <gate>,] this card cannot be stopped [by <order>]" (task #130): an optionally
+/// gated Unstoppable, guard via gate_condition. Adds bare (unconditional) + opponent-side
+/// gates (opp roll / opp-in-play) over the pre-existing stop_condition vocabulary.
+#[test]
+fn cannot_be_stopped_gates() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    fn unstop(text: &str) -> Value {
+        let e = one(text);
+        assert_eq!(e["actions"][0]["@type"], "Unstoppable", "{text:?}");
+        e.clone()
+    }
+
+    // Bare -> unconditional.
+    let e = unstop("This card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "Always");
+
+    // Opponent-roll gate (gate_condition's opp branch).
+    let e =
+        unstop("If your opponent rolled Power for their turn roll, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "RollWasSkill");
+    assert_eq!(e["condition"]["who"], "OPP");
+
+    // Opponent-in-play gate (none / count).
+    let e = unstop("When your opponent has 0 cards in play this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["who"], "OPP");
+    assert_eq!(e["condition"]["cmp"], "<");
+
+    // Crowd-Meter gate still works (via stop_condition fallback), with a by-order.
+    let e = one("If the Crowd Meter is 5 or greater, this card cannot be stopped by Follow Ups.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["actions"][0]["by_order"], "Followup");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+}
+
 /// "[If/When <gate>,] this card is also a <order>" (task #130): the card gains an extra
 /// play-order slot via AlsoLead, whose OWN condition carries the gate. gate_condition now
 /// falls back to the rich stop_condition parser (Crowd Meter, skill/hand compare, …).

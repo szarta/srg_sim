@@ -468,14 +468,40 @@ fn gate_condition(text: &str) -> Option<Condition> {
     static HIT: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(?i)^you hit (?:a |an |another )?(.+?) (this|last) turn$").unwrap()
     });
+    static OPP_PLAY: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^your opponent has (\d+)(?: or more)? (.+?) in play$").unwrap()
+    });
+    static OPP_PLAY_NONE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^your opponent has (?:no|0) (.+?) in play$").unwrap());
 
+    // Each regex-then-`recur_filter` branch FALLS THROUGH when the inner descriptor
+    // doesn't parse (rather than `?`-returning), so a shape one branch's regex loosely
+    // matches but can't map ("4 other Submission cards") still reaches `stop_condition`.
     let t = text.trim().trim_end_matches([',', ';', '.']).trim();
-    if let Some(c) = HIT.captures(t) {
-        return Some(Condition::HitCard {
-            filter: recur_filter(c[1].trim())?,
-            who: Who::SelfSide,
-            last_turn: c[2].eq_ignore_ascii_case("last"),
+    if let Some(f) = OPP_PLAY_NONE
+        .captures(t)
+        .and_then(|c| recur_filter(c[1].trim()))
+    {
+        return Some(Condition::HasInPlay {
+            who: Who::Opp,
+            filter: f,
+            count: 1,
+            cmp: Comparator::Lt,
         });
+    }
+    if let Some(c) = OPP_PLAY.captures(t) {
+        if let (Some(f), Ok(n)) = (recur_filter(c[2].trim()), c[1].parse::<i64>()) {
+            return Some(has_in_play(Who::Opp, f, n));
+        }
+    }
+    if let Some(c) = HIT.captures(t) {
+        if let Some(f) = recur_filter(c[1].trim()) {
+            return Some(Condition::HitCard {
+                filter: f,
+                who: Who::SelfSide,
+                last_turn: c[2].eq_ignore_ascii_case("last"),
+            });
+        }
     }
     if let Some(c) = ROLL_SELF.captures(t) {
         return Some(Condition::RollWasSkill {
@@ -522,11 +548,9 @@ fn gate_condition(text: &str) -> Option<Condition> {
         let count = c
             .get(1)
             .map_or(1, |m| m.as_str().parse::<i64>().unwrap_or(1));
-        return Some(has_in_play(
-            Who::SelfSide,
-            recur_filter(c[2].trim())?,
-            count,
-        ));
+        if let Some(f) = recur_filter(c[2].trim()) {
+            return Some(has_in_play(Who::SelfSide, f, count));
+        }
     }
     // Fall back to the richer `stop_condition` parser (Crowd-Meter / skill-compare /
     // hand-compare / play-count / name-list / negation / tag gates), so every gated
@@ -2956,17 +2980,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        // "If/When <cond>, this card cannot be stopped [by <order>]": a condition-gated
-        // Unstoppable. The guard is parsed by `stop_condition`; the engine evaluates it
-        // from the card owner's side at stop time.
+        // "[If/When <cond>,] this card cannot be stopped [by <order>]": an optionally
+        // condition-gated Unstoppable. The guard is parsed by `gate_condition` (the
+        // superset gate parser — Crowd Meter, skill/hand compare, opp-roll, in-play,
+        // hit-history, …); a bare clause (no gate) is unconditional. The engine evaluates
+        // the guard from the card owner's side at stop time.
         rule(
-            r"(?:If|When) (.+?),? this card cannot be stopped(?: by (Follow[ -]?Ups?|Leads?|Finish(?:es)?))?",
+            r"(?:(?:If|When) (.+?),? )?[Tt]his card cannot be stopped(?: by (Follow[ -]?Ups?|Leads?|Finish(?:es)?))?",
             |c| {
                 let by_order = c.get(2).map(|m| stopper_order(m.as_str()));
+                let condition = match c.get(1) {
+                    Some(m) => gate_condition(m.as_str())?,
+                    None => Condition::Always,
+                };
                 Some(eff(
                     Trigger::Static,
                     vec![unstoppable(by_order, None)],
-                    stop_condition(&c[1])?,
+                    condition,
                     Duration::WhileInPlay,
                 ))
             },
