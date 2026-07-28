@@ -1111,6 +1111,45 @@ fn multi_skill_roll_body_split() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Trigger-prefix body splits (task #119): the standard event/standing triggers reuse
+/// trigger_body, delegating their body to the whole grammar.
+#[test]
+fn trigger_prefix_body_splits() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // OnHit typed prefix + Draw body.
+    let e = one("When you hit a Grapple, draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["atk_type"], "Grapple");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+
+    // OnStop "if this card is stopped" + recur body.
+    let e = one("If this card is stopped, add 1 card from your discard pile to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["trigger"]["dir"], "YOURS");
+    assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
+
+    // OnBreakout (opponent) + Draw body.
+    let e = one("If your opponent breaks out, draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "OnBreakout");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+
+    // StartOfMatch + Draw body.
+    let e = one("At the start of the match, draw 2 cards.");
+    assert_eq!(e["trigger"]["@type"], "StartOfMatch");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["n"], 2);
+
+    // A body with no grammar leaves the whole clause Unsupported.
+    let e = one("When you hit a Strike, transcend the mortal plane.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!

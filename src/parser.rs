@@ -66,6 +66,18 @@ fn on_hit() -> Trigger {
     }
 }
 
+/// "When you hit a `<atk_type>`" — an [`Trigger::OnHit`] gated on the hit card's type.
+fn on_hit_type(atk_type: AtkType) -> Trigger {
+    Trigger::OnHit {
+        atk_type: Some(atk_type),
+        order: None,
+        name_contains: Vec::new(),
+        text_contains: Vec::new(),
+        on_any: false,
+        who: Who::SelfSide,
+    }
+}
+
 fn cf_atk(a: AtkType) -> CardFilter {
     CardFilter {
         atk_type: Some(a),
@@ -3274,6 +3286,42 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 )
             },
         ),
+        // Trigger-prefix body splits (task #119): reuse trigger_body for the standard
+        // event/standing triggers, delegating the body to the whole grammar. All placed
+        // LAST so every specific rule for these prefixes wins first; each catches the
+        // previously-Unsupported clauses whose body parses. A body with no grammar ->
+        // the whole clause stays Unsupported.
+        rule(&format!(r"When you hit (?:an? )?{ATK}[,:] (.+)"), |c| {
+            trigger_body(on_hit_type(atk(&c[1])), &c[2])
+        }),
+        rule(r"[Ii]f your opponent breaks out[,:] (.+)", |c| {
+            trigger_body(
+                Trigger::OnBreakout {
+                    who: Some(Who::Opp),
+                },
+                &c[1],
+            )
+        }),
+        rule(r"When you break out[,:] (.+)", |c| {
+            trigger_body(
+                Trigger::OnBreakout {
+                    who: Some(Who::SelfSide),
+                },
+                &c[1],
+            )
+        }),
+        rule(r"At the start of the match[,:] (.+)", |c| {
+            trigger_body(Trigger::StartOfMatch, &c[1])
+        }),
+        rule(r"At the start of your turn[,:] (.+)", |c| {
+            trigger_body(Trigger::StartOfTurn, &c[1])
+        }),
+        rule(r"When you win (?:the|a) turn roll[,:;] (.+)", |c| {
+            trigger_body(Trigger::OnWinTurn, &c[1])
+        }),
+        rule(r"[Ii]f (?:this card is |this is )?stopped[,:] (.+)", |c| {
+            trigger_body(on_your_stop(), &c[1])
+        }),
     ]
 }
 
