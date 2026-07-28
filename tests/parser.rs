@@ -2219,3 +2219,43 @@ fn during_turn_window_header() {
         "lone header produces no Unsupported clause"
     );
 }
+
+/// Deck-tutor grammar (Search, previously override-only): "Search your deck for <SEL>
+/// and <route>" over the three destinations, with typed / named / bare selectors.
+#[test]
+fn search_deck_tutor() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    // Bare "N cards" -> empty filter; count carried through; HAND destination.
+    let e = a1("Search your deck for 2 cards and add them to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "Search");
+    assert_eq!(e["actions"][0]["dest"], "HAND");
+    assert_eq!(e["actions"][0]["count"], 2);
+    assert_eq!(e["actions"][0]["filter"]["play_order"], Value::Null);
+
+    // Typed selector "a Finish" -> play_order filter, count 1.
+    let e = a1("Search your deck for a Finish and add it to your hand.");
+    assert_eq!(e["actions"][0]["filter"]["play_order"], "Finish");
+    assert_eq!(e["actions"][0]["count"], 1);
+
+    // "up to N cards ... discard pile" -> DISCARD.
+    let e = a1("Search your deck for up to 2 cards and put them into your discard pile.");
+    assert_eq!(e["actions"][0]["dest"], "DISCARD");
+    assert_eq!(e["actions"][0]["count"], 2);
+
+    // "... on top of your shuffled deck" -> DECK_TOP, atk_type filter.
+    let e = a1("Search your deck for 1 Strike and put it on top of your shuffled deck.");
+    assert_eq!(e["actions"][0]["dest"], "DECK_TOP");
+    assert_eq!(e["actions"][0]["filter"]["atk_type"], "Strike");
+
+    // Named selector -> name_contains filter.
+    let e = a1("Search your deck for 1 card with \"Ladder\" in the name and add it to your hand.");
+    assert_eq!(e["actions"][0]["filter"]["name_contains"][0], "Ladder");
+
+    // A selector with no CardFilter (Spotlight) declines cleanly -> Unsupported.
+    let e = a1("Search your deck for a Spotlight card and add it to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}

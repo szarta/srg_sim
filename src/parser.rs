@@ -17,7 +17,7 @@
 use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
-    CountZone, DeckEnd, Direction, Duration, Effect, EffectSource, EffectTag, Frequency,
+    CountZone, DeckEnd, Dest, Direction, Duration, Effect, EffectSource, EffectTag, Frequency,
     FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RollWhen, ScryRest,
     ShuffleSource, Skill, Trigger, Vs, Who,
 };
@@ -696,6 +696,31 @@ fn scry_flip(reveal: bool, top: i64, to_hand: i64) -> Action {
         bury: 0,
         rest: ScryRest::Flip,
     }
+}
+
+fn search(filter: CardFilter, dest: Dest, count: i64) -> Action {
+    Action::Search {
+        filter,
+        dest,
+        count,
+    }
+}
+
+/// Parse a `Search` selector — "a Finish", "2 cards", "up to 3 cards", "1 card with
+/// \"Ladder\" in the name" — into `(filter, count)`, reusing [`recur_filter`] for the
+/// typed/named descriptor. `None` for a selector with no CardFilter (Spotlight, Skill
+/// Requirement, …), so those clauses stay Unsupported rather than mis-modeling.
+fn search_target(sel: &str) -> Option<(CardFilter, i64)> {
+    static LEAD: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^(?:up to )?(a|an|\d+) (.+)$").unwrap());
+    let caps = LEAD.captures(sel.trim())?;
+    let head = caps[1].to_lowercase();
+    let count = if head == "a" || head == "an" {
+        1
+    } else {
+        head.parse().ok()?
+    };
+    Some((recur_filter(&caps[2])?, count))
 }
 
 fn bury(count: i64, who: Who) -> Action {
@@ -1861,6 +1886,46 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         draw(1, Who::SelfSide, DeckEnd::Top, None, Who::SelfSide),
                         draw(1, Who::Opp, DeckEnd::Top, None, Who::SelfSide),
                     ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Deck tutor (Search, previously override-only): "Search your deck for <SEL>
+        // and <route>". Three destinations — hand, top of the shuffled deck, discard
+        // pile. Compound tails ("… , or each player buries", "…: add 1 …", "search your
+        // deck OR discard pile") decline here and stay Unsupported for now.
+        rule(
+            r#"Search your deck for (.+?) and add (?:it|them) to your hand"#,
+            |c| {
+                let (filter, count) = search_target(&c[1])?;
+                Some(eff(
+                    on_hit(),
+                    vec![search(filter, Dest::Hand, count)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r#"Search your deck for (.+?) and put (?:it|them) on top of your shuffled deck"#,
+            |c| {
+                let (filter, count) = search_target(&c[1])?;
+                Some(eff(
+                    on_hit(),
+                    vec![search(filter, Dest::DeckTop, count)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r#"Search your deck for (.+?) and put (?:it|them) in(?:to)? your discard pile"#,
+            |c| {
+                let (filter, count) = search_target(&c[1])?;
+                Some(eff(
+                    on_hit(),
+                    vec![search(filter, Dest::Discard, count)],
                     Condition::Always,
                     Duration::Instant,
                 ))
