@@ -2018,6 +2018,28 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Opponent's next turn roll lowered by a per-count of YOUR in-play cards ("your
+        // opponent's next turn roll is -N for each [other] Lead you have in play") — the
+        // opp-directed mirror of the self per-count rule above. who=Opp (their roll),
+        // per_who=SelfSide (the cards YOU have in play).
+        rule(
+            r"Your opponent's next turn roll is -(\d+) for each (?:other )?(.+?) you have in play",
+            |c| {
+                let per = count_filter(&c[2])?;
+                Some(eff(
+                    on_hit(),
+                    vec![modify_roll(
+                        Who::Opp,
+                        -num(c, 1),
+                        RollWhen::Next,
+                        Some(per),
+                        Who::SelfSide,
+                    )],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"Your next turn roll is \+(\d+)", |c| {
             Some(eff(
                 on_hit(),

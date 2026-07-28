@@ -1380,6 +1380,32 @@ fn breakout_roll_bonus() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Opponent per-count next-turn-roll penalty (task #130): "Your opponent's next turn roll
+/// is -N for each [other] <X> you have in play" -> ModifyRoll{who:OPP, per, per_who:SELF} —
+/// the opp-directed mirror of the existing self per-count rule.
+#[test]
+fn opp_next_roll_per_count() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    let e = one("Your opponent's next turn roll is -1 for each Lead you have in play.");
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["delta"], -1);
+    assert_eq!(e["actions"][0]["when"], "NEXT");
+    assert_eq!(e["actions"][0]["per_who"], "SELF");
+    assert_eq!(e["actions"][0]["per"]["play_order"], "Lead");
+
+    // "other" is tolerated; a Stop per-count filters on is_stop.
+    let e = one("Your opponent's next turn roll is -2 for each other Grapple you have in play.");
+    assert_eq!(e["actions"][0]["per"]["atk_type"], "Grapple");
+    let e = one("Your opponent's next turn roll is -1 for each Stop you have in play.");
+    assert_eq!(e["actions"][0]["per"]["is_stop"], true);
+}
+
 /// Gimmick-blank grammar (task #130): "[Your opponent's] Gimmick is blank" -> a Static
 /// BlankGimmick marker (the action pre-existed but was override-only). WhileInPlay.
 #[test]
