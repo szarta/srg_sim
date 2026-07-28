@@ -1150,6 +1150,34 @@ fn trigger_prefix_body_splits() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// "Take N [<type>] cards from your discard pile and add them to your hand" (task #130):
+/// the "Take … and add" phrasing of the recur-from-discard rule; a trailing " cards" on
+/// a typed selector ("Lead cards") is stripped so the order/atk filter resolves.
+#[test]
+fn take_from_discard_recall() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Typed: "Lead cards" -> AddFromDiscard filtered to Lead order.
+    let e = one("Take 2 Lead cards from your discard pile and add them to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
+    assert_eq!(e["actions"][0]["filter"]["play_order"], "Lead");
+
+    // Untyped "cards" -> no filter.
+    let e = one("Take 2 cards from your discard pile and add them to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
+    assert_eq!(e["actions"][0]["filter"]["play_order"], Value::Null);
+
+    // Under an "If stopped," prefix the body still resolves (trigger-body split).
+    let e = one("If stopped, take 2 Follow Ups from your discard pile and add them to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
+    assert_eq!(e["actions"][0]["filter"]["play_order"], "Followup");
+}
+
 /// OnBreakoutRoll(Opp) trigger-body split (task #130): "Each time your opponent rolls for
 /// a Breakout roll, <body>". The body dispatches through the whole grammar; a leading
 /// third-person "they <verb>" resolves to the opponent (the roller) via the opp-subject

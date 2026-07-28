@@ -167,6 +167,12 @@ fn recur_filter(desc: &str) -> Option<CardFilter> {
         let names = quoted_names(d);
         return (!names.is_empty()).then(|| cf_name(names));
     }
+    // A trailing " card"/" cards" is noise on a typed selector ("Lead cards" -> "Lead");
+    // strip it so count_filter sees the bare type.
+    let d = d
+        .strip_suffix(" cards")
+        .or_else(|| d.strip_suffix(" card"))
+        .unwrap_or(d);
     // count_filter lowercases + strips a trailing 's' ("Strikes"->"strike"); the
     // `es`-fallback covers sibilant plurals it misses ("Finishes"->"finish").
     count_filter(d).or_else(|| d.strip_suffix("es").and_then(count_filter))
@@ -2570,6 +2576,22 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![Action::AddFromDiscard {
                         filter: recur_filter(&c[2])?,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "Take N <X> from your discard pile and add them to your hand" — the "Take …
+        // and add" phrasing of the recur-from-discard rule above (AJ Styles' Lead
+        // recursion). One added, as the whole AddFromDiscard family does.
+        rule(
+            r"Take (?:up to )?\d+ (.+?) from your discard pile and add (?:it|them) to your hand",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::AddFromDiscard {
+                        filter: recur_filter(&c[1])?,
                     }],
                     Condition::Always,
                     Duration::Instant,
