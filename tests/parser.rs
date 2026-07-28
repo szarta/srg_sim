@@ -2167,3 +2167,55 @@ fn stop_eligibility_grammar() {
     let e = a1("Stop any Strike.");
     assert_eq!(e["actions"][0]["target"], Value::Null);
 }
+
+/// A "During your turn:" / "During your opponent's turn:" window HEADER scopes every
+/// clause that follows to a [`Condition::DuringTurn`] turn phase (mirroring a frequency
+/// header), rather than becoming a dangling Unsupported clause of its own.
+#[test]
+fn during_turn_window_header() {
+    // Header + body across a newline: the header is consumed (no Unsupported clause for
+    // it), and the body keeps its own OnHit trigger. Its gate rides on the trigger, so
+    // the (Always) condition takes the window verbatim.
+    let effs = parse_text(
+        "During your turn:\nWhen you hit a Strike, draw 1 card.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "header consumed, only the body remains");
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["condition"]["@type"], "DuringTurn");
+    assert_eq!(e["condition"]["who"], "SELF");
+
+    // A body that carries its OWN condition gets the window AND-ed on top of it.
+    let effs = parse_text(
+        "During your turn:\nIf the Crowd Meter is 3 or greater, draw 1 card.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["condition"]["@type"], "And");
+    assert_eq!(e["condition"]["items"][0]["@type"], "DuringTurn");
+    assert_eq!(e["condition"]["items"][0]["who"], "SELF");
+    assert_eq!(e["condition"]["items"][1]["@type"], "CrowdMeterCompare");
+
+    // "your opponent's / target's turn" -> DuringTurn{OPP}.
+    let effs = parse_text(
+        "During your opponent's turn:\nDraw 1 card.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["condition"]["@type"], "DuringTurn");
+    assert_eq!(e["condition"]["who"], "OPP");
+
+    // A standalone header with nothing after it yields zero effects (fully consumed).
+    let effs = parse_text("During your turn:", EffectSource::Card, None, None);
+    assert!(
+        effs.is_empty(),
+        "lone header produces no Unsupported clause"
+    );
+}

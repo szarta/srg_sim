@@ -4060,6 +4060,22 @@ fn freq_header(clause: &str) -> Option<(Frequency, Option<i64>)> {
     None
 }
 
+/// A window header ("During your turn:", "During your opponent's turn:") scoping the
+/// clauses that follow to a turn phase. Returns the [`Condition::DuringTurn`] it opens,
+/// which persists (like a [`freq_header`]) until another header replaces it — the whole
+/// text after the header hangs off that turn window. `None` for any non-header clause.
+fn window_header(clause: &str) -> Option<Condition> {
+    static WINDOW: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^During your (turn|(?:target's|opponent's) turn):?$").unwrap()
+    });
+    let who = if WINDOW.captures(clause.trim())?[1].eq_ignore_ascii_case("turn") {
+        Who::SelfSide
+    } else {
+        Who::Opp
+    };
+    Some(Condition::DuringTurn { who })
+}
+
 /// Non-effect metadata (a deck-build "Skill Requirement:" line): recognized and
 /// skipped, neither an effect nor Unsupported.
 fn is_metadata(clause: &str) -> bool {
@@ -4130,16 +4146,25 @@ pub fn parse_text(
     let mut effects = Vec::new();
     let mut freq = Frequency::Unlimited;
     let mut n = None;
+    let mut window = Condition::Always;
     for clause in split_clauses(text) {
         if let Some((f, nn)) = freq_header(&clause) {
             freq = f;
             n = nn;
             continue;
         }
+        if let Some(cond) = window_header(&clause) {
+            window = cond;
+            continue;
+        }
         if is_metadata(&clause) {
             continue;
         }
-        effects.push(compile(&clause, source, freq, n));
+        let mut eff = compile(&clause, source, freq, n);
+        if !matches!(window, Condition::Always) {
+            eff.condition = and_conds(window.clone(), eff.condition);
+        }
+        effects.push(eff);
     }
     effects
 }
