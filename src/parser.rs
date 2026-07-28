@@ -439,6 +439,88 @@ fn gate_body(cond: Condition, body: &str) -> Option<Effect> {
     Some(effect)
 }
 
+/// Parse a common conditional-gate phrase — the "`<gate>`" in "If `<gate>`, double these
+/// bonuses" and kin — into a [`Condition`] the engine already evaluates. Covers turn-roll
+/// (skill / value / same-as-opponent), the re-roll / bump / ended-turn flags, the no-DQ
+/// match state, and in-play gates (type / order / name-substring). Returns `None` for a
+/// gate not yet modeled, so the caller declines and the clause stays `Unsupported`.
+fn gate_condition(text: &str) -> Option<Condition> {
+    static ROLL_SELF: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(r"(?i)^you rolled {SK} for your turn roll$")).unwrap()
+    });
+    static ROLL_OPP: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(
+            r"(?i)^your opponent rolled {SK} for their turn roll$"
+        ))
+        .unwrap()
+    });
+    static ROLL_VAL: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^you rolled (\d+) for your turn roll$").unwrap());
+    static HAVE_NAME: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r#"(?i)^you have (?:a card )?(?:in play )?with "([^"]+)" in the name(?: in play)?$"#,
+        )
+        .unwrap()
+    });
+    static HAVE_INPLAY: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^you have (?:another |(\d+) (?:or more )?)?(.+?) in play$").unwrap()
+    });
+
+    let t = text.trim().trim_end_matches([',', ';', '.']).trim();
+    if let Some(c) = ROLL_SELF.captures(t) {
+        return Some(Condition::RollWasSkill {
+            skill: skill(&c[1]),
+            who: Who::SelfSide,
+        });
+    }
+    if let Some(c) = ROLL_OPP.captures(t) {
+        return Some(Condition::RollWasSkill {
+            skill: skill(&c[1]),
+            who: Who::Opp,
+        });
+    }
+    if let Some(c) = ROLL_VAL.captures(t) {
+        return Some(Condition::RollValue {
+            cmp: Comparator::Eq,
+            value: c[1].parse().ok()?,
+        });
+    }
+    match t.to_lowercase().as_str() {
+        "you re-rolled your turn roll" | "you re-rolled your last turn roll" => {
+            return Some(Condition::RerolledTurnRoll)
+        }
+        "you bumped on the last turn roll" | "you bumped on the previous turn roll" => {
+            return Some(Condition::BumpedLastTurnRoll)
+        }
+        "you ended the last turn without playing a card" => {
+            return Some(Condition::EndedTurnNoPlay)
+        }
+        "you and your opponent rolled the same skill for your turn roll"
+        | "you rolled the same skill as your opponent for your turn roll"
+        | "you rolled the same skill as your opponent" => return Some(Condition::SameRolledSkill),
+        "this is a no dq match" => return Some(Condition::MatchHasNoDisqualifications),
+        _ => {}
+    }
+    if let Some(c) = HAVE_NAME.captures(t) {
+        return Some(has_in_play(
+            Who::SelfSide,
+            cf_name(vec![c[1].to_owned()]),
+            1,
+        ));
+    }
+    if let Some(c) = HAVE_INPLAY.captures(t) {
+        let count = c
+            .get(1)
+            .map_or(1, |m| m.as_str().parse::<i64>().unwrap_or(1));
+        return Some(has_in_play(
+            Who::SelfSide,
+            recur_filter(c[2].trim())?,
+            count,
+        ));
+    }
+    None
+}
+
 /// "Strike, Submission, or Grapple" -> `RollWasSkill` OR-set for a `who=SELF` turn roll
 /// (used as the gate on an `OnRoll{None}` multi-skill trigger). `None` if fewer than two
 /// skills parse.
@@ -3572,6 +3654,21 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 )
             },
         ),
+        // "If <gate>, double these bonuses" -> DoubleFinishIf{condition} (a 137-clause
+        // family; "these bonuses" = the card's own FinishBonus sum, doubled at finish
+        // time when the gate holds). Only the ×2 "double" form maps here — triple /
+        // quadruple would need a factor field and stay Unsupported. `gate_condition`
+        // declines gates we don't model, so those clauses stay Unsupported too.
+        rule(r"If (.+?),? double (?:these|the) bonuses", |c| {
+            Some(eff(
+                Trigger::OnPlay,
+                vec![Action::DoubleFinishIf {
+                    condition: gate_condition(&c[1])?,
+                }],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
     ]
 }
 

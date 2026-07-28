@@ -1178,6 +1178,65 @@ fn take_from_discard_recall() {
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Followup");
 }
 
+/// "If <gate>, double these bonuses" (task #130): a 137-clause family mapping to
+/// DoubleFinishIf{condition}, where gate_condition parses the common turn-roll / flag /
+/// in-play gates. Only the ×2 "double" form maps; unmodeled gates stay Unsupported.
+#[test]
+fn double_these_bonuses_gates() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    fn cond(text: &str) -> Value {
+        let e = one(text);
+        assert_eq!(e["actions"][0]["@type"], "DoubleFinishIf", "{text:?}");
+        e["actions"][0]["condition"].clone()
+    }
+
+    // Turn-roll skill gate (self / opponent).
+    let c = cond("If you rolled Power for your turn roll, double these bonuses.");
+    assert_eq!(c["@type"], "RollWasSkill");
+    assert_eq!(c["skill"], "Power");
+    assert_eq!(c["who"], "SELF");
+    let c = cond("If your opponent rolled Grapple for their turn roll, double these bonuses.");
+    assert_eq!(c["who"], "OPP");
+
+    // Flag gates.
+    assert_eq!(
+        cond("If you re-rolled your turn roll, double these bonuses.")["@type"],
+        "RerolledTurnRoll"
+    );
+    assert_eq!(
+        cond("If you ended the last turn without playing a card, double these bonuses.")["@type"],
+        "EndedTurnNoPlay"
+    );
+    // The bumped case is caught first by the dedicated DoubleFinishIfBumped rule.
+    let e = one("If you bumped on the last turn roll, double these bonuses.");
+    assert_eq!(e["actions"][0]["@type"], "DoubleFinishIfBumped");
+
+    // In-play gates: name-substring and typed count.
+    let c = cond("If you have a card with \"Wrench\" in the name in play, double these bonuses.");
+    assert_eq!(c["@type"], "HasInPlay");
+    assert_eq!(c["filter"]["name_contains"][0], "Wrench");
+    let c = cond("If you have 3 Submissions in play, double these bonuses.");
+    assert_eq!(c["@type"], "HasInPlay");
+    assert_eq!(c["count"], 3);
+    assert_eq!(c["filter"]["atk_type"], "Submission");
+
+    // Roll value.
+    let c = cond("If you rolled 10 for your turn roll, double these bonuses.");
+    assert_eq!(c["@type"], "RollValue");
+    assert_eq!(c["value"], 10);
+
+    // An unmodeled gate leaves the whole clause Unsupported (no partial DoubleFinishIf).
+    let e = one("If you hit a Grapple last turn, double these bonuses.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+    // "triple" is not the ×2 form -> stays Unsupported.
+    let e = one("If you rolled Submission for your turn roll, triple these bonuses.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Condition-gate prefixes (task #130): "If you rolled <skill> for your turn roll, <body>"
 /// and "If you have a card with 'X' in the name in play, <body>" keep the body's natural
 /// trigger and AND a RollWasSkill / HasInPlay gate onto its condition.
@@ -1206,7 +1265,7 @@ fn gate_prefix_body_splits() {
     assert_eq!(e["condition"]["filter"]["name_contains"][0], "Spear");
 
     // A gate whose body has no grammar leaves the whole clause Unsupported.
-    let e = one("If you rolled Power for your turn roll, double these bonuses.");
+    let e = one("If you rolled Power for your turn roll, ascend to a higher plane.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
