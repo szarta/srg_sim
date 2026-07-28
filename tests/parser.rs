@@ -2318,3 +2318,31 @@ fn play_extra_card_grant() {
     assert_eq!(e["actions"][0]["@type"], "PlayExtraCard");
     assert_eq!(e["optional"], true);
 }
+
+/// MinHandSize grammar (mirror of the maximum, previously override-only): the three
+/// scope shapes, Static WhileInPlay, signed delta.
+#[test]
+fn minimum_handsize_mods() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    let e = a1("Your minimum handsize is +2.");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["duration"], "WHILE_IN_PLAY");
+    assert_eq!(e["actions"][0]["@type"], "MinHandSize");
+    assert_eq!(e["actions"][0]["delta"], 2);
+    assert_eq!(e["actions"][0]["who"], "SELF");
+
+    assert_eq!(
+        a1("Your opponent's minimum hand size is -1.")["actions"][0]["who"],
+        "OPP"
+    );
+
+    // "Each player's" fans out to two actions (SELF + OPP).
+    let e = a1("Each player's minimum handsize is +1.");
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["@type"], "MinHandSize");
+}

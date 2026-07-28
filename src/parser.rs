@@ -941,6 +941,14 @@ fn max_hand(delta: i64, who: Who) -> Action {
     }
 }
 
+fn min_hand(delta: i64, who: Who) -> Action {
+    Action::MinHandSize {
+        delta,
+        who,
+        duration: Duration::WhileInPlay,
+    }
+}
+
 /// The DQ-CAUSE trigger: "if [this card is] stopped" (the stopped card's own
 /// side), shared by the whole family (task #94).
 fn on_your_stop() -> Trigger {
@@ -2208,6 +2216,37 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             Some(eff(
                 Trigger::Static,
                 vec![max_hand(num(c, 1), Who::SelfSide)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
+        // MinHandSize mirror (previously override-only). Same three shapes / Static
+        // WhileInPlay convention as the maximum. The per-count "… +N for each Lead you
+        // have in play" form has no MinHandSize.per and stays Unsupported.
+        rule(r"Each player's minimum hand ?size is ([+-]\d+)", |c| {
+            let d = num(c, 1);
+            Some(eff(
+                Trigger::Static,
+                vec![min_hand(d, Who::SelfSide), min_hand(d, Who::Opp)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
+        rule(
+            r"(?:Your opponent's|Your target's|Their) minimum hand ?size is ([+-]\d+)",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![min_hand(num(c, 1), Who::Opp)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(r"Your minimum hand ?size is ([+-]\d+)", |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![min_hand(num(c, 1), Who::SelfSide)],
                 Condition::Always,
                 Duration::WhileInPlay,
             ))
