@@ -1321,6 +1321,47 @@ fn lowest_highest_skill_buff() {
     assert_eq!(a["target_highest"], true);
 }
 
+/// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
+/// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
+/// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.
+#[test]
+fn reroll_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Self, next turn roll, optional.
+    let e = one("You may re-roll your next turn roll.");
+    assert_eq!(e["actions"][0]["@type"], "Reroll");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+    assert_eq!(e["actions"][0]["when"], "NEXT");
+    assert_eq!(e["actions"][0]["finish"], false);
+    assert_eq!(e["optional"], true);
+
+    // Bare "your turn roll" -> THIS (current roll).
+    let e = one("Re-roll your turn roll.");
+    assert_eq!(e["actions"][0]["when"], "THIS");
+    assert_eq!(e["optional"], false);
+
+    // Opponent, forced.
+    let e = one("You may force your opponent to re-roll their next turn roll.");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["when"], "NEXT");
+
+    // Finish roll.
+    let e = one("You may re-roll your Finish roll.");
+    assert_eq!(e["actions"][0]["finish"], true);
+    assert_eq!(e["actions"][0]["who"], "SELF");
+
+    // Cascade: "If stopped, you may re-roll …" -> OnStop trigger + optional body.
+    let e = one("If stopped, you may re-roll your next turn roll.");
+    assert_eq!(e["actions"][0]["@type"], "Reroll");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["optional"], true);
+}
+
 /// "[If/When <gate>,] this card is also a <order>" (task #130): the card gains an extra
 /// play-order slot via AlsoLead, whose OWN condition carries the gate. gate_condition now
 /// falls back to the rich stop_condition parser (Crowd Meter, skill/hand compare, …).

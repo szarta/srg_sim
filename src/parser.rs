@@ -860,6 +860,21 @@ fn buff_extreme(highest: bool, delta: i64, who: Who) -> Action {
     }
 }
 
+/// A `Reroll` of the owner's (`SelfSide`) or opponent's turn/finish roll. `when` picks
+/// the current roll (`This`, structural) vs a one-shot for the NEXT turn roll; `finish`
+/// scopes it to the Finish roll. The action pre-existed (override-only) — this is the
+/// first grammar for it. `once`/`choose`/`cost` stay at their defaults.
+fn reroll(who: Who, when: RollWhen, finish: bool) -> Action {
+    Action::Reroll {
+        who,
+        once: false,
+        choose: false,
+        when,
+        cost: None,
+        finish,
+    }
+}
+
 /// A `BuffSkill` scaled by the count of the owner's in-play cards matching `per`
 /// (clamped to `cap`) — "your Technique and Grapple are +1 for each card you have
 /// in play with 'Breaker' in the name". `per: None` = a flat +`delta`.
@@ -2238,6 +2253,54 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Condition::Always,
                 Duration::Instant,
             ))
+        }),
+        // Re-roll grammar (the `Reroll` action pre-existed but was override-only). A
+        // leading "You may" -> `Effect::optional`; "next" -> the one-shot NEXT turn-roll
+        // grant, bare "your turn roll" -> the current roll (`This`, structural). Trigger/
+        // gate-prefixed variants ("If stopped, you may re-roll …") reach these bodies via
+        // the split machinery, which strips "you may " and sets optional itself.
+        rule(r"(?:(You may) )?[Rr]e-?roll your (next )?turn roll", |c| {
+            let when = if c.get(2).is_some() {
+                RollWhen::Next
+            } else {
+                RollWhen::This
+            };
+            let mut e = eff(
+                Trigger::OnPlay,
+                vec![reroll(Who::SelfSide, when, false)],
+                Condition::Always,
+                Duration::Instant,
+            );
+            e.optional = c.get(1).is_some();
+            Some(e)
+        }),
+        rule(
+            r"(?:(You may) )?[Ff]orce your opponent to re-?roll (?:their )?(next )?turn roll",
+            |c| {
+                let when = if c.get(2).is_some() {
+                    RollWhen::Next
+                } else {
+                    RollWhen::This
+                };
+                let mut e = eff(
+                    Trigger::OnPlay,
+                    vec![reroll(Who::Opp, when, false)],
+                    Condition::Always,
+                    Duration::Instant,
+                );
+                e.optional = c.get(1).is_some();
+                Some(e)
+            },
+        ),
+        rule(r"(?:(You may) )?[Rr]e-?roll your [Ff]inish roll", |c| {
+            let mut e = eff(
+                Trigger::OnPlay,
+                vec![reroll(Who::SelfSide, RollWhen::This, true)],
+                Condition::Always,
+                Duration::Instant,
+            );
+            e.optional = c.get(1).is_some();
+            Some(e)
         }),
         rule(
             r"Flip cards? until you(?:r)? flip a (.+?), add (?:that .+?|it) to your hand",
