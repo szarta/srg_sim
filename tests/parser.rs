@@ -1178,6 +1178,46 @@ fn take_from_discard_recall() {
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Followup");
 }
 
+/// "[If/When <gate>,] this card is also a <order>" (task #130): the card gains an extra
+/// play-order slot via AlsoLead, whose OWN condition carries the gate. gate_condition now
+/// falls back to the rich stop_condition parser (Crowd Meter, skill/hand compare, …).
+#[test]
+fn also_a_order_gates() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    fn also(text: &str) -> Value {
+        let e = one(text);
+        assert_eq!(e["actions"][0]["@type"], "AlsoLead", "{text:?}");
+        e["actions"][0].clone()
+    }
+
+    // Bare (no gate) -> Always; order picked from the phrase.
+    let a = also("This card is also a Finish.");
+    assert_eq!(a["order"], "Finish");
+    assert_eq!(a["condition"]["@type"], "Always");
+
+    // Crowd-Meter gate (via stop_condition fallback), "If" and "When" prefixes.
+    let a = also("If the Crowd Meter is 5 or greater, this card is also a Finish.");
+    assert_eq!(a["order"], "Finish");
+    assert_eq!(a["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(a["condition"]["value"], 5);
+    let a = also("When the Crowd Meter is 2 or greater this card is also a Lead.");
+    assert_eq!(a["order"], "Lead");
+    assert_eq!(a["condition"]["@type"], "CrowdMeterCompare");
+
+    // In-play gate.
+    let a = also("If you have another Follow Up in play, this card is also a Finish.");
+    assert_eq!(a["condition"]["@type"], "HasInPlay");
+    assert_eq!(a["condition"]["filter"]["play_order"], "Followup");
+
+    // A gate gate_condition/stop_condition can't parse -> whole clause Unsupported.
+    let e = one("If played as a Stop, this card is also a Finish.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Hit-history gate (task #130): "If you hit <filter> (this|last) turn, <body>" and the
 /// generic "If <gate>, <body>" rule that keeps the body's trigger and AND-s the gate.
 #[test]

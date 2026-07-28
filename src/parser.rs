@@ -528,7 +528,11 @@ fn gate_condition(text: &str) -> Option<Condition> {
             count,
         ));
     }
-    None
+    // Fall back to the richer `stop_condition` parser (Crowd-Meter / skill-compare /
+    // hand-compare / play-count / name-list / negation / tag gates), so every gated
+    // family that routes through `gate_condition` (double-bonuses, the generic gate
+    // rule, "also a <order>") shares its whole vocabulary.
+    stop_condition(t)
 }
 
 /// "Strike, Submission, or Grapple" -> `RollWasSkill` OR-set for a `who=SELF` turn roll
@@ -3205,6 +3209,30 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     vec![Action::AlsoLead {
                         condition: Condition::BumpedLastTurnRoll,
                         order: PlayOrder::Followup,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // General "[If/When <gate>,] this card is also a <order>" (a 264-clause family):
+        // the card gains an extra play-order slot via `AlsoLead{condition, order}`, whose
+        // OWN condition carries the gate (read by `also_lead_now`, independent of the
+        // effect's trigger/condition). Subsumes the specific rules above; a gate that
+        // `gate_condition` can't parse (compound "and", "played as a Stop", match-type)
+        // declines, leaving the clause Unsupported. Bare (no gate) -> Always.
+        rule(
+            r"(?:(?:If|When) (.+?),? )?[Tt]his card is also an? (Lead|Follow Up|Finish)",
+            |c| {
+                let condition = match c.get(1) {
+                    Some(m) => gate_condition(m.as_str())?,
+                    None => Condition::Always,
+                };
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::AlsoLead {
+                        condition,
+                        order: order(&c[2]),
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
