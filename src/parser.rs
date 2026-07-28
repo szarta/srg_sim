@@ -2185,6 +2185,20 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // "The Crowd Meter is +N" / "-N" -> a direct swing (`CrowdMeter{delta}`), the
+        // printed sign verbatim (per-side orientation is handled globally, as for the
+        // "The Crowd Meter is +1" override). Trigger-prefixed variants ("If stopped, the
+        // Crowd Meter is +2") reach this body via the trigger/gate split machinery.
+        rule(r"[Tt]he Crowd Meter is ([+-]\d+)", |c| {
+            Some(eff(
+                Trigger::OnPlay,
+                vec![Action::CrowdMeter {
+                    delta: c[1].parse().ok()?,
+                }],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
         rule(
             r"Flip cards? until you(?:r)? flip a (.+?), add (?:that .+?|it) to your hand",
             |c| flip_until(&c[1], true),

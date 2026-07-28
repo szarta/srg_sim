@@ -1252,6 +1252,43 @@ fn match_type_gates() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Crowd-Meter swing body (task #130): "The Crowd Meter is +N / -N" -> `CrowdMeter{delta}`,
+/// the printed sign verbatim. Trigger-prefixed variants reach the body via the trigger
+/// split; gate-prefixed ones AND their condition. schema-neutral (CrowdMeter pre-existed).
+#[test]
+fn crowd_meter_swing() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Bare positive swing -> OnPlay, delta verbatim.
+    let e = one("The Crowd Meter is +2.");
+    assert_eq!(e["actions"][0]["@type"], "CrowdMeter");
+    assert_eq!(e["actions"][0]["delta"], 2);
+    assert_eq!(e["trigger"]["@type"], "OnPlay");
+
+    // Negative swing keeps the printed sign.
+    let e = one("The Crowd Meter is -1.");
+    assert_eq!(e["actions"][0]["delta"], -1);
+
+    // Trigger prefix: "If stopped, …" -> OnStop trigger + the swing body.
+    let e = one("If stopped, the Crowd Meter is +3.");
+    assert_eq!(e["actions"][0]["@type"], "CrowdMeter");
+    assert_eq!(e["actions"][0]["delta"], 3);
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+
+    // Gate prefix: a Crowd-Meter threshold ANDs onto the condition, staying OnPlay.
+    let e = one("If the Crowd Meter is 3 or greater, the Crowd Meter is +1.");
+    assert_eq!(e["actions"][0]["@type"], "CrowdMeter");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+
+    // Per-count swing ("+2 for each Stop") is a different shape -> declines cleanly.
+    let e = one("The Crowd Meter is +2 for each Stop in play.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// "[If/When <gate>,] this card is also a <order>" (task #130): the card gains an extra
 /// play-order slot via AlsoLead, whose OWN condition carries the gate. gate_condition now
 /// falls back to the rich stop_condition parser (Crowd Meter, skill/hand compare, …).
