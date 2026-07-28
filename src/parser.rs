@@ -315,7 +315,9 @@ fn trigger_body(trigger: Trigger, body: &str) -> Option<Effect> {
         None => (false, body),
     };
     let cap = capitalize_first(body);
-    let mut effect = match_grammar(&cap).or_else(|| compound_body(&cap))?;
+    let mut effect = match_grammar(&cap)
+        .or_else(|| compound_body(&cap))
+        .or_else(|| choice_body(&cap))?;
     effect.trigger = trigger;
     effect.optional = effect.optional || optional;
     Some(effect)
@@ -347,6 +349,45 @@ fn compound_body(body: &str) -> Option<Effect> {
         }
     }
     base
+}
+
+/// An "X or Y[ or Z]" choice body — "flip 1 card or draw 2 cards" — parsed as one effect
+/// carrying a single [`Action::Choice`] whose options are the parts. Mirrors
+/// [`compound_body`]'s guards: each part must parse to a plain (Always, non-optional,
+/// Instant) action-effect on the same trigger, which validates the split (a spurious
+/// " or " inside one action declines it) and keeps each branch a simple action list.
+fn choice_body(body: &str) -> Option<Effect> {
+    static OR: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r" or ").expect("choice connector regex"));
+    let parts: Vec<&str> = OR.split(body).collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let mut options = Vec::new();
+    let mut trigger: Option<Trigger> = None;
+    for part in parts {
+        let label = capitalize_first(part.trim());
+        let e = match_grammar(&label)?;
+        if e.condition != Condition::Always || e.optional || e.duration != Duration::Instant {
+            return None;
+        }
+        match &trigger {
+            Some(t) if *t != e.trigger => return None, // branches must share a trigger
+            None => trigger = Some(e.trigger.clone()),
+            _ => {}
+        }
+        options.push(ChoiceOption {
+            node_type: ChoiceOptionTag,
+            label,
+            actions: e.actions,
+        });
+    }
+    Some(eff(
+        trigger?,
+        vec![Action::Choice { options }],
+        Condition::Always,
+        Duration::Instant,
+    ))
 }
 
 /// `a AND b`, dropping a trivially-true `b` ("the body has no gate of its own").
@@ -3468,7 +3509,10 @@ fn compile(clause: &str, source: EffectSource, freq: Frequency, n: Option<i64>) 
     // bury 1 card" -> one effect with both actions). compound_body validates each part
     // parses to a plain Instant action-effect on the same trigger, so a spurious "and"
     // inside one action declines the split.
-    if let Some(mut eff) = match_grammar(clause).or_else(|| compound_body(clause)) {
+    if let Some(mut eff) = match_grammar(clause)
+        .or_else(|| compound_body(clause))
+        .or_else(|| choice_body(clause))
+    {
         eff.raw_clause = clause.to_owned();
         eff.source = source;
         eff.frequency = g;

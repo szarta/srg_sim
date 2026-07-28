@@ -1260,6 +1260,41 @@ fn name_gated_on_hit() {
     assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
 }
 
+/// "or"-choice bodies (task #119): "<A> or <B>" folds into one Action::Choice, at the
+/// top level and under a trigger prefix.
+#[test]
+fn choice_body_split() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    fn branch_types(e: &Value) -> Vec<String> {
+        e["actions"][0]["options"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|o| o["actions"][0]["@type"].as_str().unwrap().to_owned())
+            .collect()
+    }
+
+    // Top-level "X or Y" -> a single Choice with two options.
+    let e = one("Draw 1 card or shuffle 3 cards from your discard pile into your deck.");
+    assert_eq!(e["actions"][0]["@type"], "Choice");
+    assert_eq!(branch_types(&e), ["Draw", "ShuffleIntoDeck"]);
+
+    // Under a trigger prefix: OnRoll{Agility} carrying the Choice.
+    let e = one("When you roll Agility, flip 3 cards or add 1 Strike from your discard pile to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Agility");
+    assert_eq!(e["actions"][0]["@type"], "Choice");
+    assert_eq!(branch_types(&e), ["Flip", "AddFromDiscard"]);
+
+    // A branch with no grammar declines the whole split -> Unsupported.
+    let e = one("Draw 1 card or summon a thunderstorm.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Per-count next-turn-roll grammar (task #124): "+N for each <X> you have in play"
 /// (per_zone=IN_PLAY) and "… in your discard pile" (per_zone=DISCARD), plus the
 /// Olympics-pod fidelity grammar: Thud! (BuffSkill per OR-name-list), Rejected!
