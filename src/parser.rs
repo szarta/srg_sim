@@ -3501,6 +3501,43 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Flat SELF breakout-roll bonus (no skill gate): "Your breakout rolls are +N" /
+        // "+N to your breakout rolls". `BreakoutModifier` is inherently self-directed
+        // (breakout_bonus scans the defender's OWN standing effects); opponent-directed
+        // breakout mods have no `who` field yet and stay Unsupported.
+        rule(r"Your [Bb]reakout [Rr]olls? (?:is|are) ([+-]\d+)", |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![breakout_mod(c[1].parse().ok()?, None)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
+        rule(r"\+(\d+) to your [Bb]reakout [Rr]olls?", |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![breakout_mod(num(c, 1), None)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
+        // Attempt-indexed SELF bonus: "Your 3rd breakout roll is +N" -> the bonus applies
+        // only on that attempt (BreakoutModifier.attempts, an attempt-index gate).
+        rule(
+            r"Your (\d+)(?:st|nd|rd|th) [Bb]reakout [Rr]oll is ([+-]\d+)",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::BreakoutModifier {
+                        delta: c[2].parse().ok()?,
+                        attempts: Some(num(c, 1)),
+                        when_skill: None,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         // "Your Finish roll is +N for each <order/atk> you have in play" — a per-count
         // Finish bonus. `count_filter` declines name-based / capped forms (they stay
         // Unsupported), so only the clean order/atk-in-play shapes match here.

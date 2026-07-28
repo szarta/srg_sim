@@ -1321,6 +1321,45 @@ fn lowest_highest_skill_buff() {
     assert_eq!(a["target_highest"], true);
 }
 
+/// Flat self breakout-roll bonus (task #130): "Your breakout rolls are +N" / "+N to your
+/// breakout rolls" / "Your Nrd breakout roll is +N" -> BreakoutModifier (self-directed,
+/// no skill gate). Opponent-directed forms have no `who` field yet -> stay Unsupported.
+#[test]
+fn breakout_roll_bonus() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "Your breakout rolls are +N" -> every attempt (attempts=null), no skill gate.
+    let e = one("Your breakout rolls are +1.");
+    assert_eq!(e["actions"][0]["@type"], "BreakoutModifier");
+    assert_eq!(e["actions"][0]["delta"], 1);
+    assert_eq!(e["actions"][0]["attempts"], Value::Null);
+    assert_eq!(e["actions"][0]["when_skill"], Value::Null);
+
+    // "+N to your breakout rolls" -> same.
+    let e = one("+2 to your breakout rolls.");
+    assert_eq!(e["actions"][0]["@type"], "BreakoutModifier");
+    assert_eq!(e["actions"][0]["delta"], 2);
+
+    // Attempt-indexed: "Your 3rd breakout roll is +N" -> attempts=3.
+    let e = one("Your 3rd breakout roll is +2.");
+    assert_eq!(e["actions"][0]["attempts"], 3);
+    assert_eq!(e["actions"][0]["delta"], 2);
+
+    // Gate cascade: an "If <gate>," Crowd-Meter threshold ANDs onto the condition. (The
+    // "When <gate>," prefix is a separate, not-yet-handled split.)
+    let e = one("If the Crowd Meter is 5 or greater, your breakout rolls are +1.");
+    assert_eq!(e["actions"][0]["@type"], "BreakoutModifier");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+
+    // Opponent-directed has no who field -> declines cleanly.
+    let e = one("Your opponent's breakout rolls are -1.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.
