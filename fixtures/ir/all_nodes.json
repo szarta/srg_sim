@@ -163,7 +163,8 @@
     "source": "DISCARD",
     "who": "SELF",
     "per": null,
-    "per_who": "SELF"
+    "per_who": "SELF",
+    "all": true
   },
   {
     "@type": "CardFilter",
@@ -242,7 +243,8 @@
       "tag": null,
       "text_contains": []
     },
-    "who": "SELF"
+    "who": "SELF",
+    "all": true
   },
   {
     "@type": "DisqualificationRule",

@@ -608,6 +608,10 @@
         "@type": {
           "const": "Bury"
         },
+        "all": {
+          "default": false,
+          "type": "boolean"
+        },
         "choose": {
           "type": "boolean"
         },
@@ -1353,6 +1357,10 @@
       "properties": {
         "@type": {
           "const": "Discard"
+        },
+        "all": {
+          "default": false,
+          "type": "boolean"
         },
         "choose": {
           "type": "boolean"
@@ -4926,5 +4934,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 89
+  "version": 90
 }

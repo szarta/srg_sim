@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 89;
+pub const SCHEMA_VERSION: i64 = 90;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -844,6 +844,13 @@ pub enum Action {
         per: Option<CardFilter>,
         #[serde(default)]
         per_who: Who,
+        /// Bury EVERY card matching `selector` in the target's hand, ignoring `count`
+        /// (and `per`) — "Look at your opponent's hand, they bury all Strike cards"
+        /// (a 12-clause family). `BuryFrom::Hand` only; the dispatch sets the effective
+        /// count to the target's hand size, and the per-card loop stops when no matching
+        /// card remains. schema v90
+        #[serde(default)]
+        all: bool,
     },
     /// Bury the TRIGGERING card — "bury this card" on an `OnStop` clause (task #94:
     /// "If stopped, discard 1 card from your hand and bury this card or lose ..."). The
@@ -933,6 +940,12 @@ pub enum Action {
         /// own. Only meaningful with `who == Opp`; ignored when `random`. schema v60
         #[serde(default)]
         choose: bool,
+        /// Discard EVERY card matching `selector` from the target's hand, ignoring
+        /// `count` (and `per`) — "Look at your opponent's hand, they discard all
+        /// Strikes". Mirrors [`Action::Bury`]'s `all`; the dispatch sets the effective
+        /// count to the target's hand size. schema v90
+        #[serde(default)]
+        all: bool,
     },
     Search {
         filter: CardFilter,
@@ -1897,6 +1910,13 @@ pub enum IrNode {
         per: Option<CardFilter>,
         #[serde(default)]
         per_who: Who,
+        /// Bury EVERY card matching `selector` in the target's hand, ignoring `count`
+        /// (and `per`) — "Look at your opponent's hand, they bury all Strike cards"
+        /// (a 12-clause family). `BuryFrom::Hand` only; the dispatch sets the effective
+        /// count to the target's hand size, and the per-card loop stops when no matching
+        /// card remains. schema v90
+        #[serde(default)]
+        all: bool,
     },
     /// Bury the TRIGGERING card — "bury this card" on an `OnStop` clause (task #94:
     /// "If stopped, discard 1 card from your hand and bury this card or lose ..."). The
@@ -1986,6 +2006,12 @@ pub enum IrNode {
         /// own. Only meaningful with `who == Opp`; ignored when `random`. schema v60
         #[serde(default)]
         choose: bool,
+        /// Discard EVERY card matching `selector` from the target's hand, ignoring
+        /// `count` (and `per`) — "Look at your opponent's hand, they discard all
+        /// Strikes". Mirrors [`Action::Bury`]'s `all`; the dispatch sets the effective
+        /// count to the target's hand size. schema v90
+        #[serde(default)]
+        all: bool,
     },
     Search {
         filter: CardFilter,

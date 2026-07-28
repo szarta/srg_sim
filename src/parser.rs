@@ -236,6 +236,7 @@ fn discard(count: i64, who: Who, random: bool, per: Option<CardFilter>, per_who:
         per,
         per_who,
         choose: false,
+        all: false,
     }
 }
 
@@ -250,6 +251,7 @@ fn discard_choose(count: i64, selector: CardFilter) -> Action {
         per: None,
         per_who: Who::SelfSide,
         choose: true,
+        all: false,
     }
 }
 
@@ -531,6 +533,7 @@ fn bury(count: i64, who: Who) -> Action {
         source: BuryFrom::Discard,
         per: None,
         per_who: Who::SelfSide,
+        all: false,
     }
 }
 
@@ -547,6 +550,7 @@ fn bury_per(count: i64, who: Who, source: BuryFrom, per: CardFilter, random: boo
         source,
         per: Some(per),
         per_who: Who::SelfSide,
+        all: false,
     }
 }
 
@@ -594,6 +598,39 @@ fn bury_hand(count: i64, who: Who, random: bool, choose: bool) -> Action {
         source: BuryFrom::Hand,
         per: None,
         per_who: Who::SelfSide,
+        all: false,
+    }
+}
+
+/// "They bury all `<type>` cards" — bury EVERY hand card matching `selector` (schema
+/// v90, `all`). The hand owner sheds without choosing; `count` is a placeholder (the
+/// dispatch derives it from the hand size).
+fn bury_all_hand(selector: CardFilter, who: Who) -> Action {
+    Action::Bury {
+        choose: false,
+        selector,
+        count: 0,
+        who,
+        random: false,
+        source: BuryFrom::Hand,
+        per: None,
+        per_who: Who::SelfSide,
+        all: true,
+    }
+}
+
+/// "They discard all `<type>`" — discard EVERY hand card matching `selector` (schema
+/// v90, `all`). Sibling of [`bury_all_hand`].
+fn discard_all_hand(selector: CardFilter, who: Who) -> Action {
+    Action::Discard {
+        selector,
+        count: 0,
+        who,
+        random: false,
+        per: None,
+        per_who: Who::SelfSide,
+        choose: false,
+        all: true,
     }
 }
 
@@ -611,6 +648,7 @@ fn bury_whole_discard(who: Who) -> Action {
         source: BuryFrom::Discard,
         per: None,
         per_who: Who::SelfSide,
+        all: false,
     }
 }
 
@@ -721,6 +759,7 @@ fn discard_type_or_lose(count: i64, atk_type: AtkType) -> Effect {
             per: None,
             per_who: Who::SelfSide,
             choose: false,
+            all: false,
         }],
     };
     let lose = ChoiceOption {
@@ -2435,6 +2474,32 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     on_hit(),
                     vec![bury_hand(num(c, 1), Who::Opp, false, false)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "[Look at your opponent's hand,] they bury/discard all <type> [cards]" — the
+        // opponent sheds EVERY hand card of a type (schema v90, `all`). The reveal
+        // prefix is informational (full-info engine). recur_filter declines shapes with
+        // no card filter ("cards of the chosen type" -> stays Unsupported).
+        rule(
+            r"(?:[Ll]ook at your opponent'?s hand[,;] )?[Tt]hey bury all (.+)",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![bury_all_hand(recur_filter(&c[1])?, Who::Opp)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"(?:[Ll]ook at your opponent'?s hand[,;] )?(?:[Tt]hey discard all|[Dd]iscard all their) (.+)",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![discard_all_hand(recur_filter(&c[1])?, Who::Opp)],
                     Condition::Always,
                     Duration::Instant,
                 ))

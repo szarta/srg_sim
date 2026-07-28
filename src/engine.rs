@@ -1075,12 +1075,19 @@ impl Engine {
                 choose,
                 per,
                 per_who,
+                all,
             } => {
-                // "bury 1 … for each <X> you have in play" scales the count by the
-                // per-filter match count (Cardona), mirroring Draw/Flip.
-                let count = per
-                    .as_ref()
-                    .map_or(*count, |p| *count * self.per_multiplier(p, *per_who, key, None));
+                // `all` buries every matching card in the target's hand: set the count to
+                // the hand size (an upper bound — the per-card loop stops when no matching
+                // card remains) and skip `per`. Otherwise "bury 1 … for each <X> you have
+                // in play" scales the count by the per-filter match count (Cardona).
+                let count = if *all {
+                    let target = self.target(*who, key);
+                    self.state.players[&target].hand.len() as i64
+                } else {
+                    per.as_ref()
+                        .map_or(*count, |p| *count * self.per_multiplier(p, *per_who, key, None))
+                };
                 self.act_bury(
                     BurySpec {
                         selector: selector.clone(),
@@ -1119,16 +1126,18 @@ impl Engine {
                 per,
                 per_who,
                 choose,
-            } => self.act_discard(
-                selector,
-                *count,
-                *who,
-                *random,
-                per.as_ref(),
-                *per_who,
-                *choose,
-                key,
-            )?,
+                all,
+            } => {
+                // `all` discards every matching card in the target's hand (see Bury): set
+                // count to the hand size and skip `per`.
+                let (count, per) = if *all {
+                    let target = self.target(*who, key);
+                    (self.state.players[&target].hand.len() as i64, None)
+                } else {
+                    (*count, per.as_ref())
+                };
+                self.act_discard(selector, count, *who, *random, per, *per_who, *choose, key)?
+            }
             Action::Search {
                 filter,
                 dest,
@@ -7518,6 +7527,7 @@ mod suppress_hand_loss_tests {
             per: None,
             per_who: Who::SelfSide,
             choose: false,
+            all: false,
         }
     }
 
@@ -7548,6 +7558,7 @@ mod suppress_hand_loss_tests {
             per: None,
             per_who: Who::SelfSide,
             choose: false,
+            all: false,
         };
         engine.apply_action(&opp_discard, "B", "").unwrap();
         assert_eq!(
@@ -7571,6 +7582,7 @@ mod suppress_hand_loss_tests {
             choose: false,
             per: None,
             per_who: Who::SelfSide,
+            all: false,
         };
         let before = hand_len(&engine, "A");
         engine.apply_action(&bury, "A", "").unwrap();
@@ -9211,6 +9223,7 @@ mod cardona_mechanism_tests {
                 ..Default::default()
             }),
             per_who: Who::SelfSide,
+            all: false,
         };
         e.apply_action(&bury, "A", "").unwrap();
         assert_eq!(
@@ -9218,6 +9231,36 @@ mod cardona_mechanism_tests {
             1,
             "2 Leads in play → bury 2 from the opponent's hand (3 → 1)"
         );
+    }
+
+    #[test]
+    fn bury_all_clears_every_matching_hand_card() {
+        // "Look at your opponent's hand, they bury all Leads." B holds 2 Leads and a
+        // Follow Up → both Leads go, the Follow Up stays; count is a placeholder.
+        let mut e = engine();
+        e.state.players.get_mut("B").unwrap().hand = vec![
+            card("l1", "Lead"),
+            card("fu", "Followup"),
+            card("l2", "Lead"),
+        ];
+        let bury = Action::Bury {
+            selector: CardFilter {
+                play_order: Some(PlayOrder::Lead),
+                ..Default::default()
+            },
+            count: 0,
+            who: Who::Opp,
+            random: true,
+            source: BuryFrom::Hand,
+            choose: false,
+            per: None,
+            per_who: Who::SelfSide,
+            all: true,
+        };
+        e.apply_action(&bury, "A", "").unwrap();
+        let hand = &e.state.players["B"].hand;
+        assert_eq!(hand.len(), 1, "both Leads buried, Follow Up stays");
+        assert_eq!(hand[0].db_uuid, "fu");
     }
 
     #[test]

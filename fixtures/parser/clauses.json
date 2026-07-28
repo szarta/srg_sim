@@ -784,6 +784,7 @@
           "actions": [
             {
               "@type": "Discard",
+              "all": false,
               "choose": false,
               "count": 2,
               "per": null,
@@ -1264,6 +1265,7 @@
             },
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -1416,6 +1418,7 @@
           "actions": [
             {
               "@type": "Discard",
+              "all": false,
               "choose": false,
               "count": 2,
               "per": null,
@@ -1605,6 +1608,7 @@
           "actions": [
             {
               "@type": "Discard",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -1653,6 +1657,7 @@
           "actions": [
             {
               "@type": "Bury",
+              "all": false,
               "choose": true,
               "count": 2,
               "per": null,
@@ -1790,6 +1795,7 @@
             },
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -3558,6 +3564,7 @@
           "actions": [
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -3581,6 +3588,7 @@
             },
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -4171,6 +4179,7 @@
           "actions": [
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -4194,6 +4203,7 @@
             },
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -4952,6 +4962,7 @@
           "actions": [
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 3,
               "per": null,
@@ -5044,6 +5055,7 @@
           "actions": [
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -5323,6 +5335,7 @@
           "actions": [
             {
               "@type": "Bury",
+              "all": false,
               "choose": false,
               "count": 4,
               "per": null,
@@ -7014,6 +7027,7 @@
           "actions": [
             {
               "@type": "Discard",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": null,
@@ -8516,6 +8530,7 @@
           "actions": [
             {
               "@type": "Discard",
+              "all": false,
               "choose": false,
               "count": 1,
               "per": {

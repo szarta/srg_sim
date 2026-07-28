@@ -1178,6 +1178,39 @@ fn take_from_discard_recall() {
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Followup");
 }
 
+/// "[Look at your opponent's hand,] they bury/discard all <type>" (task #130, schema
+/// v90): the opponent sheds EVERY hand card of a type — Bury/Discard `all`, who=Opp.
+#[test]
+fn bury_discard_all_of_type() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    let e = one("Look at your opponent's hand, they bury all Strike cards.");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["all"], true);
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["selector"]["atk_type"], "Strike");
+
+    // Plural order type, no "cards" noun; discard variant.
+    let e = one("Look at your opponent's hand, they discard all Strikes.");
+    assert_eq!(e["actions"][0]["@type"], "Discard");
+    assert_eq!(e["actions"][0]["all"], true);
+    assert_eq!(e["actions"][0]["selector"]["atk_type"], "Strike");
+
+    // "discard all their <type>" variant.
+    let e = one("Look at your opponent's hand, discard all their Finishes.");
+    assert_eq!(e["actions"][0]["@type"], "Discard");
+    assert_eq!(e["actions"][0]["all"], true);
+    assert_eq!(e["actions"][0]["selector"]["play_order"], "Finish");
+
+    // "cards of the chosen type" has no card filter -> stays Unsupported.
+    let e = one("Look at your opponent's hand, they bury all cards of the chosen type.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// OnBreakoutRoll(Opp) trigger-body split (task #130): "Each time your opponent rolls for
 /// a Breakout roll, <body>". The body dispatches through the whole grammar; a leading
 /// third-person "they <verb>" resolves to the opponent (the roller) via the opp-subject

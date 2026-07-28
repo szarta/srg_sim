@@ -823,7 +823,8 @@
                     "tag": null,
                     "text_contains": []
                   },
-                  "who": "SELF"
+                  "who": "SELF",
+                  "all": false
                 }
               ],
               "condition": {
@@ -1329,7 +1330,8 @@
                   "source": "HAND",
                   "who": "SELF",
                   "per": null,
-                  "per_who": "SELF"
+                  "per_who": "SELF",
+                  "all": false
                 }
               ],
               "condition": {
@@ -1494,7 +1496,8 @@
                     "tag": null,
                     "text_contains": []
                   },
-                  "who": "SELF"
+                  "who": "SELF",
+                  "all": false
                 },
                 {
                   "@type": "AddFromDiscard",
@@ -1698,7 +1701,8 @@
                     "tag": null,
                     "text_contains": []
                   },
-                  "who": "OPP"
+                  "who": "OPP",
+                  "all": false
                 }
               ],
               "condition": {
@@ -1747,7 +1751,8 @@
                   "source": "DISCARD",
                   "who": "OPP",
                   "per": null,
-                  "per_who": "SELF"
+                  "per_who": "SELF",
+                  "all": false
                 }
               ],
               "condition": {
@@ -1889,7 +1894,8 @@
                   "source": "HAND",
                   "who": "SELF",
                   "per": null,
-                  "per_who": "SELF"
+                  "per_who": "SELF",
+                  "all": false
                 }
               ],
               "condition": {
@@ -5232,7 +5238,8 @@
                   "source": "HAND",
                   "who": "OPP",
                   "per": null,
-                  "per_who": "SELF"
+                  "per_who": "SELF",
+                  "all": false
                 },
                 {
                   "@type": "Draw",
@@ -5358,7 +5365,8 @@
                     "tag": null,
                     "text_contains": []
                   },
-                  "who": "SELF"
+                  "who": "SELF",
+                  "all": false
                 },
                 {
                   "@type": "AddFromDiscard",

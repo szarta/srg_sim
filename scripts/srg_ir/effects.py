@@ -900,6 +900,9 @@ class Bury(IRNode):
     # in-play cards matching this filter ("bury 1 ... for each Lead you have in play").
     per: CardFilter | None = None
     per_who: Who = Who.SELF
+    # Bury EVERY card matching `selector` in the target's hand, ignoring `count`/`per`
+    # ("they bury all Strike cards"). HAND source only.
+    all: bool = False
 
 
 @dataclass(frozen=True)
@@ -941,6 +944,9 @@ class Discard(IRNode):
     # The effect owner picks from the target's hand (Look at your opponent's hand …),
     # rather than the hand owner shedding their own. Ignored when `random`.
     choose: bool = False
+    # Discard EVERY card matching `selector` from the target's hand, ignoring
+    # `count`/`per` ("they discard all Strikes"). Mirrors Bury.all.
+    all: bool = False
 
 
 @dataclass(frozen=True)

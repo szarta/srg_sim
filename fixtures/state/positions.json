@@ -2943,7 +2943,8 @@
                           "tag": null,
                           "text_contains": []
                         },
-                        "who": "SELF"
+                        "who": "SELF",
+                        "all": false
                       }
                     ],
                     "condition": {
@@ -3550,7 +3551,8 @@
                           "tag": null,
                           "text_contains": []
                         },
-                        "who": "SELF"
+                        "who": "SELF",
+                        "all": false
                       }
                     ],
                     "condition": {

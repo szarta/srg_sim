@@ -698,7 +698,8 @@
                 "tag": null,
                 "text_contains": []
               },
-              "who": "SELF"
+              "who": "SELF",
+              "all": false
             }
           ],
           "condition": {
@@ -1201,7 +1202,8 @@
                 "text_contains": []
               },
               "source": "HAND",
-              "who": "SELF"
+              "who": "SELF",
+              "all": false
             }
           ],
           "condition": {
@@ -1365,7 +1367,8 @@
                 "tag": null,
                 "text_contains": []
               },
-              "who": "SELF"
+              "who": "SELF",
+              "all": false
             },
             {
               "@type": "AddFromDiscard",
@@ -1569,7 +1572,8 @@
                 "tag": null,
                 "text_contains": []
               },
-              "who": "OPP"
+              "who": "OPP",
+              "all": false
             }
           ],
           "condition": {
@@ -1616,7 +1620,8 @@
                 "text_contains": []
               },
               "source": "DISCARD",
-              "who": "OPP"
+              "who": "OPP",
+              "all": false
             }
           ],
           "condition": {
@@ -1756,7 +1761,8 @@
                 "text_contains": []
               },
               "source": "HAND",
-              "who": "SELF"
+              "who": "SELF",
+              "all": false
             }
           ],
           "condition": {

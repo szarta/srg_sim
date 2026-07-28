@@ -195,7 +195,9 @@ Always
 
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
-Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF)  Bury(selector, count, per?, per_who=SELF)   Discard(selector, count, who, per?, per_who=SELF)
+Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF)  Bury(selector, count, per?, per_who=SELF, all=False)   Discard(selector, count, who, per?, per_who=SELF, all=False)
+                              # Bury/Discard `all` (schema v90): shed EVERY hand card matching `selector`, ignoring
+                              # count/per ("they bury/discard all Strike cards"); dispatch derives count from hand size
 Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1)  ShuffleIntoDeck(selector, source=DISCARD|IN_PLAY)
                               # until (schema v68): flip-until — ignore n, mill one card at a time until a flipped card
                               # matches `until`; that card -> hand if until_to_hand, else discard ("Flip cards until you flip a Submission[, add it to your hand]")
