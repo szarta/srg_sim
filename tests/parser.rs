@@ -1169,7 +1169,8 @@ fn compound_trigger_body() {
     }
 
     // " and " connector: OnRoll{Power} carries both actions.
-    let e = one("When you roll Power for your turn roll, draw 1 card and your next turn roll is +1.");
+    let e =
+        one("When you roll Power for your turn roll, draw 1 card and your next turn roll is +1.");
     assert_eq!(e["trigger"]["skill"], "Power");
     assert_eq!(acts(&e), ["Draw", "ModifyRoll"]);
 
@@ -1187,6 +1188,37 @@ fn compound_trigger_body() {
 
     // If any part has no grammar, no compound -> whole clause Unsupported.
     let e = one("When you roll Power, draw 1 card and ascend to godhood.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
+/// Top-level compound clauses (task #119): a standalone "<A> and/then <B>" (no trigger
+/// prefix) folds into one effect via the compile-level compound_body fallback.
+#[test]
+fn top_level_compound_clause() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+    fn acts(e: &Value) -> Vec<String> {
+        e["actions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| a["@type"].as_str().unwrap().to_owned())
+            .collect()
+    }
+
+    // "Draw 1 card, then bury 1 card" -> one effect, two actions.
+    let e = one("Draw 1 card, then bury 1 card in your hand.");
+    assert_eq!(acts(&e), ["Draw", "Bury"]);
+
+    // " and " connector, both Instant/Always -> folds.
+    let e = one("Shuffle your deck, and draw 1 card.");
+    assert_eq!(acts(&e), ["ShuffleDeck", "Draw"]);
+
+    // A part with no grammar declines the whole split -> Unsupported.
+    let e = one("Draw 1 card and rewrite the laws of physics.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 

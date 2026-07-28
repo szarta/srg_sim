@@ -322,7 +322,8 @@ fn compound_body(body: &str) -> Option<Effect> {
             return None; // only fold simple sequential Instant actions
         }
         match base.as_mut() {
-            Some(b) => b.actions.extend(e.actions),
+            Some(b) if b.trigger == e.trigger => b.actions.extend(e.actions),
+            Some(_) => return None, // don't merge parts that fire on different triggers
             None => base = Some(e),
         }
     }
@@ -3429,7 +3430,11 @@ fn compile(clause: &str, source: EffectSource, freq: Frequency, n: Option<i64>) 
         kind: freq,
         n,
     };
-    if let Some(mut eff) = match_grammar(clause) {
+    // A single rule wins; otherwise try folding a top-level compound ("Draw 1 card and
+    // bury 1 card" -> one effect with both actions). compound_body validates each part
+    // parses to a plain Instant action-effect on the same trigger, so a spurious "and"
+    // inside one action declines the split.
+    if let Some(mut eff) = match_grammar(clause).or_else(|| compound_body(clause)) {
         eff.raw_clause = clause.to_owned();
         eff.source = source;
         eff.frequency = g;
