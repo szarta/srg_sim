@@ -1178,6 +1178,38 @@ fn take_from_discard_recall() {
     assert_eq!(e["actions"][0]["filter"]["play_order"], "Followup");
 }
 
+/// Condition-gate prefixes (task #130): "If you rolled <skill> for your turn roll, <body>"
+/// and "If you have a card with 'X' in the name in play, <body>" keep the body's natural
+/// trigger and AND a RollWasSkill / HasInPlay gate onto its condition.
+#[test]
+fn gate_prefix_body_splits() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Roll-gate over a bury-all body: the body keeps its OnHit trigger, gated on the roll.
+    let e = one("If you rolled Agility for your turn roll; look at your opponent's hand, they bury all Leads.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["all"], true);
+    assert_eq!(e["condition"]["@type"], "RollWasSkill");
+    assert_eq!(e["condition"]["skill"], "Agility");
+    assert_eq!(e["condition"]["who"], "SELF");
+
+    // Name-in-play gate over a bury-all body.
+    let e = one("If you have a card with \"Spear\" in the name in play, look at your opponent's hand, they bury all Leads.");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["who"], "SELF");
+    assert_eq!(e["condition"]["filter"]["name_contains"][0], "Spear");
+
+    // A gate whose body has no grammar leaves the whole clause Unsupported.
+    let e = one("If you rolled Power for your turn roll, double these bonuses.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// "[Look at your opponent's hand,] they bury/discard all <type>" (task #130, schema
 /// v90): the opponent sheds EVERY hand card of a type — Bury/Discard `all`, who=Opp.
 #[test]

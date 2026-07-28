@@ -417,6 +417,28 @@ fn trigger_body_cond(trigger: Trigger, cond: Condition, body: &str) -> Option<Ef
     Some(effect)
 }
 
+/// A condition-GATED body: re-parse the body through the whole grammar (like
+/// [`trigger_body`]) but KEEP its natural trigger, AND-ing `cond` onto its condition.
+/// Used for standalone gate prefixes that restrict WHEN a body applies without changing
+/// the event it hangs off — "If you rolled `<skill>` for your turn roll, `<body>`"
+/// (a `RollWasSkill` gate resolved against the play-time turn-roll context) and "If you
+/// have a card with 'X' in the name in play, `<body>`" (a `HasInPlay` gate). Returns
+/// `None` when the body itself has no grammar.
+fn gate_body(cond: Condition, body: &str) -> Option<Effect> {
+    let body = body.trim();
+    let (optional, body) = match body.strip_prefix("you may ") {
+        Some(rest) => (true, rest),
+        None => (false, body),
+    };
+    let cap = capitalize_first(body);
+    let mut effect = match_grammar(&cap)
+        .or_else(|| compound_body(&cap))
+        .or_else(|| choice_body(&cap))?;
+    effect.optional = effect.optional || optional;
+    effect.condition = and_conds(cond, effect.condition);
+    Some(effect)
+}
+
 /// "Strike, Submission, or Grapple" -> `RollWasSkill` OR-set for a `who=SELF` turn roll
 /// (used as the gate on an `OnRoll{None}` multi-skill trigger). `None` if fewer than two
 /// skills parse.
@@ -3523,6 +3545,33 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(r"[Ii]f (?:this card is |this is )?stopped[,:] (.+)", |c| {
             trigger_body(on_your_stop(), &c[1])
         }),
+        // Condition-gate prefixes (task #130): keep the body's natural trigger, AND a
+        // gate onto it. Placed LAST so a specific rule for the whole clause wins first.
+        // "If you rolled <skill> for your turn roll[;,] <body>" -> RollWasSkill{SELF}
+        // gate (resolved at play time against the threaded turn-roll context).
+        rule(
+            &format!(r"If you rolled {SK} for your turn roll[;,] (.+)"),
+            |c| {
+                gate_body(
+                    Condition::RollWasSkill {
+                        skill: skill(&c[1]),
+                        who: Who::SelfSide,
+                    },
+                    &c[2],
+                )
+            },
+        ),
+        // "If you have a card with 'X' in the name in play, <body>" -> HasInPlay{SELF}
+        // name-substring gate.
+        rule(
+            r#"If you have a card with "([^"]+)" in the name in play, (.+)"#,
+            |c| {
+                gate_body(
+                    has_in_play(Who::SelfSide, cf_name(vec![c[1].to_owned()]), 1),
+                    &c[2],
+                )
+            },
+        ),
     ]
 }
 
