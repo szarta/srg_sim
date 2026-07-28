@@ -1349,11 +1349,15 @@ fn breakout_roll_bonus() {
     assert_eq!(e["actions"][0]["attempts"], 3);
     assert_eq!(e["actions"][0]["delta"], 2);
 
-    // Gate cascade: an "If <gate>," Crowd-Meter threshold ANDs onto the condition. (The
-    // "When <gate>," prefix is a separate, not-yet-handled split.)
-    let e = one("If the Crowd Meter is 5 or greater, your breakout rolls are +1.");
-    assert_eq!(e["actions"][0]["@type"], "BreakoutModifier");
-    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+    // Gate cascade: both "If <gate>," and "When <gate>," Crowd-Meter thresholds AND onto
+    // the condition (the generic gate rule accepts either prefix for state gates).
+    for prefix in ["If", "When"] {
+        let e = one(&format!(
+            "{prefix} the Crowd Meter is 5 or greater, your breakout rolls are +1."
+        ));
+        assert_eq!(e["actions"][0]["@type"], "BreakoutModifier", "{prefix}");
+        assert_eq!(e["condition"]["@type"], "CrowdMeterCompare", "{prefix}");
+    }
 
     // Opponent-directed has no who field -> declines cleanly.
     let e = one("Your opponent's breakout rolls are -1.");

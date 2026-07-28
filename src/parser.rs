@@ -3925,15 +3925,18 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
-        // Generic condition gate: "If <gate>[;,] <body>" — parse the gate via
+        // Generic condition gate: "If/When <gate>[;,] <body>" — parse the gate via
         // `gate_condition` and the body via `gate_body` (natural trigger kept, gate
         // AND-ed on). Placed LAST so every specific rule wins first; it fires only when
         // BOTH the gate and the body are modelled, so it strictly adds coverage. The
         // non-greedy gate stops at the first `,`/`;`; a gate with an internal comma
         // (e.g. a multi-name list) fails `gate_condition` and the clause stays
-        // Unsupported. Subsumes the roll-gate / name-in-play prefixes above; those
-        // remain as they are more specific and produce identical output.
-        rule(r"If (.+?)[;,] (.+)", |c| {
+        // Unsupported. "When" is accepted too: `gate_condition` only matches STATE gates
+        // (Crowd Meter / in-play counts / roll-was / match type), for which "When <state>"
+        // and "If <state>" are equivalent; event-trigger "When …" phrases either match a
+        // specific trigger rule first or fail `gate_condition` and decline. Subsumes the
+        // roll-gate / name-in-play prefixes above; those remain as more-specific twins.
+        rule(r"(?:If|When) (.+?)[;,] (.+)", |c| {
             gate_body(gate_condition(&c[1])?, &c[2])
         }),
     ]
