@@ -3258,7 +3258,14 @@
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "Not",
+            "item": {
+              "@type": "IsMatchType",
+              "types": [
+                "STEEL_CAGE",
+                "LIGERS_DEN"
+              ]
+            }
           },
           "duration": "INSTANT",
           "frequency": {
@@ -3283,13 +3290,67 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
-              "reason": "no grammar match"
+              "@type": "Choice",
+              "options": [
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "TOP",
+                      "who": "SELF"
+                    },
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "TOP",
+                      "who": "OPP"
+                    }
+                  ],
+                  "label": "Add both to your hand"
+                },
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Flip",
+                      "n": 1,
+                      "per": null,
+                      "per_who": "SELF",
+                      "until": null,
+                      "until_to_hand": false,
+                      "who": "SELF"
+                    },
+                    {
+                      "@type": "Flip",
+                      "n": 1,
+                      "per": null,
+                      "per_who": "SELF",
+                      "until": null,
+                      "until_to_hand": false,
+                      "who": "OPP"
+                    }
+                  ],
+                  "label": "Flip both cards"
+                }
+              ]
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "IsMatchType",
+            "types": [
+              "STEEL_CAGE",
+              "LIGERS_DEN"
+            ]
           },
           "duration": "INSTANT",
           "frequency": {
@@ -3301,7 +3362,13 @@
           "raw_clause": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
           }
         }
       ],
@@ -3364,7 +3431,14 @@
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "Not",
+            "item": {
+              "@type": "IsMatchType",
+              "types": [
+                "STEEL_CAGE",
+                "LIGERS_DEN"
+              ]
+            }
           },
           "duration": "INSTANT",
           "frequency": {
@@ -3389,13 +3463,67 @@
           "@type": "Effect",
           "actions": [
             {
-              "@type": "Unsupported",
-              "raw_text": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
-              "reason": "no grammar match"
+              "@type": "Choice",
+              "options": [
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "TOP",
+                      "who": "SELF"
+                    },
+                    {
+                      "@type": "Draw",
+                      "cap": null,
+                      "n": 1,
+                      "per": null,
+                      "per_excludes_trigger": false,
+                      "per_who": "SELF",
+                      "source": "TOP",
+                      "who": "OPP"
+                    }
+                  ],
+                  "label": "Add both to your hand"
+                },
+                {
+                  "@type": "ChoiceOption",
+                  "actions": [
+                    {
+                      "@type": "Flip",
+                      "n": 1,
+                      "per": null,
+                      "per_who": "SELF",
+                      "until": null,
+                      "until_to_hand": false,
+                      "who": "SELF"
+                    },
+                    {
+                      "@type": "Flip",
+                      "n": 1,
+                      "per": null,
+                      "per_who": "SELF",
+                      "until": null,
+                      "until_to_hand": false,
+                      "who": "OPP"
+                    }
+                  ],
+                  "label": "Flip both cards"
+                }
+              ]
             }
           ],
           "condition": {
-            "@type": "Always"
+            "@type": "IsMatchType",
+            "types": [
+              "STEEL_CAGE",
+              "LIGERS_DEN"
+            ]
           },
           "duration": "INSTANT",
           "frequency": {
@@ -3407,7 +3535,13 @@
           "raw_clause": "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
           }
         }
       ],

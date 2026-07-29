@@ -248,6 +248,44 @@ fn reveal_followup(reveal_from: RevealSource, clause: &str) -> Option<Effect> {
     reveal_then_effect(reveal_from, 1, &c[1], &c[2])
 }
 
+/// "If this is a `<match-type>` match, you may flip both cards instead." — the optional,
+/// match-type-gated REPLACEMENT of a paired "each player reveals the top card of their
+/// deck and adds it to their hand" (Friends and Rivals family). Returns the match-type
+/// gate; `parse_text` rewrites the preceding add-to-hand into an add-or-flip `Choice`.
+fn flip_both_instead(clause: &str) -> Option<Condition> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^If (this is an? .+? match), you may flip both cards? instead$").unwrap()
+    });
+    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    gate_condition(&c[1])
+}
+
+/// Is `eff` the "each player reveals the top card of their deck and adds it to their
+/// hand" effect — an unconditional `OnHit` pair of top-of-deck Draws to SELF and OPP?
+/// The anchor a `flip both cards instead` clause rewrites.
+fn is_reveal_top_both(eff: &Effect) -> bool {
+    matches!(eff.trigger, Trigger::OnHit { .. })
+        && eff.condition == Condition::Always
+        && !eff.optional
+        && eff.actions.len() == 2
+        && matches!(
+            eff.actions[0],
+            Action::Draw {
+                who: Who::SelfSide,
+                source: DeckEnd::Top,
+                ..
+            }
+        )
+        && matches!(
+            eff.actions[1],
+            Action::Draw {
+                who: Who::Opp,
+                source: DeckEnd::Top,
+                ..
+            }
+        )
+}
+
 /// A card-substring filter over the title (`"X" in the name`) or the rules text
 /// (`"X" in the text`) — picks the attribute from the phrasing captured as `attr`.
 fn name_or_text_filter(attr: &str, names: Vec<String>) -> CardFilter {
@@ -4476,6 +4514,46 @@ pub fn parse_text(
                 };
                 effects.push(scope(eff, &window));
                 i += 2;
+                continue;
+            }
+        }
+        // "If this is a <match-type> match, you may flip both cards instead" REPLACES the
+        // preceding "each player reveals top & adds to hand": outside the match type the
+        // add stands; inside it, offer add-or-flip. (Friends and Rivals family.)
+        if let Some(gate) = flip_both_instead(clause) {
+            if effects.last().is_some_and(is_reveal_top_both) {
+                let add = effects.pop().unwrap();
+                let g = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                let option = |label: &str, actions: Vec<Action>| ChoiceOption {
+                    node_type: ChoiceOptionTag,
+                    label: label.to_owned(),
+                    actions,
+                };
+                let choice = Action::Choice {
+                    options: vec![
+                        option("Add both to your hand", add.actions.clone()),
+                        option(
+                            "Flip both cards",
+                            vec![flip(1, Who::SelfSide), flip(1, Who::Opp)],
+                        ),
+                    ],
+                };
+                let mut choice_eff = eff(on_hit(), vec![choice], gate.clone(), Duration::Instant);
+                choice_eff.raw_clause = clause.to_owned();
+                choice_eff.source = source;
+                choice_eff.frequency = g;
+                // The plain add-to-hand now applies only OUTSIDE the flip match types.
+                let mut plain = add;
+                plain.condition = Condition::Not {
+                    item: Box::new(gate),
+                };
+                effects.push(scope(plain, &window));
+                effects.push(scope(choice_eff, &window));
+                i += 1;
                 continue;
             }
         }

@@ -2446,3 +2446,58 @@ fn reveal_then_split_clause() {
         "Draw"
     );
 }
+
+/// "If this is a Steel Cage or Liger's Den match, you may flip both cards instead"
+/// (Friends and Rivals family): the preceding "each player reveals the top card of
+/// their deck and adds it to their hand" is rewritten so the add applies only OUTSIDE
+/// those match types, and INSIDE them the player chooses add-both or flip-both.
+#[test]
+fn flip_both_instead_replaces_add_to_hand() {
+    let effs = parse_text(
+        "Stop any Lead Strike.\n\
+         Each player reveals the top card of their deck and adds it to their hand.\n\
+         If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 3, "stop + gated add + gated choice");
+    let v: Vec<Value> = effs
+        .iter()
+        .map(|e| serde_json::to_value(e).unwrap())
+        .collect();
+
+    // The stop is untouched.
+    assert_eq!(v[0]["actions"][0]["@type"], "Stop");
+
+    // The add-to-hand now fires only when it is NOT one of the flip match types.
+    assert_eq!(v[1]["actions"].as_array().unwrap().len(), 2);
+    assert_eq!(v[1]["actions"][0]["@type"], "Draw");
+    assert_eq!(v[1]["condition"]["@type"], "Not");
+    assert_eq!(v[1]["condition"]["item"]["@type"], "IsMatchType");
+    assert_eq!(v[1]["condition"]["item"]["types"][0], "STEEL_CAGE");
+
+    // Inside those match types, a Choice between add-both and flip-both.
+    assert_eq!(v[2]["condition"]["@type"], "IsMatchType");
+    assert_eq!(v[2]["actions"][0]["@type"], "Choice");
+    let opts = v[2]["actions"][0]["options"].as_array().unwrap();
+    assert_eq!(opts[0]["actions"][0]["@type"], "Draw");
+    assert_eq!(opts[1]["actions"][0]["@type"], "Flip");
+    assert_eq!(
+        opts[1]["actions"].as_array().unwrap().len(),
+        2,
+        "flip both decks"
+    );
+
+    // A stray "flip both cards instead" with no preceding reveal-both stays Unsupported.
+    let lone = parse_text(
+        "If this is a Steel Cage match, you may flip both cards instead.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(
+        serde_json::to_value(&lone[0]).unwrap()["actions"][0]["@type"],
+        "Unsupported"
+    );
+}
