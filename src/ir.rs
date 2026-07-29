@@ -908,7 +908,7 @@ pub enum Action {
     BuryThisCard,
     /// Add the TRIGGERING (flipped) card to its owner's hand — "If this card is
     /// flipped, [you may] add it to your hand." The referent is
-    /// [`Engine::flipped_card`], set per-card while an `OnFlip` clause carried by a
+    /// [`Engine::self_card`], set per-card while an `OnFlip` clause carried by a
     /// just-flipped card is dispatched; the card moves from the discard pile (where a
     /// flip lands it) to its owner's hand. The "you may" lives on [`Effect::optional`].
     /// A no-op outside a flip context or if the card has already left the discard.
@@ -916,13 +916,13 @@ pub enum Action {
     AddSelfToHand,
     /// Shuffle the TRIGGERING (flipped) card back into its owner's deck — "If this card
     /// is flipped, [you may] shuffle it [back] into your deck." Sibling of
-    /// [`Action::AddSelfToHand`]: the referent is [`Engine::flipped_card`]; the card
+    /// [`Action::AddSelfToHand`]: the referent is [`Engine::self_card`]; the card
     /// moves from the discard pile to the deck, which is then shuffled (firing
     /// `OnShuffle`). "you may" lives on [`Effect::optional`]. schema v86
     ShuffleSelfIntoDeck,
     /// Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
     /// may] play it[ as an additional card this turn]." The referent is
-    /// [`Engine::flipped_card`]; the card leaves the discard pile and resolves as a
+    /// [`Engine::self_card`]; the card leaves the discard pile and resolves as a
     /// normal play by its owner (stop window, OnPlay/OnHit), a bonus action outside the
     /// turn's one-card play. "you may" lives on [`Effect::optional`]. schema v86
     PlaySelf,
@@ -2021,7 +2021,7 @@ pub enum IrNode {
     BuryThisCard,
     /// Add the TRIGGERING (flipped) card to its owner's hand — "If this card is
     /// flipped, [you may] add it to your hand." The referent is
-    /// [`Engine::flipped_card`], set per-card while an `OnFlip` clause carried by a
+    /// [`Engine::self_card`], set per-card while an `OnFlip` clause carried by a
     /// just-flipped card is dispatched; the card moves from the discard pile (where a
     /// flip lands it) to its owner's hand. The "you may" lives on [`Effect::optional`].
     /// A no-op outside a flip context or if the card has already left the discard.
@@ -2029,13 +2029,13 @@ pub enum IrNode {
     AddSelfToHand,
     /// Shuffle the TRIGGERING (flipped) card back into its owner's deck — "If this card
     /// is flipped, [you may] shuffle it [back] into your deck." Sibling of
-    /// [`Action::AddSelfToHand`]: the referent is [`Engine::flipped_card`]; the card
+    /// [`Action::AddSelfToHand`]: the referent is [`Engine::self_card`]; the card
     /// moves from the discard pile to the deck, which is then shuffled (firing
     /// `OnShuffle`). "you may" lives on [`Effect::optional`]. schema v86
     ShuffleSelfIntoDeck,
     /// Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
     /// may] play it[ as an additional card this turn]." The referent is
-    /// [`Engine::flipped_card`]; the card leaves the discard pile and resolves as a
+    /// [`Engine::self_card`]; the card leaves the discard pile and resolves as a
     /// normal play by its owner (stop window, OnPlay/OnHit), a bonus action outside the
     /// turn's one-card play. "you may" lives on [`Effect::optional`]. schema v86
     PlaySelf,

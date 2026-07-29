@@ -2495,6 +2495,53 @@ fn reveal_and_discard_if_stop() {
     );
 }
 
+/// WHILE_IN_DISCARD self-trigger (task #115 slice 1): "When this card is in your discard
+/// pile and you roll <S> for your turn roll, [you may] <self-body>" — the discard prefix
+/// is a `Duration::WhileInDiscard` marker; the remainder re-parses as a normal OnRoll
+/// trigger clause with the self-action body. Only OnRoll fires from discard today, so
+/// non-OnRoll (OnHit) and passive bodies decline to Unsupported.
+#[test]
+fn while_in_discard_onroll_self_recursion() {
+    fn eff0(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "add it to your hand" -> AddSelfToHand, OnRoll{skill}, WHILE_IN_DISCARD, optional.
+    let e = eff0("When this card is in your discard pile and you roll Power for your turn roll, you may add it to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Power");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
+
+    // "shuffle it into your deck" -> ShuffleSelfIntoDeck (mandatory, no "you may").
+    let e = eff0("When this card is in your discard pile and you roll Agility for your turn roll, shuffle it into your deck.");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["optional"], false);
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+
+    // A plain (non-self) body still attaches to OnRoll + WHILE_IN_DISCARD.
+    let e = eff0("When this card is in your discard pile and you roll Strike for your turn roll, draw 1 card.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+
+    // OnHit-triggered discard recursion declines (engine doesn't fire it from discard
+    // yet) -> stays Unsupported rather than becoming silently-inert IR.
+    assert_eq!(
+        eff0("When this card is in your discard pile and you hit a card with \"Suplex\" in the name, you may shuffle it into your deck.")
+            ["actions"][0]["@type"],
+        "Unsupported"
+    );
+    // A passive body (family A) also declines for now.
+    assert_eq!(
+        eff0("When this card is in your discard pile, your maximum handsize is +1.")["actions"][0]
+            ["@type"],
+        "Unsupported"
+    );
+}
+
 /// "If this is a Steel Cage or Liger's Den match, you may flip both cards instead"
 /// (Friends and Rivals family): the preceding "each player reveals the top card of
 /// their deck and adds it to their hand" is rewritten so the add applies only OUTSIDE

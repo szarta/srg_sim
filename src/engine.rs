@@ -391,10 +391,13 @@ pub struct Engine {
     /// duration of `run_hit_gimmicks` so a `per_excludes_trigger` count can drop it.
     /// Transient, never serialized.
     hit_card: Option<String>,
-    /// `db_uuid` of the card whose `OnFlip` clause is currently being dispatched, set
-    /// per-card while `act_flip` fires a just-flipped card's own effects so
-    /// `AddSelfToHand` knows its referent. Transient, never serialized.
-    flipped_card: Option<String>,
+    /// `db_uuid` of the card whose per-card self-referential effect is currently being
+    /// dispatched — bound while `run_self_flips` fires a just-flipped card's own
+    /// `OnFlip` effects, and while `run_discard_self_triggers` fires a card's
+    /// `WhileInDiscard` trigger from the discard pile — so `AddSelfToHand` /
+    /// `ShuffleSelfIntoDeck` / `PlaySelf` know their referent ("add IT to your hand",
+    /// where IT is the flipped/discarded card). Transient, never serialized.
+    self_card: Option<String>,
     /// `EffectSource` of the effect whose actions are currently being applied, set
     /// around `apply_actions`. `act_flip` reads it to record whether a flip was caused
     /// by a Gimmick effect ("flipped for your Gimmick"). Transient, never serialized.
@@ -477,7 +480,7 @@ impl Engine {
             turn_bumped: false,
             stopped_card: None,
             hit_card: None,
-            flipped_card: None,
+            self_card: None,
             firing_source: EffectSource::Card,
             firing_card_name: None,
             pending_roll_boost: 0,
@@ -724,6 +727,24 @@ impl Engine {
                     .filter(|e| e.duration == Duration::WhileInDiscard)
                     .cloned(),
             );
+        }
+        out
+    }
+
+    /// The `(source card `db_uuid`, effect)` pairs for every `WhileInDiscard` effect a
+    /// card declares while it sits in `key`'s discard pile. A trigger-dispatch site
+    /// fires these with the uuid bound as [`Engine::self_card`], so a self-referential
+    /// body ("add it to your hand", "shuffle it into your deck") acts on the discarded
+    /// card that fired it. Unlike [`Self::triggered_effects`] (which flattens the source
+    /// away), this keeps the card identity the self-actions need.
+    fn discard_self_triggers(&self, key: &str) -> Vec<(String, Effect)> {
+        let mut out = Vec::new();
+        for card in &self.state.players[key].discard {
+            for eff in &card.effects {
+                if eff.duration == Duration::WhileInDiscard {
+                    out.push((card.db_uuid.clone(), eff.clone()));
+                }
+            }
         }
         out
     }
@@ -1821,18 +1842,18 @@ impl Engine {
     }
 
     /// Dispatch each just-flipped card's OWN `OnFlip{who:SELF}` effects, one card at a
-    /// time — "If this card is flipped, [you may] add it to your hand." `flipped_card`
-    /// binds the referent so `AddSelfToHand` (and any future self-referential flip
+    /// time — "If this card is flipped, [you may] add it to your hand." `self_card`
+    /// binds the referent so `AddSelfToHand` (and any future self-referential
     /// action) knows which card fired, mirroring the `stopped_card` stop context.
     fn run_self_flips(&mut self, side: &str, cards: &[Card]) -> Eng<()> {
         for card in cards {
-            self.flipped_card = Some(card.db_uuid.clone());
+            self.self_card = Some(card.db_uuid.clone());
             for eff in &card.effects {
                 if is_on_flip_self(eff) {
                     self.fire_if_ready(eff, side, None)?;
                 }
             }
-            self.flipped_card = None;
+            self.self_card = None;
         }
         Ok(())
     }
@@ -3372,11 +3393,11 @@ impl Engine {
 
     /// Add the triggering (flipped) card to `key`'s hand — move it from their discard
     /// pile (where the flip landed it) to their hand. The referent is
-    /// [`Engine::flipped_card`], set per-card during `run_self_flips`. A no-op outside a
+    /// [`Engine::self_card`], set per-card during `run_self_flips`. A no-op outside a
     /// flip context or if the card has already left the discard. See
     /// [`Action::AddSelfToHand`].
     fn act_add_self_to_hand(&mut self, key: &str) {
-        let Some(uuid) = self.flipped_card.clone() else {
+        let Some(uuid) = self.self_card.clone() else {
             return;
         };
         let player = self.state.players.get_mut(key).unwrap();
@@ -3390,10 +3411,10 @@ impl Engine {
 
     /// Shuffle the triggering (flipped) card back into `key`'s deck — move it from their
     /// discard pile to the deck, then shuffle (firing `OnShuffle`). The referent is
-    /// [`Engine::flipped_card`]. A no-op outside a flip context or if the card has
+    /// [`Engine::self_card`]. A no-op outside a flip context or if the card has
     /// already left the discard. See [`Action::ShuffleSelfIntoDeck`].
     fn act_shuffle_self_into_deck(&mut self, key: &str) -> Eng<()> {
-        let Some(uuid) = self.flipped_card.clone() else {
+        let Some(uuid) = self.self_card.clone() else {
             return Ok(());
         };
         let player = self.state.players.get_mut(key).unwrap();
@@ -3408,11 +3429,11 @@ impl Engine {
 
     /// Play the triggering (flipped) card immediately — pull it from `key`'s discard and
     /// resolve it as a normal play by `key` (stop window, OnPlay/OnHit), a bonus action
-    /// outside the turn's one-card play. The referent is [`Engine::flipped_card`]. A
+    /// outside the turn's one-card play. The referent is [`Engine::self_card`]. A
     /// no-op outside a flip context or if the card has already left the discard. See
     /// [`Action::PlaySelf`].
     fn act_play_self(&mut self, key: &str) -> Eng<()> {
-        let Some(uuid) = self.flipped_card.clone() else {
+        let Some(uuid) = self.self_card.clone() else {
             return Ok(());
         };
         let player = self.state.players.get_mut(key).unwrap();
@@ -4756,8 +4777,8 @@ impl Engine {
     /// skill (`None` = any) and gated by the roller's roll context.
     fn run_on_roll(&mut self, key: &str) -> Eng<()> {
         let opp = self.state.opponent_of(key);
-        let effects = self.triggered_effects(key); // incl. WHILE_IN_DISCARD OnRoll
-        for eff in &effects {
+        // Standing OnRoll (in-play + gimmick + copied): no self-referent.
+        for eff in &self.standing_effects(key) {
             let Trigger::OnRoll { skill, who } = &eff.trigger else {
                 continue;
             };
@@ -4769,6 +4790,27 @@ impl Engine {
             let ctx = self.roll_ctx.get(ctx_key).cloned().unwrap_or_default();
             if skill.is_none() || ctx.skill == *skill {
                 self.fire_if_ready(eff, key, Some(&ctx))?;
+            }
+        }
+        // WHILE_IN_DISCARD OnRoll: a card in the discard pile watching the turn roll
+        // ("when this card is in your discard pile and you roll <S>, add it to your
+        // hand"). `self_card` binds the source card so its self-referential body
+        // resurrects the right one.
+        for (uuid, eff) in self.discard_self_triggers(key) {
+            let Trigger::OnRoll { skill, who } = &eff.trigger else {
+                continue;
+            };
+            let ctx_key = if *who == Who::SelfSide {
+                key
+            } else {
+                opp.as_str()
+            };
+            let ctx = self.roll_ctx.get(ctx_key).cloned().unwrap_or_default();
+            if skill.is_none() || ctx.skill == *skill {
+                self.self_card = Some(uuid);
+                let r = self.fire_if_ready(&eff, key, Some(&ctx));
+                self.self_card = None;
+                r?;
             }
         }
         Ok(())
@@ -8905,6 +8947,63 @@ mod man_from_it_tests {
         assert_eq!(
             engine.state.players["A"].reroll_grants.next_turn, 1,
             "discard OnRoll granted a next-turn re-roll"
+        );
+    }
+
+    /// A `WhileInDiscard` OnRoll `AddSelfToHand` (task #115): "When this card is in your
+    /// discard pile and you roll <S> for your turn roll, add it to your hand." The card
+    /// resurrects ITSELF from the discard — `run_on_roll` binds the source card as
+    /// `self_card` so `AddSelfToHand` moves the right one (discard → hand).
+    #[test]
+    fn while_in_discard_onroll_adds_itself_to_hand() {
+        let card: Card = serde_json::from_value(json!({
+            "atk_type":"Strike","db_uuid":"recur","name":"Comeback","number":30,
+            "play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect","trigger":{"@type":"OnRoll","skill":"Power","who":"SELF"},
+                "condition":{"@type":"Always"},
+                "actions":[{"@type":"AddSelfToHand"}],
+                "duration":"WHILE_IN_DISCARD","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let ctx = |s| RollContext {
+            skill: Some(s),
+            gap: None,
+            value: None,
+            opp_skill: None,
+        };
+
+        // Rolled Technique (not Power): the skill gate fails, card stays in discard.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![card.clone()];
+        engine.roll_ctx.insert("A".into(), ctx(Skill::Technique));
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            1,
+            "wrong skill: stays"
+        );
+        assert_eq!(engine.state.players["A"].hand.len(), 0);
+
+        // Rolled Power: the discard OnRoll fires and the card moves ITSELF to the hand.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![card];
+        engine.roll_ctx.insert("A".into(), ctx(Skill::Power));
+        engine.run_on_roll("A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            0,
+            "left the discard"
+        );
+        assert_eq!(
+            engine.state.players["A"]
+                .hand
+                .iter()
+                .filter(|c| c.db_uuid == "recur")
+                .count(),
+            1,
+            "resurrected itself into the hand"
         );
     }
 

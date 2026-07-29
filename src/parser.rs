@@ -590,6 +590,42 @@ fn gate_body(cond: Condition, body: &str) -> Option<Effect> {
     Some(effect)
 }
 
+/// The tail of a "When this card is in your discard pile …" clause, after the prefix.
+/// The discard prefix is a [`Duration::WhileInDiscard`] DURATION marker — the card
+/// declares this effect only while it sits in the discard pile — so `remainder` is a
+/// normal trigger clause we re-parse through the whole grammar and then re-stamp the
+/// duration on. Scope (task #115 slice 1): the TRIGGERED forms only — an inline "and
+/// `<event>`, `<body>`" (rewritten to "When `<event>`, `<body>`") or a nested
+/// "When/After/If … `<body>`" after the separator. A bare passive body (family A: "…
+/// your maximum handsize is +N") declines here and stays Unsupported until the passive
+/// discard-readers land, so we never emit an effect the engine would silently not fire.
+fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
+    let r = remainder.trim();
+    let inner = if let Some(rest) = r.strip_prefix("and ") {
+        format!("When {rest}")
+    } else if ["When ", "After ", "If ", "Each ", "At "]
+        .iter()
+        .any(|p| r.starts_with(p))
+    {
+        r.to_owned()
+    } else {
+        return None; // passive body -> deferred to the family-A slice
+    };
+    let mut effect = match_grammar(&inner)
+        .or_else(|| compound_body(&inner))
+        .or_else(|| choice_body(&inner))?;
+    // Slice-1 fidelity gate: only OnRoll WhileInDiscard effects actually fire from the
+    // discard pile today (run_on_roll dispatches them with the self_card referent
+    // bound). OnHit/OnStop/OnBreakout/passive dispatch-from-discard is not yet wired, so
+    // those decline here (stay Unsupported) rather than become silently-inert IR. Widen
+    // this gate as each dispatch site learns to fire from the discard (task #115 slice 2+).
+    if !matches!(effect.trigger, Trigger::OnRoll { .. }) {
+        return None;
+    }
+    effect.duration = Duration::WhileInDiscard;
+    Some(effect)
+}
+
 /// Parse a common conditional-gate phrase — the "`<gate>`" in "If `<gate>`, double these
 /// bonuses" and kin — into a [`Condition`] the engine already evaluates. Covers turn-roll
 /// (skill / value / same-as-opponent), the re-roll / bump / ended-turn flags, the no-DQ
@@ -2734,6 +2770,31 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Bare self-referential recursion bodies — the enclosing trigger_body supplies
+        // the trigger (flip / WHILE_IN_DISCARD roll etc.); "it"/"this card" is the
+        // card carrying the clause. Fully anchored, so these only match a whole-clause
+        // bare body (a "Search … and add it" / "Flip … add it" keeps its own specific
+        // rule). AddSelfToHand / ShuffleSelfIntoDeck are no-ops unless a `self_card`
+        // referent is bound at the fire site, so a stray match is inert, not wrong.
+        rule(r"[Aa]dd (?:it|this card) to your hand", |_| {
+            Some(eff(
+                Trigger::Static,
+                vec![Action::AddSelfToHand],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        rule(
+            r"[Ss]huffle ?(?:it|this card)(?: from your discard pile)?(?: back)? into your deck",
+            |_| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::ShuffleSelfIntoDeck],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Per-card flip self-trigger: "If this card is flipped, [you may] <self-action>."
         // Trigger OnFlip{SELF} fires per flipped card; the self-action acts on the
         // referent. "you may" -> Effect::optional. (Comma optional; "flipped you may"
@@ -4312,6 +4373,16 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(
             r"When your opponent stops (?:a|one|your) cards?[,:] (.+)",
             |c| trigger_body(on_your_stop(), &c[1]),
+        ),
+        // WHILE_IN_DISCARD self-trigger (task #115): "When this card is in your discard
+        // pile[ and <event>][:,] <body>" — the prefix is a Duration::WhileInDiscard marker;
+        // the remainder is a normal trigger clause re-parsed via while_in_discard_effect.
+        // Separator: " " (before "and"), ":" or "," (nested "When …" / passive). Slice 1
+        // fires the triggered forms (OnRoll self-recursion the biggest); passive bodies
+        // decline. Placed with the trigger-prefix splits so specific rules win first.
+        rule(
+            r"(?i)When this card is in your discard pile(?: ?[:,] ?| )(.+)",
+            |c| while_in_discard_effect(&c[1]),
         ),
         // Condition-gate prefixes (task #130): keep the body's natural trigger, AND a
         // gate onto it. Placed LAST so a specific rule for the whole clause wins first.
