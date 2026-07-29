@@ -2447,6 +2447,54 @@ fn reveal_then_split_clause() {
     );
 }
 
+/// Reveal-and-discard, single/conditional phrasing: "<opponent> randomly reveals N
+/// card(s) in their hand; if it is a Stop, they discard it" folds into
+/// `RevealAndDiscard{count:N, who:OPP}` (discarding a revealed stop out of N == discard
+/// all revealed stops). The enclosing trigger prefix supplies the real trigger.
+#[test]
+fn reveal_and_discard_if_stop() {
+    fn a0(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // OnHit name-gated prefix; "a card" -> count 1.
+    let e = a0("When you hit a card with \"Bomb\" or \"America\" in the name, your opponent randomly reveals a card in their hand; If it is a Stop, they discard it.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["name_contains"][0], "Bomb");
+    let a = &e["actions"][0];
+    assert_eq!(a["@type"], "RevealAndDiscard");
+    assert_eq!(a["count"], 1);
+    assert_eq!(a["who"], "OPP");
+
+    // OnRoll prefix; "1 card"; subject "Your opponent"; "if it is a stop" (lowercase).
+    let e = a0("When you roll Power for your turn roll: Your opponent randomly reveals 1 card in their hand; if it is a stop, they discard it.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Power");
+    assert_eq!(e["actions"][0]["@type"], "RevealAndDiscard");
+
+    // "When your opponent stops a card" -> OnStop{YOURS}; subject "they randomly reveal".
+    let e = a0("When your opponent stops a card, they randomly reveal 1 card in their hand; if it is a Stop, they discard it.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["trigger"]["dir"], "YOURS");
+    assert_eq!(e["actions"][0]["@type"], "RevealAndDiscard");
+
+    // Plural-typo standalone: "reveals 3 cards in their hands and discards all Stops".
+    let a = &a0("Your opponent randomly reveals 3 cards in their hands and discards all Stops.")
+        ["actions"][0];
+    assert_eq!(a["@type"], "RevealAndDiscard");
+    assert_eq!(a["count"], 3);
+
+    // Compound draw-OR-discard else-branch stays Unsupported (RevealAndDiscard can't
+    // express the "if not, they discard it" alternative).
+    assert_eq!(
+        a0("When you hit a card with \"Kick\" or \"Dragon\" in the name, your opponent randomly reveals one card in their hand: if it's a stop, draw 1 card, if not, they discard it.")
+            ["actions"][0]["@type"],
+        "Unsupported"
+    );
+}
+
 /// "If this is a Steel Cage or Liger's Den match, you may flip both cards instead"
 /// (Friends and Rivals family): the preceding "each player reveals the top card of
 /// their deck and adds it to their hand" is rewritten so the add applies only OUTSIDE

@@ -1325,6 +1325,15 @@ fn num(c: &Captures, i: usize) -> i64 {
     c[i].parse().expect("numeric capture parses")
 }
 
+/// A count that may be a digit or the words "a"/"an"/"one" (all -> 1). Used by the
+/// reveal-and-discard family, where "reveals a card" and "reveals 1 card" are the same.
+fn count_or_word(s: &str) -> i64 {
+    match s.to_ascii_lowercase().as_str() {
+        "a" | "an" | "one" => 1,
+        d => d.parse().unwrap_or(1),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Count / stop-target helper parsers
 // ---------------------------------------------------------------------------
@@ -3701,12 +3710,32 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             |c| per_discard(num(c, 1), &c[2]),
         ),
         rule(
-            r"Your opponent randomly reveals (\d+) cards?(?: in their hand)? and discards all revealed [Ss]tops",
+            r"Your opponent randomly reveals (\d+) cards?(?: in their hands?)? and discards all(?: revealed)? [Ss]tops",
             |c| {
                 Some(eff(
                     on_hit(),
                     vec![Action::RevealAndDiscard {
                         count: num(c, 1),
+                        who: Who::Opp,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Reveal-and-discard, single/conditional phrasing: "[Your opponent|They] randomly
+        // reveal(s) N card(s) in their hand[;:,] if it is a Stop, they discard it" — the
+        // opponent reveals N random hand cards and discards any that are stops. With N
+        // cards revealed and each discarded if a stop, this is exactly RevealAndDiscard
+        // (which discards all revealed stops). N is a digit or "a"/"one". The trigger is
+        // whatever the enclosing prefix supplies (trigger_body overrides on_hit()).
+        rule(
+            r"(?i)^(?:Your opponent|They) randomly reveals? (\d+|an?|one) cards? in their hand[;:,]\s*if it(?:'s| is) a Stop,?\s*they discard it\.?$",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::RevealAndDiscard {
+                        count: count_or_word(&c[1]),
                         who: Who::Opp,
                     }],
                     Condition::Always,
@@ -4277,6 +4306,13 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(r"[Ii]f (?:this card is |this is )?stopped[,:] (.+)", |c| {
             trigger_body(on_your_stop(), &c[1])
         }),
+        // "When your opponent stops a card, <body>" — your card was stopped
+        // (Direction::Yours), same trigger as "if stopped". The body re-parses through the
+        // grammar; the subject "they"/"your opponent" carries into RevealAndDiscard etc.
+        rule(
+            r"When your opponent stops (?:a|one|your) cards?[,:] (.+)",
+            |c| trigger_body(on_your_stop(), &c[1]),
+        ),
         // Condition-gate prefixes (task #130): keep the body's natural trigger, AND a
         // gate onto it. Placed LAST so a specific rule for the whole clause wins first.
         // "If you rolled <skill> for your turn roll[;,] <body>" -> RollWasSkill{SELF}
