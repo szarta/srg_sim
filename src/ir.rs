@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 96;
+pub const SCHEMA_VERSION: i64 = 97;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1512,6 +1512,16 @@ pub enum Action {
         #[serde(default)]
         per_divisor: Option<i64>,
     },
+    /// A standing bonus to the owner's TURN roll, applied only when the randomly
+    /// rolled skill equals `skill`: "Your Power is +N during turn rolls." Read by
+    /// `turn_roll_bonus` in the roll-off — the parallel of [`Action::FinishRollBonus`]
+    /// / [`Action::BreakoutModifier`] for the turn roll — and never executed as a
+    /// mutation. Because it lives in the turn-roll phase, it does NOT touch finish
+    /// rolls, stops, or skill comparisons the way a plain `BuffSkill` would. schema v97
+    TurnRollBonus {
+        skill: Skill,
+        delta: i64,
+    },
     BreakoutModifier {
         delta: i64,
         attempts: Option<i64>,
@@ -2624,6 +2634,16 @@ pub enum IrNode {
         /// (The Ride Along). Only meaningful with `per` set. schema v74
         #[serde(default)]
         per_divisor: Option<i64>,
+    },
+    /// A standing bonus to the owner's TURN roll, applied only when the randomly
+    /// rolled skill equals `skill`: "Your Power is +N during turn rolls." Read by
+    /// `turn_roll_bonus` in the roll-off — the parallel of [`Action::FinishRollBonus`]
+    /// / [`Action::BreakoutModifier`] for the turn roll — and never executed as a
+    /// mutation. Because it lives in the turn-roll phase, it does NOT touch finish
+    /// rolls, stops, or skill comparisons the way a plain `BuffSkill` would. schema v97
+    TurnRollBonus {
+        skill: Skill,
+        delta: i64,
     },
     BreakoutModifier {
         delta: i64,

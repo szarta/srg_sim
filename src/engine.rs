@@ -321,6 +321,7 @@ fn scale_action(action: &Action, factor: i64) -> Action {
         | Action::MinHandSize { delta, .. }
         | Action::FinishBonus { delta, .. }
         | Action::FinishRollBonus { delta, .. }
+        | Action::TurnRollBonus { delta, .. }
         | Action::BreakoutModifier { delta, .. } => *delta *= factor,
         Action::Draw { n, .. } => *n *= factor,
         Action::Discard { count, .. } => *count *= factor,
@@ -4588,6 +4589,28 @@ impl Engine {
         total
     }
 
+    /// The standing turn-roll bonus for `key` when the roll came up `skill`: the sum of
+    /// every active `TurnRollBonus{skill}` on their board (gimmick / entrance / in-play),
+    /// the turn-roll parallel of [`finish_roll_bonus`](Self::finish_roll_bonus). Applied
+    /// only in the roll-off, so a "during turn rolls" buff never leaks into finish rolls,
+    /// stops, or skill comparisons.
+    fn turn_roll_bonus(&self, key: &str, skill: Skill) -> i64 {
+        let mut total = 0;
+        for eff in self.standing_effects(key) {
+            if !conditions::holds(&eff.condition, &self.state, key, None) {
+                continue;
+            }
+            for a in &eff.actions {
+                if let Action::TurnRollBonus { skill: s, delta } = a {
+                    if *s == skill {
+                        total += *delta;
+                    }
+                }
+            }
+        }
+        total
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn log_finish_attempt(
         &mut self,
@@ -5638,7 +5661,9 @@ impl Engine {
 
     fn roll_for(&mut self, key: &str, use_pending: bool) -> (Skill, i64) {
         let skill = self.state.rng.roll();
-        let base = self.stat(key, skill);
+        // The base turn roll folds the skill's stat plus any standing "during turn
+        // rolls" bonus (TurnRollBonus) — phase-scoped, unlike the general `stat()`.
+        let base = self.stat(key, skill) + self.turn_roll_bonus(key, skill);
         let delta = if use_pending {
             self.state.players[key].pending_roll_mods.this_turn
         } else {
@@ -6008,6 +6033,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::SetFinishRoll { .. } => "SetFinishRoll",
         Action::FinishBonus { .. } => "FinishBonus",
         Action::FinishRollBonus { .. } => "FinishRollBonus",
+        Action::TurnRollBonus { .. } => "TurnRollBonus",
         Action::BreakoutModifier { .. } => "BreakoutModifier",
         Action::LowestRollWins => "LowestRollWins",
         Action::FlipGimmickSigns { .. } => "FlipGimmickSigns",
@@ -6781,6 +6807,41 @@ mod timed_buff_tests {
             "base 5 + a capped +5 reaches the derived stat"
         );
         assert_eq!(engine.stat("B", Skill::Submission), 5, "B is untouched");
+    }
+
+    /// TurnRollBonus (task #131): "Your Power is +2 during turn rolls" adds to the turn
+    /// roll only when Power is the rolled skill, and never leaks into the general
+    /// derived stat (finish rolls / stops / skill comparisons) the way a BuffSkill would.
+    #[test]
+    fn turn_roll_bonus_is_skill_gated_and_phase_scoped() {
+        let mut engine = engine();
+        let card: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "trb", "name": "trb", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{"@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "TurnRollBonus", "skill": "Power", "delta": 2}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "", "source": "card", "optional": false}]
+        }))
+        .unwrap();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card];
+        assert_eq!(
+            engine.turn_roll_bonus("A", Skill::Power),
+            2,
+            "+2 to the turn roll when Power is rolled"
+        );
+        assert_eq!(
+            engine.turn_roll_bonus("A", Skill::Technique),
+            0,
+            "no bonus when another skill is rolled"
+        );
+        assert_eq!(
+            engine.stat("A", Skill::Power),
+            5,
+            "phase-scoped: it does NOT leak into the general derived stat"
+        );
     }
 
     /// "If you have another Follow Up or Finish Strike in play, your Technique skill

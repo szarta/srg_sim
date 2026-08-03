@@ -2012,6 +2012,47 @@ fn gated_order_or_skill_buff_grammar() {
     assert_eq!(a["delta"], 2);
 }
 
+/// Phase-scoped turn-roll bonus (task #131): "during turn rolls" -> a standing
+/// TurnRollBonus per skill (single, multi-skill, and the "+N to <S>" phrasing).
+#[test]
+fn turn_roll_bonus_grammar() {
+    fn e(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Single skill, "Your <S> is +N during turn rolls".
+    let v = e("Your Power is +2 during turn rolls.");
+    assert_eq!(v["trigger"]["@type"], "Static");
+    assert_eq!(v["actions"][0]["@type"], "TurnRollBonus");
+    assert_eq!(v["actions"][0]["skill"], "Power");
+    assert_eq!(v["actions"][0]["delta"], 2);
+
+    // The "skill" word variant folds in.
+    let v = e("Your Grapple skill is +1 during turn rolls.");
+    assert_eq!(v["actions"][0]["skill"], "Grapple");
+
+    // Multi-skill fans out to one TurnRollBonus per skill.
+    let acts = e("Your Power and Strike are +1 during turn rolls.")["actions"].clone();
+    let skills: Vec<&str> = acts
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| {
+            assert_eq!(a["@type"], "TurnRollBonus");
+            a["skill"].as_str().unwrap()
+        })
+        .collect();
+    assert_eq!(skills, vec!["Power", "Strike"]);
+
+    // The "+N to <S> during turn rolls" phrasing maps to TurnRollBonus (not FinishBonus).
+    let a = e("+1 to Submission during turn rolls.")["actions"][0].clone();
+    assert_eq!(a["@type"], "TurnRollBonus");
+    assert_eq!(a["skill"], "Submission");
+    assert_eq!(a["delta"], 1);
+}
+
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
 /// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
 /// Order and attack-type gates parse; a name gate declines to Unsupported.

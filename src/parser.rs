@@ -1070,6 +1070,15 @@ fn buff(skill: Skill, delta: i64, who: Who) -> Action {
     }
 }
 
+/// One standing [`Action::TurnRollBonus`] per skill — "Your Power and Strike are +N
+/// during turn rolls" fans out to a bonus on each named skill.
+fn turn_roll_bonuses(skills: Vec<Skill>, delta: i64) -> Vec<Action> {
+    skills
+        .into_iter()
+        .map(|skill| Action::TurnRollBonus { skill, delta })
+        .collect()
+}
+
 /// "+N to your lowest/highest skill" -> a [`Action::BuffSkill`] whose target skill is
 /// resolved dynamically at derived-stats time (`resolve_buff`). The `skill` field is a
 /// placeholder (never read when `target_lowest`/`target_highest` is set).
@@ -1960,6 +1969,40 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         per: Some(cf_name(names)),
                         per_zone: CountZone::InPlay,
                     }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Phase-scoped skill buff: "Your <skills> [is|are] +N during turn rolls" (one
+        // or more skills) -> a standing TurnRollBonus per skill, applied only when the
+        // turn roll comes up that skill (the roll-off parallel of FinishRollBonus).
+        // Unlike a plain BuffSkill it does NOT affect finish rolls / stops / skill
+        // comparisons. `skill_list` handles the "skill" word + and/comma lists and
+        // declines cleanly on any unknown token.
+        rule(
+            r"Your (.+?) (?:is|are) \+(\d+) during (?:your )?turn rolls",
+            |c| {
+                let skills = skill_list(&c[1]);
+                if skills.is_empty() {
+                    return None;
+                }
+                Some(eff(
+                    Trigger::Static,
+                    turn_roll_bonuses(skills, num(c, 2)),
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // The "+N to <S> during turn rolls" phrasing (would otherwise fall to the
+        // finish-roll-only "+N to <S>" default) -> the same TurnRollBonus.
+        rule(
+            &format!(r"\+(\d+) to {SK} during (?:your )?turn rolls"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    turn_roll_bonuses(vec![skill(&c[2])], num(c, 1)),
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))

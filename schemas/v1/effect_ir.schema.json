@@ -979,6 +979,9 @@
                 "$ref": "#/$defs/FinishRollBonus"
               },
               {
+                "$ref": "#/$defs/TurnRollBonus"
+              },
+              {
                 "$ref": "#/$defs/BreakoutModifier"
               },
               {
@@ -1838,6 +1841,9 @@
                 "$ref": "#/$defs/FinishRollBonus"
               },
               {
+                "$ref": "#/$defs/TurnRollBonus"
+              },
+              {
                 "$ref": "#/$defs/BreakoutModifier"
               },
               {
@@ -2174,6 +2180,26 @@
       "properties": {
         "@type": {
           "const": "FinishBonus"
+        },
+        "delta": {
+          "type": "integer"
+        },
+        "skill": {
+          "$ref": "#/$defs/Skill"
+        }
+      },
+      "required": [
+        "@type",
+        "skill",
+        "delta"
+      ],
+      "type": "object"
+    },
+    "TurnRollBonus": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "TurnRollBonus"
         },
         "delta": {
           "type": "integer"
@@ -2718,6 +2744,9 @@
         },
         {
           "$ref": "#/$defs/FinishRollBonus"
+        },
+        {
+          "$ref": "#/$defs/TurnRollBonus"
         },
         {
           "$ref": "#/$defs/Flip"
@@ -4424,6 +4453,9 @@
                 "$ref": "#/$defs/FinishRollBonus"
               },
               {
+                "$ref": "#/$defs/TurnRollBonus"
+              },
+              {
                 "$ref": "#/$defs/BreakoutModifier"
               },
               {
@@ -5336,5 +5368,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 96
+  "version": 97
 }
