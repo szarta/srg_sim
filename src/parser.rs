@@ -2375,10 +2375,15 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // Per-count self turn-roll bonus. The optional `with "X" in the name` suffix
+        // (which trails "you have in play", so a single capture can't reach it) routes
+        // through `in_play_filter` — a name-substring filter when present, else the
+        // `<pre>` descriptor (card / type / order / stop). "+1 for each card you have
+        // in play with 'Steel Chain' in the name."
         rule(
-            r"Your next turn roll is ([+-]\d+) for each (?:other )?(.+?) you have in play",
+            r#"Your next turn roll is ([+-]\d+) for each (?:other )?(.+?) you have in play(?: with (.+?) in the name)?"#,
             |c| {
-                let per = count_filter(&c[2])?;
+                let per = in_play_filter(&c[2], c.get(3).map(|m| m.as_str()))?;
                 Some(eff(
                     on_hit(),
                     vec![modify_roll(
@@ -2417,9 +2422,9 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         // opp-directed mirror of the self per-count rule above. who=Opp (their roll),
         // per_who=SelfSide (the cards YOU have in play).
         rule(
-            r"Your opponent's next turn roll is -(\d+) for each (?:other )?(.+?) you have in play",
+            r#"Your opponent's next turn roll is -(\d+) for each (?:other )?(.+?) you have in play(?: with (.+?) in the name)?"#,
             |c| {
-                let per = count_filter(&c[2])?;
+                let per = in_play_filter(&c[2], c.get(3).map(|m| m.as_str()))?;
                 Some(eff(
                     on_hit(),
                     vec![modify_roll(

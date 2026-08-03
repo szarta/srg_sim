@@ -2116,6 +2116,26 @@ fn next_roll_percount_and_also_followup_grammar() {
     assert_eq!(m["per_zone"], "DISCARD");
     assert_eq!(m["delta"], 2);
 
+    // Name-descriptor per-count: the "with 'X' in the name" qualifier trails "you have
+    // in play", so it routes through in_play_filter (name-substring filter).
+    let m = a1("Your next turn roll is +1 for each card you have in play with \"Steel Chain\" in the name.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(m["@type"], "ModifyRoll");
+    assert_eq!(m["delta"], 1);
+    assert_eq!(m["per_who"], "SELF");
+    assert_eq!(m["per"]["name_contains"][0], "Steel Chain");
+
+    // Opponent-roll penalty, name-descriptor variant (per_who = SELF, the cards YOU
+    // have in play; who = OPP, their roll).
+    let m = a1("Your opponent's next turn roll is -1 for each card you have in play with \"Kendo Stick\" in the name.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(m["who"], "OPP");
+    assert_eq!(m["delta"], -1);
+    assert_eq!(m["per_who"], "SELF");
+    assert_eq!(m["per"]["name_contains"][0], "Kendo Stick");
+
     // The plain "+N" rule still yields no per (regression guard for rule ordering).
     let m = a1("Your next turn roll is +3.")["actions"][0].clone();
     assert_eq!(m["per"], Value::Null);
