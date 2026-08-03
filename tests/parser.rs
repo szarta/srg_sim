@@ -1970,6 +1970,48 @@ fn pod_fidelity_grammar() {
     assert_eq!(a["selector"]["tag"], "Spotlight");
 }
 
+/// Skill-buff family (task #119/#130): a standing skill buff gated on "another
+/// Follow Up or Finish <ATK>" — an OR-of-orders `HasInPlay` at count>=2 (the source
+/// card counts, so one OTHER qualifier arms it). Plus the bare "Your <S> skill is +N".
+#[test]
+fn gated_order_or_skill_buff_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    let e =
+        one("If you have another Follow Up or Finish Strike in play, your Technique skill is +1.");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["duration"], "WHILE_IN_PLAY");
+    let a = &e["actions"][0];
+    assert_eq!(a["@type"], "BuffSkill");
+    assert_eq!(a["skill"], "Technique");
+    assert_eq!(a["delta"], 1);
+    let cond = &e["condition"];
+    assert_eq!(cond["@type"], "HasInPlay");
+    assert_eq!(cond["who"], "SELF");
+    assert_eq!(cond["cmp"], ">=");
+    assert_eq!(
+        cond["count"], 2,
+        "'another' on a self-matching card => count>=2"
+    );
+    assert_eq!(cond["filter"]["atk_type"], "Strike");
+    assert_eq!(
+        cond["filter"]["play_orders"],
+        serde_json::json!(["Followup", "Finish"])
+    );
+    assert_eq!(cond["filter"]["play_order"], Value::Null);
+
+    // The bare "Your <S> skill is +N" (widened to accept the optional "skill" word)
+    // is an unconditional Static buff.
+    let a = one("Your Power skill is +2.")["actions"][0].clone();
+    assert_eq!(a["@type"], "BuffSkill");
+    assert_eq!(a["skill"], "Power");
+    assert_eq!(a["delta"], 2);
+}
+
 /// "also a Follow Up" conditional (AlsoLead order=Followup gated on RollWasSkill).
 #[test]
 fn next_roll_percount_and_also_followup_grammar() {

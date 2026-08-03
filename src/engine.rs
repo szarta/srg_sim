@@ -6783,6 +6783,83 @@ mod timed_buff_tests {
         assert_eq!(engine.stat("B", Skill::Submission), 5, "B is untouched");
     }
 
+    /// "If you have another Follow Up or Finish Strike in play, your Technique skill
+    /// is +1" (task #119/#130 skill-buff family): a Static buff gated on HasInPlay
+    /// count>=2 of the play_orders OR-filter. The gate is re-evaluated live off the
+    /// board, so a qualifying card landing LATER turns the +1 on; a wrong attack type
+    /// never satisfies it.
+    #[test]
+    fn gated_order_or_buff_activates_when_a_second_qualifier_lands() {
+        let fu_strike = |uuid: &str, effects: serde_json::Value| -> Card {
+            serde_json::from_value(json!({
+                "atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+                "play_order": "Followup", "raw_text": "", "tags": [], "finish_bonuses": {},
+                "effects": effects
+            }))
+            .unwrap()
+        };
+        let gated = json!([{
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "HasInPlay", "who": "SELF", "cmp": ">=", "count": 2,
+                "filter": {"@type": "CardFilter", "atk_type": "Strike",
+                    "play_orders": ["Followup", "Finish"], "is_stop": null, "name": null,
+                    "name_contains": [], "number": null, "play_order": null, "raw": null,
+                    "tag": null, "text_contains": []}},
+            "actions": [{"@type": "BuffSkill", "skill": "Technique", "delta": 1, "who": "SELF",
+                "duration": "WHILE_IN_PLAY", "target_highest": false, "target_lowest": false,
+                "per_crowd": false, "cap": null, "per": null, "per_zone": "IN_PLAY"}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "", "source": "card", "optional": false
+        }]);
+
+        let mut engine = engine();
+        // Only the buff card itself (a Follow Up Strike): count 1 < 2, buff OFF.
+        engine.state.players.get_mut("A").unwrap().in_play = vec![fu_strike("buffer", gated)];
+        assert_eq!(
+            engine.stat("A", Skill::Technique),
+            5,
+            "a lone Follow Up Strike does not satisfy its own 'another' gate"
+        );
+
+        // A single FINISH Strike landing later is enough (source + 1 other = count 2):
+        // the gate flips true and the standing +1 applies live. One qualifier, not two.
+        let finish_strike: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "fin", "name": "fin", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []
+        }))
+        .unwrap();
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(finish_strike);
+        assert_eq!(
+            engine.stat("A", Skill::Technique),
+            6,
+            "one other qualifier (a Finish Strike) turns the standing +1 on"
+        );
+
+        // Replace the second card with a Follow Up GRAPPLE: wrong attack type, no gate.
+        let grapple: Card = serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "g", "name": "g", "number": 1,
+            "play_order": "Followup", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []
+        }))
+        .unwrap();
+        let ip = &mut engine.state.players.get_mut("A").unwrap().in_play;
+        ip.pop();
+        ip.push(grapple);
+        assert_eq!(
+            engine.stat("A", Skill::Technique),
+            5,
+            "a Follow Up Grapple is the wrong attack type — gate stays false"
+        );
+    }
+
     #[test]
     fn until_start_of_your_next_turn_survives_the_granting_turns_roll() {
         // Granted on turn 3's roll: the sweep for turn 3 must NOT take it, or the buff

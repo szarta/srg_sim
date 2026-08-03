@@ -1965,7 +1965,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        rule(&format!(r"Your {SK} is \+(\d+)"), |c| {
+        rule(&format!(r"Your {SK}(?: skill)? is \+(\d+)"), |c| {
             Some(eff(
                 Trigger::Static,
                 vec![buff(skill(&c[1]), num(c, 2), Who::SelfSide)],
@@ -1973,6 +1973,35 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // Standing skill buff gated on a SECOND card of two play orders sharing an
+        // attack type: "If you have another Follow Up or Finish <ATK> in play, your
+        // <SK> skill is +N." Every printed card with this clause is itself a Follow Up
+        // of the gated attack type, and the effect is Static (fires only while in
+        // play), so the engine's HasInPlay — which counts the source card — reads
+        // "another" faithfully as count >= 2 (this card plus at least one other). The
+        // buff re-evaluates live off the board, so a qualifying card entering later
+        // turns it on.
+        rule(
+            &format!(
+                r"If you have another (Lead|Follow Up|Finish) or (Lead|Follow Up|Finish) {ATK} in play, your {SK}(?: skill)? is \+(\d+)"
+            ),
+            |c| {
+                let filter = CardFilter {
+                    play_orders: vec![
+                        count_order(&c[1].to_lowercase()),
+                        count_order(&c[2].to_lowercase()),
+                    ],
+                    atk_type: Some(atk(&c[3])),
+                    ..Default::default()
+                };
+                Some(eff(
+                    Trigger::Static,
+                    vec![buff(skill(&c[4]), num(c, 5), Who::SelfSide)],
+                    has_in_play(Who::SelfSide, filter, 2),
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         // "+N to your lowest/highest skill" and "Your lowest/highest skill is +N" -> a
         // dynamic-target skill buff, resolved to the extreme BASE skill at derived-stats
         // time (`resolve_buff`), mirroring Copy Kat's `target_highest`.
