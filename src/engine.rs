@@ -2929,24 +2929,51 @@ impl Engine {
                 self.scry_to_top(owner, keep);
             }
             ScryRest::Flip => {
-                // Mill the leftovers to the deck owner's discard pile.
-                let uuids: Vec<String> = cards.iter().map(|c| c.db_uuid.clone()).collect();
-                self.state
-                    .players
-                    .get_mut(owner)
-                    .unwrap()
-                    .discard
-                    .extend(cards);
-                let t = self.state.turn_no;
-                self.log(Event::Discard(CardMovement {
-                    t,
-                    player: owner.to_owned(),
-                    cards: uuids,
-                    source: Some("deck".to_owned()),
-                    hidden: false,
-                }));
+                self.scry_flip_cards(owner, cards);
+            }
+            ScryRest::MayFlip => {
+                // Optional flip ("you may flip it"): the peek is free, so the flip
+                // decision is made after seeing the card. Flip only the cards worth
+                // milling — on an opponent's deck, the ones worth denying them
+                // (Finish / stops, `scry_value >= 2`); on your own, the junk you'd
+                // rather shed. Leave the rest on top (best-on-top on your deck,
+                // worst-on-top when sabotaging, mirroring `Return`).
+                let (flip, keep): (Vec<Card>, Vec<Card>) = cards
+                    .into_iter()
+                    .partition(|c| (scry_value(c) >= 2) == sabotage);
+                self.scry_flip_cards(owner, flip);
+                if !keep.is_empty() {
+                    let mut ordered = keep;
+                    ordered.sort_by_key(|c| Reverse(scry_value(c))); // best first
+                    if sabotage {
+                        ordered.reverse();
+                    }
+                    self.scry_to_top(owner, ordered);
+                }
             }
         }
+    }
+
+    /// Mill `cards` to `owner`'s discard pile (the `Flip` disposition) and log it.
+    fn scry_flip_cards(&mut self, owner: &str, cards: Vec<Card>) {
+        if cards.is_empty() {
+            return;
+        }
+        let uuids: Vec<String> = cards.iter().map(|c| c.db_uuid.clone()).collect();
+        self.state
+            .players
+            .get_mut(owner)
+            .unwrap()
+            .discard
+            .extend(cards);
+        let t = self.state.turn_no;
+        self.log(Event::Discard(CardMovement {
+            t,
+            player: owner.to_owned(),
+            cards: uuids,
+            source: Some("deck".to_owned()),
+            hidden: false,
+        }));
     }
 
     /// Put `cards` back on top of `owner`'s deck, `cards[0]` ending up topmost.
@@ -10218,6 +10245,44 @@ mod flip_percount_tests {
         assert_eq!(a.discard.len(), 2, "the two leftover Strikes milled");
         assert_eq!(a.deck.len(), 1, "the untouched 4th card stays in deck");
         assert_eq!(a.deck[0].db_uuid, "keep-me");
+    }
+
+    /// `ScryRest::MayFlip` (task #119): peek the top card of an opponent's deck and
+    /// flip it only when it is worth denying them — a Finish is milled to their
+    /// discard, a plain card is left on top. schema v96
+    #[test]
+    fn scry_may_flip_denies_a_valuable_card_but_leaves_junk() {
+        let scry: Action = serde_json::from_value(json!({
+            "@type": "Scry", "deck": "OPP", "top": 1, "bottom": 0, "reveal": false,
+            "to_hand": 0, "bury": 0, "rest": "MAY_FLIP"
+        }))
+        .unwrap();
+
+        // A valuable top card (Finish) -> milled to the opponent's discard.
+        let mut eng = engine();
+        {
+            let b = eng.state.players.get_mut("B").unwrap();
+            b.deck = vec![card("fin", "Finish"), atk_card("s1", "Strike")];
+            b.discard.clear();
+        }
+        eng.apply_action(&scry, "A", "").unwrap();
+        let b = &eng.state.players["B"];
+        assert_eq!(b.discard.len(), 1, "the Finish is flipped (denied)");
+        assert_eq!(b.discard[0].db_uuid, "fin");
+        assert_eq!(b.deck.len(), 1, "only the single top card was peeked");
+        assert_eq!(b.deck[0].db_uuid, "s1", "the junk below stays in the deck");
+
+        // A plain top card -> not worth flipping, left on top, nothing milled.
+        let mut eng = engine();
+        {
+            let b = eng.state.players.get_mut("B").unwrap();
+            b.deck = vec![atk_card("j0", "Strike"), card("fin", "Finish")];
+            b.discard.clear();
+        }
+        eng.apply_action(&scry, "A", "").unwrap();
+        let b = &eng.state.players["B"];
+        assert!(b.discard.is_empty(), "a plain card is not worth flipping");
+        assert_eq!(b.deck[0].db_uuid, "j0", "it stays on top of the deck");
     }
 
     /// ModifyRoll `per_zone=DISCARD` scales the next-roll bonus by the count of

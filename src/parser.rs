@@ -885,6 +885,22 @@ fn scry_flip(reveal: bool, top: i64, to_hand: i64) -> Action {
     }
 }
 
+/// "Look at / Reveal the top card of `deck`'s deck, you may flip it" — a single-card
+/// peek with an *optional* flip ([`ScryRest::MayFlip`]): the actor sees the top card,
+/// then mills it only when worthwhile (deny an opponent their Finish/stop, or shed
+/// your own junk) and otherwise leaves it on top.
+fn scry_may_flip(reveal: bool, deck: Who) -> Action {
+    Action::Scry {
+        deck,
+        top: 1,
+        bottom: 0,
+        reveal,
+        to_hand: 0,
+        bury: 0,
+        rest: ScryRest::MayFlip,
+    }
+}
+
 fn search(filter: CardFilter, dest: Dest, count: i64) -> Action {
     Action::Search {
         filter,
@@ -2729,6 +2745,26 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     on_hit(),
                     vec![scry_flip(&c[1] == "Reveal", num(c, 2), num(c, 3))],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Single-card peek with an optional flip: "Look at the top card of your
+        // opponent's deck, you may flip it" -> Scry{top:1, rest:MayFlip}. "Look at"
+        // keeps it private (reveal:false); "Reveal" is public. deck follows the
+        // "your"/"your opponent's" possessive.
+        rule(
+            r"(Look at|Reveal) the top card of your (opponent'?s )?deck, you may flip it",
+            |c| {
+                let deck = if c.get(2).is_some() {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![scry_may_flip(&c[1] == "Reveal", deck)],
                     Condition::Always,
                     Duration::Instant,
                 ))

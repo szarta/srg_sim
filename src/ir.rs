@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 95;
+pub const SCHEMA_VERSION: i64 = 96;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -301,7 +301,10 @@ pub enum RevealMatch {
 /// card, between returning it on top and burying it to the deck bottom
 /// (Ricky Riot's "put the other back on top or bury it"); `Flip` mills them to
 /// the discard pile ("look at the top N cards, add M to your hand and flip the
-/// others"). schema v69
+/// others"). `MayFlip` is the optional single-card variant — peek the top card,
+/// then flip it *only when worthwhile* (mill the cards worth denying an opponent
+/// / dumping from your own deck, leave the rest on top): "Look at the top card of
+/// your opponent's deck, you may flip it." schema v69; MayFlip v96
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ScryRest {
@@ -309,6 +312,7 @@ pub enum ScryRest {
     Return,
     Choose,
     Flip,
+    MayFlip,
 }
 
 /// Where a [`Action::RevealRoute`] sends the revealed card. `Hand` = the deck

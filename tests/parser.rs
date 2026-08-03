@@ -770,6 +770,32 @@ fn scry_flip_grammar() {
     assert_eq!(a[0]["rest"], "FLIP");
 }
 
+/// Single-card peek with an optional flip (task #119): "Look at the top card of
+/// your opponent's deck, you may flip it" -> Scry{top:1, deck:OPP, rest:MayFlip}.
+#[test]
+fn scry_may_flip_grammar() {
+    fn acts(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()["actions"].clone()
+    }
+
+    // Opponent's deck, private "look at".
+    let a = acts("Look at the top card of your opponent's deck, you may flip it.");
+    assert_eq!(a[0]["@type"], "Scry");
+    assert_eq!(a[0]["deck"], "OPP");
+    assert_eq!(a[0]["top"], 1);
+    assert_eq!(a[0]["to_hand"], 0);
+    assert_eq!(a[0]["reveal"], false);
+    assert_eq!(a[0]["rest"], "MAY_FLIP");
+
+    // Own deck + public "Reveal" variant folds into the same node.
+    let a = acts("Reveal the top card of your deck, you may flip it.");
+    assert_eq!(a[0]["deck"], "SELF");
+    assert_eq!(a[0]["reveal"], true);
+    assert_eq!(a[0]["rest"], "MAY_FLIP");
+}
+
 /// Compound flip + recur-to-hand (task #119): "Flip N cards, then take/add M
 /// <filter> from your discard pile [and add it] to your hand" -> Flip then
 /// AddFromDiscard, reusing both existing nodes.
