@@ -35,7 +35,9 @@ of truth is :file:`overrides.yaml` at the repo root.
 #. ``invoke parser-fixture`` — refreshes :file:`fixtures/parser/clauses.json`
    in place (keeps the curated inputs, recomputes the ``expected`` IR and the
    ``coverage_golden`` counts).
-#. Review the fixture diffs, then ``invoke check`` (the CI gate).
+#. Review the fixture diffs, then ``invoke check && invoke test`` (fmt/clippy/knots
+   then the suite — the parser-parity tests hold the parser to the regenerated
+   goldens, so ``invoke test`` is what actually verifies the change).
 
 .. warning::
 
@@ -43,8 +45,9 @@ of truth is :file:`overrides.yaml` at the repo root.
    binary via ``include_str!`` (:file:`src/console/loader.rs`) at *compile*
    time. A bare ``invoke overrides`` does **not** rebuild, so ``srg play`` /
    ``srg coverage`` keep emitting byte-identical output — the override looks
-   like it "didn't apply". Run ``cargo build`` (or ``invoke check``, which
-   rebuilds) before trusting behavior.
+   like it "didn't apply". Run ``cargo build`` (which rebuilds the ``srg``
+   binary) before trusting behavior — note ``invoke check`` is fmt/clippy/knots
+   only and does not produce a fresh runnable binary.
 
 .. note::
 
@@ -322,9 +325,10 @@ Testing and verification gotchas
    whole-engine replay), **not** an ad-hoc game. Verify each engine fires a
    mechanic separately.
 
-- **Never verify the gate through** ``head``. ``invoke check | grep | head`` has
+- **Never verify the gate through** ``head``. ``invoke test | grep | head`` has
   truncated before a failing test binary and reported a red run green. Redirect
-  to a file and grep the whole thing, or trust the exit code.
+  to a file and grep the whole thing, or trust the exit code. (Tests run under
+  ``invoke test`` now, not ``invoke check`` — the latter is fmt/clippy/knots only.)
 - A reused smoke deck can emit a **colliding node** — the bull main-deck also
   emits ``OnRoll → ModifyRoll(delta=0)`` and a bare-``OnHit`` fragment. Filter
   behavioral assertions by the override's signature (delta / when).

@@ -62,12 +62,12 @@ Development tasks are driven by [`invoke`](https://www.pyinvoke.org/)
 (`tasks.py`); run them from the venv:
 
 ```bash
-invoke check          # pre-commit hooks + type check + tests — the CI gate
-invoke test           # run the test suite
-invoke build          # build the sdist and wheel into dist/
-invoke docs           # build the Sphinx developer docs -> docs/_build/html
-invoke bump-version   # bump the version across all files (dry-run with no args)
+invoke check          # pre-commit hooks only (fmt + clippy + knots) — the fast gate
+invoke test           # cargo test — the suite (separate from check)
+invoke build          # cargo build (--release for optimized)
+invoke bump-version   # bump the crate version in Cargo.toml (dry-run with no args)
 invoke --list         # list all tasks
+# Full pre-commit gate: invoke check && invoke test
 ```
 
 Install the git hooks once per clone:

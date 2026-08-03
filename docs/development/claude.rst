@@ -34,6 +34,8 @@ Keep tasks scoped to the milestones in :file:`DESIGN.md` §10.
 Before you commit
 -----------------
 
-Run ``invoke check`` (pre-commit hooks + type check + tests). It must be green.
-The ``knots`` complexity gate will reject overly complex functions — prefer
-small, well-named helpers that read like the surrounding code.
+Run ``invoke check`` (pre-commit hooks: ``cargo fmt`` + ``cargo clippy`` +
+knots) **and** ``invoke test`` (the suite) — both must be green before
+committing. ``invoke check`` no longer runs the tests; it is the fast
+fmt/clippy/knots pass. The ``knots`` complexity gate will reject overly complex
+functions — prefer small, well-named helpers that read like the surrounding code.

@@ -40,5 +40,5 @@ srg audit decks/<a>.yaml decks/<b>.yaml --games 10 \
 ```
 
 The captured fixture (decks + per-player decisions + canonical log) is picked up
-automatically by the directory-scanning replay tests — run `invoke check` to
-confirm it replays.
+automatically by the directory-scanning replay tests — run `invoke test` to
+confirm it replays (`invoke check` is fmt/clippy/knots only, not the tests).

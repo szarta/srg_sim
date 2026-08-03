@@ -116,7 +116,7 @@ Run on the developer machine first, then on prod.
 .. code-block:: bash
 
    cd ~/data/srg_sim
-   invoke check                 # the full gate must be green
+   invoke check && invoke test  # the full gate must be green (hooks, then the suite)
    invoke release-web           # rebuilds target/release/srg AND web/src/pkg from one tree
    git add web/src/pkg overrides.yaml overrides.ir.json fixtures/
    git commit                   # ship the refreshed pkg with the source change

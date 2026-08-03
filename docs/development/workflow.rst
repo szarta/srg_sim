@@ -19,10 +19,11 @@ second build system. Run them by path so the shared venv's ``invoke`` is used
    * - Command
      - What it does
    * - ``invoke check``
-     - The full CI gate: pre-commit hooks (``cargo fmt`` + ``cargo clippy`` +
-       knots) followed by ``cargo test``.
+     - The fast gate: pre-commit hooks only (``cargo fmt`` + ``cargo clippy`` +
+       knots + file checks). Does **not** run tests — use ``invoke test`` for
+       those. The full pre-commit gate is ``invoke check && invoke test``.
    * - ``invoke test``
-     - Run the test suite (``cargo test``).
+     - Run the test suite (``cargo test``), separate from ``invoke check``.
    * - ``invoke build``
      - ``cargo build`` (debug by default; ``--release`` for optimized).
    * - ``invoke overrides``
@@ -46,7 +47,7 @@ second build system. Run them by path so the shared venv's ``invoke`` is used
 
 Run ``~/data/stars/venv/bin/invoke --list`` to see every task. When a parser or
 IR change lands, the usual sequence is ``invoke overrides`` → ``invoke
-cards-ir`` → ``invoke parser-fixture`` → ``invoke check`` (see
+cards-ir`` → ``invoke parser-fixture`` → ``invoke check && invoke test`` (see
 :doc:`coverage-grind`).
 
 Pre-commit
