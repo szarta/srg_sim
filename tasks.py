@@ -1,8 +1,8 @@
 """Invoke tasks for srg-core development.
 
 Usage:
-    invoke check          # pre-commit hooks (fmt + clippy + knots) + tests — the CI gate
-    invoke test           # cargo test
+    invoke check          # pre-commit hooks only (fmt + clippy + knots) — the fast gate
+    invoke test           # cargo test — the suite (separate from check)
     invoke build          # cargo build (--release optional)
     invoke overrides      # regen overrides.ir.json from overrides.yaml (self-contained)
     invoke cards-ir       # regen the parser golden fixtures/parser/cards.ir.json (Rust)
@@ -30,14 +30,17 @@ def _read_cargo_version() -> str:
 
 @task
 def check(c):
-    """Run the full gate: pre-commit hooks (fmt + clippy + knots), then tests."""
+    """Run the fast gate: pre-commit hooks only (fmt + clippy + knots + file checks).
+
+    Tests are deliberately NOT run here — use `invoke test` for those. The full
+    pre-commit gate is `invoke check && invoke test`.
+    """
     c.run("pre-commit run --all-files", pty=True)
-    c.run("cargo test", pty=True)
 
 
 @task
 def test(c):
-    """Run the test suite."""
+    """Run the test suite (`cargo test`)."""
     c.run("cargo test", pty=True)
 
 

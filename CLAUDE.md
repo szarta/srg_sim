@@ -50,8 +50,8 @@ Python-free inside `cargo test`.
 Development tasks run through `invoke` (`tasks.py`), wrapping `cargo`:
 
 ```bash
-invoke check          # pre-commit (fmt + clippy + knots) + cargo test  (the CI gate)
-invoke test           # cargo test
+invoke check          # pre-commit hooks only (fmt + clippy + knots) — the fast gate
+invoke test           # cargo test — the suite (separate from check)
 invoke build          # cargo build (--release for optimized)
 invoke overrides      # regen overrides.ir.json from ./overrides.yaml (single source; self-contained)
 invoke cards-ir       # regen the parser golden fixtures/parser/cards.ir.json (Rust parser)
@@ -104,4 +104,5 @@ todo-sqlite-cli start <id>      # in-progress
 todo-sqlite-cli done  <id>      # complete
 ```
 
-Before committing: `invoke check` must be green.
+Before committing: `invoke check && invoke test` must be green (the full gate —
+`check` is the fast fmt/clippy/knots pass, `test` runs the suite).
