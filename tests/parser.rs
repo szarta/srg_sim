@@ -521,6 +521,13 @@ fn draw_rider_grammar() {
     assert_eq!(e["actions"][0]["per"]["play_order"], "Lead");
     assert_eq!(e["actions"][0]["per_who"], "OPP");
 
+    // Name-descriptor per-count draw: the "with 'X' in the name" qualifier trails
+    // "you have in play", so it routes through in_play_filter (name-substring filter).
+    let e = parse1("Draw 1 card for each card you have in play with \"Table\" in the name.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["per"]["name_contains"][0], "Table");
+    assert_eq!(e["actions"][0]["per_who"], "SELF");
+
     // OnRoll draws: standing "when you / your opponent roll <S>, draw N".
     let e = parse1("When you roll Technique for your turn roll, draw 1 card.");
     assert_eq!(e["trigger"]["@type"], "OnRoll");

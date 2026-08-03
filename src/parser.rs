@@ -1765,8 +1765,13 @@ fn per_roll(delta: i64, desc: &str, per_who: Who, trigger: Trigger) -> Option<Ef
     ))
 }
 
-fn per_draw(n: i64, desc: &str, per_who: Who) -> Option<Effect> {
-    let per = count_filter(desc)?;
+/// Per-count draw. The optional `name` descriptor (the "with 'X' in the name"
+/// suffix that trails "you have in play") routes through `in_play_filter` — a
+/// name-substring filter when present, else the `<desc>` selector (card / type /
+/// order / stop). "Draw 1 card for each card you have in play with 'Table' in the
+/// name."
+fn per_draw(n: i64, desc: &str, per_who: Who, name: Option<&str>) -> Option<Effect> {
+    let per = in_play_filter(desc, name)?;
     Some(eff(
         Trigger::OnPlay,
         vec![draw(n, Who::SelfSide, DeckEnd::Top, Some(per), per_who)],
@@ -3752,12 +3757,19 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             |c| per_roll(num(c, 1), &c[2], Who::SelfSide, Trigger::OnPlay),
         ),
         rule(
-            r"Draw (\d+) cards? for each (?:other )?(.+?) you have in play",
-            |c| per_draw(num(c, 1), &c[2], Who::SelfSide),
+            r#"Draw (\d+) cards? for each (?:other )?(.+?) you have in play(?: with (.+?) in the name)?"#,
+            |c| {
+                per_draw(
+                    num(c, 1),
+                    &c[2],
+                    Who::SelfSide,
+                    c.get(3).map(|m| m.as_str()),
+                )
+            },
         ),
         rule(
-            r"Draw (\d+) cards? for each (?:other )?(.+?) your opponent has in play",
-            |c| per_draw(num(c, 1), &c[2], Who::Opp),
+            r#"Draw (\d+) cards? for each (?:other )?(.+?) your opponent has in play(?: with (.+?) in the name)?"#,
+            |c| per_draw(num(c, 1), &c[2], Who::Opp, c.get(3).map(|m| m.as_str())),
         ),
         // --- Draw riders (task #49): deck-position, conditional, compare ------
         rule(r"[Dd]raw the bottom card of your deck", |_| {
