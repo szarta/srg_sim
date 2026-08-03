@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 98;
+pub const SCHEMA_VERSION: i64 = 99;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1198,6 +1198,13 @@ pub enum Action {
         /// pile"). Only meaningful when `per` is set. schema v70
         #[serde(default)]
         per_zone: CountZone,
+        /// When set (with `when = Next`), a SKILL-KEYED pending mod: it waits, across
+        /// however many turns, until `who` next rolls this skill for their turn roll,
+        /// applies `delta` to THAT roll, and is consumed — "the next time you roll
+        /// Technique for your turn roll, it is +2". `None` = the plain next/this mod.
+        /// schema v99
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        on_skill: Option<Skill>,
     },
     /// Add `delta` to the owner's CURRENT roll value, mid-roll-off. Unlike
     /// `ModifyRoll{when=This}` (a pending mod consumed at roll start), this applies to a
@@ -2321,6 +2328,13 @@ pub enum IrNode {
         /// pile"). Only meaningful when `per` is set. schema v70
         #[serde(default)]
         per_zone: CountZone,
+        /// When set (with `when = Next`), a SKILL-KEYED pending mod: it waits, across
+        /// however many turns, until `who` next rolls this skill for their turn roll,
+        /// applies `delta` to THAT roll, and is consumed — "the next time you roll
+        /// Technique for your turn roll, it is +2". `None` = the plain next/this mod.
+        /// schema v99
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        on_skill: Option<Skill>,
     },
     /// Add `delta` to the owner's CURRENT roll value, mid-roll-off. Unlike
     /// `ModifyRoll{when=This}` (a pending mod consumed at roll start), this applies to a

@@ -375,6 +375,21 @@ fn modify_roll(
         per,
         per_who,
         per_zone: CountZone::InPlay,
+        on_skill: None,
+    }
+}
+
+/// Skill-keyed pending turn-roll bonus: "the next time you roll `<S>` for your turn
+/// roll, it is +N" — waits until `skill` is next rolled, applies once, is consumed.
+fn modify_roll_on_skill(delta: i64, skill: Skill) -> Action {
+    Action::ModifyRoll {
+        who: Who::SelfSide,
+        delta,
+        when: RollWhen::Next,
+        per: None,
+        per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
+        on_skill: Some(skill),
     }
 }
 
@@ -2436,6 +2451,21 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Skill-keyed pending turn-roll bonus: "The next time you roll <S> [for your
+        // turn roll][,] it is +N" — a mod that waits until <S> is next rolled, applies
+        // once, and is consumed (schema v99, engine pending_skill_roll_mods). The
+        // "for your turn roll" phrase and the comma are both optional.
+        rule(
+            &format!(r"The next time you roll {SK}(?: for your turn roll)?,? it is \+?(\d+)"),
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![modify_roll_on_skill(num(c, 2), skill(&c[1]))],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"Your next turn roll is \+(\d+) for each (.+?) in your discard pile",
             |c| {
@@ -2449,6 +2479,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         per: Some(per),
                         per_who: Who::SelfSide,
                         per_zone: CountZone::Discard,
+                        on_skill: None,
                     }],
                     Condition::Always,
                     Duration::Instant,

@@ -2180,6 +2180,27 @@ fn next_roll_percount_and_also_followup_grammar() {
     assert_eq!(m["per"], Value::Null);
     assert_eq!(m["per_zone"], "IN_PLAY");
 
+    // Skill-keyed pending mod: "The next time you roll <S> for your turn roll, it is
+    // +N" -> ModifyRoll{when:NEXT, on_skill:S}. Waits for that skill (engine consumes).
+    let m =
+        a1("The next time you roll Technique for your turn roll, it is +2.")["actions"][0].clone();
+    assert_eq!(m["@type"], "ModifyRoll");
+    assert_eq!(m["when"], "NEXT");
+    assert_eq!(m["delta"], 2);
+    assert_eq!(m["on_skill"], "Technique");
+    assert_eq!(m["per"], Value::Null);
+    // The "for your turn roll" phrase and the comma are both optional ("… Grapple, it
+    // is +5"), and a plain next-roll mod carries no on_skill (serde-skipped when None).
+    let m = a1("The next time you roll Grapple, it is +5.")["actions"][0].clone();
+    assert_eq!(m["on_skill"], "Grapple");
+    assert_eq!(m["delta"], 5);
+    let m = a1("Your next turn roll is +3.")["actions"][0].clone();
+    assert_eq!(
+        m.get("on_skill"),
+        None,
+        "plain next-roll mod has no on_skill"
+    );
+
     // "If you rolled <skill> … also a Follow Up" -> AlsoLead{order:Followup, RollWasSkill}.
     let e = a1("If you rolled Agility for your turn roll this card is also a Follow Up.");
     let al = &e["actions"][0];

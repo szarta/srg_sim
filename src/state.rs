@@ -50,6 +50,17 @@ pub struct RollMods {
     pub next_turn: i64,
 }
 
+/// A pending SKILL-KEYED turn-roll bonus: waits until the owner next rolls `skill`
+/// for their turn roll, then adds `delta` to that roll and is consumed. Backs
+/// `ModifyRoll{when=Next, on_skill=Some(skill)}` — "the next time you roll `<S>` for
+/// your turn roll, it is +N" — so unlike [`RollMods`] it persists across turns until
+/// the skill actually comes up.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SkillRollMod {
+    pub skill: Skill,
+    pub delta: i64,
+}
+
 /// One live timed skill buff on a player (DESIGN.md §3, `Duration::UntilEndOfTurn` /
 /// `UntilStartOfYourNextTurn`).
 ///
@@ -103,6 +114,11 @@ pub struct PlayerState {
     pub in_play: Vec<Card>,
     #[serde(default)]
     pub pending_roll_mods: RollMods,
+    /// Pending SKILL-KEYED turn-roll bonuses (see [`SkillRollMod`]) — each waits for
+    /// the owner to roll its skill, applies once, and is consumed. Engine bookkeeping,
+    /// excluded from the observable projection like `pending_roll_mods`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pending_skill_roll_mods: Vec<SkillRollMod>,
     /// One-shot "re-roll your NEXT turn roll" grants (King Brian Cage). `next` is
     /// set when the granting effect fires; promoted to `this` at the owner's next
     /// turn start; an unused grant expires (never accumulates).

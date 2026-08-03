@@ -24,7 +24,7 @@ use crate::ir::{
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
-use crate::state::{FlipProvenance, GameState, PendingText, PlayerState, TimedBuff};
+use crate::state::{FlipProvenance, GameState, PendingText, PlayerState, SkillRollMod, TimedBuff};
 use serde_json::{json, Value};
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
@@ -212,6 +212,7 @@ fn negate_action(action: &Action) -> Action {
             per,
             per_who,
             per_zone,
+            on_skill,
         } => Action::ModifyRoll {
             who: *who,
             delta: -*delta,
@@ -219,6 +220,7 @@ fn negate_action(action: &Action) -> Action {
             per: per.clone(),
             per_who: *per_who,
             per_zone: *per_zone,
+            on_skill: *on_skill,
         },
         Action::BuffSkill {
             skill,
@@ -453,6 +455,7 @@ impl Engine {
                         discard: Vec::new(),
                         in_play: Vec::new(),
                         pending_roll_mods: Default::default(),
+                        pending_skill_roll_mods: Vec::new(),
                         reroll_grants: Default::default(),
                         timed_buffs: Vec::new(),
                         chosen_name: None,
@@ -1270,7 +1273,17 @@ impl Engine {
                 per,
                 per_who,
                 per_zone,
-            } => self.act_modify_roll(*who, *delta, *when, per.as_ref(), *per_who, *per_zone, key),
+                on_skill,
+            } => self.act_modify_roll(
+                *who,
+                *delta,
+                *when,
+                per.as_ref(),
+                *per_who,
+                *per_zone,
+                *on_skill,
+                key,
+            ),
             Action::CrowdMeter { delta } => self.act_crowd(*delta, key),
             Action::RollBoost { delta } => self.pending_roll_boost += *delta,
             Action::WinTie { who } => self.act_win_tie(*who, key),
@@ -2621,6 +2634,7 @@ impl Engine {
         per: Option<&CardFilter>,
         per_who: Who,
         per_zone: CountZone,
+        on_skill: Option<Skill>,
         key: &str,
     ) {
         let target = self.target(who, key);
@@ -2628,6 +2642,23 @@ impl Engine {
         if let Some(per) = per {
             let counter = self.target(per_who, key);
             delta *= self.state.count_in_zone(per, per_zone, &counter);
+        }
+        // Skill-keyed pending mod ("the next time you roll <S>, it is +N"): queue it
+        // on the target, to be consumed in `roll_for` when that skill is next rolled.
+        if let Some(skill) = on_skill {
+            self.state
+                .players
+                .get_mut(&target)
+                .unwrap()
+                .pending_skill_roll_mods
+                .push(SkillRollMod { skill, delta });
+            self.log_effect(
+                key,
+                "ModifyRoll",
+                Some(&target),
+                json!({"delta": delta, "when": "next", "on_skill": skill.name()}),
+            );
+            return;
         }
         {
             let mods = &mut self
@@ -5664,16 +5695,27 @@ impl Engine {
         // The base turn roll folds the skill's stat plus any standing "during turn
         // rolls" bonus (TurnRollBonus) — phase-scoped, unlike the general `stat()`.
         let base = self.stat(key, skill) + self.turn_roll_bonus(key, skill);
-        let delta = if use_pending {
+        let flat = if use_pending {
             self.state.players[key].pending_roll_mods.this_turn
         } else {
             0
         };
+        // Skill-keyed pending mod: "the next time you roll <S>, it is +N" fires on the
+        // FIRST roll (initial or bump) that comes up its skill, then is consumed. Read
+        // on every roll (independent of `use_pending`, which only gates the flat mod).
+        let keyed = self.consume_skill_roll_mod(key, skill);
+        let delta = flat + keyed;
         let mut mods = Vec::new();
-        if delta != 0 {
+        if flat != 0 {
             mods.push(RollMod {
                 src: "pending".to_owned(),
-                delta,
+                delta: flat,
+            });
+        }
+        if keyed != 0 {
+            mods.push(RollMod {
+                src: "pending_skill".to_owned(),
+                delta: keyed,
             });
         }
         let value = base + delta;
@@ -5705,6 +5747,29 @@ impl Engine {
         for player in self.state.players.values_mut() {
             player.pending_roll_mods.this_turn = 0;
         }
+    }
+
+    /// Remove and sum every pending skill-keyed roll mod for `key` matching `skill`
+    /// ("the next time you roll <S>, it is +N"). All entries for that skill refer to
+    /// the same next occurrence, so they fire together and are consumed at once; 0 if
+    /// none match (the queue is untouched for other skills).
+    fn consume_skill_roll_mod(&mut self, key: &str, skill: Skill) -> i64 {
+        let mods = &mut self
+            .state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .pending_skill_roll_mods;
+        let mut delta = 0;
+        mods.retain(|m| {
+            if m.skill == skill {
+                delta += m.delta;
+                false
+            } else {
+                true
+            }
+        });
+        delta
     }
 
     /// The forced tie winner: the sole holder of a `win_tie` flag (consumed here),
@@ -6400,6 +6465,81 @@ mod breakout_modifier_tests {
             "stp",
             "buried to the bottom of the deck"
         );
+    }
+
+    /// "The next time you roll <S>, it is +N": the mod waits across rolls of other
+    /// skills, applies once to the first roll that comes up its skill, and is consumed.
+    #[test]
+    fn skill_keyed_roll_mod_waits_for_its_skill_then_is_consumed() {
+        let mut engine = engine();
+        // Queue "+3 the next time A rolls Technique" (as act_modify_roll would).
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .pending_skill_roll_mods
+            .push(SkillRollMod {
+                skill: Skill::Technique,
+                delta: 3,
+            });
+
+        let mut fired = false;
+        for _ in 0..500 {
+            let queued_before = engine.state.players["A"].pending_skill_roll_mods.len();
+            let (skill, value) = engine.roll_for("A", true);
+            let base = engine.stat("A", skill) + engine.turn_roll_bonus("A", skill);
+            if skill == Skill::Technique && !fired {
+                assert_eq!(value, base + 3, "the Technique roll gets +3");
+                assert!(
+                    engine.state.players["A"].pending_skill_roll_mods.is_empty(),
+                    "the mod is consumed once its skill is rolled"
+                );
+                fired = true;
+            } else if !fired {
+                assert_eq!(value, base, "a non-Technique roll is unmodified");
+                assert_eq!(
+                    engine.state.players["A"].pending_skill_roll_mods.len(),
+                    queued_before,
+                    "the mod stays queued until its skill comes up"
+                );
+            }
+        }
+        assert!(fired, "Technique came up within 500 rolls");
+    }
+
+    /// `consume_skill_roll_mod` drains every entry for the rolled skill (summing their
+    /// deltas) and leaves entries for other skills untouched.
+    #[test]
+    fn consume_skill_roll_mod_drains_matching_and_sums() {
+        let mut engine = engine();
+        let mods = &mut engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .pending_skill_roll_mods;
+        mods.push(SkillRollMod {
+            skill: Skill::Power,
+            delta: 2,
+        });
+        mods.push(SkillRollMod {
+            skill: Skill::Power,
+            delta: 5,
+        });
+        mods.push(SkillRollMod {
+            skill: Skill::Grapple,
+            delta: 1,
+        });
+
+        // Rolling Power drains both Power entries (2 + 5) and keeps Grapple.
+        assert_eq!(engine.consume_skill_roll_mod("A", Skill::Power), 7);
+        let left = &engine.state.players["A"].pending_skill_roll_mods;
+        assert_eq!(left.len(), 1);
+        assert_eq!(left[0].skill, Skill::Grapple);
+        // A skill with no queued mod returns 0 and changes nothing.
+        assert_eq!(engine.consume_skill_roll_mod("A", Skill::Strike), 0);
+        assert_eq!(engine.state.players["A"].pending_skill_roll_mods.len(), 1);
     }
 }
 

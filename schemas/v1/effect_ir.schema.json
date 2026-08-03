@@ -3270,6 +3270,17 @@
         "delta": {
           "type": "integer"
         },
+        "on_skill": {
+          "description": "When set (with when=NEXT), a skill-keyed pending mod: waits until who next rolls this skill for their turn roll, applies delta to that roll, then is consumed. Null = plain next/this mod.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skill"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "per": {
           "anyOf": [
             {
@@ -5369,5 +5380,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 98
+  "version": 99
 }
