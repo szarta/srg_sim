@@ -341,7 +341,8 @@ pub fn audit(
     let da = index.load_playable(deck_a, &ov)?;
     let db = index.load_playable(deck_b, &ov)?;
 
-    // 1. Static coverage: the clauses each deck's own cards leave Unsupported.
+    // 1. Static coverage: the clauses each deck's own cards leave Unsupported,
+    //    plus format-legality (deck-build pool rules, e.g. skill-requirement ≤ 2).
     println!("=== deck coverage (unmodeled clauses) ===");
     for (path, deck) in [(deck_a, &da), (deck_b, &db)] {
         let gaps = deck_unsupported(deck);
@@ -353,6 +354,9 @@ pub fn audit(
         );
         for g in &gaps {
             println!("    · {g}");
+        }
+        for problem in deck.format_problems() {
+            println!("    ⚠ format: {problem}");
         }
     }
 

@@ -31,8 +31,9 @@ the log, never silently modeled:
 - Tag games (multiple competitors per side) and card text keyed to tag play.
 - Spectacle cards (one-per-game Newman/Valiant pick).
 - CrowdMeter **card types** and their rule modifications (max handsize, no-DQ, count-outs…).
-- Deck-build legality (format pools; the `skill-requirement cards ≤ 2 / deck` rule) — handled
-  later by an optional offline validator, not the engine.
+- Deck-build legality (format pools) — an optional offline validator, not the engine. The
+  `skill-requirement cards ≤ 2 / deck` rule is implemented (`Deck::format_problems`, surfaced
+  by `srg audit`); the rest of the card-pool format rules remain out of scope.
 
 **Priority signal.** Competitor cards carry a `division` field. **Worlds** (top 64) +
 **Underworld** (next 32) = the **top-96** most-played/competitive comps, set quarterly and

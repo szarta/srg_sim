@@ -15,6 +15,11 @@ use std::collections::BTreeMap;
 /// A legal main deck holds exactly one card of each number 1..=30.
 pub const DECK_SIZE: usize = 30;
 
+/// Format-legality cap: a legal deck holds at most this many skill-requirement
+/// cards (cards carrying a `requirements:` block). A deck-build rule, enforced by
+/// [`Deck::format_problems`] (the optional offline validator), not the engine.
+pub const MAX_SKILL_REQUIREMENT_CARDS: usize = 2;
+
 /// Synthetic tag marking a card that carries a `requirements:` block (a "Skill
 /// Requirement card"). Folded in at load time by the loader so the stop-resolution
 /// `Unstoppable { by_skillreq }` gate can read it off a stopper's tags.
@@ -177,8 +182,99 @@ impl Deck {
         self.validate().is_empty()
     }
 
+    /// Return a list of **format-legality** problems (empty means the deck is
+    /// format-legal). Distinct from [`Self::validate`], which checks structural
+    /// integrity (30 cards, unique numbers): this enforces card-pool / deck-build
+    /// rules and is the "optional offline validator" of DESIGN.md §1 — deliberately
+    /// NOT run in the engine preflight, since the engine plays whatever decklists it
+    /// is handed. Currently one rule: at most [`MAX_SKILL_REQUIREMENT_CARDS`]
+    /// skill-requirement cards (cards carrying a `requirements:` block).
+    pub fn format_problems(&self) -> Vec<String> {
+        let mut problems = Vec::new();
+        let req_count = self
+            .cards
+            .iter()
+            .filter(|c| !c.skill_requirements.is_empty())
+            .count();
+        if req_count > MAX_SKILL_REQUIREMENT_CARDS {
+            problems.push(format!(
+                "too many skill-requirement cards: {req_count} (max {MAX_SKILL_REQUIREMENT_CARDS})"
+            ));
+        }
+        problems
+    }
+
+    /// True iff the deck is format-legal (no [`Self::format_problems`]).
+    pub fn is_format_legal(&self) -> bool {
+        self.format_problems().is_empty()
+    }
+
     /// The card with the given number, if present.
     pub fn card_by_number(&self, number: i64) -> Option<&Card> {
         self.cards.iter().find(|c| c.number == number)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// A minimal main-deck card; `reqs` is its `skill_requirements` list.
+    fn card(number: i64, reqs: serde_json::Value) -> Card {
+        serde_json::from_value(json!({
+            "db_uuid": format!("c{number}"), "name": format!("c{number}"),
+            "number": number, "atk_type": "Strike", "play_order": "Lead",
+            "finish_bonuses": {}, "tags": [], "skill_requirements": reqs,
+            "raw_text": "", "effects": []
+        }))
+        .unwrap()
+    }
+
+    /// A deck carrying exactly `cards` (integrity aside — these tests exercise
+    /// format legality, which is independent of the 30-card size check).
+    fn deck_with(cards: Vec<Card>) -> Deck {
+        let mut deck: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "A", "name": "A", "division": "World Championship",
+                "stats": {"Power": 5, "Agility": 5, "Technique": 5,
+                          "Submission": 5, "Grapple": 5, "Strike": 5}},
+            "entrance": {"db_uuid": "E", "name": "E"},
+            "cards": []
+        }))
+        .unwrap();
+        deck.cards = cards;
+        deck
+    }
+
+    #[test]
+    fn format_problems_caps_skill_requirement_cards_at_two() {
+        let req = || json!([{"skill": "Strike", "min": 8}]);
+        // Two skill-requirement cards (plus a plain one) is format-legal.
+        let two = deck_with(vec![card(1, req()), card(2, req()), card(3, json!([]))]);
+        assert!(two.format_problems().is_empty());
+        assert!(two.is_format_legal());
+
+        // Three trips the cap, with a message naming the count and the limit.
+        let three = deck_with(vec![card(1, req()), card(2, req()), card(3, req())]);
+        let problems = three.format_problems();
+        assert_eq!(problems.len(), 1);
+        assert!(
+            problems[0].contains('3') && problems[0].contains("max 2"),
+            "got {problems:?}"
+        );
+        assert!(!three.is_format_legal());
+    }
+
+    #[test]
+    fn format_legality_is_independent_of_integrity() {
+        // A one-card deck fails the integrity check but is still format-legal — the
+        // two validators are separate (DESIGN.md §1: format legality is not enforced
+        // in the engine preflight).
+        let deck = deck_with(vec![card(1, json!([{"skill": "Grapple", "min": 8}]))]);
+        assert!(!deck.is_valid(), "one card fails integrity");
+        assert!(
+            deck.is_format_legal(),
+            "one skill-requirement card is format-legal"
+        );
     }
 }
