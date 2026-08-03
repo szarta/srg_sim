@@ -1005,6 +1005,23 @@ fn bury(count: i64, who: Who) -> Action {
     }
 }
 
+/// "Bury N [`<selector>`] cards in any/either player's discard pile" — the actor picks
+/// `count` cards matching `selector` from EITHER discard pile (`choose: true`; `who`
+/// is ignored). Each buried card returns to ITS OWNER's deck bottom.
+fn bury_choose(count: i64, selector: CardFilter) -> Action {
+    Action::Bury {
+        choose: true,
+        selector,
+        count,
+        who: Who::SelfSide,
+        random: false,
+        source: BuryFrom::Discard,
+        per: None,
+        per_who: Who::SelfSide,
+        all: false,
+    }
+}
+
 /// "Bury `count` per `per`-matching card you have in play" (schema v83). `random` is
 /// forced on for a HAND source (the hand owner sheds without choosing). The per-count
 /// always ranges over the SELF board ("… for each `<X>` you have in play").
@@ -3268,6 +3285,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(
             r"Bury (\d+) cards? in your hand for each (?:other )?(.+?) you have in play",
             |c| per_bury(num(c, 1), Who::SelfSide, BuryFrom::Hand, &c[2], None, false),
+        ),
+        // "Bury N [<selector>] cards in ANY/EITHER player's discard pile" — the actor
+        // chooses from both piles (Bury.choose). The optional middle is a type/order
+        // selector ("1 Grapple") or bare "cards" (any). `player.?s` absorbs the
+        // apostrophe variants (player's / player’s / players). Placed before the
+        // opponent/self discard rules so the both-piles pool wins.
+        rule(
+            r"Bury (?:up to )?(\d+) (.+?) in (?:any|either) player.?s discard pile",
+            |c| {
+                let selector = recur_filter(&c[2]).unwrap_or_default();
+                Some(eff(
+                    on_hit(),
+                    vec![bury_choose(num(c, 1), selector)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
         ),
         rule(
             r"Bury (?:up to )?(\d+) cards? in your opponent's discard pile",

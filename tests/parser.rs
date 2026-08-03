@@ -247,6 +247,22 @@ fn hand_bury_grammar() {
     assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
     assert_eq!(e["trigger"]["@type"], "OnPlay");
     assert_eq!(bury(&e["actions"][0]).0, "OPP");
+
+    // "Bury N [<selector>] cards in ANY/EITHER player's discard pile" -> Bury.choose
+    // (the actor picks from both piles). Bare "cards" = any; a typed middle sets the
+    // selector; "either" is a synonym for "any"; the "up to"/apostrophe variants parse.
+    let a = only_action("Bury 2 cards in any player's discard pile.");
+    assert_eq!(a["@type"], "Bury");
+    assert_eq!(a["choose"], true);
+    assert_eq!(a["count"], 2);
+    assert_eq!(a["selector"]["atk_type"], Value::Null);
+    let a = only_action("Bury 1 Grapple in either player's discard pile.");
+    assert_eq!(a["choose"], true);
+    assert_eq!(a["selector"]["atk_type"], "Grapple");
+    // Apostrophe-less "players" and "up to" both parse.
+    let a = only_action("Bury up to 2 cards in any players discard pile.");
+    assert_eq!(a["choose"], true);
+    assert_eq!(a["count"], 2);
 }
 
 /// Schema-v83 grammar families (Cardona): the match-no-DQ condition gate, per-count
@@ -2666,8 +2682,16 @@ fn reveal_then_family() {
     assert_eq!(a["filter"]["atk_type"], "Strike");
     assert_eq!(a["then"][0]["@type"], "Draw");
 
-    // A consequence with no grammar (bury into "any player's discard pile") declines.
+    // "…bury 1 card in any player's discard pile" now parses (Bury.choose), so the
+    // reveal-then composes with a Bury consequence.
     let a = a1("Randomly reveal 1 card in your hand: if it has \"Drumstick\" in the name, bury 1 card in any player's discard pile.")["actions"][0].clone();
+    assert_eq!(a["@type"], "RevealThen");
+    assert_eq!(a["filter"]["name_contains"][0], "Drumstick");
+    assert_eq!(a["then"][0]["@type"], "Bury");
+    assert_eq!(a["then"][0]["choose"], true);
+
+    // A consequence with no grammar still declines (reveal-then stays Unsupported).
+    let a = a1("Randomly reveal 1 card in your hand: if it has \"Widget\" in the name, do something unmodelable.")["actions"][0].clone();
     assert_eq!(a["@type"], "Unsupported");
 
     // The bare header with no inline "if" stays Unsupported (its consequence is a
