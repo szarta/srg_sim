@@ -2391,6 +2391,31 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Gated flat next-turn-roll bonus: "If you have another <order|atk> in play[,]
+        // your next turn roll is +N." Every printed card with this clause is itself a
+        // card of the gated order/type, and the bonus fires OnHit (after the card has
+        // entered play), so "another" reads as HasInPlay count>=2 — this card plus at
+        // least one other. A name-gated variant ("another Saber of Light card") has no
+        // count_filter and declines to Unsupported. Placed before the generic gate rule
+        // (which would emit the always-on count=1) so this count=2 model wins.
+        rule(
+            r"If you have another (.+?) in play,? your next turn roll is \+(\d+)",
+            |c| {
+                let filter = count_filter(&c[1])?;
+                Some(eff(
+                    on_hit(),
+                    vec![modify_roll(
+                        Who::SelfSide,
+                        num(c, 2),
+                        RollWhen::Next,
+                        None,
+                        Who::Opp,
+                    )],
+                    has_in_play(Who::SelfSide, filter, 2),
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"Your next turn roll is \+(\d+)", |c| {
             Some(eff(
                 on_hit(),

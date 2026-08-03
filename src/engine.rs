@@ -10392,6 +10392,56 @@ mod flip_percount_tests {
         );
     }
 
+    /// "If you have another Strike in play your next turn roll is +2" (task #131): an
+    /// OnHit ModifyRoll{NEXT} gated on HasInPlay count>=2 of the attack type. The card
+    /// fires OnHit (already in play), so "another" = the card plus one other Strike;
+    /// the pending bonus is granted only when a second Strike is on the board.
+    #[test]
+    fn gated_next_turn_roll_needs_a_second_qualifier_in_play() {
+        let gated: Effect = serde_json::from_value(json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnHit", "order": null, "atk_type": null,
+                "name_contains": [], "text_contains": []},
+            "condition": {"@type": "HasInPlay", "who": "SELF", "cmp": ">=", "count": 2,
+                "filter": {"@type": "CardFilter", "atk_type": "Strike", "play_orders": [],
+                    "is_stop": null, "name": null, "name_contains": [], "number": null,
+                    "play_order": null, "raw": null, "tag": null, "text_contains": []}},
+            "actions": [{"@type": "ModifyRoll", "who": "SELF", "delta": 2, "when": "NEXT",
+                "per": null, "per_who": "OPP", "per_zone": "IN_PLAY"}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "", "source": "card", "optional": false
+        }))
+        .unwrap();
+
+        // One Strike on the board (the card itself): count 1 < 2 -> no bonus.
+        let mut engine = engine();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![atk_card("s0", "Strike")];
+        engine
+            .run_effects(std::slice::from_ref(&gated), "OnHit", "A", None)
+            .unwrap();
+        assert_eq!(
+            engine.state.players["A"].pending_roll_mods.next_turn, 0,
+            "a lone Strike does not arm its own 'another' gate"
+        );
+
+        // A second Strike in play: count 2 -> the +2 is granted.
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(atk_card("s1", "Strike"));
+        engine
+            .run_effects(std::slice::from_ref(&gated), "OnHit", "A", None)
+            .unwrap();
+        assert_eq!(
+            engine.state.players["A"].pending_roll_mods.next_turn, 2,
+            "a second Strike arms the next-turn-roll +2"
+        );
+    }
+
     /// `AlsoLead { order: Followup, .. }` makes a card playable as a Follow Up — only
     /// while a Lead is in play AND its condition (here, having rolled Agility this
     /// turn) holds against the current roll context. schema v70

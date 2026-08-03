@@ -2012,6 +2012,43 @@ fn gated_order_or_skill_buff_grammar() {
     assert_eq!(a["delta"], 2);
 }
 
+/// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
+/// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
+/// Order and attack-type gates parse; a name gate declines to Unsupported.
+#[test]
+fn gated_next_turn_roll_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Attack-type gate, no comma.
+    let e = one("If you have another Strike in play your next turn roll is +2.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    let m = &e["actions"][0];
+    assert_eq!(m["@type"], "ModifyRoll");
+    assert_eq!(m["who"], "SELF");
+    assert_eq!(m["when"], "NEXT");
+    assert_eq!(m["delta"], 2);
+    let c = &e["condition"];
+    assert_eq!(c["@type"], "HasInPlay");
+    assert_eq!(c["count"], 2);
+    assert_eq!(c["filter"]["atk_type"], "Strike");
+
+    // Play-order gate, with comma.
+    let c = one("If you have another Follow Up in play, your next turn roll is +2.")["condition"]
+        .clone();
+    assert_eq!(c["count"], 2);
+    assert_eq!(c["filter"]["play_order"], "Followup");
+
+    // A name gate has no count_filter -> the clause stays Unsupported.
+    let a = one("If you have another Saber of Light card in play, your next turn roll is +3.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["@type"], "Unsupported");
+}
+
 /// "also a Follow Up" conditional (AlsoLead order=Followup gated on RollWasSkill).
 #[test]
 fn next_roll_percount_and_also_followup_grammar() {
