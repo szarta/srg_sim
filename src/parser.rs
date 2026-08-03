@@ -2400,6 +2400,33 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "Each player discards N cards from their hand" — the non-random twin: each
+        // player sheds their OWN choice (choose=false, random=false), so who=SelfSide
+        // + who=Opp both mean the hand owner picks. Two Discard actions.
+        rule(r"Each player discards (\d+) cards? from their hand", |c| {
+            Some(eff(
+                on_hit(),
+                vec![
+                    discard(num(c, 1), Who::SelfSide, false, None, Who::SelfSide),
+                    discard(num(c, 1), Who::Opp, false, None, Who::SelfSide),
+                ],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // "Each player discards their hand" — both players shed their ENTIRE hand
+        // (discard-all, count derived from hand size). Two Discard{all} actions.
+        rule(r"Each player discards their hand", |_| {
+            Some(eff(
+                on_hit(),
+                vec![
+                    discard_all_hand(CardFilter::default(), Who::SelfSide),
+                    discard_all_hand(CardFilter::default(), Who::Opp),
+                ],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
         // Impact is Family (V2) entrance: blank the opponent's Spotlight Finishes
         // Reveal-then family (RevealThen, schema v95): "Reveal the top/bottom card of
         // your deck[:,] if <filter>, <consequence>" and "Randomly reveal N card(s) in

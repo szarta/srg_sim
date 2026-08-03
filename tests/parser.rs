@@ -235,6 +235,47 @@ fn hand_bury_grammar() {
     assert_eq!(bury(&acts[0]).0, "SELF");
     assert_eq!(bury(&acts[1]).0, "OPP");
 
+    // "Each player discards N cards from their hand" (non-random): two Discard actions
+    // (SELF then OPP), each the hand owner's own choice (random=false, choose=false).
+    let acts = serde_json::to_value(
+        &parse_text(
+            "Each player discards 2 cards from their hand.",
+            EffectSource::Card,
+            None,
+            None,
+        )[0],
+    )
+    .unwrap()["actions"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["@type"], "Discard");
+    assert_eq!(acts[0]["who"], "SELF");
+    assert_eq!(acts[0]["count"], 2);
+    assert_eq!(acts[0]["random"], false);
+    assert_eq!(acts[0]["choose"], false);
+    assert_eq!(acts[1]["who"], "OPP");
+
+    // "Each player discards their hand": two discard-all Discards (whole hand).
+    let acts = serde_json::to_value(
+        &parse_text(
+            "Each player discards their hand.",
+            EffectSource::Card,
+            None,
+            None,
+        )[0],
+    )
+    .unwrap()["actions"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["all"], true);
+    assert_eq!(acts[0]["who"], "SELF");
+    assert_eq!(acts[1]["all"], true);
+    assert_eq!(acts[1]["who"], "OPP");
+
     // Conditional prefix carries a HasInPlay gate + OnPlay trigger.
     let effs = parse_text(
         "If you have another Follow Up in play, your opponent buries 1 card in their hand.",
