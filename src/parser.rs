@@ -1529,9 +1529,12 @@ fn stop_condition(text: &str) -> Option<Condition> {
     static CROWD: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"^the [Cc]rowd [Mm]eter is (\d+) or (greater|less)$").unwrap()
     });
+    // "greater than" / "higher than" (synonyms) vs the opponent's same-or-other
+    // skill; an optional "or equal to" promotes the comparator Gt -> Ge. Group 2 is
+    // the "or equal to" flag, so the two skills are groups 1 and 3.
     static SKILL_GT: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(&format!(
-            r"^your {SK}(?: skill)? is greater than your opponent'?s {SK}(?: skill)?$"
+            r"^your {SK}(?: skill)? is (?:greater|higher) than (or equal to )?your opponent'?s {SK}(?: skill)?$"
         ))
         .unwrap()
     });
@@ -1594,10 +1597,15 @@ fn stop_condition(text: &str) -> Option<Condition> {
         });
     }
     if let Some(c) = SKILL_GT.captures(t) {
-        let (s1, s2) = (skill(&c[1]), skill(&c[2]));
+        let (s1, s2) = (skill(&c[1]), skill(&c[3]));
+        let cmp = if c.get(2).is_some() {
+            Comparator::Ge
+        } else {
+            Comparator::Gt
+        };
         return Some(Condition::SkillCompare {
             skill: s1,
-            cmp: Comparator::Gt,
+            cmp,
             who: Who::SelfSide,
             vs: Vs::OppSame,
             value: None,

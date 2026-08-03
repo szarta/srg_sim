@@ -504,6 +504,22 @@ fn draw_rider_grammar() {
     assert_eq!(e["condition"]["skill"], "Grapple");
     assert_eq!(e["condition"]["vs_skill"], "Power");
 
+    // "higher than" is a synonym for "greater than" (cmp still Gt). Unlocks the
+    // stop-body cards via the generic gate rule -> stop_condition.
+    let e = parse1("If your Agility skill is higher than your opponent's Agility skill, stop any Follow Up Grapple.");
+    assert_eq!(e["condition"]["@type"], "SkillCompare");
+    assert_eq!(e["condition"]["skill"], "Agility");
+    assert_eq!(e["condition"]["cmp"], ">");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+
+    // "greater than or equal to" promotes the comparator Gt -> Ge (value null =
+    // self >= opp, no delta).
+    let e = parse1("If your Power skill is greater than or equal to your opponent's Power skill, stop any Submission.");
+    assert_eq!(e["condition"]["cmp"], ">=");
+    assert_eq!(e["condition"]["vs"], "OPP_SAME");
+    assert_eq!(e["condition"]["value"], Value::Null);
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+
     // "instead" replacement form must NOT parse (stays Unsupported).
     let e = parse1(
         "If your Power skill is greater than your opponent's Power skill, draw 2 cards instead.",
