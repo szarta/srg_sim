@@ -520,6 +520,22 @@ fn draw_rider_grammar() {
     assert_eq!(e["condition"]["value"], Value::Null);
     assert_eq!(e["actions"][0]["@type"], "Stop");
 
+    // Self-vs-self: two of YOUR OWN skills (the #13/#14/#15 "equal-8" stops). vs =
+    // SELF_OTHER (no "opponent's"), vs_skill = the right operand's skill.
+    let e = parse1("If your Agility skill is greater than your Strike skill, stop any Grapple.");
+    assert_eq!(e["condition"]["@type"], "SkillCompare");
+    assert_eq!(e["condition"]["skill"], "Agility");
+    assert_eq!(e["condition"]["vs"], "SELF_OTHER");
+    assert_eq!(e["condition"]["vs_skill"], "Strike");
+    assert_eq!(e["condition"]["cmp"], ">");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+    assert_eq!(e["actions"][0]["atk_type"], "Grapple");
+    // The bare first operand ("your Strike", no "skill") parses the same way.
+    let e = parse1("If your Strike is greater than your Agility skill, stop any Grapple.");
+    assert_eq!(e["condition"]["vs"], "SELF_OTHER");
+    assert_eq!(e["condition"]["skill"], "Strike");
+    assert_eq!(e["condition"]["vs_skill"], "Agility");
+
     // "instead" replacement form must NOT parse (stays Unsupported).
     let e = parse1(
         "If your Power skill is greater than your opponent's Power skill, draw 2 cards instead.",

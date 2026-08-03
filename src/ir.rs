@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 97;
+pub const SCHEMA_VERSION: i64 = 98;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -422,13 +422,18 @@ pub enum RollWhen {
     Next,
 }
 
-/// Comparison operand for skill/hand-size compares.
+/// Comparison operand for skill/hand-size compares. `Opp`/`OppSame` read the
+/// opponent's skill (a different / the same skill); `Value` compares to a literal.
+/// `SelfOther` compares two of the SAME player's skills — "your Agility skill is
+/// greater than your Strike skill" (the #13/#14/#15 "equal-8" stops), where the
+/// right operand is the subject's own `vs_skill` rather than the opponent's.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Vs {
     Opp,
     OppSame,
     Value,
+    SelfOther,
 }
 
 /// Which player a node targets. `SELF` is the acting player.

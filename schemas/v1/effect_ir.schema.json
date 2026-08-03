@@ -5336,7 +5336,8 @@
       "enum": [
         "OPP",
         "OPP_SAME",
-        "VALUE"
+        "VALUE",
+        "SELF_OTHER"
       ],
       "type": "string"
     },
@@ -5368,5 +5369,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 97
+  "version": 98
 }

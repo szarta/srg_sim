@@ -1538,6 +1538,15 @@ fn stop_condition(text: &str) -> Option<Condition> {
         ))
         .unwrap()
     });
+    // Self-vs-self: two of the SAME player's skills — "your Agility skill is greater
+    // than your Strike skill" (the #13/#14/#15 "equal-8" stops). No "opponent's", so
+    // it never overlaps SKILL_GT. Group 2 is the "or equal to" flag; skills are 1, 3.
+    static SKILL_GT_SELF: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(
+            r"^your {SK}(?: skill)? is (?:greater|higher) than (or equal to )?your {SK}(?: skill)?$"
+        ))
+        .unwrap()
+    });
     static SKILL_GE_DELTA: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(&format!(
             r"^your {SK}(?: skill)? is at least (\d+) greater than your opponent'?s {SK}(?: skill)?$"
@@ -1610,6 +1619,22 @@ fn stop_condition(text: &str) -> Option<Condition> {
             vs: Vs::OppSame,
             value: None,
             vs_skill: (s1 != s2).then_some(s2),
+        });
+    }
+    if let Some(c) = SKILL_GT_SELF.captures(t) {
+        let (s1, s2) = (skill(&c[1]), skill(&c[3]));
+        let cmp = if c.get(2).is_some() {
+            Comparator::Ge
+        } else {
+            Comparator::Gt
+        };
+        return Some(Condition::SkillCompare {
+            skill: s1,
+            cmp,
+            who: Who::SelfSide,
+            vs: Vs::SelfOther,
+            value: None,
+            vs_skill: Some(s2),
         });
     }
     if let Some(c) = SKILL_GE_DELTA.captures(t) {

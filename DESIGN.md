@@ -157,7 +157,7 @@ its buffs return. Blanked gimmicks contribute no effects (incl. no `Static` buff
 
 **Condition** — a predicate on `GameState` (composable via And/Or/Not):
 ```
-SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE, value?, vs_skill?)  # vs_skill: compare to a DIFFERENT opponent skill ("your Strike > opp Agility")
+SkillCompare(skill, who=SELF, cmp=>|>=|=|<, vs=OPP_SAME|VALUE|SELF_OTHER, value?, vs_skill?)  # vs_skill: compare to a DIFFERENT skill; OPP_SAME/OPP=vs opponent ("your Strike > opp Agility"), SELF_OTHER=two of your OWN skills ("your Agility > your Strike", the #13/#14/#15 equal-8 stops)
 HandSizeCompare(cmp, vs=OPP|VALUE, value?)
 CrowdMeterCompare(cmp, value)
 DeckSizeCompare(cmp, value, who=SELF)  # who's remaining deck size vs value — "if you have 0 cards in your deck" (Foxworthy V3). schema v82

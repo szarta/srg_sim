@@ -250,21 +250,29 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
         } => {
             let subject = who_key(state, owner, *who);
             // "Your skills are considered higher than your opponent's" (RaRa Perre):
-            // a vs-opponent skill comparison of `subject` resolves a fixed way.
-            if *vs != Vs::Value {
+            // a vs-OPPONENT skill comparison of `subject` resolves a fixed way. Self-vs-
+            // self (`SelfOther`) compares two of the subject's OWN skills, so the
+            // considered-vs-opponent override does not apply.
+            if *vs != Vs::Value && *vs != Vs::SelfOther {
                 if let Some(order) = considered_compare(state, &subject, CompareDomain::Skill) {
                     return forced_cmp(*cmp, order);
                 }
             }
             let left = skill_value(state, &subject, *skill);
-            let right = if *vs == Vs::Value {
-                value.unwrap_or(0)
-            } else {
+            let right = match vs {
+                Vs::Value => value.unwrap_or(0),
+                // Self-vs-self: the right operand is the subject's OWN `vs_skill` —
+                // "your Agility skill is greater than your Strike skill".
+                Vs::SelfOther => {
+                    skill_value(state, &subject, vs_skill.unwrap_or(*skill)) + value.unwrap_or(0)
+                }
                 // vs-opponent with a `value` delta: "at least N greater than your
                 // opponent's <S>" is `self >= opp + N` (Ge, value=N). `None` = +0,
                 // keeping the plain "greater than" form (Gt, value=None) unchanged.
-                let opp = state.opponent_of(&subject);
-                skill_value(state, &opp, vs_skill.unwrap_or(*skill)) + value.unwrap_or(0)
+                Vs::Opp | Vs::OppSame => {
+                    let opp = state.opponent_of(&subject);
+                    skill_value(state, &opp, vs_skill.unwrap_or(*skill)) + value.unwrap_or(0)
+                }
             };
             cmp_apply(*cmp, left, right)
         }

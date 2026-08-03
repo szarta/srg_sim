@@ -52,6 +52,69 @@ fn hand_cmp(cmp: &str) -> Condition {
     .unwrap()
 }
 
+/// A self-vs-self skill compare (`vs = SELF_OTHER`) of the subject's own `skill`
+/// against its own `vs_skill` — the #13/#14/#15 "equal-8" stops.
+fn skill_self(skill: &str, cmp: &str, vs_skill: &str) -> Condition {
+    serde_json::from_value(json!({
+        "@type": "SkillCompare", "skill": skill, "cmp": cmp,
+        "who": "SELF", "vs": "SELF_OTHER", "value": null, "vs_skill": vs_skill
+    }))
+    .unwrap()
+}
+
+#[test]
+fn self_vs_self_compares_two_of_the_subjects_own_skills() {
+    // A's real stats: Agility 5, Strike 7, Submission 8, Grapple 9, Power 10.
+    let base = state_with(&[]);
+    // Power(10) > Grapple(9) — TRUE (the #14 "Pull Down the Ropes" gate arms).
+    assert!(conditions::holds(
+        &skill_self("Power", ">", "Grapple"),
+        &base,
+        "A",
+        None
+    ));
+    // Agility(5) > Strike(7) — FALSE (the #13 "Springboard Lion Splash" gate; A's
+    // skill profile does NOT arm it — proof the right operand is A's OWN Strike,
+    // not the opponent's).
+    assert!(!conditions::holds(
+        &skill_self("Agility", ">", "Strike"),
+        &base,
+        "A",
+        None
+    ));
+    // ">= "boundary reads own stats too: Grapple(9) >= Power(10) false, reverse true.
+    assert!(!conditions::holds(
+        &skill_self("Grapple", ">=", "Power"),
+        &base,
+        "A",
+        None
+    ));
+    assert!(conditions::holds(
+        &skill_self("Power", ">=", "Grapple"),
+        &base,
+        "A",
+        None
+    ));
+}
+
+#[test]
+fn self_vs_self_ignores_the_considered_vs_opponent_override() {
+    // A declares "skills considered GREATER" — a vs-OPPONENT meta-override. A
+    // self-vs-self compare compares two of A's OWN skills, so the override must not
+    // force it: Agility(5) > Strike(7) stays FALSE, Power(10) > Grapple(9) stays TRUE.
+    let g = state_with(&[declare("SKILL", "GREATER")]);
+    assert!(
+        !conditions::holds(&skill_self("Agility", ">", "Strike"), &g, "A", None),
+        "SELF_OTHER must ignore the vs-opponent considered override"
+    );
+    assert!(conditions::holds(
+        &skill_self("Power", ">", "Grapple"),
+        &g,
+        "A",
+        None
+    ));
+}
+
 #[test]
 fn skill_override_greater_is_strict() {
     // Baseline: A.Power (10) == B.Power (10) — `>` false, `>=`/`=` true, `<` false.
