@@ -564,6 +564,56 @@ fn choice_body(body: &str) -> Option<Effect> {
     ))
 }
 
+/// A standalone "Choose one[ of the following]:" header. Unlike the inline "X or Y"
+/// that [`choice_body`] splits, its options arrive as the FOLLOWING clauses — composed
+/// by [`choice_from_following`] in the parse loop.
+fn is_choose_one_header(clause: &str) -> bool {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^Choose one(?: of the following)?:?$").unwrap());
+    RE.is_match(clause.trim())
+}
+
+/// Build a `Choice` from the option clauses following a "Choose one:" header. Consumes
+/// consecutive clauses that each parse as an unconditional, instant, non-optional
+/// action sharing one trigger (the same shape [`choice_body`] requires of "X or Y"
+/// branches), stopping at the first that does not. Returns the effect and how many
+/// clauses it consumed; `None` if fewer than two options parse, so the header falls
+/// through to `Unsupported` rather than silently dropping the choice.
+fn choice_from_following(clauses: &[String]) -> Option<(Effect, usize)> {
+    let mut options = Vec::new();
+    let mut trigger: Option<Trigger> = None;
+    for clause in clauses {
+        let label = capitalize_first(clause.trim().trim_end_matches('.').trim());
+        let Some(e) = match_grammar(&label) else {
+            break;
+        };
+        if e.condition != Condition::Always || e.optional || e.duration != Duration::Instant {
+            break;
+        }
+        match &trigger {
+            Some(t) if *t != e.trigger => break, // options must share a trigger
+            None => trigger = Some(e.trigger.clone()),
+            _ => {}
+        }
+        options.push(ChoiceOption {
+            node_type: ChoiceOptionTag,
+            label,
+            actions: e.actions,
+        });
+    }
+    if options.len() < 2 {
+        return None;
+    }
+    let consumed = options.len();
+    let effect = eff(
+        trigger?,
+        vec![Action::Choice { options }],
+        Condition::Always,
+        Duration::Instant,
+    );
+    Some((effect, consumed))
+}
+
 /// `a AND b`, dropping a trivially-true `b` ("the body has no gate of its own").
 fn and_conds(a: Condition, b: Condition) -> Condition {
     match b {
@@ -2398,20 +2448,26 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
-        rule(r"Draw the bottom (\d+) cards? of your deck", |c| {
-            Some(eff(
-                on_hit(),
-                vec![draw(
-                    num(c, 1),
-                    Who::SelfSide,
-                    DeckEnd::Bottom,
-                    None,
-                    Who::SelfSide,
-                )],
-                Condition::Always,
-                Duration::Instant,
-            ))
-        }),
+        // Draw from the BOTTOM of the deck. "Add the bottom N cards of your deck to
+        // your hand" (a "Choose one:" option on Booty Drop Chop and kin) is the same
+        // action as "Draw the bottom N cards of your deck", just phrased as an add.
+        rule(
+            r"(?:Draw|Add) the bottom (\d+) cards? of your deck(?: to your hand)?",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![draw(
+                        num(c, 1),
+                        Who::SelfSide,
+                        DeckEnd::Bottom,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"Shuffle your deck", |_| {
             Some(eff(
                 on_hit(),
@@ -4875,6 +4931,23 @@ pub fn parse_text(
                 effects.push(scope(plain, &window));
                 effects.push(scope(choice_eff, &window));
                 i += 1;
+                continue;
+            }
+        }
+        // "Choose one:" header (a standalone line): compose the following option
+        // clauses into a single Choice. If fewer than two options parse, fall through
+        // so the header itself compiles to Unsupported (never a silent drop).
+        if is_choose_one_header(clause) {
+            if let Some((mut eff, consumed)) = choice_from_following(&clauses[i + 1..]) {
+                eff.raw_clause = clauses[i..=i + consumed].join(" ");
+                eff.source = source;
+                eff.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(eff, &window));
+                i += 1 + consumed;
                 continue;
             }
         }

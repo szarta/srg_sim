@@ -483,6 +483,13 @@ fn draw_rider_grammar() {
     assert_eq!(e["actions"][0]["source"], "TOP");
     assert_eq!(e["actions"][1]["source"], "BOTTOM");
 
+    // "Add the bottom N cards of your deck to your hand" is the same bottom-draw,
+    // phrased as an add (a "Choose one:" option on Booty Drop Chop and kin).
+    let e = parse1("Add the bottom 2 cards of your deck to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["source"], "BOTTOM");
+    assert_eq!(e["actions"][0]["n"], 2);
+
     // Conditional (HasInPlay gate, OnPlay): another <atk>/<order> in play.
     let e = parse1("If you have another Strike in play, draw 2 cards.");
     assert_eq!(e["trigger"]["@type"], "OnPlay");
@@ -571,6 +578,54 @@ fn draw_rider_grammar() {
     assert_eq!(e["trigger"]["skill"], "Power");
     assert_eq!(e["actions"][0]["n"], 2);
     assert_eq!(e["actions"][0]["who"], "SELF");
+}
+
+/// Multiline "Choose one:" header (Booty Drop Chop): the header sits on its own line
+/// and its options are the FOLLOWING clauses, composed into a single `Choice` (not
+/// each option fired independently, which would draw both piles).
+#[test]
+fn multiline_choose_one_composes_a_choice() {
+    let effs = parse_text(
+        "Your maximum handsize is +3.\nChoose one:\nDraw 3 cards.\nAdd the bottom 3 cards of your deck to your hand.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    // Two effects only: the max-handsize buff, then ONE Choice (the header clause is
+    // consumed, not left as a separate Unsupported, and the options are not independent).
+    assert_eq!(effs.len(), 2, "max-handsize + one composed Choice");
+    let e = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(e["actions"][0]["@type"], "Choice");
+    let opts = e["actions"][0]["options"].as_array().unwrap();
+    assert_eq!(opts.len(), 2);
+    assert_eq!(opts[0]["actions"][0]["@type"], "Draw");
+    assert_eq!(opts[0]["actions"][0]["source"], "TOP");
+    assert_eq!(opts[0]["actions"][0]["n"], 3);
+    assert_eq!(opts[1]["actions"][0]["@type"], "Draw");
+    assert_eq!(opts[1]["actions"][0]["source"], "BOTTOM");
+    assert_eq!(opts[1]["actions"][0]["n"], 3);
+
+    // A "Choose one:" whose options don't both parse falls through — the header stays
+    // Unsupported rather than silently dropping the choice.
+    let effs = parse_text(
+        "Choose one:\nDraw 3 cards.\nDo something the parser cannot model at all.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let types: Vec<String> = effs
+        .iter()
+        .map(|e| {
+            serde_json::to_value(e).unwrap()["actions"][0]["@type"]
+                .as_str()
+                .unwrap()
+                .to_owned()
+        })
+        .collect();
+    assert!(
+        types.contains(&"Unsupported".to_owned()),
+        "unparseable options leave the header Unsupported, got {types:?}"
+    );
 }
 
 /// Finish-roll rider grammar (task #49): rolled-skill and base-roll-gated bonuses.
