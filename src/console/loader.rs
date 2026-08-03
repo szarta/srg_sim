@@ -8,7 +8,9 @@
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_yaml_ng::Value;
-use srg_core::cards::{Card, Competitor, Deck, EntranceCard, SKILL_REQUIREMENT_TAG};
+use srg_core::cards::{
+    Card, Competitor, Deck, EntranceCard, SkillRequirement, SKILL_REQUIREMENT_TAG,
+};
 use srg_core::ir::{AtkType, PlayOrder, Skill};
 use srg_core::parser::{enrich_deck, load_overrides, Overrides};
 use srg_core::skills::Skills;
@@ -208,10 +210,43 @@ fn build_card(rec: &Value) -> Result<Card> {
         play_order: play_order(str_field(rec, "play_order")),
         finish_bonuses: BTreeMap::new(),
         tags: card_tags(rec),
+        skill_requirements: skill_requirements(rec),
         raw_text: rules_text(rec).to_owned(),
         effects: Vec::new(),
         played_seq: None,
     })
+}
+
+/// Parse the DB `requirements: [{min_<skill>: N}, …]` block into `(skill, min)`
+/// pairs. Each map key is `min_<skill>` for one of the six skills; a card may carry
+/// more than one (all must hold). Unknown keys are skipped rather than erroring, so
+/// a future requirement kind never breaks the load.
+fn skill_requirements(rec: &Value) -> Vec<SkillRequirement> {
+    let Some(items) = rec.get("requirements").and_then(Value::as_sequence) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for item in items {
+        let Some(map) = item.as_mapping() else {
+            continue;
+        };
+        for (k, v) in map {
+            let (Some(key), Some(min)) = (k.as_str(), v.as_i64()) else {
+                continue;
+            };
+            if let Some(skill) = key.strip_prefix("min_").and_then(skill_by_name) {
+                out.push(SkillRequirement { skill, min });
+            }
+        }
+    }
+    out
+}
+
+/// Map a lowercase skill name ("strike", "grapple", …) to its [`Skill`].
+fn skill_by_name(name: &str) -> Option<Skill> {
+    Skill::ALL
+        .into_iter()
+        .find(|s| s.name().eq_ignore_ascii_case(name))
 }
 
 /// A card's tags, with the DB `spotlight: true` flag folded in as a synthetic
@@ -392,6 +427,8 @@ mod tests {
    atk_type: Submission, play_order: Lead, spotlight: true}
 - {card_type: MainDeckCard, db_uuid: M-4, name: Req Lead, deck_card_number: 4,
    atk_type: Strike, play_order: Lead, requirements: [{min_strike: 5}]}
+- {card_type: MainDeckCard, db_uuid: M-5, name: Dual Req, deck_card_number: 5,
+   atk_type: Strike, play_order: Followup, requirements: [{min_strike: 10}, {min_agility: 9}]}
 - {card_type: SpectacleCard, db_uuid: S-1, name: Ignore Me}
 "#;
 
@@ -444,6 +481,36 @@ mod tests {
         // A card with no requirements gets no synthetic tag.
         let plain = idx.main_card(&Value::String("Lead Strike".into())).unwrap();
         assert!(!plain.tags.contains(&SKILL_REQUIREMENT_TAG.to_owned()));
+    }
+
+    #[test]
+    fn requirements_block_parses_into_skill_requirements() {
+        let idx = index();
+        // Single `min_strike: 5` -> one (Strike, 5) requirement.
+        let req = idx.main_card(&Value::String("Req Lead".into())).unwrap();
+        assert_eq!(req.skill_requirements.len(), 1);
+        assert_eq!(req.skill_requirements[0].skill, Skill::Strike);
+        assert_eq!(req.skill_requirements[0].min, 5);
+        // Two-entry block -> both requirements, in order.
+        let dual = idx.main_card(&Value::String("Dual Req".into())).unwrap();
+        assert_eq!(dual.skill_requirements.len(), 2);
+        assert_eq!(
+            dual.skill_requirements[0],
+            SkillRequirement {
+                skill: Skill::Strike,
+                min: 10
+            }
+        );
+        assert_eq!(
+            dual.skill_requirements[1],
+            SkillRequirement {
+                skill: Skill::Agility,
+                min: 9
+            }
+        );
+        // A card with no requirements has an empty list.
+        let plain = idx.main_card(&Value::String("Lead Strike".into())).unwrap();
+        assert!(plain.skill_requirements.is_empty());
     }
 
     #[test]

@@ -3,7 +3,7 @@
   "$id": "https://github.com/szarta/srg_sim/schemas/v1/observable_state.schema.json",
   "title": "ObservableState",
   "description": "The per-viewer projection of GameState carried on every DecisionRequest.observable_state (src/state.rs GameState::observable). Lossy and viewer-scoped: the seed, RNG, flags, and every hidden zone are excluded; an opponent's hand is a count unless a Peek reveals it this turn. schema_version mirrors src/state.rs OBSERVABLE_SCHEMA_VERSION.",
-  "version": 1,
+  "version": 2,
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "viewer", "crowd_meter", "active", "turn_no", "players"],
@@ -52,6 +52,18 @@
         "play_order": { "type": "string", "enum": ["Lead", "Followup", "Finish", "None"] },
         "finish_bonuses": { "type": "object", "description": "Skill -> integer bonus." },
         "tags": { "type": "array", "items": { "type": "string" } },
+        "skill_requirements": {
+          "type": "array",
+          "description": "Card's requirements: block, {skill, min} per entry. Absent when empty. The card is BLANK (text inert) while the owner's effective skill is below ANY min, un-blanking live when restored.",
+          "items": {
+            "type": "object",
+            "required": ["skill", "min"],
+            "properties": {
+              "skill": { "type": "string", "enum": ["Power", "Agility", "Technique", "Submission", "Grapple", "Strike"] },
+              "min": { "type": "integer" }
+            }
+          }
+        },
         "raw_text": { "type": "string" },
         "effects": { "type": "array", "description": "Compiled Effect IR (see effect_ir.schema.json)." }
       }

@@ -34,7 +34,7 @@ pub const MIN_HAND_SIZE: i64 = 3;
 /// per-viewer state carried on every [`DecisionRequest`](crate::engine::DecisionRequest)
 /// and pinned in `schemas/v1/observable_state.schema.json`. Bump on any shape change
 /// so the web client can assert it against the engine it vendors.
-pub const OBSERVABLE_SCHEMA_VERSION: i64 = 1;
+pub const OBSERVABLE_SCHEMA_VERSION: i64 = 2;
 
 /// A condition evaluator the engine can supply so conditional `Static` buffs
 /// resolve against live state; without one, only unconditional (`Always`) buffs
@@ -464,6 +464,22 @@ impl GameState {
         // A card blanked by a stop this turn stays blanked regardless of zone.
         if self.blanked_text.contains(&card.db_uuid) {
             return true;
+        }
+        // A skill-requirement card is blank whenever the owner's EFFECTIVE skill is
+        // below ANY of its requirements ("if your skill is ever below the skill
+        // requirement — e.g. an opponent reduced it — the card is blank until your
+        // skill is brought back"). A live, continuous check that un-blanks the moment
+        // the skill is restored. Safe to read `effective_stats` here: skill buffs fold
+        // in without consulting text-blank (`fold_buffs`), so this cannot recurse.
+        if !card.skill_requirements.is_empty() {
+            let stats = self.effective_stats(owner, None);
+            if card
+                .skill_requirements
+                .iter()
+                .any(|r| stats.get(r.skill) < r.min)
+            {
+                return true;
+            }
         }
         for (decl_owner, player) in &self.players {
             // (effects, is_discard) per source zone. A `WhileInDiscard` effect is active

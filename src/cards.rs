@@ -20,6 +20,15 @@ pub const DECK_SIZE: usize = 30;
 /// `Unstoppable { by_skillreq }` gate can read it off a stopper's tags.
 pub const SKILL_REQUIREMENT_TAG: &str = "SkillRequirement";
 
+/// One `min_<skill>: N` entry of a card's `requirements:` block — the owner needs
+/// effective `skill` >= `min` for the card to be online. A card may carry more than
+/// one (e.g. "Field of Fire" needs Strike >= 10 AND Agility >= 9); ALL must hold.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SkillRequirement {
+    pub skill: Skill,
+    pub min: i64,
+}
+
 /// Attack type implied by a main-deck card number (DESIGN.md §2).
 ///
 /// `n mod 3`: 1 → Strike, 2 → Grapple, 0 → Submission. Cards come in triples
@@ -43,6 +52,12 @@ pub struct Card {
     pub finish_bonuses: BTreeMap<Skill, i64>,
     #[serde(default)]
     pub tags: Vec<String>,
+    /// The card's `requirements:` block, parsed to `(skill, min)` pairs. Empty for
+    /// the vast majority of cards. A skill-requirement card is BLANK (text inert)
+    /// whenever the owner's effective skill is below ANY of these thresholds, and
+    /// un-blanks live when restored — read by `GameState::is_text_blanked`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub skill_requirements: Vec<SkillRequirement>,
     #[serde(default)]
     pub raw_text: String,
     #[serde(default)]
