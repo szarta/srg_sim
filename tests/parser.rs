@@ -2903,11 +2903,11 @@ fn reveal_and_discard_if_stop() {
     );
 }
 
-/// WHILE_IN_DISCARD self-trigger (task #115 slice 1): "When this card is in your discard
-/// pile and you roll <S> for your turn roll, [you may] <self-body>" — the discard prefix
-/// is a `Duration::WhileInDiscard` marker; the remainder re-parses as a normal OnRoll
-/// trigger clause with the self-action body. Only OnRoll fires from discard today, so
-/// non-OnRoll (OnHit) and passive bodies decline to Unsupported.
+/// WHILE_IN_DISCARD self-trigger (task #115 slices 1-2): "When this card is in your
+/// discard pile and you roll <S> for your turn roll / hit <X>, [you may] <self-body>" —
+/// the discard prefix is a `Duration::WhileInDiscard` marker; the remainder re-parses as a
+/// normal trigger clause with the self-action body. OnRoll (slice 1) and OnHit (slice 2)
+/// fire from discard; OnStop/OnBreakout/passive bodies still decline to Unsupported.
 #[test]
 fn while_in_discard_onroll_self_recursion() {
     fn eff0(text: &str) -> Value {
@@ -2935,10 +2935,18 @@ fn while_in_discard_onroll_self_recursion() {
     assert_eq!(e["actions"][0]["@type"], "Draw");
     assert_eq!(e["duration"], "WHILE_IN_DISCARD");
 
-    // OnHit-triggered discard recursion declines (engine doesn't fire it from discard
+    // OnHit-triggered discard recursion now fires from discard (slice 2) -> OnHit +
+    // WHILE_IN_DISCARD + the self-action body.
+    let e = eff0("When this card is in your discard pile and you hit a card with \"Suplex\" in the name, you may shuffle it into your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["name_contains"][0], "Suplex");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+
+    // OnStop-triggered discard recursion still declines (its dispatch site is not wired
     // yet) -> stays Unsupported rather than becoming silently-inert IR.
     assert_eq!(
-        eff0("When this card is in your discard pile and you hit a card with \"Suplex\" in the name, you may shuffle it into your deck.")
+        eff0("When this card is in your discard pile and your opponent stops a Submission, you may add it to your hand.")
             ["actions"][0]["@type"],
         "Unsupported"
     );

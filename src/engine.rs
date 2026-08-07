@@ -4143,43 +4143,60 @@ impl Engine {
     fn run_hit_gimmicks_inner(&mut self, card: &Card, key: &str, hitter: &str) -> Eng<()> {
         let effects = self.standing_effects(key);
         for eff in &effects {
-            let Trigger::OnHit {
-                atk_type,
-                name_contains,
-                text_contains,
-                on_any,
-                order,
-                who,
-            } = &eff.trigger
-            else {
-                continue;
-            };
-            // Whose hit this fires on. The default (SELF) reproduces the pre-v43
-            // behavior exactly: only the hitter's own gimmicks fire.
-            if self.target(*who, key) != hitter {
-                continue;
-            }
-            // A bare OnHit (no gate) is the card's OWN "when this hits", already fired
-            // via `run_effects` — skipped here UNLESS it explicitly sets `on_any` ("when
-            // you hit a card" — Bartholomew Hooke), which fires on every hit. `on_any`
-            // is override-only, so parser fragments that produce a bare OnHit stay inert.
-            let has_name_gate = !name_contains.is_empty() || !text_contains.is_empty();
-            if atk_type.is_none() && !has_name_gate && order.is_none() && !on_any {
-                continue;
-            }
-            let type_ok = atk_type.is_none_or(|want| card.counts_as_atk_type(want));
-            // "When you hit a Lead" — the play-order gate on the HIT card (ANDed).
-            let order_ok = order.is_none_or(|want| want == card.play_order);
-            let name_gate = CardFilter {
-                name_contains: name_contains.clone(),
-                text_contains: text_contains.clone(),
-                ..Default::default()
-            };
-            if type_ok && order_ok && conditions::card_matches(card, &name_gate) {
+            if self.on_hit_trigger_fires(eff, card, key, hitter) {
                 self.fire_if_ready(eff, key, None)?;
             }
         }
+        // WHILE_IN_DISCARD OnHit (task #115 slice 2): a card in `key`'s discard pile
+        // watching a hit — "when this card is in your discard pile and you hit <X>, add it
+        // to your hand" / "when your opponent hits a Follow Up, …". `self_card` binds the
+        // source so a self-referential body (`AddSelfToHand` / `ShuffleSelfIntoDeck`)
+        // resurrects the card that fired it, exactly as `run_on_roll` does at the roll-off.
+        for (uuid, eff) in self.discard_self_triggers(key) {
+            if self.on_hit_trigger_fires(&eff, card, key, hitter) {
+                self.self_card = Some(uuid);
+                let r = self.fire_if_ready(&eff, key, None);
+                self.self_card = None;
+                r?;
+            }
+        }
         Ok(())
+    }
+
+    /// Whether `eff`'s `OnHit` trigger fires for `hitter` hitting `card`, from `key`'s
+    /// vantage (`who` selects whose hit — SELF = `key`'s own, OPP = its opponent's). A
+    /// bare untyped OnHit is the card's OWN "when this hits" (already fired via
+    /// `run_effects`) and is skipped UNLESS `on_any` is set; a gated OnHit fires when the
+    /// hit card's attack-type / play-order / name gates all match. Shared by the in-play
+    /// standing scan and the discard-pile self-trigger scan.
+    fn on_hit_trigger_fires(&self, eff: &Effect, card: &Card, key: &str, hitter: &str) -> bool {
+        let Trigger::OnHit {
+            atk_type,
+            name_contains,
+            text_contains,
+            on_any,
+            order,
+            who,
+        } = &eff.trigger
+        else {
+            return false;
+        };
+        if self.target(*who, key) != hitter {
+            return false;
+        }
+        let has_name_gate = !name_contains.is_empty() || !text_contains.is_empty();
+        if atk_type.is_none() && !has_name_gate && order.is_none() && !on_any {
+            return false;
+        }
+        let type_ok = atk_type.is_none_or(|want| card.counts_as_atk_type(want));
+        // "When you hit a Lead" — the play-order gate on the HIT card (ANDed).
+        let order_ok = order.is_none_or(|want| want == card.play_order);
+        let name_gate = CardFilter {
+            name_contains: name_contains.clone(),
+            text_contains: text_contains.clone(),
+            ..Default::default()
+        };
+        type_ok && order_ok && conditions::card_matches(card, &name_gate)
     }
 
     /// "Added text" effects `key`'s active gimmicks grant to `card` (El Super Santa:
@@ -9454,6 +9471,66 @@ mod man_from_it_tests {
                 .count(),
             1,
             "resurrected itself into the hand"
+        );
+    }
+
+    /// A `WhileInDiscard` OnHit self-resurrect (task #115 slice 2): "When this card is in
+    /// your discard pile and you hit a card with 'Suplex' in the name, shuffle it into
+    /// your deck." `run_hit_gimmicks` binds the discard-pile source as `self_card` so
+    /// `ShuffleSelfIntoDeck` moves the RIGHT card (discard → deck), and the name gate on
+    /// the HIT card decides whether it fires at all.
+    #[test]
+    fn while_in_discard_onhit_shuffles_itself_into_deck() {
+        let watcher: Card = serde_json::from_value(json!({
+            "atk_type":"Grapple","db_uuid":"recur","name":"Comeback","number":30,
+            "play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect",
+                "trigger":{"@type":"OnHit","atk_type":null,"name_contains":["Suplex"],
+                    "text_contains":[],"on_any":false,"order":null,"who":"SELF"},
+                "condition":{"@type":"Always"},
+                "actions":[{"@type":"ShuffleSelfIntoDeck"}],
+                "duration":"WHILE_IN_DISCARD","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let hit = |name: &str| -> Card {
+            serde_json::from_value(json!({
+                "atk_type":"Strike","db_uuid":"hit","name":name,"number":1,
+                "play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},"effects":[]
+            }))
+            .unwrap()
+        };
+
+        // Hit a card WITHOUT "Suplex": the name gate fails, the watcher stays in discard.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![watcher.clone()];
+        engine.run_hit_gimmicks(&hit("Dropkick"), "A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            1,
+            "no name match: stays"
+        );
+        assert_eq!(engine.state.players["A"].deck.len(), 0);
+
+        // Hit a "German Suplex": the discard OnHit fires and the watcher shuffles ITSELF
+        // from the discard into the deck.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![watcher];
+        engine.run_hit_gimmicks(&hit("German Suplex"), "A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            0,
+            "left the discard"
+        );
+        assert_eq!(
+            engine.state.players["A"]
+                .deck
+                .iter()
+                .filter(|c| c.db_uuid == "recur")
+                .count(),
+            1,
+            "shuffled itself into the deck"
         );
     }
 

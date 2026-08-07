@@ -717,12 +717,15 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
     let mut effect = match_grammar(&inner)
         .or_else(|| compound_body(&inner))
         .or_else(|| choice_body(&inner))?;
-    // Slice-1 fidelity gate: only OnRoll WhileInDiscard effects actually fire from the
-    // discard pile today (run_on_roll dispatches them with the self_card referent
-    // bound). OnHit/OnStop/OnBreakout/passive dispatch-from-discard is not yet wired, so
-    // those decline here (stay Unsupported) rather than become silently-inert IR. Widen
-    // this gate as each dispatch site learns to fire from the discard (task #115 slice 2+).
-    if !matches!(effect.trigger, Trigger::OnRoll { .. }) {
+    // Fidelity gate: only WhileInDiscard triggers whose dispatch site fires from the
+    // discard pile (with the self_card referent bound) may be emitted; the rest decline
+    // and stay Unsupported rather than become silently-inert IR. Wired so far (task #115):
+    // OnRoll (slice 1, run_on_roll) and OnHit (slice 2, run_hit_gimmicks_inner). OnStop /
+    // OnBreakout / passive remain gated out until their sites learn the self_card bind.
+    if !matches!(
+        effect.trigger,
+        Trigger::OnRoll { .. } | Trigger::OnHit { .. }
+    ) {
         return None;
     }
     effect.duration = Duration::WhileInDiscard;
