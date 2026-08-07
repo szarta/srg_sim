@@ -4524,6 +4524,31 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "Stop \"X\"[, \"Y\"][ or \"Z\"]" — stop a specifically-NAMED attack (no
+        // order/type constraint), an OR-list of card names. One Stop whose `target`
+        // name-filter matches any attack with one of those names (order/atk_type None
+        // = any). Placed before "Stop any …" (which needs a type) — the leading quote
+        // means it never overlaps that rule.
+        rule(
+            r#"Stop ("[^"]+"(?:(?:,\s*(?:or\s+)?|\s+or\s+)"[^"]+")*)"#,
+            |c| {
+                let names = quoted_names(&c[1]);
+                (!names.is_empty()).then(|| {
+                    eff(
+                        Trigger::OnPlay,
+                        vec![Action::Stop {
+                            order: None,
+                            atk_type: None,
+                            source_is_skillreq: false,
+                            even_unstoppable: false,
+                            target: Some(cf_name(names)),
+                        }],
+                        Condition::Always,
+                        Duration::Instant,
+                    )
+                })
+            },
+        ),
         rule(r"Stop any (.+)", |c| stop_eff(&c[1], Condition::Always)),
         rule(
             &format!(

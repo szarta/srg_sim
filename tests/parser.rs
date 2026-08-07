@@ -2523,6 +2523,29 @@ fn stop_eligibility_grammar() {
     // A plain stop leaves target null.
     let e = a1("Stop any Strike.");
     assert_eq!(e["actions"][0]["target"], Value::Null);
+
+    // Name-only stop: "Stop \"X\"" -> one Stop keyed on the card NAME, no order/type
+    // constraint (order/atk_type null; the engine matches any attack with that name).
+    let e = a1("Stop \"Full Nelson\".");
+    assert_eq!(e["actions"].as_array().unwrap().len(), 1);
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+    assert_eq!(e["actions"][0]["order"], Value::Null);
+    assert_eq!(e["actions"][0]["atk_type"], Value::Null);
+    assert_eq!(e["actions"][0]["target"]["name_contains"][0], "Full Nelson");
+    // An OR-list of names -> one Stop whose target matches any of them.
+    let e = a1("Stop \"School Boy\" or \"Backslide\".");
+    let names = &e["actions"][0]["target"]["name_contains"];
+    assert_eq!(names[0], "School Boy");
+    assert_eq!(names[1], "Backslide");
+    // Oxford-comma three-name list.
+    let e = a1("Stop \"Double Death Drop\", \"School Boy\", or \"Backslide\".");
+    assert_eq!(
+        e["actions"][0]["target"]["name_contains"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
 }
 
 /// A "During your turn:" / "During your opponent's turn:" window HEADER scopes every
