@@ -3106,3 +3106,45 @@ fn compound_or_gate() {
     let items = v["actions"][0]["condition"]["items"].as_array().unwrap();
     assert_eq!(items.len(), 3, "flat three-way Or");
 }
+
+/// New OnStop/OnBreakout trigger phrasings (task #115): "when you stop a card" (the
+/// stopper's side, Direction::Theirs) and "either/any player breaks out" (OnBreakout,
+/// who=None). Both dispatch from the discard pile via the slice-2b wiring, and also work
+/// as ordinary in-play triggers.
+#[test]
+fn stop_and_breakout_trigger_phrasings() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "When you stop a card" -> OnStop, Direction THEIRS (the stopper).
+    let v = one("When you stop a card, your next turn roll is +1.");
+    assert_eq!(v["trigger"]["@type"], "OnStop");
+    assert_eq!(v["trigger"]["dir"], "THEIRS");
+
+    // "When your opponent stops a card" stays YOURS (your card was stopped).
+    let v = one("When your opponent stops a card, your next turn roll is +1.");
+    assert_eq!(v["trigger"]["dir"], "YOURS");
+
+    // "either/any player breaks out" -> OnBreakout, who=None (any breakout).
+    for txt in [
+        "When either player breaks out, add 1 card from your discard pile to your hand.",
+        "If any player breaks out, add 1 card from your discard pile to your hand.",
+    ] {
+        let v = one(txt);
+        assert_eq!(v["trigger"]["@type"], "OnBreakout", "{txt:?}");
+        assert!(
+            v["trigger"]["who"].is_null(),
+            "any-breakout has who=None: {txt:?}"
+        );
+    }
+
+    // A discard-pile "either player breaks out" self-recur parses (OnBreakout wired) with
+    // WHILE_IN_DISCARD + the self-action body.
+    let v = one("When this card is in your discard pile and either player breaks out, you may shuffle it into your deck.");
+    assert_eq!(v["trigger"]["@type"], "OnBreakout");
+    assert_eq!(v["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(v["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+}

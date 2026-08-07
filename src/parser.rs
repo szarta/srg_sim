@@ -1354,6 +1354,16 @@ fn on_your_stop() -> Trigger {
     }
 }
 
+/// The stopper's side: "when you stop a card" — the effect fires for the player who
+/// PLAYED the stop (Direction::Theirs, "they stopped a card"), the mirror of
+/// [`on_your_stop`].
+fn on_their_stop() -> Trigger {
+    Trigger::OnStop {
+        dir: Direction::Theirs,
+        order: None,
+    }
+}
+
 /// "If stopped, you lose the match via `kind`" — an OnStop(Yours) self-loss gated on
 /// `cond`: the loss fires only while `cond` holds. Pass `Always` for the plain form,
 /// or `Not(escape)` for an "... unless <escape>" variant (the loss is voided when the
@@ -4859,6 +4869,14 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 &c[1],
             )
         }),
+        // "When either/any player breaks out, <body>" — fires on ANY breakout
+        // (who: None). Common as a discard-pile self-recur ("… and either player breaks
+        // out, you may shuffle it into your deck"); on_broken_out already dispatches
+        // who=None from both sides.
+        rule(
+            r"(?:When|If) (?:either|any) player breaks out[,:] (.+)",
+            |c| trigger_body(Trigger::OnBreakout { who: None }, &c[1]),
+        ),
         rule(
             r"Each time your opponent rolls for a [Bb]reakout roll[,:] (.+)",
             |c| trigger_body(Trigger::OnBreakoutRoll { who: Who::Opp }, &c[1]),
@@ -4882,6 +4900,13 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             r"When your opponent stops (?:a|one|your) cards?[,:] (.+)",
             |c| trigger_body(on_your_stop(), &c[1]),
         ),
+        // "When you stop a card, <body>" — the stopper's side (Direction::Theirs), the
+        // mirror of "your opponent stops a card". Common as a discard-pile self-recur
+        // ("… and you stop a card, add it to your hand"); run_on_stop_gimmicks already
+        // dispatches the Theirs direction for the stopper.
+        rule(r"When you stop (?:a|one) cards?[,:] (.+)", |c| {
+            trigger_body(on_their_stop(), &c[1])
+        }),
         // WHILE_IN_DISCARD self-trigger (task #115): "When this card is in your discard
         // pile[ and <event>][:,] <body>" — the prefix is a Duration::WhileInDiscard marker;
         // the remainder is a normal trigger clause re-parsed via while_in_discard_effect.
