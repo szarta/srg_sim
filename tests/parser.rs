@@ -3004,3 +3004,53 @@ fn flip_both_instead_replaces_add_to_hand() {
         "Unsupported"
     );
 }
+
+/// Compound "<A> and <B>" gate composition (task #131): `gate_condition` splits a
+/// two-part gate on a top-level " and " and AND-parses each half, so a role-promotion
+/// or stop-eligibility clause gated on two already-modeled conditions parses into a
+/// `Condition::And` instead of staying `Unsupported`. Atomic gates that merely CONTAIN
+/// " and " must still match as a unit (tried before any split).
+#[test]
+fn compound_and_gate() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Role-promotion gated on (has-in-play) AND (match-type) -> And[HasInPlay, IsMatchType].
+    let v = one("If you have another Follow Up in play and this is a Steel Cage match, this card is also a Finish.");
+    let act = &v["actions"][0];
+    assert_eq!(act["@type"], "AlsoLead");
+    assert_eq!(act["order"], "Finish");
+    let cond = &act["condition"];
+    assert_eq!(cond["@type"], "And");
+    let items = cond["items"].as_array().unwrap();
+    assert_eq!(items.len(), 2);
+    assert_eq!(items[0]["@type"], "HasInPlay");
+    assert_eq!(items[0]["filter"]["play_order"], "Followup");
+    assert_eq!(items[1]["@type"], "IsMatchType");
+    assert_eq!(items[1]["types"][0], "STEEL_CAGE");
+
+    // Match-type (itself an OR-list) AND Crowd-Meter composes — the inner " or " stays
+    // inside the atomic match-type half; only the top-level " and " splits.
+    let v = one("If this is a Steel Cage or Liger's Den match and the Crowd Meter is 2 or greater, this card is also a Lead.");
+    let cond = &v["actions"][0]["condition"];
+    assert_eq!(cond["@type"], "And");
+    let items = cond["items"].as_array().unwrap();
+    assert_eq!(items[0]["@type"], "IsMatchType");
+    assert_eq!(items[0]["types"].as_array().unwrap().len(), 2);
+    assert_eq!(items[1]["@type"], "CrowdMeterCompare");
+
+    // Atomic gate that literally contains " and " must NOT be split: the whole phrase
+    // parses as one condition (SameRolledSkill), never as And[garbage].
+    let v = one("If you and your opponent rolled the same skill for your turn roll, this card is also a Lead.");
+    assert_eq!(v["actions"][0]["condition"]["@type"], "SameRolledSkill");
+
+    // A compound where one half is NOT modeled declines cleanly (stays Unsupported),
+    // never a partial/garbage And.
+    let v = one(
+        "If you juggle three chainsaws and this is a Steel Cage match, this card is also a Finish.",
+    );
+    assert_eq!(v["actions"][0]["@type"], "Unsupported");
+}
