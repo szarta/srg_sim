@@ -346,6 +346,12 @@
     "who": "SELF"
   },
   {
+    "@type": "MillDeck",
+    "who": "SELF",
+    "count": 1,
+    "from": "BOTTOM"
+  },
+  {
     "@type": "FlipGimmick",
     "who": "SELF"
   },

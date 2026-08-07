@@ -2465,6 +2465,36 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // "Each player discards the bottom card of their deck" — a deck-to-discard mill
+        // from the BOTTOM for both players (MillDeck, not a Flip). "play" is a common DB
+        // typo for "player". Two MillDeck actions.
+        rule(
+            r"Each play(?:er)? discards the (top|bottom) card of their deck",
+            |c| {
+                let from = if &c[1] == "top" {
+                    DeckEnd::Top
+                } else {
+                    DeckEnd::Bottom
+                };
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        Action::MillDeck {
+                            who: Who::SelfSide,
+                            count: 1,
+                            from,
+                        },
+                        Action::MillDeck {
+                            who: Who::Opp,
+                            count: 1,
+                            from,
+                        },
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // "Each player reveals N card(s) in their hand" — fog-of-war: each player
         // reveals N of their own hand cards to the opponent (their own choice, resolved
         // by the engine's `reveal` decision). Two Reveal actions (SELF + OPP).

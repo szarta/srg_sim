@@ -841,6 +841,9 @@
                 "$ref": "#/$defs/Flip"
               },
               {
+                "$ref": "#/$defs/MillDeck"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -1706,6 +1709,9 @@
                 "$ref": "#/$defs/Flip"
               },
               {
+                "$ref": "#/$defs/MillDeck"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -2354,6 +2360,31 @@
       ],
       "type": "object"
     },
+    "MillDeck": {
+      "additionalProperties": false,
+      "description": "Move count card(s) from the `from` end of who's DECK to their discard pile (plain mill, no flip semantics).",
+      "properties": {
+        "@type": {
+          "const": "MillDeck"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "from": {
+          "$ref": "#/$defs/DeckEnd"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "count",
+        "from"
+      ],
+      "type": "object"
+    },
     "FlipGimmick": {
       "additionalProperties": false,
       "properties": {
@@ -2756,6 +2787,9 @@
         },
         {
           "$ref": "#/$defs/Flip"
+        },
+        {
+          "$ref": "#/$defs/MillDeck"
         },
         {
           "$ref": "#/$defs/FlipGimmick"
@@ -4356,6 +4390,9 @@
                 "$ref": "#/$defs/Flip"
               },
               {
+                "$ref": "#/$defs/MillDeck"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -5413,5 +5450,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 100
+  "version": 101
 }

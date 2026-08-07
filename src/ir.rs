@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 100;
+pub const SCHEMA_VERSION: i64 = 101;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -983,6 +983,15 @@ pub enum Action {
         until: Option<CardFilter>,
         #[serde(default)]
         until_to_hand: bool,
+    },
+    /// Move `count` card(s) from the `from` end of `who`'s DECK to their discard pile
+    /// — "Each player discards the bottom card of their deck." Unlike [`Self::Flip`]
+    /// (which mills the TOP and fires flip triggers / records `flipped_this_turn`),
+    /// this is a plain deck-to-discard mill with no flip semantics. schema v101
+    MillDeck {
+        who: Who,
+        count: i64,
+        from: DeckEnd,
     },
     Discard {
         selector: CardFilter,
@@ -2121,6 +2130,15 @@ pub enum IrNode {
         until: Option<CardFilter>,
         #[serde(default)]
         until_to_hand: bool,
+    },
+    /// Move `count` card(s) from the `from` end of `who`'s DECK to their discard pile
+    /// — "Each player discards the bottom card of their deck." Unlike [`Self::Flip`]
+    /// (which mills the TOP and fires flip triggers / records `flipped_this_turn`),
+    /// this is a plain deck-to-discard mill with no flip semantics. schema v101
+    MillDeck {
+        who: Who,
+        count: i64,
+        from: DeckEnd,
     },
     Discard {
         selector: CardFilter,

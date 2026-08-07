@@ -295,6 +295,26 @@ fn hand_bury_grammar() {
     assert_eq!(acts[0]["count"], 1);
     assert_eq!(acts[1]["who"], "OPP");
 
+    // "Each player discards the bottom card of their deck" -> two MillDeck{BOTTOM}.
+    let acts = serde_json::to_value(
+        &parse_text(
+            "Each player discards the bottom card of their deck.",
+            EffectSource::Card,
+            None,
+            None,
+        )[0],
+    )
+    .unwrap()["actions"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["@type"], "MillDeck");
+    assert_eq!(acts[0]["who"], "SELF");
+    assert_eq!(acts[0]["count"], 1);
+    assert_eq!(acts[0]["from"], "BOTTOM");
+    assert_eq!(acts[1]["who"], "OPP");
+
     // Conditional prefix carries a HasInPlay gate + OnPlay trigger.
     let effs = parse_text(
         "If you have another Follow Up in play, your opponent buries 1 card in their hand.",

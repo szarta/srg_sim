@@ -1150,6 +1150,7 @@ impl Engine {
                     self.act_flip(count, *who, key)?;
                 }
             }
+            Action::MillDeck { who, count, from } => self.act_mill_deck(*who, *count, *from, key),
             Action::Discard {
                 selector,
                 count,
@@ -1824,6 +1825,40 @@ impl Engine {
             .and_then(|()| self.run_self_flips(&target, &self_flips));
         self.state.flip_provenance = saved;
         result
+    }
+
+    /// "`who` discards `count` card(s) from the `from` end of their DECK" — a plain
+    /// deck-to-discard mill ([`Action::MillDeck`]), with none of `act_flip`'s flip
+    /// semantics (no `flipped_this_turn`, no `OnFlip`, no provenance). "Each player
+    /// discards the bottom card of their deck."
+    fn act_mill_deck(&mut self, who: Who, count: i64, from: DeckEnd, key: &str) {
+        let target = self.target(who, key);
+        let milled: Vec<Card> = {
+            let deck = &mut self.state.players.get_mut(&target).unwrap().deck;
+            let take = (count.max(0) as usize).min(deck.len());
+            match from {
+                DeckEnd::Top => deck.drain(..take).collect(),
+                DeckEnd::Bottom => deck.split_off(deck.len() - take),
+            }
+        };
+        if milled.is_empty() {
+            return;
+        }
+        let uuids: Vec<String> = milled.iter().map(|c| c.db_uuid.clone()).collect();
+        self.state
+            .players
+            .get_mut(&target)
+            .unwrap()
+            .discard
+            .extend(milled);
+        let t = self.state.turn_no;
+        self.log(Event::Discard(CardMovement {
+            t,
+            player: target,
+            cards: uuids,
+            source: Some("deck".to_owned()),
+            hidden: false,
+        }));
     }
 
     /// Fire STANDING (`on_self == false`) `OnFlip` gimmicks after `flipped_side` flipped
@@ -6085,6 +6120,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::Draw { .. } => "Draw",
         Action::Bury { .. } => "Bury",
         Action::Flip { .. } => "Flip",
+        Action::MillDeck { .. } => "MillDeck",
         Action::Discard { .. } => "Discard",
         Action::Search { .. } => "Search",
         Action::ShuffleDeck { .. } => "ShuffleDeck",
@@ -6594,6 +6630,40 @@ mod breakout_modifier_tests {
         // A skill with no queued mod returns 0 and changes nothing.
         assert_eq!(engine.consume_skill_roll_mod("A", Skill::Strike), 0);
         assert_eq!(engine.state.players["A"].pending_skill_roll_mods.len(), 1);
+    }
+
+    /// `act_mill_deck` moves cards from the named DECK END to discard, with no flip
+    /// side effects (nothing recorded in `flipped_this_turn`).
+    #[test]
+    fn act_mill_deck_takes_from_the_named_end_without_flip_semantics() {
+        let mut engine = engine();
+        let card = |u: &str| -> Card {
+            serde_json::from_value(json!({
+                "db_uuid": u, "name": u, "number": 1, "atk_type": "Strike",
+                "play_order": "Lead", "finish_bonuses": {}, "effects": []
+            }))
+            .unwrap()
+        };
+        {
+            let deck = &mut engine.state.players.get_mut("A").unwrap().deck;
+            *deck = vec![card("top"), card("mid"), card("bot")];
+        }
+        engine.act_mill_deck(Who::SelfSide, 1, DeckEnd::Bottom, "A");
+        let a = &engine.state.players["A"];
+        // The BOTTOM card left the deck for the discard; top/mid remain, in order.
+        assert_eq!(
+            a.deck
+                .iter()
+                .map(|c| c.db_uuid.as_str())
+                .collect::<Vec<_>>(),
+            ["top", "mid"]
+        );
+        assert_eq!(a.discard.last().unwrap().db_uuid, "bot");
+        // A mill is NOT a flip — nothing recorded for FlippedThisTurn counters.
+        assert!(
+            a.flipped_this_turn.is_empty(),
+            "mill must not count as a flip"
+        );
     }
 
     /// `act_reveal` marks the chosen hand card(s) in `revealed_hand`. With a single-card
