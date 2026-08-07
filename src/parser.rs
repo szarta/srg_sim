@@ -614,6 +614,44 @@ fn choice_from_following(clauses: &[String]) -> Option<(Effect, usize)> {
     Some((effect, consumed))
 }
 
+/// "The player with the fewest/most cards in hand draws/discards N" — the actor is
+/// the hand-size extreme, decided at resolution. Composed as TWO conditional effects
+/// (one per seat) using a NON-STRICT compare (`<=` for fewest, `>=` for most) so a
+/// TIE resolves for BOTH players: each side draws/discards iff its hand is `<=`/`>=`
+/// the opponent's. No new IR — reuses `HandSizeCompare` + `Draw`/`Discard`.
+fn hand_extreme_effects(clause: &str) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^The player with (?:the )?(fewest|most) cards in (?:their )?hand (draws|discards) (\d+) cards?(?: from their hand)?$",
+        )
+        .unwrap()
+    });
+    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    let most = c[1].eq_ignore_ascii_case("most");
+    let draws = c[2].eq_ignore_ascii_case("draws");
+    let n: i64 = c[3].parse().ok()?;
+    let cmp = if most { Comparator::Ge } else { Comparator::Le };
+    let mk = |who: Who| {
+        let action = if draws {
+            draw(n, who, DeckEnd::Top, None, Who::SelfSide)
+        } else {
+            discard(n, who, false, None, Who::SelfSide)
+        };
+        eff(
+            on_hit(),
+            vec![action],
+            Condition::HandSizeCompare {
+                cmp,
+                vs: Vs::Opp,
+                value: None,
+                who,
+            },
+            Duration::Instant,
+        )
+    };
+    Some(vec![mk(Who::SelfSide), mk(Who::Opp)])
+}
+
 /// `a AND b`, dropping a trivially-true `b` ("the body has no gate of its own").
 fn and_conds(a: Condition, b: Condition) -> Condition {
     match b {
@@ -5056,6 +5094,22 @@ pub fn parse_text(
                 i += 1 + consumed;
                 continue;
             }
+        }
+        // "The player with the fewest/most cards in hand draws/discards N" — one
+        // clause, TWO conditional effects (per-seat, tie resolves for both).
+        if let Some(effs) = hand_extreme_effects(clause) {
+            for mut e in effs {
+                e.raw_clause = clause.clone();
+                e.source = source;
+                e.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(e, &window));
+            }
+            i += 1;
+            continue;
         }
         effects.push(scope(compile(clause, source, freq, n), &window));
         i += 1;
