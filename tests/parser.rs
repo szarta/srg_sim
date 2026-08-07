@@ -3054,3 +3054,47 @@ fn compound_and_gate() {
     );
     assert_eq!(v["actions"][0]["@type"], "Unsupported");
 }
+
+/// Compound "<A> or <B>" gate composition (task #131): the OR-companion to
+/// `compound_and_gate`. `or` splits before `and` (lower precedence), so a mixed gate
+/// groups as A or (B and C). Atomic gates that merely CONTAIN " or " ("the Crowd Meter is
+/// 2 or greater", a match-type OR-list) must still match as a unit before any split.
+#[test]
+fn compound_or_gate() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Stop-eligibility gated on (Crowd-Meter) OR (match-type). The phrase has TWO " or "
+    // occurrences; atomic-first keeps "the Crowd Meter is 2 or greater" whole and only the
+    // top-level " or " (before "this is a Steel Cage match") splits -> Or[CM, IsMatchType].
+    let v = one("If the Crowd Meter is 2 or greater or this is a Steel Cage match, stop any Finish Submission.");
+    let cond = &v["condition"]; // Stop-eligibility carries its gate on the effect condition
+    assert_eq!(cond["@type"], "Or");
+    let items = cond["items"].as_array().unwrap();
+    assert_eq!(items.len(), 2);
+    assert_eq!(items[0]["@type"], "CrowdMeterCompare");
+    assert_eq!(items[1]["@type"], "IsMatchType");
+    assert_eq!(items[1]["types"][0], "STEEL_CAGE");
+
+    // Precedence: "A or B and C" groups as Or[A, And[B, C]] (and binds tighter than or).
+    let v = one("If this is a Steel Cage match or this is a Triad match and you have another Lead in play, this card is also a Lead.");
+    let cond = &v["actions"][0]["condition"];
+    assert_eq!(cond["@type"], "Or");
+    let items = cond["items"].as_array().unwrap();
+    assert_eq!(items.len(), 2);
+    assert_eq!(items[0]["@type"], "IsMatchType");
+    assert_eq!(items[0]["types"][0], "STEEL_CAGE");
+    assert_eq!(items[1]["@type"], "And");
+    let inner = items[1]["items"].as_array().unwrap();
+    assert_eq!(inner[0]["@type"], "IsMatchType");
+    assert_eq!(inner[0]["types"][0], "TRIAD");
+    assert_eq!(inner[1]["@type"], "HasInPlay");
+
+    // A same-connective chain flattens: A or B or C -> flat Or[A, B, C].
+    let v = one("If this is a Steel Cage match or this is a Triad match or this is a Ring of Fire match, this card is also a Lead.");
+    let items = v["actions"][0]["condition"]["items"].as_array().unwrap();
+    assert_eq!(items.len(), 3, "flat three-way Or");
+}

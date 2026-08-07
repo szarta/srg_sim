@@ -856,47 +856,57 @@ fn gate_condition(text: &str) -> Option<Condition> {
     if let Some(c) = stop_condition(t) {
         return Some(c);
     }
-    // Compound gate: "<A> and <B>" where each half is itself a modeled gate — e.g.
-    // "you have another Follow Up in play and this is a Steel Cage match". Tried ONLY
-    // after the whole phrase fails to parse atomically, so single conditions that
-    // literally contain " and " ("you and your opponent rolled the same skill") are
-    // matched as a unit first and never split. Composes existing `Condition`s under the
-    // existing `And` — no schema change. `or`-compounds are left Unsupported for now.
-    split_and_gate(t)
+    // Compound gate: "<A> or <B>" / "<A> and <B>" where each half is itself a modeled
+    // gate — e.g. "you have another Follow Up in play and this is a Steel Cage match".
+    // Tried ONLY after the whole phrase fails to parse atomically, so single conditions
+    // that literally contain " and " / " or " ("you and your opponent rolled the same
+    // skill", "the Crowd Meter is 2 or greater") are matched as a unit first and never
+    // split. `or` splits BEFORE `and` so `and` binds tighter (A or B and C = A or (B and
+    // C)). Composes existing `Condition`s under the existing And / Or — no schema change.
+    if let Some(c) = split_compound_gate(t, " or ", |items| Condition::Or { items }) {
+        return Some(c);
+    }
+    split_compound_gate(t, " and ", |items| Condition::And { items })
 }
 
-/// Split a gate phrase on a top-level " and " (outside quoted names) and AND-parse the
-/// two halves via [`gate_condition`], returning [`Condition::And`] iff BOTH parse. Tries
-/// each split point left-to-right and takes the first that fully parses, so a leading
-/// atomic phrase that itself contains " and " ("you and your opponent rolled the same
-/// skill and …") is kept whole. A trailing half that is itself compound flattens into a
-/// single flat `And`. `None` (clause stays `Unsupported`) if no split point parses.
-fn split_and_gate(text: &str) -> Option<Condition> {
-    for pos in and_split_points(text) {
+/// Split a gate phrase on a top-level `sep` (" and " / " or ", outside quoted names) and
+/// parse each half via [`gate_condition`], combining them with `make` iff BOTH parse.
+/// Tries each split point left-to-right and takes the first that fully parses, so a
+/// leading atomic phrase that itself contains `sep` ("the Crowd Meter is 2 or greater or
+/// …") is kept whole. A trailing half combined under the SAME connective flattens into
+/// one flat node (A or (B or C) -> Or[A,B,C]); a differently-combined half stays nested,
+/// preserving precedence. `None` (clause stays `Unsupported`) if no split point parses.
+fn split_compound_gate(
+    text: &str,
+    sep: &str,
+    make: fn(Vec<Condition>) -> Condition,
+) -> Option<Condition> {
+    for pos in top_level_split_points(text, sep) {
         let left = text[..pos].trim();
-        let right = text[pos + " and ".len()..].trim();
+        let right = text[pos + sep.len()..].trim();
         if let (Some(a), Some(b)) = (gate_condition(left), gate_condition(right)) {
             let mut items = vec![a];
             match b {
-                Condition::And { items: more } => items.extend(more),
+                Condition::Or { items: more } if sep == " or " => items.extend(more),
+                Condition::And { items: more } if sep == " and " => items.extend(more),
                 other => items.push(other),
             }
-            return Some(Condition::And { items });
+            return Some(make(items));
         }
     }
     None
 }
 
-/// Byte offsets of every top-level " and " in `text` — occurrences inside a `"…"` quoted
+/// Byte offsets of every top-level `sep` in `text` — occurrences inside a `"…"` quoted
 /// name (e.g. a card titled `"Bar and Grill"`) are skipped so a compound split never
 /// bisects a name.
-fn and_split_points(text: &str) -> Vec<usize> {
+fn top_level_split_points(text: &str, sep: &str) -> Vec<usize> {
     let mut out = Vec::new();
     let mut in_quote = false;
     for (i, ch) in text.char_indices() {
         if ch == '"' {
             in_quote = !in_quote;
-        } else if !in_quote && text[i..].starts_with(" and ") {
+        } else if !in_quote && text[i..].starts_with(sep) {
             out.push(i);
         }
     }
