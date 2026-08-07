@@ -344,9 +344,13 @@ fn set_skill(s: &mut Skills, skill: Skill, v: i64) {
 // Value accessors (mirroring the Python dict access + the rules-text typo)
 // ---------------------------------------------------------------------------
 
-/// A card's rules text, tolerating the `rules-text` typo in the export.
+/// A card's engine-facing rules text. Prefers `rules_text` (the normalized layer,
+/// present only where a card's printed wording is edited for the engine), falling back to
+/// `card_text` (the verbatim as-printed text, the field the card DB carries for every
+/// card). Also tolerates the legacy `rules-text` typo key in older exports.
 pub fn rules_text(rec: &Value) -> &str {
     str_field(rec, "rules_text")
+        .or_else(|| str_field(rec, "card_text"))
         .or_else(|| str_field(rec, "rules-text"))
         .unwrap_or("")
 }
