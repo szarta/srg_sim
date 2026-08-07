@@ -456,6 +456,7 @@ impl Engine {
                         in_play: Vec::new(),
                         pending_roll_mods: Default::default(),
                         pending_skill_roll_mods: Vec::new(),
+                        revealed_hand: Default::default(),
                         reroll_grants: Default::default(),
                         timed_buffs: Vec::new(),
                         chosen_name: None,
@@ -1213,6 +1214,7 @@ impl Engine {
                 match_on,
             } => self.act_reveal_for_draw(*who, *count, *draw, *match_on, key)?,
             Action::Peek { who } => self.act_peek(*who, key),
+            Action::Reveal { who, count } => self.act_reveal(*who, *count, key)?,
             Action::ForceRevealPlay { who } => self.act_force_reveal_play(*who, key),
             Action::CopyEntrance { who } => self.act_copy_entrance(*who, key),
             Action::Scry {
@@ -2740,6 +2742,42 @@ impl Engine {
         self.log_effect(key, "Peek", Some(&target), json!({"hand_size": hand_size}));
     }
 
+    /// "`who` reveals `count` card(s) in their hand" (fog-of-war [`Action::Reveal`]).
+    /// The revealing player CHOOSES which cards (a `reveal` decision per card, over the
+    /// hand minus any already picked THIS reveal); the chosen cards join their
+    /// `revealed_hand` so the opponent sees them (in `observable`) while they stay in
+    /// hand. Idempotent per card — re-picking an already-revealed card leaks nothing.
+    fn act_reveal(&mut self, who: Who, count: i64, key: &str) -> Eng<()> {
+        let target = self.target(who, key);
+        let mut chosen: Vec<String> = Vec::new();
+        for _ in 0..count {
+            let pool: Vec<Card> = self.state.players[&target]
+                .hand
+                .iter()
+                .filter(|c| !chosen.contains(&c.db_uuid))
+                .cloned()
+                .collect();
+            if pool.is_empty() {
+                break;
+            }
+            let card = self.choose_reveal(&target, "reveal", &pool)?;
+            chosen.push(card.db_uuid);
+        }
+        let player = self.state.players.get_mut(&target).unwrap();
+        for uuid in &chosen {
+            player.revealed_hand.insert(uuid.clone());
+        }
+        self.log_effect(key, "Reveal", Some(&target), json!({"cards": chosen}));
+        Ok(())
+    }
+
+    /// One `reveal` decision: the reveal target picks a card from `pool` to expose.
+    fn choose_reveal(&mut self, chooser: &str, point: &str, pool: &[Card]) -> Eng<Card> {
+        let legal = pool.iter().map(reveal_option).collect();
+        let chosen = self.decide(point, chooser, legal)?;
+        Ok(find_by_uuid(pool, &chosen))
+    }
+
     /// Arm the deferred "forced reveal-and-play" on `who` for their next won turn
     /// (Father Light). A one-shot flag on the target; the actual reveal+play fires
     /// from `take_turn_action` when that player next takes a turn. Idempotent —
@@ -3692,8 +3730,13 @@ impl Engine {
             player.hits_this_turn = 0; // reset the per-turn hit count (HitThisTurn)
             player.hit_last_turn = std::mem::take(&mut player.hit_this_turn); // rotate hit history
             player.flipped_this_turn.clear(); // reset per-turn flips (FlippedThisTurn)
-                                              // Promote a "re-roll your next turn roll" grant to this turn (SET, not
-                                              // accumulate); an unused grant expires.
+                                              // Drop revealed-hand entries for cards no longer in hand (played /
+                                              // discarded): once it leaves the hand it is no longer a revealed card.
+            player
+                .revealed_hand
+                .retain(|u| player.hand.iter().any(|c| &c.db_uuid == u));
+            // Promote a "re-roll your next turn roll" grant to this turn (SET, not
+            // accumulate); an unused grant expires.
             player.reroll_grants.this_turn = player.reroll_grants.next_turn;
             player.reroll_grants.next_turn = 0;
         }
@@ -5927,6 +5970,16 @@ fn discard_option(card: &Card) -> Value {
     })
 }
 
+/// A `reveal` decision option — one hand card the revealing player could expose.
+fn reveal_option(card: &Card) -> Value {
+    json!({
+        "kind": "reveal",
+        "number": card.number,
+        "card": card.db_uuid,
+        "order": card.play_order.name(),
+    })
+}
+
 /// Whether a `Stop` action's order/type filter covers this attack (`None` = any).
 /// Whether `attack` satisfies every `StopRequiresTag` gate in a stop `eff` — a
 /// passive marker paired with a sibling `Stop`, requiring the attacked card carry
@@ -6049,6 +6102,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RevealAndDiscard { .. } => "RevealAndDiscard",
         Action::RevealForDraw { .. } => "RevealForDraw",
         Action::Peek { .. } => "Peek",
+        Action::Reveal { .. } => "Reveal",
         Action::ForceRevealPlay { .. } => "ForceRevealPlay",
         Action::CopyEntrance { .. } => "CopyEntrance",
         Action::Scry { .. } => "Scry",
@@ -6540,6 +6594,27 @@ mod breakout_modifier_tests {
         // A skill with no queued mod returns 0 and changes nothing.
         assert_eq!(engine.consume_skill_roll_mod("A", Skill::Strike), 0);
         assert_eq!(engine.state.players["A"].pending_skill_roll_mods.len(), 1);
+    }
+
+    /// `act_reveal` marks the chosen hand card(s) in `revealed_hand`. With a single-card
+    /// hand the `reveal` decision auto-resolves, so no decider is consulted.
+    #[test]
+    fn act_reveal_marks_the_chosen_card_revealed() {
+        let mut engine = engine();
+        let card: Card = serde_json::from_value(json!({
+            "db_uuid": "rv", "name": "rv", "number": 1, "atk_type": "Strike",
+            "play_order": "Lead", "finish_bonuses": {}, "effects": []
+        }))
+        .unwrap();
+        engine.state.players.get_mut("A").unwrap().hand.push(card);
+
+        engine.act_reveal(Who::SelfSide, 1, "A").expect("reveal");
+        assert!(engine.state.players["A"].revealed_hand.contains("rv"));
+
+        // The reveal exposes it to B's observable projection.
+        let a = engine.state.observable("B");
+        let revealed = a["players"]["A"]["revealed"].as_array().expect("revealed");
+        assert_eq!(revealed[0]["db_uuid"], "rv");
     }
 }
 

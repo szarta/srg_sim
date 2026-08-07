@@ -880,6 +880,9 @@
                 "$ref": "#/$defs/Peek"
               },
               {
+                "$ref": "#/$defs/Reveal"
+              },
+              {
                 "$ref": "#/$defs/ForceRevealPlay"
               },
               {
@@ -1740,6 +1743,9 @@
               },
               {
                 "$ref": "#/$defs/Peek"
+              },
+              {
+                "$ref": "#/$defs/Reveal"
               },
               {
                 "$ref": "#/$defs/ForceRevealPlay"
@@ -2854,6 +2860,9 @@
           "$ref": "#/$defs/Peek"
         },
         {
+          "$ref": "#/$defs/Reveal"
+        },
+        {
           "$ref": "#/$defs/ForceRevealPlay"
         },
         {
@@ -3957,6 +3966,27 @@
       ],
       "type": "object"
     },
+    "Reveal": {
+      "additionalProperties": false,
+      "description": "who reveals count card(s) from their own hand to the opponent (fog-of-war); the revealing player chooses which via a 'reveal' decision. No zone change.",
+      "properties": {
+        "@type": {
+          "const": "Reveal"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "count"
+      ],
+      "type": "object"
+    },
     "PlayExtraCard": {
       "additionalProperties": false,
       "properties": {
@@ -4363,6 +4393,9 @@
               },
               {
                 "$ref": "#/$defs/Peek"
+              },
+              {
+                "$ref": "#/$defs/Reveal"
               },
               {
                 "$ref": "#/$defs/ForceRevealPlay"
@@ -5380,5 +5413,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 99
+  "version": 100
 }

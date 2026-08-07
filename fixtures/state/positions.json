@@ -30,7 +30,7 @@
       },
       "name": "bull_fae_fresh",
       "observable_A": {
-        "schema_version": 2,
+        "schema_version": 3,
         "active": "A",
         "crowd_meter": 0,
         "players": {
@@ -280,7 +280,7 @@
         "viewer": "A"
       },
       "observable_B": {
-        "schema_version": 2,
+        "schema_version": 3,
         "active": "A",
         "crowd_meter": 0,
         "players": {
@@ -1271,7 +1271,7 @@
       },
       "name": "bull_fae_buffs_peek",
       "observable_A": {
-        "schema_version": 2,
+        "schema_version": 3,
         "active": "B",
         "crowd_meter": 3,
         "players": {
@@ -2023,7 +2023,7 @@
         "viewer": "A"
       },
       "observable_B": {
-        "schema_version": 2,
+        "schema_version": 3,
         "active": "B",
         "crowd_meter": 3,
         "players": {
@@ -3951,7 +3951,7 @@
       },
       "name": "mm_v3_active_blank_on_B",
       "observable_A": {
-        "schema_version": 2,
+        "schema_version": 3,
         "active": "A",
         "crowd_meter": 0,
         "players": {
@@ -4336,7 +4336,7 @@
         "viewer": "A"
       },
       "observable_B": {
-        "schema_version": 2,
+        "schema_version": 3,
         "active": "A",
         "crowd_meter": 0,
         "players": {

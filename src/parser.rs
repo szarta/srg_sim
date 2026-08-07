@@ -2427,6 +2427,26 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // "Each player reveals N card(s) in their hand" — fog-of-war: each player
+        // reveals N of their own hand cards to the opponent (their own choice, resolved
+        // by the engine's `reveal` decision). Two Reveal actions (SELF + OPP).
+        rule(r"Each player reveals (\d+) cards? in their hand", |c| {
+            Some(eff(
+                on_hit(),
+                vec![
+                    Action::Reveal {
+                        who: Who::SelfSide,
+                        count: num(c, 1),
+                    },
+                    Action::Reveal {
+                        who: Who::Opp,
+                        count: num(c, 1),
+                    },
+                ],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
         // Impact is Family (V2) entrance: blank the opponent's Spotlight Finishes
         // Reveal-then family (RevealThen, schema v95): "Reveal the top/bottom card of
         // your deck[:,] if <filter>, <consequence>" and "Randomly reveal N card(s) in

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 99;
+pub const SCHEMA_VERSION: i64 = 100;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1082,6 +1082,14 @@ pub enum Action {
     },
     Peek {
         who: Who,
+    },
+    /// `who` reveals `count` card(s) from their OWN hand to the opponent — a fog-of-war
+    /// effect ("Each player reveals 1 card in their hand"). The revealing player CHOOSES
+    /// which (a `reveal` decision); the chosen cards become visible to the opponent in
+    /// the observable projection while they remain in hand. No zone change. schema v100
+    Reveal {
+        who: Who,
+        count: i64,
     },
     /// Arm a deferred, mandatory "forced reveal-and-play" on `who` for their next
     /// turn (Father Light: "during your opponent's next turn, they randomly reveal
@@ -2212,6 +2220,14 @@ pub enum IrNode {
     },
     Peek {
         who: Who,
+    },
+    /// `who` reveals `count` card(s) from their OWN hand to the opponent — a fog-of-war
+    /// effect ("Each player reveals 1 card in their hand"). The revealing player CHOOSES
+    /// which (a `reveal` decision); the chosen cards become visible to the opponent in
+    /// the observable projection while they remain in hand. No zone change. schema v100
+    Reveal {
+        who: Who,
+        count: i64,
     },
     /// Arm a deferred, mandatory "forced reveal-and-play" on `who` for their next
     /// turn (Father Light: "during your opponent's next turn, they randomly reveal

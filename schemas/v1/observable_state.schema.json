@@ -3,12 +3,12 @@
   "$id": "https://github.com/szarta/srg_sim/schemas/v1/observable_state.schema.json",
   "title": "ObservableState",
   "description": "The per-viewer projection of GameState carried on every DecisionRequest.observable_state (src/state.rs GameState::observable). Lossy and viewer-scoped: the seed, RNG, flags, and every hidden zone are excluded; an opponent's hand is a count unless a Peek reveals it this turn. schema_version mirrors src/state.rs OBSERVABLE_SCHEMA_VERSION.",
-  "version": 2,
+  "version": 3,
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "viewer", "crowd_meter", "active", "turn_no", "players"],
   "properties": {
-    "schema_version": { "type": "integer", "const": 1 },
+    "schema_version": { "type": "integer", "const": 3 },
     "viewer": { "type": "string", "description": "Seat key ('A'|'B') this projection is scoped to." },
     "crowd_meter": { "type": "integer" },
     "active": { "type": "string", "description": "Seat key whose turn it is." },
@@ -37,7 +37,8 @@
         "gimmick_blanked": { "type": "boolean" },
         "deck_size": { "type": "integer", "description": "Count only; deck order is hidden from everyone." },
         "hand": { "type": "array", "items": { "$ref": "#/$defs/Card" }, "description": "Full hand — present only for the viewer's own seat or a Peek-revealed opponent." },
-        "hand_size": { "type": "integer", "description": "Count only — present for a hidden opponent hand." }
+        "hand_size": { "type": "integer", "description": "Count only — present for a hidden opponent hand." },
+        "revealed": { "type": "array", "items": { "$ref": "#/$defs/Card" }, "description": "Hidden-opponent seat only: the specific hand cards this seat has REVEALED to the viewer (fog-of-war, Action::Reveal) and still holds. Absent when none." }
       }
     },
     "Card": {

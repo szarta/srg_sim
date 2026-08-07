@@ -597,6 +597,11 @@
     "who": "SELF"
   },
   {
+    "@type": "Reveal",
+    "who": "SELF",
+    "count": 1
+  },
+  {
     "@type": "ForceRevealPlay",
     "who": "OPP"
   },

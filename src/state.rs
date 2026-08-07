@@ -34,7 +34,7 @@ pub const MIN_HAND_SIZE: i64 = 3;
 /// per-viewer state carried on every [`DecisionRequest`](crate::engine::DecisionRequest)
 /// and pinned in `schemas/v1/observable_state.schema.json`. Bump on any shape change
 /// so the web client can assert it against the engine it vendors.
-pub const OBSERVABLE_SCHEMA_VERSION: i64 = 2;
+pub const OBSERVABLE_SCHEMA_VERSION: i64 = 3;
 
 /// A condition evaluator the engine can supply so conditional `Static` buffs
 /// resolve against live state; without one, only unconditional (`Always`) buffs
@@ -119,6 +119,12 @@ pub struct PlayerState {
     /// excluded from the observable projection like `pending_roll_mods`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pending_skill_roll_mods: Vec<SkillRollMod>,
+    /// `db_uuid`s of THIS player's own hand cards they have REVEALED to the opponent
+    /// (fog-of-war; [`Action::Reveal`]). Persists for the match — a card the opponent
+    /// has seen stays known while it is in hand. Read by [`Self::observable`] to expose
+    /// those cards to the opponent even while the rest of the hand is redacted.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
+    pub revealed_hand: std::collections::BTreeSet<String>,
     /// One-shot "re-roll your NEXT turn roll" grants (King Brian Cage). `next` is
     /// set when the granting effect fires; promoted to `this` at the owner's next
     /// turn start; an unused grant expires (never accumulates).
@@ -948,6 +954,18 @@ impl GameState {
             view["hand"] = serde_json::to_value(&player.hand).expect("hand");
         } else {
             view["hand_size"] = json!(player.hand.len());
+            // Fog-of-war: cards this player has REVEALED to the opponent stay visible
+            // to them (by db_uuid) while in hand, even though the rest is redacted.
+            if !player.revealed_hand.is_empty() {
+                let revealed: Vec<&Card> = player
+                    .hand
+                    .iter()
+                    .filter(|c| player.revealed_hand.contains(&c.db_uuid))
+                    .collect();
+                if !revealed.is_empty() {
+                    view["revealed"] = serde_json::to_value(&revealed).expect("revealed");
+                }
+            }
         }
         view
     }

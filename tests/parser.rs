@@ -276,6 +276,25 @@ fn hand_bury_grammar() {
     assert_eq!(acts[1]["all"], true);
     assert_eq!(acts[1]["who"], "OPP");
 
+    // "Each player reveals N card(s) in their hand" -> two Reveal actions (fog-of-war).
+    let acts = serde_json::to_value(
+        &parse_text(
+            "Each player reveals 1 card in their hand.",
+            EffectSource::Card,
+            None,
+            None,
+        )[0],
+    )
+    .unwrap()["actions"]
+        .as_array()
+        .unwrap()
+        .clone();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["@type"], "Reveal");
+    assert_eq!(acts[0]["who"], "SELF");
+    assert_eq!(acts[0]["count"], 1);
+    assert_eq!(acts[1]["who"], "OPP");
+
     // Conditional prefix carries a HasInPlay gate + OnPlay trigger.
     let effs = parse_text(
         "If you have another Follow Up in play, your opponent buries 1 card in their hand.",

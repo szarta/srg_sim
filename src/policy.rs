@@ -477,6 +477,7 @@ impl Policy for HeuristicPolicy {
             "bury_hand" => self.at_discard(legal, state, key),
             "bury_opp_hand" => self.at_bury_opp_hand(legal, state, key),
             "discard" => self.at_discard(legal, state, key),
+            "reveal" => at_reveal(legal, state, key),
             "optional" => self.at_optional(legal),
             "elect_bump" => self.at_elect_bump(legal, state, key),
             "bump_replace" => self.at_bump_replace(legal),
@@ -546,6 +547,58 @@ fn find_grapple_finish<'a>(legal: &'a [Value], state: &GameState, key: &str) -> 
 /// True iff `card` is a Grapple finish (the Kill Shot line's payload).
 fn is_grapple_finish(card: &Card) -> bool {
     card.play_order == PlayOrder::Finish && card.atk_type == AtkType::Grapple
+}
+
+/// Choose which hand card to REVEAL (fog-of-war "each player reveals N in their
+/// hand"): expose the card that leaks the LEAST information. See the reveal-decision
+/// heuristic — lower [`reveal_rank`] wins, ties keep the earliest option.
+fn at_reveal(legal: &[Value], state: &GameState, key: &str) -> Value {
+    // Empty deck: the opponent can already infer the whole hand from public zones
+    // (discard + board), so revealing anything leaks nothing new — take the first.
+    if state.players[key].deck.is_empty() {
+        return legal[0].clone();
+    }
+    let best = (0..legal.len())
+        .min_by_key(|&i| reveal_rank(hand_card(state, key, ocard(&legal[i])), state, key))
+        .unwrap();
+    legal[best].clone()
+}
+
+/// Reveal priority for one card (1 = most preferred to reveal … 8 = least): already
+/// known > dead equal-8 stop > non-stop Lead > non-stop Follow Up > Lead Stop >
+/// Finish > Follow Up Stop > anything else.
+fn reveal_rank(card: &Card, state: &GameState, key: &str) -> i64 {
+    if state.players[key].revealed_hand.contains(&card.db_uuid) {
+        return 1; // already shown — zero new information
+    }
+    // A "dead" equal-8 stop (#13-15): its skill-requirement stat is below the
+    // opponent's, so the stop cannot win — nothing lost by showing it.
+    if (13..=15).contains(&card.number) {
+        if let Some(req) = card.skill_requirements.first() {
+            let opp = state.opponent_of(key);
+            if state.effective_stat(key, req.skill, None)
+                < state.effective_stat(&opp, req.skill, None)
+            {
+                return 2;
+            }
+        }
+    }
+    let is_stop = card_is_stop(card);
+    match card.play_order {
+        PlayOrder::Lead if !is_stop => 3,
+        PlayOrder::Followup if !is_stop => 4,
+        PlayOrder::Lead => 5,     // Lead Stop
+        PlayOrder::Finish => 6,   // Finish
+        PlayOrder::Followup => 7, // Follow Up Stop
+        PlayOrder::None => 8,
+    }
+}
+
+/// Whether `card` carries a Stop action.
+fn card_is_stop(card: &Card) -> bool {
+    card.effects
+        .iter()
+        .any(|e| e.actions.iter().any(|a| matches!(a, Action::Stop { .. })))
 }
 
 /// True iff a stop's deck number is a finish-answering stop the Kill Shot line

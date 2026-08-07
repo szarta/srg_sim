@@ -636,7 +636,7 @@
               "in_play": []
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 1,
           "viewer": "A"
         },
@@ -1184,7 +1184,7 @@
               "in_play": []
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 1,
           "viewer": "A"
         },
@@ -2129,7 +2129,7 @@
               ]
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 5,
           "viewer": "A"
         },
@@ -3504,7 +3504,7 @@
               "in_play": []
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 6,
           "viewer": "A"
         },
@@ -4929,7 +4929,7 @@
               "in_play": []
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 7,
           "viewer": "A"
         },
@@ -6699,7 +6699,7 @@
               ]
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 8,
           "viewer": "A"
         },
@@ -8386,7 +8386,7 @@
               ]
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 8,
           "viewer": "A"
         },
@@ -9947,7 +9947,7 @@
               ]
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 8,
           "viewer": "A"
         },
@@ -11675,7 +11675,7 @@
               ]
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 9,
           "viewer": "A"
         },
@@ -13789,7 +13789,7 @@
               "in_play": []
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 10,
           "viewer": "A"
         },
@@ -16271,7 +16271,7 @@
               ]
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 12,
           "viewer": "A"
         },
@@ -19007,7 +19007,7 @@
               ]
             }
           },
-          "schema_version": 2,
+          "schema_version": 3,
           "turn_no": 14,
           "viewer": "A"
         },
