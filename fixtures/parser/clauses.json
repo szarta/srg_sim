@@ -9143,13 +9143,9 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 95,
+    "grammar": 97,
     "override": 118,
     "top_unparsed": [
-      [
-        "If this is a Steel Cage or Liger's Den match, you may flip both cards instead.",
-        2
-      ],
       [
         "Finishes with \"Cannot Breakout\" in the text instead have blank text.",
         1
@@ -9160,7 +9156,7 @@
       ]
     ],
     "total": 217,
-    "unsupported": 4
+    "unsupported": 2
   },
   "coverage_records": [
     {

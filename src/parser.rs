@@ -5248,11 +5248,26 @@ pub fn coverage(records: &[CoverageRecord], overrides: Option<&Overrides>) -> Co
             override_ += clauses.len();
             continue;
         }
+        // Parse the WHOLE record (not clause-by-clause via `match_grammar`) so parse-
+        // loop compositions — the "Choose one:" / reveal-header composers and the
+        // hand-size-extreme two-effect split — count as MODELED rather than showing up
+        // as unsupported headers. A clause the parser cannot map surfaces as exactly one
+        // `Unsupported` effect whose `raw_clause` is that clause verbatim (same string
+        // `split_clauses` yields), so the set membership below is a faithful per-clause
+        // verdict.
+        let effects = parse_text(rec.text, EffectSource::Card, rec.db_uuid, overrides);
+        let unsupported_clauses: std::collections::HashSet<&str> = effects
+            .iter()
+            .filter(|e| {
+                e.actions
+                    .iter()
+                    .any(|a| matches!(a, Action::Unsupported { .. }))
+            })
+            .map(|e| e.raw_clause.as_str())
+            .collect();
         for clause in &clauses {
             total += 1;
-            if match_grammar(clause).is_some() {
-                grammar += 1;
-            } else {
+            if unsupported_clauses.contains(clause.as_str()) {
                 unsupported += 1;
                 let shape = normalize_shape(clause);
                 shape_counts
@@ -5262,6 +5277,8 @@ pub fn coverage(records: &[CoverageRecord], overrides: Option<&Overrides>) -> Co
                         shape_order.push(shape.clone());
                         1
                     });
+            } else {
+                grammar += 1;
             }
         }
     }
