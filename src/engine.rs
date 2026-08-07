@@ -4474,6 +4474,21 @@ impl Engine {
                 self.fire_if_ready(eff, key, None)?;
             }
         }
+        // WHILE_IN_DISCARD OnStop with self_card binding (task #115 slice 2b): "when this
+        // card is in your discard pile and you stop / your opponent stops <X>, add it to
+        // your hand". The re-parsed remainder carries the same `dir` an in-play OnStop
+        // would, and this site is already called for both players with both dirs, so the
+        // who-scoping falls out of the identical `dir`/`order` match.
+        for (uuid, eff) in self.discard_self_triggers(key) {
+            if matches!(eff.trigger, Trigger::OnStop { dir: d, order }
+                if d == dir && order.is_none_or(|o| o == stopped))
+            {
+                self.self_card = Some(uuid);
+                let r = self.fire_if_ready(&eff, key, None);
+                self.self_card = None;
+                r?;
+            }
+        }
         Ok(())
     }
 
@@ -4893,12 +4908,29 @@ impl Engine {
         // frozen corpus (which has none) is byte-identical.
         let breaker = self.state.opponent_of(finisher);
         for key in ["A", "B"] {
-            for eff in self.triggered_effects(key) {
+            for eff in self.standing_effects(key) {
                 let Trigger::OnBreakout { who } = &eff.trigger else {
                     continue;
                 };
                 if who.is_none_or(|w| self.target(w, key) == breaker) {
                     self.fire_if_ready(&eff, key, None)?;
+                }
+            }
+            // WHILE_IN_DISCARD OnBreakout with self_card binding (task #115 slice 2b):
+            // "when this card is in your discard pile and either player / your opponent
+            // breaks out, you may shuffle it into your deck / add it to your hand". (Was
+            // firing flattened via `triggered_effects` but with no `self_card` — the
+            // dedicated loop binds the source so the self-action resurrects the right card;
+            // splitting the standing scan off keeps it from double-firing.)
+            for (uuid, eff) in self.discard_self_triggers(key) {
+                let Trigger::OnBreakout { who } = &eff.trigger else {
+                    continue;
+                };
+                if who.is_none_or(|w| self.target(w, key) == breaker) {
+                    self.self_card = Some(uuid);
+                    let r = self.fire_if_ready(&eff, key, None);
+                    self.self_card = None;
+                    r?;
                 }
             }
         }
@@ -9531,6 +9563,96 @@ mod man_from_it_tests {
                 .count(),
             1,
             "shuffled itself into the deck"
+        );
+    }
+
+    /// A `WhileInDiscard` OnStop self-resurrect (task #115 slice 2b): "When this card is
+    /// in your discard pile and your opponent stops your card, add it to your hand." The
+    /// clause carries `dir=Yours` (your card was stopped), so `run_on_stop_gimmicks` only
+    /// resurrects it on the matching-direction call — not on the stopper's `Theirs` call.
+    #[test]
+    fn while_in_discard_onstop_dir_gated_self_resurrect() {
+        let watcher = |db: &str| -> Card {
+            serde_json::from_value(json!({
+                "atk_type":"Grapple","db_uuid":db,"name":"Comeback","number":30,
+                "play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+                "effects":[{"@type":"Effect",
+                    "trigger":{"@type":"OnStop","dir":"YOURS","order":null},
+                    "condition":{"@type":"Always"},
+                    "actions":[{"@type":"AddSelfToHand"}],
+                    "duration":"WHILE_IN_DISCARD","optional":false,
+                    "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                    "raw_clause":"","source":"card"}]
+            }))
+            .unwrap()
+        };
+
+        // The `Theirs` call (the stopper's vantage) must NOT fire a `dir=Yours` watcher.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![watcher("w")];
+        engine
+            .run_on_stop_gimmicks("A", Direction::Theirs, PlayOrder::Lead)
+            .unwrap();
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            1,
+            "wrong dir: stays"
+        );
+
+        // The `Yours` call (your card was stopped) fires it: the card resurrects itself.
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![watcher("w")];
+        engine
+            .run_on_stop_gimmicks("A", Direction::Yours, PlayOrder::Lead)
+            .unwrap();
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            0,
+            "left the discard"
+        );
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            1,
+            "resurrected to hand"
+        );
+    }
+
+    /// A `WhileInDiscard` OnBreakout self-resurrect (task #115 slice 2b): "When this card
+    /// is in your discard pile and either player breaks out, shuffle it into your deck."
+    /// Fires EXACTLY ONCE — the standing scan and the discard self-trigger scan are split
+    /// so the effect no longer double-fires (once flat via `triggered_effects`, once
+    /// bound) — and `self_card` binds so the right card leaves the discard.
+    #[test]
+    fn while_in_discard_onbreakout_fires_once_and_self_resurrects() {
+        let watcher: Card = serde_json::from_value(json!({
+            "atk_type":"Grapple","db_uuid":"recur","name":"Comeback","number":30,
+            "play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect",
+                "trigger":{"@type":"OnBreakout","who":null},
+                "condition":{"@type":"Always"},
+                "actions":[{"@type":"ShuffleSelfIntoDeck"}],
+                "duration":"WHILE_IN_DISCARD","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+
+        let mut engine = engine_with(json!([]));
+        engine.state.players.get_mut("A").unwrap().discard = vec![watcher];
+        engine.on_broken_out("B").unwrap(); // B finished; A (breaker) broke out
+        assert_eq!(
+            engine.state.players["A"].discard.len(),
+            0,
+            "left the discard"
+        );
+        assert_eq!(
+            engine.state.players["A"]
+                .deck
+                .iter()
+                .filter(|c| c.db_uuid == "recur")
+                .count(),
+            1,
+            "shuffled itself in exactly once (no double-fire)"
         );
     }
 

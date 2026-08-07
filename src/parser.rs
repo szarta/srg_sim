@@ -720,11 +720,15 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
     // Fidelity gate: only WhileInDiscard triggers whose dispatch site fires from the
     // discard pile (with the self_card referent bound) may be emitted; the rest decline
     // and stay Unsupported rather than become silently-inert IR. Wired so far (task #115):
-    // OnRoll (slice 1, run_on_roll) and OnHit (slice 2, run_hit_gimmicks_inner). OnStop /
-    // OnBreakout / passive remain gated out until their sites learn the self_card bind.
+    // OnRoll (slice 1, run_on_roll), OnHit (slice 2a, run_hit_gimmicks_inner), OnStop
+    // (slice 2b, run_on_stop_gimmicks), OnBreakout (slice 2b, on_broken_out). Passive
+    // bodies and OnBreakoutRoll/OnFlip remain gated out until their readers land.
     if !matches!(
         effect.trigger,
-        Trigger::OnRoll { .. } | Trigger::OnHit { .. }
+        Trigger::OnRoll { .. }
+            | Trigger::OnHit { .. }
+            | Trigger::OnStop { .. }
+            | Trigger::OnBreakout { .. }
     ) {
         return None;
     }
