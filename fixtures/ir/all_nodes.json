@@ -695,6 +695,7 @@
     "choose": false,
     "cost": null,
     "finish": false,
+    "breakout": false,
     "once": false,
     "when": "THIS",
     "who": "SELF"

@@ -3596,6 +3596,7 @@
               "actions": [
                 {
                   "@type": "Reroll",
+                  "breakout": false,
                   "choose": false,
                   "cost": null,
                   "finish": false,

@@ -36,6 +36,9 @@ pub const TURN_CAP: i64 = 400;
 /// Max finish-roll re-rolls honored per finish — a loop guard for "you may re-roll
 /// your Finish roll" (schema v76), independent of each effect's own frequency guard.
 const FINISH_REROLL_CAP: usize = 3;
+/// Max breakout-roll re-rolls honored per breakout attempt — the loop guard for
+/// "re-roll your Breakout roll" (schema v102), independent of each effect's frequency.
+const BREAKOUT_REROLL_CAP: usize = 3;
 pub const MAX_TIE_REROLLS: i64 = 64;
 
 // ---------------------------------------------------------------------------
@@ -4605,6 +4608,58 @@ impl Engine {
         Ok(false)
     }
 
+    /// Offer a re-roll of `defender`'s just-made breakout die (schema v102). Scans the
+    /// defender's own `Reroll{breakout, who:SelfSide}` ("re-roll your Breakout roll")
+    /// and the finisher's `Reroll{breakout, who:Opp}` ("force your opponent to re-roll
+    /// their Breakout roll") — both re-roll the defender's die, differing only in which
+    /// side owns the "you may". Honors frequency, the optional flag, and any in-play
+    /// cost; on election runs the effect's paired non-`Reroll` actions and returns
+    /// `true`. A no-op (no RNG, no decision) when neither side has one in play, so the
+    /// frozen corpus stays byte-identical.
+    fn offer_breakout_reroll(&mut self, defender: &str) -> Eng<bool> {
+        let finisher = self.state.opponent_of(defender);
+        for (owner, want) in [(defender.to_owned(), Who::SelfSide), (finisher, Who::Opp)] {
+            let effects = self.standing_effects(&owner);
+            for eff in &effects {
+                let Some(cost) = eff.actions.iter().find_map(|a| match a {
+                    Action::Reroll {
+                        breakout: true,
+                        who,
+                        cost,
+                        ..
+                    } if *who == want => Some(cost.clone()),
+                    _ => None,
+                }) else {
+                    continue;
+                };
+                if !(self.may_fire(eff, &owner)
+                    && conditions::holds(&eff.condition, &self.state, &owner, None))
+                {
+                    continue;
+                }
+                if let Some(filter) = &cost {
+                    if !self.has_in_play(&owner, filter) {
+                        continue;
+                    }
+                }
+                if eff.optional && !self.take_optional(eff, &owner)? {
+                    continue;
+                }
+                self.mark_fired(eff, &owner);
+                if let Some(filter) = &cost {
+                    self.pay_reroll_cost(&owner, filter)?;
+                }
+                for a in &eff.actions {
+                    if !matches!(a, Action::Reroll { .. }) {
+                        self.apply_action(a, &owner, &eff.raw_clause)?;
+                    }
+                }
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     fn finish_sequence(&mut self, finisher: &str, defender: &str, card: &Card) -> Eng<()> {
         let mut skill = self.roll_finish_skill(finisher)?;
         // Optional finish-roll re-roll ("you may re-roll your Finish roll", v76):
@@ -4830,7 +4885,16 @@ impl Engine {
         let mut rolls: Vec<BreakoutRoll> = Vec::new();
         let mut broke = false;
         for i in 0..BREAKOUT_ATTEMPTS {
-            let skill = self.state.rng.roll();
+            let mut skill = self.state.rng.roll();
+            // Optional breakout-roll re-roll ("re-roll your Breakout roll" / "force your
+            // opponent to re-roll their Breakout roll", v102), bounded to avoid loops.
+            // A no-op — no RNG, no decision — when neither side has one in play, so the
+            // frozen corpus (no such card) stays byte-identical.
+            let mut rr = 0;
+            while rr < BREAKOUT_REROLL_CAP && self.offer_breakout_reroll(defender)? {
+                rr += 1;
+                skill = self.state.rng.roll();
+            }
             let val = self.stat(defender, skill);
             // A `BreakoutModifier{delta}` raises the roll by `delta`; passing it as a
             // NEGATIVE `penalty` keeps the raw-10-always-breaks rule on the unboosted
@@ -5497,6 +5561,7 @@ impl Engine {
                     when: RollWhen::This,
                     cost,
                     finish: false, // finish-scoped re-rolls are offered in the finish sequence
+                    breakout: false, // breakout-scoped re-rolls are offered in the breakout loop
                     ..
                 } => Some((*who, *choose, cost.clone())),
                 _ => None,
@@ -6399,6 +6464,54 @@ mod breakout_modifier_tests {
         // A's own board carries no SelfSide mod, and B's mod is OPP-directed, so B's own
         // breakout roll is unaffected.
         assert_eq!(engine.breakout_bonus("B", 1, Skill::Strike), 0);
+    }
+
+    /// A breakout `Reroll` (schema v102): the defender's own `who:SELF` and the
+    /// finisher's `who:OPP` ("force your opponent to re-roll") both re-roll the
+    /// DEFENDER's die, so both are offered when A is the defender; a `who:SELF` reroll
+    /// sitting on the FINISHER never fires against A. A once-per-match guard is honored,
+    /// and a board without any breakout reroll is a no-op.
+    fn breakout_reroll(who: &str, freq: Value) -> Value {
+        json!({
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Reroll", "who": who, "once": false, "choose": false,
+                "when": "THIS", "cost": null, "finish": false, "breakout": true}],
+            "duration": "WHILE_IN_PLAY", "frequency": freq,
+            "raw_clause": "re-roll your breakout roll", "source": "gimmick", "optional": false
+        })
+    }
+
+    #[test]
+    fn breakout_reroll_offered_for_defender_self_and_finisher_forced() {
+        let unlimited = || json!({"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null});
+
+        // No reroll anywhere → no-op for the defender A.
+        let mut e = engine();
+        assert!(!e.offer_breakout_reroll("A").expect("offer"));
+
+        // Defender A's own "re-roll your Breakout roll".
+        let mut e = engine();
+        push_gimmick(&mut e, "A", breakout_reroll("SELF", unlimited()));
+        assert!(e.offer_breakout_reroll("A").expect("offer"));
+
+        // Finisher B's "force your opponent (A) to re-roll their Breakout roll".
+        let mut e = engine();
+        push_gimmick(&mut e, "B", breakout_reroll("OPP", unlimited()));
+        assert!(e.offer_breakout_reroll("A").expect("offer"));
+
+        // A `who:SELF` breakout reroll on the FINISHER B is for B's own die, not A's —
+        // never offered when A is the defender.
+        let mut e = engine();
+        push_gimmick(&mut e, "B", breakout_reroll("SELF", unlimited()));
+        assert!(!e.offer_breakout_reroll("A").expect("offer"));
+
+        // The once-per-match guard: fires once, then not again.
+        let once = json!({"@type": "FrequencyGuard", "kind": "ONCE_PER_MATCH", "n": null});
+        let mut e = engine();
+        push_gimmick(&mut e, "A", breakout_reroll("SELF", once));
+        assert!(e.offer_breakout_reroll("A").expect("first"));
+        assert!(!e.offer_breakout_reroll("A").expect("second"));
     }
 
     fn strike_cards(n: usize) -> Vec<Card> {

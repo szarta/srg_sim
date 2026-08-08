@@ -1690,11 +1690,73 @@ fn reroll_grammar() {
     assert_eq!(e["actions"][0]["finish"], true);
     assert_eq!(e["actions"][0]["who"], "SELF");
 
+    // Breakout roll, self (schema v102).
+    let e = one("You may re-roll your Breakout roll.");
+    assert_eq!(e["actions"][0]["@type"], "Reroll");
+    assert_eq!(e["actions"][0]["breakout"], true);
+    assert_eq!(e["actions"][0]["finish"], false);
+    assert_eq!(e["actions"][0]["who"], "SELF");
+    assert_eq!(e["actions"][0]["when"], "THIS");
+    assert_eq!(e["optional"], true);
+
+    // Breakout roll, force-opponent ("their"/"a", capitalized "Roll" all accepted).
+    let e = one("Force your opponent to re-roll a Breakout Roll.");
+    assert_eq!(e["actions"][0]["breakout"], true);
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["optional"], false);
+
     // Cascade: "If stopped, you may re-roll …" -> OnStop trigger + optional body.
     let e = one("If stopped, you may re-roll your next turn roll.");
     assert_eq!(e["actions"][0]["@type"], "Reroll");
     assert_eq!(e["trigger"]["@type"], "OnStop");
     assert_eq!(e["optional"], true);
+}
+
+/// Inline frequency prefix routing: a `freq_header` fused to its body on one clause
+/// ("Once per turn: <body>", "Once a turn, <body>", "N times per match: <body>") applies
+/// the frequency to that body alone and routes the residual through the grammar. The
+/// full clause is preserved as `raw_clause`; a lowercase comma-form body is sentence-
+/// cased so capital-anchored rules match; an unparseable body stays Unsupported.
+#[test]
+fn inline_freq_prefix_routes_the_body() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Colon form, capitalized body.
+    let e = one("Once per turn: Draw 1 card.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
+    assert_eq!(e["raw_clause"], "Once per turn: Draw 1 card.");
+
+    // Comma form, LOWERCASE body — sentence-cased before matching.
+    let e = one("Once a turn, draw 1 card.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
+
+    // Once-per-match and N-times-per-match.
+    let e = one("Once per match: Draw 2 cards.");
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_MATCH");
+    let e = one("3 times per match: Draw 1 card.");
+    assert_eq!(e["frequency"]["kind"], "N_PER_MATCH");
+    assert_eq!(e["frequency"]["n"], 3);
+
+    // The inline freq applies to its body ALONE, not persistently: it composes with a
+    // gated reroll body (the whole point of the wrapper lever).
+    let e = one("Once per turn: You may re-roll your turn roll.");
+    assert_eq!(e["actions"][0]["@type"], "Reroll");
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
+    assert_eq!(e["optional"], true);
+
+    // Unparseable body: the WHOLE clause stays Unsupported (never a silent drop).
+    let e = one("Once per turn: mumble frotz gibberish clause.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+    assert_eq!(
+        e["actions"][0]["raw_text"],
+        "Once per turn: mumble frotz gibberish clause."
+    );
 }
 
 /// "[If/When <gate>,] this card is also a <order>" (task #130): the card gains an extra

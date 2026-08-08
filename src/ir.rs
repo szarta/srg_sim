@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 101;
+pub const SCHEMA_VERSION: i64 = 102;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1331,6 +1331,14 @@ pub enum Action {
         /// Tomato Tomato Jr.). Keeps the two roll paths from cross-firing. schema v76
         #[serde(default)]
         finish: bool,
+        /// Scope: `true` = a BREAKOUT roll, offered in `offer_breakout_reroll` inside
+        /// the breakout loop ("re-roll your Breakout roll" / "force your opponent to
+        /// re-roll their Breakout roll"). Mutually exclusive with `finish`; a bare
+        /// `Reroll` (both `false`) is the turn roll. Both re-roll the DEFENDER's die —
+        /// `who: SelfSide` means the effect owner IS the defender, `who: Opp` means the
+        /// finisher forces the defender to re-roll. schema v102
+        #[serde(default)]
+        breakout: bool,
     },
     /// "When you roll `from` for your turn roll or Finish roll, you may switch it to
     /// `to`" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn
@@ -2478,6 +2486,14 @@ pub enum IrNode {
         /// Tomato Tomato Jr.). Keeps the two roll paths from cross-firing. schema v76
         #[serde(default)]
         finish: bool,
+        /// Scope: `true` = a BREAKOUT roll, offered in `offer_breakout_reroll` inside
+        /// the breakout loop ("re-roll your Breakout roll" / "force your opponent to
+        /// re-roll their Breakout roll"). Mutually exclusive with `finish`; a bare
+        /// `Reroll` (both `false`) is the turn roll. Both re-roll the DEFENDER's die —
+        /// `who: SelfSide` means the effect owner IS the defender, `who: Opp` means the
+        /// finisher forces the defender to re-roll. schema v102
+        #[serde(default)]
+        breakout: bool,
     },
     /// "When you roll `from` for your turn roll or Finish roll, you may switch it to
     /// `to`" (Scott Prime V1/V2). Read structurally in BOTH roll paths (the turn

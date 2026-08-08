@@ -1293,6 +1293,23 @@ fn reroll(who: Who, when: RollWhen, finish: bool) -> Action {
         when,
         cost: None,
         finish,
+        breakout: false,
+    }
+}
+
+/// A `Reroll` of the DEFENDER's breakout roll — `who: SelfSide` (the defender re-rolls
+/// their own: "re-roll your Breakout roll") or `Opp` ("force your opponent to re-roll
+/// their Breakout roll", the finisher forcing the defender). Always `This` (structural,
+/// read in the breakout loop); never a `Next` grant.
+fn reroll_breakout(who: Who) -> Action {
+    Action::Reroll {
+        who,
+        once: false,
+        choose: false,
+        when: RollWhen::This,
+        cost: None,
+        finish: false,
+        breakout: true,
     }
 }
 
@@ -3123,6 +3140,35 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             e.optional = c.get(1).is_some();
             Some(e)
         }),
+        // Breakout-roll re-roll (schema v102). Self ("re-roll your Breakout roll") and
+        // force-opponent ("force/make your opponent re-roll their Breakout roll") both
+        // re-roll the defender's die; who distinguishes which side owns the "you may".
+        rule(
+            r"(?:(You may) )?[Rr]e-?roll your [Bb]reakout [Rr]oll",
+            |c| {
+                let mut e = eff(
+                    Trigger::OnPlay,
+                    vec![reroll_breakout(Who::SelfSide)],
+                    Condition::Always,
+                    Duration::Instant,
+                );
+                e.optional = c.get(1).is_some();
+                Some(e)
+            },
+        ),
+        rule(
+            r"(?:(You may) )?(?:[Ff]orce|[Mm]ake) your opponent (?:to )?re-?roll (?:their )?(?:a )?[Bb]reakout [Rr]oll",
+            |c| {
+                let mut e = eff(
+                    Trigger::OnPlay,
+                    vec![reroll_breakout(Who::Opp)],
+                    Condition::Always,
+                    Duration::Instant,
+                );
+                e.optional = c.get(1).is_some();
+                Some(e)
+            },
+        ),
         // Extra-card grant (PlayExtraCard, previously override-only): "You may play an
         // additional card this turn". `order=None` (any card); N>1 grants loop as N
         // separate PlayExtraCard actions (each bumps the extra-plays counter). The
@@ -5026,6 +5072,41 @@ fn freq_header(clause: &str) -> Option<(Frequency, Option<i64>)> {
     None
 }
 
+/// Uppercase the first character of `s` (ASCII), leaving the rest untouched. Used to
+/// sentence-case a body promoted out of an inline prefix so capital-anchored rules match.
+fn uppercase_first(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+        None => String::new(),
+    }
+}
+
+/// An INLINE frequency prefix — a [`freq_header`] fused to its body on one clause
+/// ("Once per turn: <body>", "Once a turn, <body>", "N times per match: <body>").
+/// Returns the frequency plus the trailing body, which the caller compiles on its own
+/// and to which the frequency applies ALONE (unlike a standalone header, which persists
+/// over the following clauses). `None` when the clause is not so prefixed.
+fn inline_freq(clause: &str) -> Option<(Frequency, Option<i64>, &str)> {
+    static INLINE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^(Once (?:per|a) match|Once (?:per|a) turn|(\d+) times per match)[:,]\s+(.+)$",
+        )
+        .unwrap()
+    });
+    let caps = INLINE.captures(clause.trim())?;
+    let head = caps.get(1)?.as_str().to_lowercase();
+    let body = caps.get(3)?.as_str();
+    let freq = if head.contains("match") && caps.get(2).is_none() {
+        Frequency::OncePerMatch
+    } else if caps.get(2).is_some() {
+        return Some((Frequency::NPerMatch, Some(caps[2].parse().ok()?), body));
+    } else {
+        Frequency::OncePerTurn
+    };
+    Some((freq, None, body))
+}
+
 /// A window header ("During your turn:", "During your opponent's turn:") scoping the
 /// clauses that follow to a turn phase. Returns the [`Condition::DuringTurn`] it opens,
 /// which persists (like a [`freq_header`]) until another header replaces it — the whole
@@ -5129,6 +5210,32 @@ pub fn parse_text(
             n = nn;
             i += 1;
             continue;
+        }
+        // Inline frequency prefix ("Once per turn: <body>", "Once a turn, <body>"):
+        // apply the frequency to THIS body alone (a standalone header instead persists).
+        // Take it only if the body actually parses; otherwise fall through so the whole
+        // clause compiles to Unsupported (never a silent drop).
+        if let Some((f, nn, body)) = inline_freq(clause) {
+            let is_unsupported = |e: &Effect| {
+                e.actions
+                    .iter()
+                    .any(|a| matches!(a, Action::Unsupported { .. }))
+            };
+            let mut e = compile(body, source, f, nn);
+            // A body promoted from mid-clause may start lowercase ("Once a turn, draw
+            // …"); retry sentence-cased so capital-anchored rules match.
+            if is_unsupported(&e) {
+                let cap = uppercase_first(body);
+                if cap != body {
+                    e = compile(&cap, source, f, nn);
+                }
+            }
+            if !is_unsupported(&e) {
+                e.raw_clause = clause.clone();
+                effects.push(scope(e, &window));
+                i += 1;
+                continue;
+            }
         }
         if let Some(cond) = window_header(clause) {
             window = cond;
