@@ -2372,6 +2372,52 @@ fn pod_fidelity_grammar() {
     assert_eq!(a["selector"]["tag"], "Spotlight");
 }
 
+/// Type-counted per-count buff (task #131): "Your X [and Y] is/are +N for each <type>
+/// you have in play [(Max +M)]" -> Static multi-skill BuffSkill scaled over a card TYPE
+/// (atk / play order / stop) on the OWN board. Opponent-board and "for each other …"
+/// forms decline (need per_who/exclude); bare "for each card …" is left to the name rules.
+#[test]
+fn type_count_buff_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Single skill over an atk type, with a cap.
+    let a =
+        a1("Your Agility is +2 for each Grapple you have in play (Max +6).")["actions"][0].clone();
+    assert_eq!(a["@type"], "BuffSkill");
+    assert_eq!(a["skill"], "Agility");
+    assert_eq!(a["delta"], 2);
+    assert_eq!(a["cap"], 6);
+    assert_eq!(a["per_zone"], "IN_PLAY");
+    assert_eq!(a["per"]["atk_type"], "Grapple");
+    assert_eq!(a["who"], "SELF");
+
+    // Two skills over a play order (Stop), no cap; "+N to X" phrasing.
+    let e = a1("Your Technique and Agility are +1 for each Stop you have in play (Max +4).");
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["per"]["is_stop"], true);
+    let skills: Vec<&str> = acts.iter().map(|a| a["skill"].as_str().unwrap()).collect();
+    assert!(skills.contains(&"Technique") && skills.contains(&"Agility"));
+
+    let a = a1("+1 to Submission for each Lead you have in play.")["actions"][0].clone();
+    assert_eq!(a["skill"], "Submission");
+    assert_eq!(a["per"]["play_order"], "Lead");
+    assert_eq!(a["cap"], Value::Null);
+
+    // Guardrails: opponent-board and "for each other" both decline (per_who/exclude
+    // unsupported) -> the whole clause stays Unsupported.
+    for text in [
+        "Your Power is +1 for each Submission your opponent has in play.",
+        "Your Power is +1 for each other Grapple you have in play.",
+    ] {
+        assert_eq!(a1(text)["actions"][0]["@type"], "Unsupported", "{text:?}");
+    }
+}
+
 /// Skill-buff family (task #119/#130): a standing skill buff gated on "another
 /// Follow Up or Finish <ATK>" — an OR-of-orders `HasInPlay` at count>=2 (the source
 /// card counts, so one OTHER qualifier arms it). Plus the bare "Your <S> skill is +N".

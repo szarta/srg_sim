@@ -1406,6 +1406,36 @@ fn buff_per(skill: Skill, delta: i64, per: Option<CardFilter>, cap: Option<i64>)
     }
 }
 
+/// Build a Static multi-skill [`BuffSkill`] scaled by the count of a card TYPE on the
+/// owner's board — "Your X and Y are +N for each `<type>` you have in play (Max +M)".
+/// `skills_text` is a skill/and/comma list, `per_text` a type descriptor routed through
+/// [`count_filter`] (atk / play order / stop). Declines if the skill list is empty or
+/// the type descriptor isn't a countable type (e.g. bare "card" — owned by the name
+/// rules), so a non-type "for each …" falls through to Unsupported.
+fn type_count_buff(
+    skills_text: &str,
+    delta: i64,
+    per_text: &str,
+    cap: Option<regex::Match>,
+) -> Option<Effect> {
+    let skills = skill_list(skills_text);
+    let per = count_filter(per_text)?;
+    if skills.is_empty() {
+        return None;
+    }
+    let cap = cap.map(|m| m.as_str().parse::<i64>().unwrap());
+    let actions = skills
+        .into_iter()
+        .map(|s| buff_per(s, delta, Some(per.clone()), cap))
+        .collect();
+    Some(eff(
+        Trigger::Static,
+        actions,
+        Condition::Always,
+        Duration::WhileInPlay,
+    ))
+}
+
 /// A Static "no disqualifications" match-rule toggle (`DisqualificationRule` was
 /// previously override-only). `Match` scope = "the match has no disqualifications";
 /// `SelfSide` = "you cannot be disqualified".
@@ -2495,6 +2525,22 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Duration::WhileInPlay,
                 ))
             },
+        ),
+        // Type-counted per-count buff (task #131): "Your X [and Y] is/are +N for each
+        // <type> you have in play [(Max +M)]" — the same buff_per scaling as the
+        // name-count rules above, but the count ranges over a card TYPE (atk / play
+        // order / stop) via count_filter instead of a name substring. Own board only
+        // (BuffSkill.per counts the buffed player's board; opponent-board and "for each
+        // OTHER" forms need per_who/exclude and stay Unsupported). "for each card …"
+        // declines here (count_filter has no bare-card filter) — the name rules own it.
+        rule(
+            r"Your (.+?) (?:is|are) \+(\d+) for each (.+?) you have in play(?: \(Max \+?(\d+)\))?",
+            |c| type_count_buff(&c[1], num(c, 2), &c[3], c.get(4)),
+        ),
+        // Same, phrased "+N to X [and Y] for each <type> you have in play [(Max +M)]".
+        rule(
+            r"\+(\d+) to (.+?) for each (.+?) you have in play(?: \(Max \+?(\d+)\))?",
+            |c| type_count_buff(&c[2], num(c, 1), &c[3], c.get(4)),
         ),
         rule(r"Each player draws? (\d+) cards?", |c| {
             let n = num(c, 1);
