@@ -2989,6 +2989,35 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Both-boards per-count next-roll bonus: "Your next turn roll is +N for each
+        // <X> in play" with NO owner qualifier counts <X> on BOTH boards. Modeled without
+        // a schema change as two stacked ModifyRolls on SELF's next roll — per_who=Self
+        // (your board) + per_who=Opp (theirs) — whose per-counts sum to the total. Placed
+        // AFTER the "you have"/"opponent has" rules; those phrasings decline recur_filter
+        // here and fall through to the qualified rules ("... you have in play" is not a
+        // bare selector).
+        rule(
+            r"Your next turn roll is ([+-]\d+) for each (.+?) in play",
+            |c| {
+                let delta: i64 = c[1].parse().ok()?;
+                let per = recur_filter(c[2].trim())?;
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        modify_roll(
+                            Who::SelfSide,
+                            delta,
+                            RollWhen::Next,
+                            Some(per.clone()),
+                            Who::SelfSide,
+                        ),
+                        modify_roll(Who::SelfSide, delta, RollWhen::Next, Some(per), Who::Opp),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Skill-keyed pending turn-roll bonus: "The next time you roll <S> [for your
         // turn roll][,] it is +N" — a mod that waits until <S> is next rolled, applies
         // once, and is consumed (schema v99, engine pending_skill_roll_mods). The

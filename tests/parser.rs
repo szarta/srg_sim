@@ -2706,6 +2706,19 @@ fn next_roll_percount_and_also_followup_grammar() {
     assert_eq!(m["per_zone"], "DISCARD");
     assert_eq!(m["delta"], 2);
 
+    // Unqualified owner ("for each Stop in play") = BOTH boards: two stacked ModifyRolls
+    // on SELF's next roll, per_who Self + Opp, each per-counting is_stop.
+    let acts = a1("Your next turn roll is +1 for each Stop in play.")["actions"].clone();
+    assert_eq!(acts.as_array().unwrap().len(), 2, "one per board");
+    for (i, pw) in ["SELF", "OPP"].iter().enumerate() {
+        assert_eq!(acts[i]["@type"], "ModifyRoll");
+        assert_eq!(acts[i]["who"], "SELF", "bonus lands on SELF's roll");
+        assert_eq!(acts[i]["when"], "NEXT");
+        assert_eq!(acts[i]["delta"], 1);
+        assert_eq!(acts[i]["per"]["is_stop"], true);
+        assert_eq!(acts[i]["per_who"], *pw);
+    }
+
     // Name-descriptor per-count: the "with 'X' in the name" qualifier trails "you have
     // in play", so it routes through in_play_filter (name-substring filter).
     let m = a1("Your next turn roll is +1 for each card you have in play with \"Steel Chain\" in the name.")
