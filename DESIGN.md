@@ -261,6 +261,9 @@ ShuffleHandDraw(who, count, choose=False)  # schema v13: shuffle a player's hand
 CountsAsInPlay(selector, count=2)  # Static self-decl: this card counts as `count` cards matching `selector`
 ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP, per_zone=IN_PLAY)  # delta scales by count of `per` cards
                               # in `per_zone` (IN_PLAY, or DISCARD for "+2 for each Finish in your discard pile"; schema v70)
+RollDraw(who, skill, count)   # one-shot roll-conditional draw: "if your [opponent's] next turn roll is <S>, draw N". `who`
+                              # = whose NEXT turn roll to WATCH (SELF|OPP); the owner draws `count` if that roll resolves to
+                              # `skill`. Armed on hit, fires-or-fizzles on that one turn roll and is consumed (schema v109)
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, target_lowest?, per_crowd?, cap?, per?, per_zone=IN_PLAY, per_excludes_self=False)
                                                  # target_lowest -> retarget to the LOWEST base skill ("+N to your lowest skill"); mirrors target_highest. schema v93
                                                  # per=CardFilter -> bonus = delta * (count of the target's cards

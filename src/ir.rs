@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 108;
+pub const SCHEMA_VERSION: i64 = 109;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1042,6 +1042,17 @@ pub enum Action {
         who: Who,
         count: i64,
         from: DeckEnd,
+    },
+    /// One-shot roll-conditional draw — "if your [opponent's] next turn roll is `<S>`,
+    /// draw N". Arms on play; the engine watches `who`'s NEXT turn roll (`SelfSide` =
+    /// your own, `Opp` = your opponent's) and, if it resolves to `skill`, the effect
+    /// owner draws `count`. Fires-or-fizzles on that one turn roll and is consumed —
+    /// distinct from `ModifyRoll{on_skill}`, which waits until its skill comes up.
+    /// schema v109
+    RollDraw {
+        who: Who,
+        skill: Skill,
+        count: i64,
     },
     Discard {
         selector: CardFilter,
@@ -2244,6 +2255,17 @@ pub enum IrNode {
         who: Who,
         count: i64,
         from: DeckEnd,
+    },
+    /// One-shot roll-conditional draw — "if your [opponent's] next turn roll is `<S>`,
+    /// draw N". Arms on play; the engine watches `who`'s NEXT turn roll (`SelfSide` =
+    /// your own, `Opp` = your opponent's) and, if it resolves to `skill`, the effect
+    /// owner draws `count`. Fires-or-fizzles on that one turn roll and is consumed —
+    /// distinct from `ModifyRoll{on_skill}`, which waits until its skill comes up.
+    /// schema v109
+    RollDraw {
+        who: Who,
+        skill: Skill,
+        count: i64,
     },
     Discard {
         selector: CardFilter,

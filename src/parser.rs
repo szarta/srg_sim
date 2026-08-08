@@ -2995,6 +2995,41 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Roll-conditional one-shot draw (cluster d): "If your next turn roll is <S>,
+        // draw N" arms a pending draw that fires if the owner's NEXT turn roll comes up
+        // <S>; the opponent-watch mirror ("If your opponent's next turn roll is <S>")
+        // draws for the owner when the OPPONENT's next turn roll is <S> (schema v109,
+        // engine pending_roll_draws). Fires-or-fizzles on that one turn roll.
+        rule(
+            &format!(r"If your next turn roll is {SK},? draw (\d+) cards?"),
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::RollDraw {
+                        who: Who::SelfSide,
+                        skill: skill(&c[1]),
+                        count: num(c, 2),
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            &format!(r"If your opponent's next turn roll is {SK},? draw (\d+) cards?"),
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::RollDraw {
+                        who: Who::Opp,
+                        skill: skill(&c[1]),
+                        count: num(c, 2),
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"Your next turn roll is \+(\d+) for each (.+?) in your discard pile",
             |c| {

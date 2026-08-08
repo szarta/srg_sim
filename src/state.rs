@@ -66,6 +66,19 @@ pub struct SkillRollMod {
     pub delta: i64,
 }
 
+/// A pending one-shot "if your [opponent's] next turn roll is `<S>`, draw N": watches
+/// `watch`'s NEXT turn roll and, if it resolves to `skill`, the OWNER draws `count`.
+/// Unlike [`SkillRollMod`] (which waits, across turns, until its skill actually comes
+/// up) this fires-or-fizzles on the very next turn roll of the watched side and is
+/// consumed either way — "your NEXT turn roll" is a one-turn window. `watch` is
+/// `SelfSide` for "your next turn roll" or `Opp` for "your opponent's next turn roll".
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PendingRollDraw {
+    pub skill: Skill,
+    pub count: i64,
+    pub watch: Who,
+}
+
 /// One live timed skill buff on a player (DESIGN.md §3, `Duration::UntilEndOfTurn` /
 /// `UntilStartOfYourNextTurn`).
 ///
@@ -124,6 +137,12 @@ pub struct PlayerState {
     /// excluded from the observable projection like `pending_roll_mods`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pending_skill_roll_mods: Vec<SkillRollMod>,
+    /// Pending one-shot roll-conditional draws (see [`PendingRollDraw`]) — each armed by
+    /// "if your [opponent's] next turn roll is `<S>`, draw N", fired-or-fizzled on the
+    /// next turn roll of the watched side. Engine bookkeeping, excluded from the
+    /// observable projection like `pending_skill_roll_mods`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pending_roll_draws: Vec<PendingRollDraw>,
     /// `db_uuid`s of THIS player's own hand cards they have REVEALED to the opponent
     /// (fog-of-war; [`Action::Reveal`]). Persists for the match — a card the opponent
     /// has seen stays known while it is in hand. Read by [`Self::observable`] to expose

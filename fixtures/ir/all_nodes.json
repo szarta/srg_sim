@@ -358,6 +358,12 @@
     "from": "BOTTOM"
   },
   {
+    "@type": "RollDraw",
+    "who": "OPP",
+    "skill": "Agility",
+    "count": 1
+  },
+  {
     "@type": "FlipGimmick",
     "who": "SELF"
   },

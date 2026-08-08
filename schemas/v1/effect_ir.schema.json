@@ -852,6 +852,9 @@
                 "$ref": "#/$defs/MillDeck"
               },
               {
+                "$ref": "#/$defs/RollDraw"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -1724,6 +1727,9 @@
                 "$ref": "#/$defs/MillDeck"
               },
               {
+                "$ref": "#/$defs/RollDraw"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -2416,6 +2422,31 @@
       ],
       "type": "object"
     },
+    "RollDraw": {
+      "additionalProperties": false,
+      "description": "One-shot roll-conditional draw: \"if your [opponent's] next turn roll is <S>, draw N\". `who` is which side's next turn roll to WATCH (SelfSide = your own, Opp = your opponent's); the effect owner draws `count` if that roll resolves to `skill`. Fires-or-fizzles on that one turn roll and is consumed. schema v109",
+      "properties": {
+        "@type": {
+          "const": "RollDraw"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "skill": {
+          "$ref": "#/$defs/Skill"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "skill",
+        "count"
+      ],
+      "type": "object"
+    },
     "FlipGimmick": {
       "additionalProperties": false,
       "properties": {
@@ -2821,6 +2852,9 @@
         },
         {
           "$ref": "#/$defs/MillDeck"
+        },
+        {
+          "$ref": "#/$defs/RollDraw"
         },
         {
           "$ref": "#/$defs/FlipGimmick"
@@ -4496,6 +4530,9 @@
                 "$ref": "#/$defs/MillDeck"
               },
               {
+                "$ref": "#/$defs/RollDraw"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -5553,5 +5590,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 108
+  "version": 109
 }

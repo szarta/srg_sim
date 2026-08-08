@@ -25,7 +25,9 @@ use crate::ir::{
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
-use crate::state::{FlipProvenance, GameState, PendingText, PlayerState, SkillRollMod, TimedBuff};
+use crate::state::{
+    FlipProvenance, GameState, PendingRollDraw, PendingText, PlayerState, SkillRollMod, TimedBuff,
+};
 use serde_json::{json, Value};
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
@@ -469,6 +471,7 @@ impl Engine {
                         in_play: Vec::new(),
                         pending_roll_mods: Default::default(),
                         pending_skill_roll_mods: Vec::new(),
+                        pending_roll_draws: Vec::new(),
                         revealed_hand: Default::default(),
                         reroll_grants: Default::default(),
                         timed_buffs: Vec::new(),
@@ -1191,6 +1194,7 @@ impl Engine {
                 }
             }
             Action::MillDeck { who, count, from } => self.act_mill_deck(*who, *count, *from, key),
+            Action::RollDraw { who, skill, count } => self.act_roll_draw(*who, *skill, *count, key),
             Action::Discard {
                 selector,
                 count,
@@ -1906,6 +1910,59 @@ impl Engine {
             source: Some("deck".to_owned()),
             hidden: false,
         }));
+    }
+
+    /// Arm a one-shot roll-conditional draw ([`Action::RollDraw`]): "if your
+    /// [opponent's] next turn roll is `<S>`, draw N". Queued on the effect owner, whose
+    /// NEXT-turn-roll resolution ([`Self::resolve_pending_roll_draws`]) checks the
+    /// watched side (`who`) and draws if it came up `skill`. `who` records only which
+    /// side's roll to WATCH — the owner always does the drawing.
+    fn act_roll_draw(&mut self, who: Who, skill: Skill, count: i64, key: &str) {
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .pending_roll_draws
+            .push(PendingRollDraw {
+                skill,
+                count,
+                watch: who,
+            });
+        self.log_effect(
+            key,
+            "RollDraw",
+            None,
+            json!({"skill": skill.name(), "count": count, "watch": format!("{who:?}")}),
+        );
+    }
+
+    /// Resolve every player's pending one-shot roll-conditional draws against the turn
+    /// roll that just settled ([`Action::RollDraw`]). For each armed entry, the WATCHED
+    /// side's resolved turn-roll skill is read from `roll_ctx`; a match draws `count` for
+    /// the owner. The queue is drained wholesale — "your NEXT turn roll" is a one-turn
+    /// window, so a non-match fizzles rather than carrying over.
+    fn resolve_pending_roll_draws(&mut self) -> Eng<()> {
+        for key in ["A", "B"] {
+            let armed =
+                std::mem::take(&mut self.state.players.get_mut(key).unwrap().pending_roll_draws);
+            for entry in armed {
+                let watched = self.target(entry.watch, key);
+                let rolled = self.roll_ctx.get(&watched).and_then(|c| c.skill);
+                if rolled == Some(entry.skill) {
+                    self.log_effect(
+                        key,
+                        "RollDraw",
+                        None,
+                        json!({"skill": entry.skill.name(), "count": entry.count, "fired": true}),
+                    );
+                    self.draw(key, entry.count.max(0) as usize, DeckEnd::Top)?;
+                    if self.ended() {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Fire STANDING (`on_self == false`) `OnFlip` gimmicks after `flipped_side` flipped
@@ -5123,6 +5180,9 @@ impl Engine {
             self.run_on_roll(key)?;
             self.run_on_rolled_all(key)?;
         }
+        // One-shot roll-conditional draws ("if your [opponent's] next turn roll is <S>,
+        // draw N") armed on a prior turn resolve against this just-settled turn roll.
+        self.resolve_pending_roll_draws()?;
         self.state.last_roll_winner = Some(winner.clone()); // "last turn roll" next turn (Dunn)
         Ok(winner)
     }
@@ -6447,6 +6507,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::Bury { .. } => "Bury",
         Action::Flip { .. } => "Flip",
         Action::MillDeck { .. } => "MillDeck",
+        Action::RollDraw { .. } => "RollDraw",
         Action::Discard { .. } => "Discard",
         Action::Search { .. } => "Search",
         Action::ShuffleDeck { .. } => "ShuffleDeck",
@@ -7085,6 +7146,101 @@ mod breakout_modifier_tests {
         // A skill with no queued mod returns 0 and changes nothing.
         assert_eq!(engine.consume_skill_roll_mod("A", Skill::Strike), 0);
         assert_eq!(engine.state.players["A"].pending_skill_roll_mods.len(), 1);
+    }
+
+    /// A pending roll-conditional draw ("if your [opponent's] next turn roll is <S>,
+    /// draw N") fires when the WATCHED side's resolved turn roll comes up its skill, is
+    /// consumed even on a non-match (a one-turn window), and watches the opponent's roll
+    /// when armed with `watch = Opp`.
+    #[test]
+    fn pending_roll_draw_fires_on_a_match_and_fizzles_otherwise() {
+        let make_engine = engine; // bind the ctor before a local `engine` shadows it
+        let card = |u: &str| -> Card {
+            serde_json::from_value(json!({
+                "db_uuid": u, "name": u, "number": 1, "atk_type": "Strike",
+                "play_order": "Lead", "finish_bonuses": {}, "effects": []
+            }))
+            .expect("card")
+        };
+        let ctx = |s: Skill| RollContext {
+            skill: Some(s),
+            gap: None,
+            value: Some(10),
+            opp_skill: None,
+        };
+        let arm = |engine: &mut Engine, skill: Skill, count: i64, watch: Who| {
+            engine
+                .state
+                .players
+                .get_mut("A")
+                .unwrap()
+                .pending_roll_draws
+                .push(PendingRollDraw {
+                    skill,
+                    count,
+                    watch,
+                });
+        };
+        let stock = |engine: &mut Engine, n: usize| {
+            for i in 0..n {
+                engine
+                    .state
+                    .players
+                    .get_mut("A")
+                    .unwrap()
+                    .deck
+                    .push(card(&format!("d{i}")));
+            }
+        };
+
+        // Match: A armed "if your next turn roll is Grapple, draw 1"; A rolls Grapple.
+        let mut engine = make_engine();
+        stock(&mut engine, 3);
+        arm(&mut engine, Skill::Grapple, 1, Who::SelfSide);
+        engine.roll_ctx.insert("A".into(), ctx(Skill::Grapple));
+        engine.roll_ctx.insert("B".into(), ctx(Skill::Power));
+        let before = engine.state.players["A"].hand.len();
+        engine.resolve_pending_roll_draws().unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            before + 1,
+            "drew on the matching roll"
+        );
+        assert!(
+            engine.state.players["A"].pending_roll_draws.is_empty(),
+            "consumed after firing"
+        );
+
+        // Fizzle: armed Grapple but A rolls Power -> no draw, still consumed.
+        let mut engine = make_engine();
+        stock(&mut engine, 3);
+        arm(&mut engine, Skill::Grapple, 1, Who::SelfSide);
+        engine.roll_ctx.insert("A".into(), ctx(Skill::Power));
+        let before = engine.state.players["A"].hand.len();
+        engine.resolve_pending_roll_draws().unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            before,
+            "no draw on a non-matching roll"
+        );
+        assert!(
+            engine.state.players["A"].pending_roll_draws.is_empty(),
+            "consumed even on a fizzle (the next-turn-roll window closed)"
+        );
+
+        // Opponent-watch: A armed watch=Opp; A draws off the OPPONENT's roll skill.
+        let mut engine = make_engine();
+        stock(&mut engine, 3);
+        arm(&mut engine, Skill::Strike, 2, Who::Opp);
+        engine.roll_ctx.insert("A".into(), ctx(Skill::Power));
+        engine.roll_ctx.insert("B".into(), ctx(Skill::Strike));
+        let before = engine.state.players["A"].hand.len();
+        engine.resolve_pending_roll_draws().unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            before + 2,
+            "A drew 2 off the opponent's Strike roll"
+        );
     }
 
     /// `act_mill_deck` moves cards from the named DECK END to discard, with no flip

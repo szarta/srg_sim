@@ -2763,6 +2763,54 @@ fn next_roll_percount_and_also_followup_grammar() {
     }
 }
 
+/// Roll-conditional one-shot draw (cluster d): "If your [opponent's] next turn roll is
+/// <S>, draw N" -> RollDraw{who=SELF|OPP watch, skill, count}, armed OnHit.
+#[test]
+fn roll_conditional_draw_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Self-watch: my own next turn roll.
+    let e = a1("If your next turn roll is Grapple, draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "OnHit", "arms when the card hits");
+    let m = &e["actions"][0];
+    assert_eq!(m["@type"], "RollDraw");
+    assert_eq!(m["who"], "SELF");
+    assert_eq!(m["skill"], "Grapple");
+    assert_eq!(m["count"], 1);
+
+    // Opponent-watch: draws for the owner off the OPPONENT's next turn roll.
+    let m = a1("If your opponent's next turn roll is Strike, draw 2 cards.")["actions"][0].clone();
+    assert_eq!(m["@type"], "RollDraw");
+    assert_eq!(m["who"], "OPP");
+    assert_eq!(m["skill"], "Strike");
+    assert_eq!(m["count"], 2);
+
+    // Every skill parses (singular "card" too).
+    for (text, sk) in [
+        ("If your next turn roll is Power, draw 1 card.", "Power"),
+        (
+            "If your next turn roll is Technique, draw 1 card.",
+            "Technique",
+        ),
+        (
+            "If your next turn roll is Submission, draw 1 card.",
+            "Submission",
+        ),
+        (
+            "If your opponent's next turn roll is Agility, draw 1 card.",
+            "Agility",
+        ),
+    ] {
+        let m = a1(text)["actions"][0].clone();
+        assert_eq!(m["@type"], "RollDraw", "{text:?}");
+        assert_eq!(m["skill"], sk, "{text:?}");
+    }
+}
+
 /// Stop-card filter enabler: "stop" as a CardFilter (is_stop) flows through
 /// per-count, recur, and HasInPlay-gated grammar.
 #[test]
