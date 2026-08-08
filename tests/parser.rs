@@ -1286,6 +1286,47 @@ fn roll_trigger_body_split() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Generic OPPONENT roll trigger-body split (task #131): "When your opponent rolls
+/// <Skill> for their turn roll[:,] <body>" -> body re-parsed with OnRoll{Opp}. The
+/// "their roll is ±N" phrasing normalizes to a ModifyRoll{Opp,This}; "you"/"they"
+/// subjects in the body resolve to owner/opponent through the shared grammar.
+#[test]
+fn opp_roll_trigger_body_split() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "their roll is -1" -> ModifyRoll{Opp,This} under an OnRoll{Opp} trigger.
+    let e = one("When your opponent rolls Strike for their turn roll, their roll is -1.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Strike");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["delta"], -1);
+    assert_eq!(e["actions"][0]["when"], "THIS");
+
+    // "you"-subject body: the owner draws when the opponent rolls the skill.
+    let e = one("When your opponent rolls Technique for their turn roll, draw 1 card.");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+
+    // "they discard" opponent-subject alias (also fires DB-wide, not just here).
+    let e = one(
+        "When your opponent rolls Power for their turn roll, they discard 1 card from their hand.",
+    );
+    assert_eq!(e["actions"][0]["@type"], "Discard");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+
+    // No-grammar body -> the whole clause stays Unsupported.
+    let e =
+        one("When your opponent rolls Power for their turn roll, they reveal their hand to you.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Multi-skill roll OR (task #119): "When you roll <S1>, … or <Sn>, <body>" -> a single
 /// OnRoll{None} effect gated by an Or of RollWasSkill on the named skills.
 #[test]

@@ -1365,11 +1365,27 @@ fn reroll_cost(text: &str) -> Option<RerollCost> {
 /// value; every OnReroll clause's roll-mod always targets the re-rolling player.
 fn on_reroll_body(who: Who, body: &str) -> Option<Effect> {
     static THAT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\bthat roll is").unwrap());
+    let norm = THAT.replace_all(body, "your turn roll is").into_owned();
+    trigger_body(Trigger::OnReroll { who }, &norm_roll_is_phrasing(&norm))
+}
+
+/// Normalize a bare "your/their roll is ±N" roll-modifier phrasing to the canonical
+/// "…turn roll is ±N" the [`ModifyRoll`] grammar (`Your turn roll is …` /
+/// `Their turn roll is …`) matches. Shared by the OnReroll and OnRoll body routers,
+/// whose clauses write the roll modifier as "their roll is -1" mid-body.
+fn norm_roll_is_phrasing(body: &str) -> String {
     static BARE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)\b(your|their) roll is").unwrap());
-    let norm = THAT.replace_all(body, "your turn roll is").into_owned();
-    let norm = BARE.replace_all(&norm, "${1} turn roll is").into_owned();
-    trigger_body(Trigger::OnReroll { who }, &norm)
+    BARE.replace_all(body, "${1} turn roll is").into_owned()
+}
+
+/// Route an OnRoll trigger body where the roller is the effect owner's OPPONENT ("When
+/// your opponent rolls `<S>` for their turn roll, `<body>`"). Normalizes the "their roll
+/// is ±N" roll-modifier phrasing, then delegates to [`trigger_body`] with `OnRoll{Opp}`
+/// — the "you"/"they" subjects in the body resolve to owner/opponent through the shared
+/// grammar exactly as the self mirror does.
+fn on_roll_opp_body(s: Skill, body: &str) -> Option<Effect> {
+    trigger_body(on_roll(s, Who::Opp), &norm_roll_is_phrasing(body))
 }
 
 /// A `BuffSkill` scaled by the count of the owner's in-play cards matching `per`
@@ -3681,7 +3697,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         rule(
-            r"[Yy]our opponent discards (\d+) random cards?(?: (?:from|in) their hand)?",
+            r"(?:[Yy]our opponent discards|[Tt]hey discard) (\d+) random cards?(?: (?:from|in) their hand)?",
             |c| {
                 Some(eff(
                     on_hit(),
@@ -3692,7 +3708,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         rule(
-            r"[Yy]our opponent discards (\d+) cards?(?: (?:from|in) their hand)?",
+            r"(?:[Yy]our opponent discards|[Tt]hey discard) (\d+) cards?(?: (?:from|in) their hand)?",
             |c| {
                 Some(eff(
                     on_hit(),
@@ -4984,6 +5000,16 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     &c[2],
                 )
             },
+        ),
+        // Generic OPPONENT roll trigger-body split (task #131): "When your opponent rolls
+        // <Skill>[ for their turn roll][:,] <body>" -> body re-parsed with OnRoll{Opp}
+        // attached (the engine's run_on_roll already dispatches Opp-side rolls). The mirror
+        // of the self rule above; "their roll is ±N" normalizes to a ModifyRoll{Opp,This}.
+        // Placed LAST so every specific "When your opponent rolls …" rule wins its phrasing
+        // first, and additive — a body with no grammar leaves the clause Unsupported.
+        rule(
+            &format!(r"When your opponent rolls {SK}(?: for their turn roll)?[:,] (.+)"),
+            |c| on_roll_opp_body(skill(&c[1]), &c[2]),
         ),
         // Trigger-prefix body splits (task #119): reuse trigger_body for the standard
         // event/standing triggers, delegating the body to the whole grammar. All placed
