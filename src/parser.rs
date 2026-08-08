@@ -1436,6 +1436,40 @@ fn type_count_buff(
     ))
 }
 
+/// Build a Static multi-skill [`BuffSkill`] whose delta is the live Crowd Meter —
+/// "Your X [and Y] is/are + the Crowd Meter [(Max +M)]" (`per_crowd`, the same dynamic
+/// delta Copy Kat uses, previously override-only). Declines when the skill list is empty
+/// (so "Your Finish roll …" / "Your breakout rolls …" — different mechanisms — fall
+/// through), keeping this to plain skill buffs.
+fn crowd_meter_buff(skills_text: &str, cap: Option<regex::Match>) -> Option<Effect> {
+    let skills = skill_list(skills_text);
+    if skills.is_empty() {
+        return None;
+    }
+    let cap = cap.map(|m| m.as_str().parse::<i64>().unwrap());
+    let actions = skills
+        .into_iter()
+        .map(|s| Action::BuffSkill {
+            skill: s,
+            delta: 1,
+            who: Who::SelfSide,
+            duration: Duration::WhileInPlay,
+            target_highest: false,
+            target_lowest: false,
+            per_crowd: true,
+            cap,
+            per: None,
+            per_zone: CountZone::InPlay,
+        })
+        .collect();
+    Some(eff(
+        Trigger::Static,
+        actions,
+        Condition::Always,
+        Duration::WhileInPlay,
+    ))
+}
+
 /// A Static "no disqualifications" match-rule toggle (`DisqualificationRule` was
 /// previously override-only). `Match` scope = "the match has no disqualifications";
 /// `SelfSide` = "you cannot be disqualified".
@@ -2541,6 +2575,14 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(
             r"\+(\d+) to (.+?) for each (.+?) you have in play(?: \(Max \+?(\d+)\))?",
             |c| type_count_buff(&c[2], num(c, 1), &c[3], c.get(4)),
+        ),
+        // Crowd-Meter skill buff (task #131): "Your X [and Y] is/are + the Crowd Meter
+        // [(Max +M)]" -> BuffSkill{per_crowd} (Copy Kat's dynamic delta, was override-
+        // only). skill_list declines "Finish roll"/"breakout rolls" (own mechanisms) and
+        // "+ double/triple the Crowd Meter" fails the literal "+ the" so it stays tail.
+        rule(
+            r"Your (.+?) (?:is|are) \+ the [Cc]rowd [Mm]eter(?: \((?:Max|max) \+?(\d+)\))?",
+            |c| crowd_meter_buff(&c[1], c.get(2)),
         ),
         rule(r"Each player draws? (\d+) cards?", |c| {
             let n = num(c, 1);

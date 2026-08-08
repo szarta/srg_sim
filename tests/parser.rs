@@ -2418,6 +2418,40 @@ fn type_count_buff_grammar() {
     }
 }
 
+/// Crowd-Meter skill buff (task #131): "Your X [and Y] is/are + the Crowd Meter
+/// [(Max +M)]" -> Static multi-skill BuffSkill{per_crowd}. "Finish roll"/"breakout
+/// rolls" (own mechanisms) and "+ double/triple the Crowd Meter" decline.
+#[test]
+fn crowd_meter_buff_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    let a = a1("Your Technique is + the Crowd Meter (max +3).")["actions"][0].clone();
+    assert_eq!(a["@type"], "BuffSkill");
+    assert_eq!(a["skill"], "Technique");
+    assert_eq!(a["per_crowd"], true);
+    assert_eq!(a["cap"], 3);
+    assert_eq!(a["who"], "SELF");
+
+    let e = a1("Your Power and Technique are + the Crowd Meter.");
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 2);
+    assert!(acts
+        .iter()
+        .all(|a| a["per_crowd"] == true && a["cap"] == Value::Null));
+
+    // Different mechanisms / multiplier forms decline -> Unsupported.
+    for text in [
+        "Your Finish roll is + the Crowd Meter.",
+        "Your Technique and Submission are + double the Crowd Meter.",
+    ] {
+        assert_eq!(a1(text)["actions"][0]["@type"], "Unsupported", "{text:?}");
+    }
+}
+
 /// Skill-buff family (task #119/#130): a standing skill buff gated on "another
 /// Follow Up or Finish <ATK>" — an OR-of-orders `HasInPlay` at count>=2 (the source
 /// card counts, so one OTHER qualifier arms it). Plus the bare "Your <S> skill is +N".
