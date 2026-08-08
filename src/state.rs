@@ -30,6 +30,11 @@ use std::collections::{BTreeMap, HashSet};
 /// a player's cap below this. `MinHandSize` mods shift it. See [`GameState::effective_hand_cap`].
 pub const MIN_HAND_SIZE: i64 = 3;
 
+/// Absolute ceiling on the effective *minimum* hand size (SRG ruling): `MinHandSize`
+/// mods can raise the minimum, but it never exceeds this. Its mirror is `MIN_HAND_SIZE`,
+/// the floor on the effective *maximum*. See [`GameState::effective_hand_cap`].
+pub const MAX_MIN_HAND_SIZE: i64 = 10;
+
 /// Version of the [`observable`](GameState::observable) projection — the lossy,
 /// per-viewer state carried on every [`DecisionRequest`](crate::engine::DecisionRequest)
 /// and pinned in `schemas/v1/observable_state.schema.json`. Bump on any shape change
@@ -876,8 +881,10 @@ impl GameState {
     /// [`effective_stats`](Self::effective_stats) folds Static buffs. Per the SRG
     /// ruling the minimum (default [`MIN_HAND_SIZE`], + `MinHandSize` mods) is a
     /// **floor on the maximum**: a max reduction never drops the cap below it, and
-    /// a minimum raised above the maximum becomes the new maximum. Both collapse to
-    /// `max(base + max_mods, effective_min)`.
+    /// a minimum raised above the maximum becomes the new maximum. Two absolute
+    /// bounds cap the result (SRG ruling): the effective **minimum can never exceed
+    /// [`MAX_MIN_HAND_SIZE`]** (10), and the effective **maximum can never drop below
+    /// [`MIN_HAND_SIZE`]** (3) — no stack of modifiers pushes past either.
     pub fn effective_hand_cap(&self, key: &str, base: i64, holds: Option<&ConditionHolds>) -> i64 {
         let (mut max_mods, mut min_mods) = (0, 0);
         for (owner, player) in &self.players {
@@ -885,8 +892,10 @@ impl GameState {
             max_mods += mx;
             min_mods += mn;
         }
-        let floor = (MIN_HAND_SIZE + min_mods).max(0);
-        (base + max_mods).max(floor)
+        // The minimum is a floor on the maximum, itself clamped to ≤ MAX_MIN_HAND_SIZE;
+        // and the maximum can never fall below MIN_HAND_SIZE.
+        let floor = (MIN_HAND_SIZE + min_mods).clamp(0, MAX_MIN_HAND_SIZE);
+        (base + max_mods).max(floor).max(MIN_HAND_SIZE)
     }
 
     /// `(max_mods, min_mods)` this player's active Static hand modifiers contribute

@@ -72,6 +72,52 @@ fn effective_hand_cap_matches_oracle() {
     }
 }
 
+/// Absolute hand-size bounds (SRG ruling): the effective minimum can never exceed 10,
+/// and the effective maximum can never drop below 3 — no stack of MinHandSize/MaxHandSize
+/// modifiers pushes past either.
+#[test]
+fn hand_size_bounds_clamp_the_minimum_and_maximum() {
+    // Base position 0's state, with A's in_play replaced by one card carrying `actions`.
+    fn cap_with(actions: Value) -> i64 {
+        let mut doc = positions()[0].clone();
+        doc["state"]["players"]["A"]["in_play"] = json!([{
+            "atk_type": "Strike", "db_uuid": "hs", "name": "hs", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{"@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"}, "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "", "source": "card", "optional": false, "actions": actions}]
+        }]);
+        GameState::from_dict(doc["state"].clone())
+            .expect("from_dict")
+            .effective_hand_cap("A", 5, None)
+    }
+    let min_mod = |d: i64| json!({"@type": "MinHandSize", "delta": d, "who": "SELF", "duration": "WHILE_IN_PLAY"});
+    let max_mod = |d: i64| json!({"@type": "MaxHandSize", "delta": d, "who": "SELF", "duration": "WHILE_IN_PLAY"});
+
+    // Minimum pushed to 3 + 9 = 12 is clamped to 10; it floors the max at 10.
+    assert_eq!(cap_with(json!([min_mod(9)])), 10, "minimum capped at 10");
+    // +6 -> 9 (under the ceiling): the minimum floors the max at 9.
+    assert_eq!(
+        cap_with(json!([min_mod(6)])),
+        9,
+        "minimum below the ceiling passes through"
+    );
+    // Maximum reduced to 5 - 10 = -5 with the minimum also reduced (3 - 5 -> 0) still
+    // floors at 3 — the max never drops below 3.
+    assert_eq!(
+        cap_with(json!([max_mod(-10), min_mod(-5)])),
+        3,
+        "maximum floored at 3"
+    );
+    // A plain +4 max with no min mod is unclamped.
+    assert_eq!(
+        cap_with(json!([max_mod(4)])),
+        9,
+        "an in-bounds max is unchanged"
+    );
+}
+
 #[test]
 fn gimmick_blank_derivation_matches_oracle() {
     let mut saw_blank = false;
