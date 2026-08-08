@@ -778,13 +778,18 @@ fn gate_condition(text: &str) -> Option<Condition> {
         .unwrap()
     });
     static HAVE_INPLAY: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"(?i)^you have (?:another |(\d+) (?:or more )?)?(.+?) in play$").unwrap()
+        // The article "a"/"an" ("you have a Stop in play") reads as count 1, like a bare
+        // count; "another" keeps its own branch (tried first so "another" never matches
+        // the "an" article). The count group stays group 1 (None -> 1).
+        Regex::new(r"(?i)^you have (?:another |an? |(\d+) (?:or more )?)?(.+?) in play$").unwrap()
     });
     static HIT: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(?i)^you hit (?:a |an |another )?(.+?) (this|last) turn$").unwrap()
     });
     static OPP_PLAY: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"(?i)^your opponent has (\d+)(?: or more)? (.+?) in play$").unwrap()
+        // Count is group 1 (a bare number, "or more" optional); the article "a"/"an"
+        // ("your opponent has a Stop in play") is a countless branch that reads as 1.
+        Regex::new(r"(?i)^your opponent has (?:(\d+)(?: or more)?|an?) (.+?) in play$").unwrap()
     });
     static OPP_PLAY_NONE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^your opponent has (?:no|0) (.+?) in play$").unwrap());
@@ -807,7 +812,11 @@ fn gate_condition(text: &str) -> Option<Condition> {
         });
     }
     if let Some(c) = OPP_PLAY.captures(t) {
-        if let (Some(f), Ok(n)) = (recur_filter(c[2].trim()), c[1].parse::<i64>()) {
+        // Count group absent = the "a"/"an" article branch -> 1.
+        let n = c
+            .get(1)
+            .map_or(1, |m| m.as_str().parse::<i64>().unwrap_or(1));
+        if let Some(f) = recur_filter(c[2].trim()) {
             return Some(has_in_play(Who::Opp, f, n));
         }
     }

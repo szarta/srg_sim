@@ -595,6 +595,21 @@ fn draw_rider_grammar() {
     let e = parse1("If you have another Follow Up in play, draw 1 card.");
     assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
 
+    // The article "a"/"an" reads as count 1 in the has-in-play gate (self + opponent).
+    let e = parse1("If you have a Stop in play, draw 2 cards.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["who"], "SELF");
+    assert_eq!(e["condition"]["filter"]["is_stop"], true);
+    assert_eq!(e["condition"]["count"], 1);
+    let e = parse1("If your opponent has a Stop in play, your next turn roll is +2.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["who"], "OPP");
+    assert_eq!(e["condition"]["filter"]["is_stop"], true);
+    assert_eq!(e["condition"]["count"], 1);
+    // "another" keeps its own branch — the "an" article never swallows it.
+    let e = parse1("If you have another Submission in play, draw 1 card.");
+    assert_eq!(e["condition"]["filter"]["atk_type"], "Submission");
+
     // Skill compare: same-skill (vs_skill null) and cross-skill (vs_skill set).
     let e =
         parse1("If your Power skill is greater than your opponent's Power skill, draw 2 cards.");
