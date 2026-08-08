@@ -374,6 +374,12 @@
     "delta": 2
   },
   {
+    "@type": "MultiTurnRollBonus",
+    "who": "OPP",
+    "rolls": 3,
+    "delta": -1
+  },
+  {
     "@type": "FlipGimmick",
     "who": "SELF"
   },

@@ -3125,6 +3125,30 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Multi-turn duration bonus (cluster b): "Your [opponent's] next N turn rolls are
+        // +/-N" -> MultiTurnRollBonus applied to the next N turn rolls of the affected
+        // side (schema v111, engine multi_turn_roll_mods). The Finish-roll-gated variant
+        // ("If your Finish roll is odd, ...") keeps its "If" prefix and declines here.
+        rule(
+            r"Your (opponent's )?next (\d+) turn rolls are ([+-]\d+)",
+            |c| {
+                let who = if c.get(1).is_some() {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
+                Some(eff(
+                    on_hit(),
+                    vec![Action::MultiTurnRollBonus {
+                        who,
+                        rolls: num(c, 2),
+                        delta: c[3].parse().ok()?,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"Your next turn roll is \+(\d+) for each (.+?) in your discard pile",
             |c| {

@@ -78,6 +78,17 @@ pub struct SkillSetRollMod {
     pub delta: i64,
 }
 
+/// A pending MULTI-TURN turn-roll bonus: `delta` applies to each of the owner's next
+/// `remaining` turn rolls, decrementing once per roll-off until exhausted. Backs
+/// [`Action::MultiTurnRollBonus`] — "your [opponent's] next N turn rolls are +/-N".
+/// Unlike the one-turn queues it spans several turns; unlike a standing `TurnRollBonus`
+/// it is skill-agnostic and self-expiring.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MultiTurnRollMod {
+    pub delta: i64,
+    pub remaining: i64,
+}
+
 /// A pending one-shot "if your [opponent's] next turn roll is `<S>`, draw N": watches
 /// `watch`'s NEXT turn roll and, if it resolves to `skill`, the OWNER draws `count`.
 /// Unlike [`SkillRollMod`] (which waits, across turns, until its skill actually comes
@@ -161,6 +172,11 @@ pub struct PlayerState {
     /// observable projection like `pending_roll_mods`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pending_next_roll_skill_mods: Vec<SkillSetRollMod>,
+    /// Pending MULTI-TURN turn-roll bonuses (see [`MultiTurnRollMod`]) — each applies to
+    /// the owner's next `remaining` turn rolls, decrementing per roll-off. Engine
+    /// bookkeeping, excluded from the observable projection like `pending_roll_mods`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub multi_turn_roll_mods: Vec<MultiTurnRollMod>,
     /// `db_uuid`s of THIS player's own hand cards they have REVEALED to the opponent
     /// (fog-of-war; [`Action::Reveal`]). Persists for the match — a card the opponent
     /// has seen stays known while it is in hand. Read by [`Self::observable`] to expose

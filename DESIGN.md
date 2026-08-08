@@ -268,6 +268,9 @@ NextRollSkillBonus(who, skills, delta)  # one-turn skill-gated turn-roll bonus: 
                               # "if your [opponent's] next turn roll is <S>, it is +N". `delta` applies to `who`'s (SELF|OPP)
                               # IMMEDIATELY-next turn roll if it comes up one of `skills`, then the queue is drained (one-turn
                               # window, non-match fizzles). Unlike ModifyRoll{on_skill}, does NOT wait indefinitely (schema v110)
+MultiTurnRollBonus(who, rolls, delta)  # multi-turn turn-roll bonus: "your [opponent's] next N turn rolls are +/-N". `delta`
+                              # applies to each of `who`'s (SELF|OPP) next `rolls` turn rolls, decrementing per roll-off until
+                              # exhausted. Skill-agnostic and self-expiring, unlike the standing TurnRollBonus (schema v111)
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, target_lowest?, per_crowd?, cap?, per?, per_zone=IN_PLAY, per_excludes_self=False)
                                                  # target_lowest -> retarget to the LOWEST base skill ("+N to your lowest skill"); mirrors target_highest. schema v93
                                                  # per=CardFilter -> bonus = delta * (count of the target's cards

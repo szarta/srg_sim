@@ -26,8 +26,8 @@ use crate::ir::{
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
 use crate::state::{
-    FlipProvenance, GameState, PendingRollDraw, PendingText, PlayerState, SkillRollMod,
-    SkillSetRollMod, TimedBuff,
+    FlipProvenance, GameState, MultiTurnRollMod, PendingRollDraw, PendingText, PlayerState,
+    SkillRollMod, SkillSetRollMod, TimedBuff,
 };
 use serde_json::{json, Value};
 use std::cmp::Reverse;
@@ -474,6 +474,7 @@ impl Engine {
                         pending_skill_roll_mods: Vec::new(),
                         pending_roll_draws: Vec::new(),
                         pending_next_roll_skill_mods: Vec::new(),
+                        multi_turn_roll_mods: Vec::new(),
                         revealed_hand: Default::default(),
                         reroll_grants: Default::default(),
                         timed_buffs: Vec::new(),
@@ -1199,6 +1200,9 @@ impl Engine {
             Action::RollDraw { who, skill, count } => self.act_roll_draw(*who, *skill, *count, key),
             Action::NextRollSkillBonus { who, skills, delta } => {
                 self.act_next_roll_skill_bonus(*who, skills, *delta, key)
+            }
+            Action::MultiTurnRollBonus { who, rolls, delta } => {
+                self.act_multi_turn_roll_bonus(*who, *rolls, *delta, key)
             }
             Action::Discard {
                 selector,
@@ -2003,6 +2007,45 @@ impl Engine {
             .pending_next_roll_skill_mods
             .iter()
             .filter(|m| m.skills.contains(&skill))
+            .map(|m| m.delta)
+            .sum()
+    }
+
+    /// Arm a multi-turn turn-roll bonus ([`Action::MultiTurnRollBonus`]): "your
+    /// [opponent's] next N turn rolls are +/-N". Queued on the AFFECTED player
+    /// (`target(who)`); applied by `multi_turn_roll_bonus` on each of their next `rolls`
+    /// initial rolls and decremented by `consume_pending`. A zero/negative `rolls` arms
+    /// nothing.
+    fn act_multi_turn_roll_bonus(&mut self, who: Who, rolls: i64, delta: i64, key: &str) {
+        if rolls <= 0 {
+            return;
+        }
+        let target = self.target(who, key);
+        self.state
+            .players
+            .get_mut(&target)
+            .unwrap()
+            .multi_turn_roll_mods
+            .push(MultiTurnRollMod {
+                delta,
+                remaining: rolls,
+            });
+        self.log_effect(
+            key,
+            "MultiTurnRollBonus",
+            Some(&target),
+            json!({"rolls": rolls, "delta": delta}),
+        );
+    }
+
+    /// Sum the live multi-turn bonuses ([`MultiTurnRollMod`]) for `key`'s turn roll.
+    /// Read-only — `consume_pending` decrements each entry's `remaining` once per
+    /// roll-off and drops the exhausted ones.
+    fn multi_turn_roll_bonus(&self, key: &str) -> i64 {
+        self.state.players[key]
+            .multi_turn_roll_mods
+            .iter()
+            .filter(|m| m.remaining > 0)
             .map(|m| m.delta)
             .sum()
     }
@@ -6219,7 +6262,15 @@ impl Engine {
         } else {
             0
         };
-        let delta = flat + keyed + set;
+        // Multi-turn bonus ("your next N turn rolls are +N"): skill-agnostic, applied on
+        // the initial roll of each of the next N roll-offs (`consume_pending` decrements
+        // the counter). Gated by `use_pending` like the other pending mods.
+        let multi = if use_pending {
+            self.multi_turn_roll_bonus(key)
+        } else {
+            0
+        };
+        let delta = flat + keyed + set + multi;
         let mut mods = Vec::new();
         if flat != 0 {
             mods.push(RollMod {
@@ -6237,6 +6288,12 @@ impl Engine {
             mods.push(RollMod {
                 src: "pending_skill_set".to_owned(),
                 delta: set,
+            });
+        }
+        if multi != 0 {
+            mods.push(RollMod {
+                src: "multi_turn".to_owned(),
+                delta: multi,
             });
         }
         let value = base + delta;
@@ -6270,6 +6327,12 @@ impl Engine {
         for player in self.state.players.values_mut() {
             player.pending_roll_mods.this_turn = 0;
             player.pending_next_roll_skill_mods.clear();
+            // A multi-turn bonus spent one of its N rolls on this roll-off; drop it when
+            // exhausted.
+            for m in &mut player.multi_turn_roll_mods {
+                m.remaining -= 1;
+            }
+            player.multi_turn_roll_mods.retain(|m| m.remaining > 0);
         }
     }
 
@@ -6570,6 +6633,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::MillDeck { .. } => "MillDeck",
         Action::RollDraw { .. } => "RollDraw",
         Action::NextRollSkillBonus { .. } => "NextRollSkillBonus",
+        Action::MultiTurnRollBonus { .. } => "MultiTurnRollBonus",
         Action::Discard { .. } => "Discard",
         Action::Search { .. } => "Search",
         Action::ShuffleDeck { .. } => "ShuffleDeck",
@@ -7350,6 +7414,44 @@ mod breakout_modifier_tests {
             .pending_next_roll_skill_mods
             .is_empty());
         assert_eq!(engine.next_roll_skill_bonus("B", Skill::Strike), -2);
+    }
+
+    /// A multi-turn bonus applies its `delta` on each of the next N roll-offs (skill-
+    /// agnostic), decrements once per `consume_pending`, expires after N, and lands on the
+    /// opponent when armed with `who = Opp`.
+    #[test]
+    fn multi_turn_roll_bonus_applies_for_n_rolls_then_expires() {
+        let mut engine = engine();
+        // "Your opponent's next 3 turn rolls are -1" armed by A -> stored on B.
+        engine.act_multi_turn_roll_bonus(Who::Opp, 3, -1, "A");
+        assert!(
+            engine.state.players["A"].multi_turn_roll_mods.is_empty(),
+            "armed against the opponent, not the source"
+        );
+        assert_eq!(
+            engine.state.players["B"].multi_turn_roll_mods[0].remaining,
+            3
+        );
+
+        // Applies (skill-agnostic) on each of B's next three roll-offs, then expires.
+        for expect_remaining in [3, 2, 1] {
+            assert_eq!(
+                engine.multi_turn_roll_bonus("B"),
+                -1,
+                "active while remaining = {expect_remaining}"
+            );
+            engine.consume_pending(); // one roll-off spent
+        }
+        assert_eq!(
+            engine.multi_turn_roll_bonus("B"),
+            0,
+            "expired after 3 rolls"
+        );
+        assert!(engine.state.players["B"].multi_turn_roll_mods.is_empty());
+
+        // A zero-length arm adds nothing.
+        engine.act_multi_turn_roll_bonus(Who::SelfSide, 0, 5, "A");
+        assert!(engine.state.players["A"].multi_turn_roll_mods.is_empty());
     }
 
     /// `act_mill_deck` moves cards from the named DECK END to discard, with no flip

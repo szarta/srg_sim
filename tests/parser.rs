@@ -2854,6 +2854,17 @@ fn roll_conditional_draw_grammar() {
     let m = a1("If your next turn roll is 10, it is +1.")["actions"][0].clone();
     assert_eq!(m["@type"], "Unsupported");
 
+    // Multi-turn duration bonus: "Your [opponent's] next N turn rolls are +/-N".
+    let m = a1("Your next 3 turn rolls are +1.")["actions"][0].clone();
+    assert_eq!(m["@type"], "MultiTurnRollBonus");
+    assert_eq!(m["who"], "SELF");
+    assert_eq!(m["rolls"], 3);
+    assert_eq!(m["delta"], 1);
+    let m = a1("Your opponent's next 2 turn rolls are -2.")["actions"][0].clone();
+    assert_eq!(m["who"], "OPP");
+    assert_eq!(m["rolls"], 2);
+    assert_eq!(m["delta"], -2);
+
     // Every skill parses (singular "card" too).
     for (text, sk) in [
         ("If your next turn roll is Power, draw 1 card.", "Power"),

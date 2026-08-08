@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 110;
+pub const SCHEMA_VERSION: i64 = 111;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1063,6 +1063,16 @@ pub enum Action {
     NextRollSkillBonus {
         who: Who,
         skills: Vec<Skill>,
+        delta: i64,
+    },
+    /// Multi-turn turn-roll bonus — "your [opponent's] next N turn rolls are +/-N".
+    /// Arms on play; `delta` applies to each of `who`'s (`SelfSide` = your own, `Opp` =
+    /// your opponent's) next `rolls` turn rolls, decrementing once per roll-off until
+    /// exhausted. Skill-agnostic and self-expiring (unlike the standing `TurnRollBonus`).
+    /// schema v111
+    MultiTurnRollBonus {
+        who: Who,
+        rolls: i64,
         delta: i64,
     },
     Discard {
@@ -2287,6 +2297,16 @@ pub enum IrNode {
     NextRollSkillBonus {
         who: Who,
         skills: Vec<Skill>,
+        delta: i64,
+    },
+    /// Multi-turn turn-roll bonus — "your [opponent's] next N turn rolls are +/-N".
+    /// Arms on play; `delta` applies to each of `who`'s (`SelfSide` = your own, `Opp` =
+    /// your opponent's) next `rolls` turn rolls, decrementing once per roll-off until
+    /// exhausted. Skill-agnostic and self-expiring (unlike the standing `TurnRollBonus`).
+    /// schema v111
+    MultiTurnRollBonus {
+        who: Who,
+        rolls: i64,
         delta: i64,
     },
     Discard {
