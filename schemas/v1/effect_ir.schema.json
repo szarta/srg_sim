@@ -530,6 +530,10 @@
         "per_crowd": {
           "type": "boolean"
         },
+        "per_excludes_self": {
+          "description": "Exclude the source card (the one carrying this buff) from the per count, for a \"for each other <X> you have in play\" buff. Absent = false. Only meaningful with per over the owner's own board.",
+          "type": "boolean"
+        },
         "per_zone": {
           "$ref": "#/$defs/CountZone"
         },
@@ -5522,5 +5526,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 104
+  "version": 105
 }

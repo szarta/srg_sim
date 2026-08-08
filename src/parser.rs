@@ -1253,6 +1253,7 @@ fn buff(skill: Skill, delta: i64, who: Who) -> Action {
         cap: None,
         per: None,
         per_zone: CountZone::InPlay,
+        per_excludes_self: false,
     }
 }
 
@@ -1280,6 +1281,7 @@ fn buff_extreme(highest: bool, delta: i64, who: Who) -> Action {
         cap: None,
         per: None,
         per_zone: CountZone::InPlay,
+        per_excludes_self: false,
     }
 }
 
@@ -1390,8 +1392,15 @@ fn on_roll_opp_body(s: Skill, body: &str) -> Option<Effect> {
 
 /// A `BuffSkill` scaled by the count of the owner's in-play cards matching `per`
 /// (clamped to `cap`) — "your Technique and Grapple are +1 for each card you have
-/// in play with 'Breaker' in the name". `per: None` = a flat +`delta`.
-fn buff_per(skill: Skill, delta: i64, per: Option<CardFilter>, cap: Option<i64>) -> Action {
+/// in play with 'Breaker' in the name". `per: None` = a flat +`delta`. `exclude_self`
+/// drops the source card from the count ("for each OTHER card …").
+fn buff_per(
+    skill: Skill,
+    delta: i64,
+    per: Option<CardFilter>,
+    cap: Option<i64>,
+    exclude_self: bool,
+) -> Action {
     Action::BuffSkill {
         skill,
         delta,
@@ -1403,6 +1412,7 @@ fn buff_per(skill: Skill, delta: i64, per: Option<CardFilter>, cap: Option<i64>)
         cap,
         per,
         per_zone: CountZone::InPlay,
+        per_excludes_self: exclude_self,
     }
 }
 
@@ -1417,6 +1427,7 @@ fn type_count_buff(
     delta: i64,
     per_text: &str,
     cap: Option<regex::Match>,
+    exclude_self: bool,
 ) -> Option<Effect> {
     let skills = skill_list(skills_text);
     let per = count_filter(per_text)?;
@@ -1426,7 +1437,7 @@ fn type_count_buff(
     let cap = cap.map(|m| m.as_str().parse::<i64>().unwrap());
     let actions = skills
         .into_iter()
-        .map(|s| buff_per(s, delta, Some(per.clone()), cap))
+        .map(|s| buff_per(s, delta, Some(per.clone()), cap, exclude_self))
         .collect();
     Some(eff(
         Trigger::Static,
@@ -1460,6 +1471,7 @@ fn crowd_meter_buff(skills_text: &str, cap: Option<regex::Match>) -> Option<Effe
             cap,
             per: None,
             per_zone: CountZone::InPlay,
+            per_excludes_self: false,
         })
         .collect();
     Some(eff(
@@ -2356,6 +2368,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         cap,
                         per: Some(cf_name(names)),
                         per_zone: CountZone::InPlay,
+                        per_excludes_self: false,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -2509,23 +2522,25 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        // Multi-skill per-count buff, "Your X [and Y] are +N for each card you have in
-        // play with 'Z' in the name/text" (Evee's Spell Breaker). The single-skill
+        // Multi-skill per-count buff, "Your X [and Y] are +N for each [other] card you
+        // have in play with 'Z' in the name/text" (Evee's Spell Breaker). The single-skill
         // "Your X skill is +N for each …" rule above wins first for its exact shape.
+        // "other" sets per_excludes_self (the source card drops from the count).
         rule(
-            r#"Your (.+?) (?:is|are) \+(\d+) for each card you have in play with (.+?) in the (name|text)(?: \(Max \+(\d+)\))?"#,
+            r#"Your (.+?) (?:is|are) \+(\d+) for each (other )?card you have in play with (.+?) in the (name|text)(?: \(Max \+(\d+)\))?"#,
             |c| {
                 let skills = skill_list(&c[1]);
-                let names = quoted_names(&c[3]);
+                let names = quoted_names(&c[4]);
                 if skills.is_empty() || names.is_empty() {
                     return None;
                 }
                 let delta = num(c, 2);
-                let cap = c.get(5).map(|m| m.as_str().parse::<i64>().unwrap());
-                let filter = name_or_text_filter(&c[4], names);
+                let excl = c.get(3).is_some();
+                let cap = c.get(6).map(|m| m.as_str().parse::<i64>().unwrap());
+                let filter = name_or_text_filter(&c[5], names);
                 let actions = skills
                     .into_iter()
-                    .map(|s| buff_per(s, delta, Some(filter.clone()), cap))
+                    .map(|s| buff_per(s, delta, Some(filter.clone()), cap, excl))
                     .collect();
                 Some(eff(
                     Trigger::Static,
@@ -2535,22 +2550,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        // Same per-count buff phrased "+N to X [and Y] for each card … in the
+        // Same per-count buff phrased "+N to X [and Y] for each [other] card … in the
         // name/text" (Witch's My Most Powerful Spell; Postal's "…in the text (Max +4)").
         rule(
-            r#"\+(\d+) to (.+?) for each card you have in play with (.+?) in the (name|text)(?: \(Max \+(\d+)\))?"#,
+            r#"\+(\d+) to (.+?) for each (other )?card you have in play with (.+?) in the (name|text)(?: \(Max \+(\d+)\))?"#,
             |c| {
                 let skills = skill_list(&c[2]);
-                let names = quoted_names(&c[3]);
+                let names = quoted_names(&c[4]);
                 if skills.is_empty() || names.is_empty() {
                     return None;
                 }
                 let delta = num(c, 1);
-                let cap = c.get(5).map(|m| m.as_str().parse::<i64>().unwrap());
-                let filter = name_or_text_filter(&c[4], names);
+                let excl = c.get(3).is_some();
+                let cap = c.get(6).map(|m| m.as_str().parse::<i64>().unwrap());
+                let filter = name_or_text_filter(&c[5], names);
                 let actions = skills
                     .into_iter()
-                    .map(|s| buff_per(s, delta, Some(filter.clone()), cap))
+                    .map(|s| buff_per(s, delta, Some(filter.clone()), cap, excl))
                     .collect();
                 Some(eff(
                     Trigger::Static,
@@ -2561,20 +2577,20 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         // Type-counted per-count buff (task #131): "Your X [and Y] is/are +N for each
-        // <type> you have in play [(Max +M)]" — the same buff_per scaling as the
+        // [other] <type> you have in play [(Max +M)]" — the same buff_per scaling as the
         // name-count rules above, but the count ranges over a card TYPE (atk / play
         // order / stop) via count_filter instead of a name substring. Own board only
-        // (BuffSkill.per counts the buffed player's board; opponent-board and "for each
-        // OTHER" forms need per_who/exclude and stay Unsupported). "for each card …"
+        // (BuffSkill.per counts the buffed player's board; opponent-board forms need
+        // per_who and stay Unsupported). "other" sets per_excludes_self. "for each card …"
         // declines here (count_filter has no bare-card filter) — the name rules own it.
         rule(
-            r"Your (.+?) (?:is|are) \+(\d+) for each (.+?) you have in play(?: \(Max \+?(\d+)\))?",
-            |c| type_count_buff(&c[1], num(c, 2), &c[3], c.get(4)),
+            r"Your (.+?) (?:is|are) \+(\d+) for each (other )?(.+?) you have in play(?: \(Max \+?(\d+)\))?",
+            |c| type_count_buff(&c[1], num(c, 2), &c[4], c.get(5), c.get(3).is_some()),
         ),
-        // Same, phrased "+N to X [and Y] for each <type> you have in play [(Max +M)]".
+        // Same, phrased "+N to X [and Y] for each [other] <type> you have in play [(Max +M)]".
         rule(
-            r"\+(\d+) to (.+?) for each (.+?) you have in play(?: \(Max \+?(\d+)\))?",
-            |c| type_count_buff(&c[2], num(c, 1), &c[3], c.get(4)),
+            r"\+(\d+) to (.+?) for each (other )?(.+?) you have in play(?: \(Max \+?(\d+)\))?",
+            |c| type_count_buff(&c[2], num(c, 1), &c[4], c.get(5), c.get(3).is_some()),
         ),
         // Crowd-Meter skill buff (task #131): "Your X [and Y] is/are + the Crowd Meter
         // [(Max +M)]" -> BuffSkill{per_crowd} (Copy Kat's dynamic delta, was override-
@@ -4871,6 +4887,7 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     cap: None,
                     per: Some(per.clone()),
                     per_zone: CountZone::FlippedThisTurn,
+                    per_excludes_self: false,
                 })
                 .collect();
             Some(eff(

@@ -704,6 +704,8 @@ impl GameState {
         holds: Option<&ConditionHolds>,
     ) {
         let gimmick_active = !self.is_gimmick_blanked(owner);
+        // Gimmick / entrance carry no in-play card, so a "for each other" buff there has
+        // nothing to exclude (source = None) — the count is over every matching card.
         self.fold_buffs(
             stats,
             &player.competitor.effects,
@@ -711,13 +713,23 @@ impl GameState {
             target,
             owner,
             holds,
+            None,
         );
-        self.fold_buffs(stats, &player.entrance.effects, true, target, owner, holds);
+        self.fold_buffs(
+            stats,
+            &player.entrance.effects,
+            true,
+            target,
+            owner,
+            holds,
+            None,
+        );
         for card in &player.in_play {
-            self.fold_buffs(stats, &card.effects, true, target, owner, holds);
+            self.fold_buffs(stats, &card.effects, true, target, owner, holds, Some(card));
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn fold_buffs(
         &self,
         stats: &mut Skills,
@@ -726,6 +738,7 @@ impl GameState {
         target: &str,
         owner: &str,
         holds: Option<&ConditionHolds>,
+        source: Option<&Card>,
     ) {
         if !active {
             return;
@@ -745,10 +758,15 @@ impl GameState {
                     cap,
                     per,
                     per_zone,
+                    per_excludes_self,
                     ..
                 } = action
                 {
                     if targets(owner, *who, target) && condition_ok(&eff.condition, holds) {
+                        // "for each OTHER …": drop the buff's own card from the count. The
+                        // exclude only bites when the source is on the counted board, i.e.
+                        // a SELF buff (owner == target) — count_in_play matches by identity.
+                        let exclude = per_excludes_self.then_some(source).flatten();
                         let (sk, d) = self.resolve_buff(
                             *skill,
                             *target_highest,
@@ -759,6 +777,7 @@ impl GameState {
                             per.as_ref(),
                             *per_zone,
                             target,
+                            exclude,
                         );
                         *stats = stats.with(sk, stats.get(sk) + d);
                     }
@@ -783,6 +802,7 @@ impl GameState {
         per: Option<&CardFilter>,
         per_zone: CountZone,
         target: &str,
+        exclude: Option<&Card>,
     ) -> (Skill, i64) {
         let sk = if target_highest || target_lowest {
             let base = self.players[target].competitor.stats;
@@ -805,8 +825,9 @@ impl GameState {
         let d = if per_crowd {
             cap.map_or(self.crowd_meter, |c| self.crowd_meter.min(c))
         } else if let Some(filter) = per {
-            // "+delta for each card in `per_zone` matching `filter`", clamped to cap.
-            let n = self.count_in_zone(filter, per_zone, target);
+            // "+delta for each [other] card in `per_zone` matching `filter`", clamped to
+            // cap; `exclude` drops the source card for a "for each OTHER …" buff.
+            let n = self.count_in_zone_excl(filter, per_zone, target, exclude);
             let raw = n * delta;
             cap.map_or(raw, |c| raw.min(c))
         } else {
@@ -817,17 +838,34 @@ impl GameState {
 
     /// Count the target's cards in `zone` matching `filter` (Static per-count buffs).
     pub fn count_in_zone(&self, filter: &CardFilter, zone: CountZone, target: &str) -> i64 {
+        self.count_in_zone_excl(filter, zone, target, None)
+    }
+
+    /// [`count_in_zone`](Self::count_in_zone) but dropping `exclude` (the SOURCE card of a
+    /// "for each OTHER …" per-count) from the tally by pointer identity — the standing-buff
+    /// analogue of [`conditions::count_in_play`]'s `exclude`. The source card is always in
+    /// play, so the skip only bites the `InPlay` zone in practice.
+    pub fn count_in_zone_excl(
+        &self,
+        filter: &CardFilter,
+        zone: CountZone,
+        target: &str,
+        exclude: Option<&Card>,
+    ) -> i64 {
         let player = &self.players[target];
+        let skip = |c: &&Card| exclude.is_none_or(|ex| !std::ptr::eq(*c, ex));
         match zone {
-            CountZone::InPlay => conditions::count_in_play(&player.in_play, filter, None),
+            CountZone::InPlay => conditions::count_in_play(&player.in_play, filter, exclude),
             CountZone::Discard => player
                 .discard
                 .iter()
+                .filter(skip)
                 .filter(|c| conditions::card_matches(c, filter))
                 .count() as i64,
             CountZone::FlippedThisTurn => player
                 .flipped_this_turn
                 .iter()
+                .filter(skip)
                 .filter(|c| conditions::card_matches(c, filter))
                 .count() as i64,
         }

@@ -2408,14 +2408,18 @@ fn type_count_buff_grammar() {
     assert_eq!(a["per"]["play_order"], "Lead");
     assert_eq!(a["cap"], Value::Null);
 
-    // Guardrails: opponent-board and "for each other" both decline (per_who/exclude
-    // unsupported) -> the whole clause stays Unsupported.
-    for text in [
-        "Your Power is +1 for each Submission your opponent has in play.",
-        "Your Power is +1 for each other Grapple you have in play.",
-    ] {
-        assert_eq!(a1(text)["actions"][0]["@type"], "Unsupported", "{text:?}");
-    }
+    // "for each other <type>" -> per_excludes_self set (self-exclude, task #131 v105).
+    let a = a1("Your Power is +1 for each other Grapple you have in play.")["actions"][0].clone();
+    assert_eq!(a["@type"], "BuffSkill");
+    assert_eq!(a["per"]["atk_type"], "Grapple");
+    assert_eq!(a["per_excludes_self"], true);
+
+    // Guardrail: opponent-board still declines (per_who unsupported) -> Unsupported.
+    assert_eq!(
+        a1("Your Power is +1 for each Submission your opponent has in play.")["actions"][0]
+            ["@type"],
+        "Unsupported"
+    );
 }
 
 /// Crowd-Meter skill buff (task #131): "Your X [and Y] is/are + the Crowd Meter

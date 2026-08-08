@@ -25,7 +25,14 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 104;
+pub const SCHEMA_VERSION: i64 = 105;
+
+/// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
+/// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
+/// byte-identical, the same low-churn tactic as `Option` fields with `Option::is_none`.
+fn is_false(b: &bool) -> bool {
+    !*b
+}
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -1294,6 +1301,13 @@ pub enum Action {
         per: Option<CardFilter>,
         #[serde(default)]
         per_zone: CountZone,
+        /// Exclude the SOURCE card (the one carrying this buff) from the `per` count —
+        /// "for each OTHER card you have in play with 'X' in the name". Only meaningful
+        /// with `per` over the owner's own board; the count-in-zone drops the source by
+        /// pointer identity. Additive/skip-when-false (mirrors `ModifyRoll.on_skill`),
+        /// so pre-v105 fixtures round-trip byte-identically. schema v105
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_excludes_self: bool,
     },
     MaxHandSize {
         delta: i64,
@@ -2460,6 +2474,13 @@ pub enum IrNode {
         per: Option<CardFilter>,
         #[serde(default)]
         per_zone: CountZone,
+        /// Exclude the SOURCE card (the one carrying this buff) from the `per` count —
+        /// "for each OTHER card you have in play with 'X' in the name". Only meaningful
+        /// with `per` over the owner's own board; the count-in-zone drops the source by
+        /// pointer identity. Additive/skip-when-false (mirrors `ModifyRoll.on_skill`),
+        /// so pre-v105 fixtures round-trip byte-identically. schema v105
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_excludes_self: bool,
     },
     MaxHandSize {
         delta: i64,

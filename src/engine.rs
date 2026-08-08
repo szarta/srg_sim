@@ -237,6 +237,7 @@ fn negate_action(action: &Action) -> Action {
             cap,
             per,
             per_zone,
+            per_excludes_self,
         } => Action::BuffSkill {
             skill: *skill,
             delta: -*delta,
@@ -248,6 +249,7 @@ fn negate_action(action: &Action) -> Action {
             cap: *cap,
             per: per.clone(),
             per_zone: *per_zone,
+            per_excludes_self: *per_excludes_self,
         },
         Action::CrowdMeter { delta } => Action::CrowdMeter { delta: -*delta },
         Action::MaxHandSize {
