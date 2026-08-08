@@ -201,7 +201,8 @@ Always
 
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
-Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF)  Bury(selector, count, per?, per_who=SELF, all=False)   Discard(selector, count, who, per?, per_who=SELF, all=False)
+Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF, cap?, per_excludes_trigger=False, from_crowd=False)  # from_crowd -> count = Crowd Meter + n (n is the signed offset), clamped to cap, floored at 0 — "draw cards equal to the Crowd Meter +1 (Max +5)"; mutually exclusive with per (schema v108)
+Bury(selector, count, per?, per_who=SELF, all=False)   Discard(selector, count, who, per?, per_who=SELF, all=False)
                               # Bury/Discard `all` (schema v90): shed EVERY hand card matching `selector`, ignoring
                               # count/per ("they bury/discard all Strike cards"); dispatch derives count from hand size
 Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1)  ShuffleIntoDeck(selector, source=DISCARD|IN_PLAY)

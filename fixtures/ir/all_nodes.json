@@ -297,7 +297,8 @@
     "per_excludes_trigger": false,
     "per_who": "SELF",
     "source": "TOP",
-    "who": "SELF"
+    "who": "SELF",
+    "from_crowd": true
   },
   {
     "@type": "Effect",

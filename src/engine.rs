@@ -389,6 +389,7 @@ struct DrawSpec {
     per_who: Who,
     cap: Option<i64>,
     per_excludes_trigger: bool,
+    from_crowd: bool,
 }
 
 pub struct Engine {
@@ -1123,6 +1124,7 @@ impl Engine {
                 per_who,
                 cap,
                 per_excludes_trigger,
+                from_crowd,
             } => self.act_draw(
                 DrawSpec {
                     n: *n,
@@ -1132,6 +1134,7 @@ impl Engine {
                     per_who: *per_who,
                     cap: *cap,
                     per_excludes_trigger: *per_excludes_trigger,
+                    from_crowd: *from_crowd,
                 },
                 key,
             )?,
@@ -1485,7 +1488,14 @@ impl Engine {
         } = spec;
         let target = self.target(who, key);
         let mut n = spec.n;
-        if let Some(per) = spec.per.as_ref() {
+        if spec.from_crowd {
+            // Count is the live Crowd Meter plus `n` (the signed offset), then capped —
+            // "draw cards equal to the Crowd Meter +1 (Max +5)". Never below 0.
+            n = (self.state.crowd_meter + spec.n).max(0);
+            if let Some(c) = cap {
+                n = n.min(c);
+            }
+        } else if let Some(per) = spec.per.as_ref() {
             let exclude = per_excludes_trigger
                 .then(|| self.hit_card.clone())
                 .flatten();
@@ -12183,6 +12193,78 @@ mod either_roll_tests {
             1,
             "owner still gets it"
         );
+    }
+}
+
+/// Crowd-Meter count draw (task #131, v108): a `Draw{from_crowd}` draws Crowd Meter + `n`
+/// (the signed offset), clamped to `cap` and floored at 0.
+#[cfg(test)]
+mod crowd_draw_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    fn eng() -> Engine {
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": {"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5},
+                    "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(Policies::new(
+                Box::new(HeuristicPolicy::heuristic()),
+                Box::new(HeuristicPolicy::heuristic()),
+            )),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn crowd_draw(n: i64, cap: Option<i64>) -> DrawSpec {
+        DrawSpec {
+            n,
+            source: DeckEnd::Top,
+            who: Who::SelfSide,
+            per: None,
+            per_who: Who::SelfSide,
+            cap,
+            per_excludes_trigger: false,
+            from_crowd: true,
+        }
+    }
+
+    /// Draw count = Crowd Meter + offset, capped; measured on the deck (unaffected by the
+    /// hand cap, which could trim the hand after the draw).
+    fn drew(cm: i64, spec_n: i64, cap: Option<i64>) -> i64 {
+        let mut e = eng();
+        e.state.crowd_meter = cm;
+        let deck: Vec<Card> = (0..20)
+            .map(|i| {
+                serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": format!("d{i}"),
+                    "name": "d", "number": 1, "play_order": "Lead", "raw_text": "",
+                    "tags": [], "finish_bonuses": {}, "effects": []}))
+                .unwrap()
+            })
+            .collect();
+        let before = deck.len();
+        e.state.players.get_mut("A").unwrap().deck = deck;
+        e.act_draw(crowd_draw(spec_n, cap), "A").unwrap();
+        (before - e.state.players["A"].deck.len()) as i64
+    }
+
+    #[test]
+    fn draw_equals_crowd_meter_plus_offset_capped_and_floored() {
+        assert_eq!(drew(3, 0, None), 3, "equal to the Crowd Meter");
+        assert_eq!(drew(3, 1, None), 4, "Crowd Meter +1");
+        assert_eq!(drew(3, 1, Some(2)), 2, "clamped to (Max +2)");
+        assert_eq!(drew(0, -1, None), 0, "floored at 0, never negative");
     }
 }
 

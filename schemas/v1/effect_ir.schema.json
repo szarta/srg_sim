@@ -1621,6 +1621,10 @@
             "null"
           ]
         },
+        "from_crowd": {
+          "description": "Count is the Crowd Meter plus `n` (a signed offset), clamped to `cap` — \"draw cards equal to the Crowd Meter +1 (Max +5)\". Mutually exclusive with `per`. Absent = false. schema v108",
+          "type": "boolean"
+        },
         "n": {
           "type": "integer"
         },
@@ -5549,5 +5553,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 107
+  "version": 108
 }

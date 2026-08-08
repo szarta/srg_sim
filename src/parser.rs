@@ -359,6 +359,22 @@ fn draw(n: i64, who: Who, source: DeckEnd, per: Option<CardFilter>, per_who: Who
         who,
         per,
         per_who,
+        from_crowd: false,
+    }
+}
+
+/// "Draw cards equal to the Crowd Meter [+`offset`] [(Max +`cap`)]" — a self-draw whose
+/// count is the live Crowd Meter plus `offset`, clamped to `cap`. `n` carries the offset.
+fn draw_crowd(offset: i64, cap: Option<i64>) -> Action {
+    Action::Draw {
+        cap,
+        per_excludes_trigger: false,
+        n: offset,
+        source: DeckEnd::Top,
+        who: Who::SelfSide,
+        per: None,
+        per_who: Who::SelfSide,
+        from_crowd: true,
     }
 }
 
@@ -2888,6 +2904,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // "Draw cards equal to the Crowd Meter [+N] [(Max +M)]" (task #131) — a self-draw
+        // whose count is the live Crowd Meter plus the offset, clamped. Compound forms
+        // ("… or shuffle …") break the anchor and stay Unsupported; gated/triggered forms
+        // ("If stopped, draw …") compose via the generic gate/trigger split over this body.
+        rule(
+            r"Draw cards? equal to the [Cc]rowd [Mm]eter(?: \+(\d+))?(?: \(Max \+?(\d+)\))?",
+            |c| {
+                let offset = c.get(1).map_or(0, |m| m.as_str().parse().unwrap());
+                let cap = c.get(2).map(|m| m.as_str().parse::<i64>().unwrap());
+                Some(eff(
+                    on_hit(),
+                    vec![draw_crowd(offset, cap)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Draw from the BOTTOM of the deck. "Add the bottom N cards of your deck to
         // your hand" (a "Choose one:" option on Booty Drop Chop and kin) is the same
         // action as "Draw the bottom N cards of your deck", just phrased as an add.

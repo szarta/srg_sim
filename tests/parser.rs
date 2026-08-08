@@ -674,6 +674,26 @@ fn draw_rider_grammar() {
     assert_eq!(e["trigger"]["skill"], "Power");
     assert_eq!(e["actions"][0]["n"], 2);
     assert_eq!(e["actions"][0]["who"], "SELF");
+
+    // Crowd-Meter count draw (task #131, v108): "Draw cards equal to the Crowd Meter
+    // [+N] [(Max +M)]" -> Draw{from_crowd}, n = the signed offset.
+    let a = parse1("Draw cards equal to the Crowd Meter.")["actions"][0].clone();
+    assert_eq!(a["@type"], "Draw");
+    assert_eq!(a["from_crowd"], true);
+    assert_eq!(a["n"], 0);
+    assert_eq!(a["cap"], Value::Null);
+    let a = parse1("Draw cards equal to the Crowd Meter +1 (Max +5).")["actions"][0].clone();
+    assert_eq!(a["from_crowd"], true);
+    assert_eq!(a["n"], 1);
+    assert_eq!(a["cap"], 5);
+    // Gated form composes over the same body via the OnStop trigger split.
+    let e = parse1("If stopped, draw cards equal to the Crowd Meter +1 (Max +3).");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["actions"][0]["from_crowd"], true);
+    assert_eq!(e["actions"][0]["cap"], 3);
+    // A compound "… or …" isn't a single Draw -> the whole clause stays Unsupported.
+    let e = parse1("Draw cards equal to the Crowd Meter +1 or choose 2 cards from your discard pile and randomly bury them.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
 /// Multiline "Choose one:" header (Booty Drop Chop): the header sits on its own line

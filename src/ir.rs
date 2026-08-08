@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 107;
+pub const SCHEMA_VERSION: i64 = 108;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -921,6 +921,12 @@ pub enum Action {
         /// exclusion is needed, so this defaults false. schema v38
         #[serde(default)]
         per_excludes_trigger: bool,
+        /// Count is the Crowd Meter (plus `n` as a signed offset), clamped to `cap` —
+        /// "draw cards equal to the Crowd Meter", "… equal to the Crowd Meter +1 (Max
+        /// +5)". Mutually exclusive with `per`. `n` is the offset here, not a flat count.
+        /// Additive/skip-when-false. schema v108
+        #[serde(default, skip_serializing_if = "is_false")]
+        from_crowd: bool,
     },
     Bury {
         selector: CardFilter,
@@ -2117,6 +2123,12 @@ pub enum IrNode {
         /// exclusion is needed, so this defaults false. schema v38
         #[serde(default)]
         per_excludes_trigger: bool,
+        /// Count is the Crowd Meter (plus `n` as a signed offset), clamped to `cap` —
+        /// "draw cards equal to the Crowd Meter", "… equal to the Crowd Meter +1 (Max
+        /// +5)". Mutually exclusive with `per`. `n` is the offset here, not a flat count.
+        /// Additive/skip-when-false. schema v108
+        #[serde(default, skip_serializing_if = "is_false")]
+        from_crowd: bool,
     },
     Bury {
         selector: CardFilter,
