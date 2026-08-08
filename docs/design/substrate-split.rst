@@ -2,11 +2,15 @@
 Substrate split & Rust migration
 ================================
 
-**Status:** proposal for review. This is a companion to :file:`DESIGN.md`
-and is governed by the same gate: the **Effect IR (§3)** and the **game-log schema
-(§8)** are expensive-to-change contracts. This document does **not** alter their
-semantics — it re-homes them as language-neutral JSON contracts that two engines
-round-trip. Any change to §3/§8 is still proposed against :file:`DESIGN.md`, not here.
+**Status:** accepted and implemented (historical record). The migration this
+document proposed is **complete** — Rust ``srg-core`` is the sole authoritative
+engine and the Python parity oracle was retired at task #79 (see §6/§7). The
+phased "Python as live oracle" language below describes steps that have since
+executed; read it as a record, not a pending plan. This remains a companion to
+:file:`DESIGN.md` and is governed by the same gate: the **Effect IR (§3)** and the
+**game-log schema (§8)** are expensive-to-change contracts, re-homed here as
+language-neutral JSON contracts. Any change to §3/§8 is still proposed against
+:file:`DESIGN.md`, not here.
 
 This doc transitions ``srg_sim`` from a single Python program into **one authoritative
 rules engine** with **many consumers on top**, and records the decision to make that

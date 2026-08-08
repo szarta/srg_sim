@@ -68,15 +68,20 @@ Adding an IR node or field
 
 The Effect IR and game-log schema are cross-language contracts
 (:file:`schemas/v1/`). Any change hits the CLAUDE.md **§3 review gate** and must
-touch every mirror below or a test — or, worse, the other engine — drifts.
+touch every mirror below or a test drifts. (Historically a change also had to
+keep the Python parity oracle in sync; that engine was **retired at task #79** —
+only the ``scripts/srg_ir/effects.py`` override→IR expander survives as a
+mirror, see below.)
 
 #. **DESIGN.md §3** — propose the node/field.
 #. **schemas/v1/effect_ir.schema.json** — add the ``$def``, add a ``oneOf`` ref
    at *every* union site, and bump the internal ``"version"``. The schema is
-   canonical ``json.dumps(indent=2, sort_keys=True)`` + trailing newline; edit
-   it programmatically and re-dump. Nothing reads ``"version"`` at runtime — it
-   is a pure contract marker, so the bump is always safe. ``oneOf`` ref counts
-   by node kind (grep to confirm):
+   canonical ``json.dumps(indent=2, ensure_ascii=False)`` + trailing newline
+   (**not** ``sort_keys`` — ``$defs`` are insertion-ordered, so re-dump with the
+   existing order preserved, e.g. ``object_pairs_hook=OrderedDict``); edit it
+   programmatically and re-dump. Nothing reads ``"version"`` at runtime — it is a
+   pure contract marker, so the bump is always safe. ``oneOf`` ref counts by node
+   kind (grep to confirm):
 
    .. list-table::
       :header-rows: 1
@@ -98,12 +103,37 @@ touch every mirror below or a test — or, worse, the other engine — drifts.
 
 #. **fixtures/ir/all_nodes.json** — add an instance, and bump the ``NN`` count
    in ``tests/ir_roundtrip.rs`` (it value-compares, so order is free).
-#. **scripts/srg_ir/effects.py** ``SAMPLES`` list + import — the Python IR
+#. **scripts/srg_ir/effects.py** ``SAMPLES`` list + import — the override→IR
    expander's node-registry guard. This is the test that breaks *first* and is
-   easiest to forget.
-#. **Both engines** — node defs + evaluator/dispatch. A marker action read
-   outside ``apply_action`` still needs adding to the passive no-op list.
+   easiest to forget. (Add the field to the matching ``effects.py`` dataclass
+   only when an **override** needs to set it to a non-default — a grammar-only
+   field with no override consumer can be left out, the same way ``on_skill``
+   was; see the low-churn tactic below.)
+#. **The Rust engine** (``src/``) — node defs (``ir.rs``, both the enum and the
+   flat ``IrNode`` mirror) + the evaluator/dispatch that reads the field. A
+   marker action read outside ``apply_action`` still needs adding to the passive
+   no-op list.
 #. Override + ``invoke overrides``.
+
+.. note::
+
+   **Low-churn additive fields (skip-when-default).** An additive field on a
+   *common* node (``BuffSkill``, ``FinishRollBonus``, …) is a large fixture sweep
+   if it always serializes: every embedded-IR golden
+   (:file:`fixtures/conformance/`, :file:`deck_effects.json`, the web samples,
+   :file:`clauses.json`, :file:`scripted_match.json`) gains the field. Avoid the
+   sweep by making it **absent-when-default** — ``#[serde(default,
+   skip_serializing_if = "is_false")]`` for a ``bool`` (helper in ``ir.rs``),
+   ``skip_serializing_if = "Option::is_none"`` for an ``Option`` — and adding it
+   to the schema as a **non-required** property (precedent: ``ModifyRoll.on_skill``,
+   ``BuffSkill.target_lowest``, ``FinishRollBonus.cap``/``per_excludes_self``).
+   Pre-field fixtures then deserialize to the default and re-serialize without
+   the key, so they round-trip byte-identically: the only churn is the
+   :file:`cards.ir.json` regen plus one ``all_nodes.json`` instance (set the
+   field non-default there for round-trip coverage) and DESIGN. This is the
+   preferred tactic; reserve the always-serialized sweep (below, ``Bury.all`` /
+   ``target_lowest`` style) for fields where absent-vs-default must be
+   distinguishable on the wire.
 
 .. note::
 
@@ -120,10 +150,9 @@ checks node types, not enum values, and existing instances keep their value.
 
 **State fields** need extra care. A ``GameState`` or ``PlayerState`` field
 (``last_roll_winner``, ``reroll_grants``, ``chosen_name``, ``timed_buffs``) must
-land in both engines' state with ``#[serde(default)]`` (Rust) + a dataclass
-default (Python) *and* be swept into every position of
-:file:`fixtures/state/positions.json` (canonical ``sort_keys=False``, dataclass
-field order) or ``tests/state.rs::snapshot_round_trips`` fails. An **engine-only
+land in the Rust state with ``#[serde(default)]`` *and* be swept into every
+position of :file:`fixtures/state/positions.json` (canonical ``sort_keys=False``,
+struct field order) or ``tests/state.rs::snapshot_round_trips`` fails. An **engine-only
 transient** (``hit_card``, ``stopped_card``, ``pending_roll_boost``,
 ``turn_bumped``) is not serialized — no ``positions.json`` churn. ``flags``-based
 ad-hoc state (``flags["swap_grant_next"]``) is a serialized map, also no churn.
@@ -211,36 +240,26 @@ default-fillable fields required), so the default-filling front-end genuinely
 needs Python ``from_dict``.
 
 - A field named ``from`` collides with the Python keyword. ``IRNode.to_dict``
-  emits ``f.name`` verbatim with no alias mechanism, so rename in **both**
-  engines (``reveal_from``, ``from_skill``).
-- ``&`` binds **looser** than ``==`` in Python: ``x & want == want`` parses as
-  ``x & (want == want)``. Write ``(x & want) == want``.
-- ``_buff_sources`` is a ``GameState`` method — call
-  ``self.state._buff_sources(...)``, not ``self.``.
+  emits ``f.name`` verbatim with no alias mechanism, so rename in **both** the
+  Rust node and the ``effects.py`` dataclass (``reveal_from``, ``from_skill``).
 - ``yaml.dump`` emits ``&id001`` / ``*id001`` aliases when a generator reuses one
   dict across effects. Build fresh dicts per effect, or use a dumper with
   ``ignore_aliases`` — but note intentional YAML anchors (``&esh2_choice``)
   resolve on load and are fine.
-- Shared helpers diverge tolerant-vs-strict: Rust ``bury_cards`` / ``pick_from``
-  tolerate a miss; Python ``.remove()`` raises and ``_pick_from`` auto-takes
-  ``len == 1``. When mirroring, check the *shared* helper's behavior, not just
-  the new code (also present in ``add_from_discard``).
 - Inline Rust test JSON for an action with no serde default must spell out every
   field — a ``Draw`` needs ``"per": null, "per_who": "SELF"`` or Deck
-  deserialization fails (``overrides.ir.json`` is fine — Python always writes
-  them).
+  deserialization fails (``overrides.ir.json`` is fine — ``effects.py``
+  ``to_dict`` always writes them).
 - ``competitor`` / ``entrance`` are **frozen** dataclasses — mutate via
   ``replace(competitor, effects=...)``.
 - Enum casing on the wire: ``AtkType`` serializes PascalCase (``Strike``,
   ``None``); domain/order enums are ``SCREAMING_SNAKE`` ``$defs``.
-- ``Skill::ALL`` order equals Python ``list(Skill)`` order (Power, Agility,
-  Technique, Submission, Grapple, Strike) — a serialized bitmask matches across
-  engines only because of this.
+- ``Skill::ALL`` order (Power, Agility, Technique, Submission, Grapple, Strike)
+  must match ``effects.py``'s ``Skill`` order — a serialized bitmask
+  (``rolled_set_key`` / ``skill_bit``) only round-trips because of this.
 - ``negate`` / ``flip_signs`` (Cassandra) must enumerate *every* signed field on
   a node — a new ``FinishRollBonus.when_base_le`` or ``MinHandSize`` each needs
-  adding to ``negate_action`` and Python ``_SIGNED_DELTA``.
-- Python's ``_ACTIONS`` dispatch captures ``Engine._method`` at class-def time —
-  monkeypatching an instance does not intercept; patch ``_ACTIONS[fx.Node]``.
+  adding to ``negate_action`` and ``effects.py``'s ``_SIGNED_DELTA``.
 
 
 .. _coverage-grind:reusable patterns:
@@ -319,11 +338,15 @@ Testing and verification gotchas
 
 .. warning::
 
-   **Cross-engine ad-hoc log diffs do not match.** Rust and Python resolve and
-   shuffle *non-frozen* decks differently — a baseline bull-vs-d2 game diverges
-   from turn 0. The oracle is ``invoke conformance`` (parser parity + frozen
-   whole-engine replay), **not** an ad-hoc game. Verify each engine fires a
-   mechanic separately.
+   **The regression guard is the frozen golden corpora, not an ad-hoc game.**
+   With the Python oracle retired, verification is Python-free inside
+   ``cargo test``: the whole-engine logs in :file:`fixtures/conformance/`
+   (replayed byte-for-byte by ``tests/engine_conformance.rs``) and the whole-DB
+   parser golden :file:`fixtures/parser/cards.ir.json`
+   (``tests/parser_parity.rs``). Regenerate the parser golden with
+   ``invoke cards-ir`` and bank a new whole-engine regression with
+   ``srg audit … --capture fixtures/conformance/NN_x.json``; don't diff two
+   ad-hoc runs — a non-frozen deck shuffles differently per seed.
 
 - **Never verify the gate through** ``head``. ``invoke test | grep | head`` has
   truncated before a failing test binary and reported a red run green. Redirect
