@@ -2789,6 +2789,43 @@ fn roll_conditional_draw_grammar() {
     assert_eq!(m["skill"], "Strike");
     assert_eq!(m["count"], 2);
 
+    // One-turn skill-gated bonus: "+N to <S>, <S>, and <S> during your next turn roll"
+    // -> NextRollSkillBonus{SELF, [skills], +N}, armed OnHit.
+    let e = a1("+2 to Technique, Agility, and Strike during your next turn roll.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    let m = &e["actions"][0];
+    assert_eq!(m["@type"], "NextRollSkillBonus");
+    assert_eq!(m["who"], "SELF");
+    assert_eq!(m["delta"], 2);
+    assert_eq!(
+        m["skills"],
+        serde_json::json!(["Technique", "Agility", "Strike"])
+    );
+
+    // Self single-skill, comma optional.
+    for text in [
+        "If your next turn roll is Grapple it is +2.",
+        "If your next turn roll is Grapple, it is +2.",
+    ] {
+        let m = a1(text)["actions"][0].clone();
+        assert_eq!(m["@type"], "NextRollSkillBonus", "{text:?}");
+        assert_eq!(m["who"], "SELF", "{text:?}");
+        assert_eq!(m["skills"], serde_json::json!(["Grapple"]), "{text:?}");
+        assert_eq!(m["delta"], 2, "{text:?}");
+    }
+
+    // Opponent single-skill penalty (negative delta, stored against OPP's roll).
+    let m =
+        a1("If your opponent's next turn roll is Strike, their roll is -2.")["actions"][0].clone();
+    assert_eq!(m["@type"], "NextRollSkillBonus");
+    assert_eq!(m["who"], "OPP");
+    assert_eq!(m["skills"], serde_json::json!(["Strike"]));
+    assert_eq!(m["delta"], -2);
+
+    // The roll-VALUE variant ("is 10, it is +1") is NOT a skill mod -> stays Unsupported.
+    let m = a1("If your next turn roll is 10, it is +1.")["actions"][0].clone();
+    assert_eq!(m["@type"], "Unsupported");
+
     // Every skill parses (singular "card" too).
     for (text, sk) in [
         ("If your next turn roll is Power, draw 1 card.", "Power"),

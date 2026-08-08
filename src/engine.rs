@@ -26,7 +26,8 @@ use crate::ir::{
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
 use crate::state::{
-    FlipProvenance, GameState, PendingRollDraw, PendingText, PlayerState, SkillRollMod, TimedBuff,
+    FlipProvenance, GameState, PendingRollDraw, PendingText, PlayerState, SkillRollMod,
+    SkillSetRollMod, TimedBuff,
 };
 use serde_json::{json, Value};
 use std::cmp::Reverse;
@@ -472,6 +473,7 @@ impl Engine {
                         pending_roll_mods: Default::default(),
                         pending_skill_roll_mods: Vec::new(),
                         pending_roll_draws: Vec::new(),
+                        pending_next_roll_skill_mods: Vec::new(),
                         revealed_hand: Default::default(),
                         reroll_grants: Default::default(),
                         timed_buffs: Vec::new(),
@@ -1195,6 +1197,9 @@ impl Engine {
             }
             Action::MillDeck { who, count, from } => self.act_mill_deck(*who, *count, *from, key),
             Action::RollDraw { who, skill, count } => self.act_roll_draw(*who, *skill, *count, key),
+            Action::NextRollSkillBonus { who, skills, delta } => {
+                self.act_next_roll_skill_bonus(*who, skills, *delta, key)
+            }
             Action::Discard {
                 selector,
                 count,
@@ -1963,6 +1968,43 @@ impl Engine {
             }
         }
         Ok(())
+    }
+
+    /// Arm a one-turn skill-gated turn-roll bonus ([`Action::NextRollSkillBonus`]): "+N
+    /// to `<S>`, `<S>` during your next turn roll". Queued on the AFFECTED player (the one
+    /// whose roll it modifies — `target(who)`, so `Opp` stores it on the opponent); read
+    /// by `next_roll_skill_bonus` on that player's next initial roll and drained by
+    /// `consume_pending` (a one-turn window).
+    fn act_next_roll_skill_bonus(&mut self, who: Who, skills: &[Skill], delta: i64, key: &str) {
+        let target = self.target(who, key);
+        self.state
+            .players
+            .get_mut(&target)
+            .unwrap()
+            .pending_next_roll_skill_mods
+            .push(SkillSetRollMod {
+                skills: skills.to_vec(),
+                delta,
+            });
+        let names: Vec<&str> = skills.iter().map(|s| s.name()).collect();
+        self.log_effect(
+            key,
+            "NextRollSkillBonus",
+            Some(&target),
+            json!({"skills": names, "delta": delta}),
+        );
+    }
+
+    /// Sum the pending one-turn skill-gated bonuses ([`SkillSetRollMod`]) for `key`'s
+    /// next turn roll that gate on `skill`. Read-only — the whole queue is drained by
+    /// `consume_pending` after the initial roll-off (so a non-match fizzles too).
+    fn next_roll_skill_bonus(&self, key: &str, skill: Skill) -> i64 {
+        self.state.players[key]
+            .pending_next_roll_skill_mods
+            .iter()
+            .filter(|m| m.skills.contains(&skill))
+            .map(|m| m.delta)
+            .sum()
     }
 
     /// Fire STANDING (`on_self == false`) `OnFlip` gimmicks after `flipped_side` flipped
@@ -6167,7 +6209,17 @@ impl Engine {
         // FIRST roll (initial or bump) that comes up its skill, then is consumed. Read
         // on every roll (independent of `use_pending`, which only gates the flat mod).
         let keyed = self.consume_skill_roll_mod(key, skill);
-        let delta = flat + keyed;
+        // One-turn skill-gated pending bonus ("+N to <S>, <S> during your next turn
+        // roll"): applies to the INITIAL roll if it comes up a listed skill (read-only
+        // here; `consume_pending` drains the whole queue after the roll-off, so a
+        // non-match fizzles). Gated by `use_pending` like the flat mod, so bump re-rolls
+        // don't re-read it.
+        let set = if use_pending {
+            self.next_roll_skill_bonus(key, skill)
+        } else {
+            0
+        };
+        let delta = flat + keyed + set;
         let mut mods = Vec::new();
         if flat != 0 {
             mods.push(RollMod {
@@ -6179,6 +6231,12 @@ impl Engine {
             mods.push(RollMod {
                 src: "pending_skill".to_owned(),
                 delta: keyed,
+            });
+        }
+        if set != 0 {
+            mods.push(RollMod {
+                src: "pending_skill_set".to_owned(),
+                delta: set,
             });
         }
         let value = base + delta;
@@ -6205,10 +6263,13 @@ impl Engine {
     }
 
     /// The initial roll spent `this`; clear it so a pending mod applies once (bump
-    /// re-rolls run with `use_pending=false`, so they never re-read it).
+    /// re-rolls run with `use_pending=false`, so they never re-read it). Also drains the
+    /// one-turn skill-gated queue ([`SkillSetRollMod`]) — it applied (or fizzled) on the
+    /// initial roll-off, and "your next turn roll" closes after that one roll.
     fn consume_pending(&mut self) {
         for player in self.state.players.values_mut() {
             player.pending_roll_mods.this_turn = 0;
+            player.pending_next_roll_skill_mods.clear();
         }
     }
 
@@ -6508,6 +6569,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::Flip { .. } => "Flip",
         Action::MillDeck { .. } => "MillDeck",
         Action::RollDraw { .. } => "RollDraw",
+        Action::NextRollSkillBonus { .. } => "NextRollSkillBonus",
         Action::Discard { .. } => "Discard",
         Action::Search { .. } => "Search",
         Action::ShuffleDeck { .. } => "ShuffleDeck",
@@ -7241,6 +7303,53 @@ mod breakout_modifier_tests {
             before + 2,
             "A drew 2 off the opponent's Strike roll"
         );
+    }
+
+    /// A one-turn skill-gated turn-roll bonus sums matching entries, is gated by its
+    /// skill set, is drained by `consume_pending` (the one-turn window), and lands on the
+    /// AFFECTED player when armed with `who = Opp`.
+    #[test]
+    fn next_roll_skill_bonus_sums_gates_and_is_drained() {
+        let mut engine = engine();
+        let q = &mut engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .pending_next_roll_skill_mods;
+        q.push(SkillSetRollMod {
+            skills: vec![Skill::Grapple, Skill::Power],
+            delta: 2,
+        });
+        q.push(SkillSetRollMod {
+            skills: vec![Skill::Grapple],
+            delta: 1,
+        });
+        q.push(SkillSetRollMod {
+            skills: vec![Skill::Agility],
+            delta: 3,
+        });
+
+        // Grapple matches both Grapple entries (2 + 1); Power one (2); Agility one (3);
+        // an unlisted skill gets nothing.
+        assert_eq!(engine.next_roll_skill_bonus("A", Skill::Grapple), 3);
+        assert_eq!(engine.next_roll_skill_bonus("A", Skill::Power), 2);
+        assert_eq!(engine.next_roll_skill_bonus("A", Skill::Agility), 3);
+        assert_eq!(engine.next_roll_skill_bonus("A", Skill::Strike), 0, "gated");
+
+        // `consume_pending` drains the whole queue — the next-turn-roll window closed.
+        engine.consume_pending();
+        assert!(engine.state.players["A"]
+            .pending_next_roll_skill_mods
+            .is_empty());
+        assert_eq!(engine.next_roll_skill_bonus("A", Skill::Grapple), 0);
+
+        // `who = Opp` stores the mod on the opponent, whose roll it modifies.
+        engine.act_next_roll_skill_bonus(Who::Opp, &[Skill::Strike], -2, "A");
+        assert!(engine.state.players["A"]
+            .pending_next_roll_skill_mods
+            .is_empty());
+        assert_eq!(engine.next_roll_skill_bonus("B", Skill::Strike), -2);
     }
 
     /// `act_mill_deck` moves cards from the named DECK END to discard, with no flip

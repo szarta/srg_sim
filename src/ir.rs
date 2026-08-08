@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 109;
+pub const SCHEMA_VERSION: i64 = 110;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1053,6 +1053,17 @@ pub enum Action {
         who: Who,
         skill: Skill,
         count: i64,
+    },
+    /// One-turn skill-gated turn-roll bonus — "+N to `<S>`, `<S>` during your next turn
+    /// roll" / "if your [opponent's] next turn roll is `<S>`, it is +N". Arms on play;
+    /// `delta` applies to `who`'s (`SelfSide` = your own, `Opp` = your opponent's)
+    /// IMMEDIATELY-next turn roll if it comes up one of `skills`, then the whole pending
+    /// queue is drained — a one-turn window, so a non-match fizzles. Distinct from
+    /// `ModifyRoll{on_skill}` (waits indefinitely for one skill). schema v110
+    NextRollSkillBonus {
+        who: Who,
+        skills: Vec<Skill>,
+        delta: i64,
     },
     Discard {
         selector: CardFilter,
@@ -2266,6 +2277,17 @@ pub enum IrNode {
         who: Who,
         skill: Skill,
         count: i64,
+    },
+    /// One-turn skill-gated turn-roll bonus — "+N to `<S>`, `<S>` during your next turn
+    /// roll" / "if your [opponent's] next turn roll is `<S>`, it is +N". Arms on play;
+    /// `delta` applies to `who`'s (`SelfSide` = your own, `Opp` = your opponent's)
+    /// IMMEDIATELY-next turn roll if it comes up one of `skills`, then the whole pending
+    /// queue is drained — a one-turn window, so a non-match fizzles. Distinct from
+    /// `ModifyRoll{on_skill}` (waits indefinitely for one skill). schema v110
+    NextRollSkillBonus {
+        who: Who,
+        skills: Vec<Skill>,
+        delta: i64,
     },
     Discard {
         selector: CardFilter,

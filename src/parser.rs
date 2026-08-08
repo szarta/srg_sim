@@ -3030,6 +3030,63 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // One-turn skill-gated turn-roll bonus (cluster b): "+N to <S>, <S>, and <S>
+        // during your next turn roll" (single or multi-skill via skill_list) —
+        // NextRollSkillBonus{SELF} applied to the immediately-next turn roll if it comes
+        // up a listed skill, then drained (a one-turn window; schema v110, engine
+        // pending_next_roll_skill_mods). Declines (-> Unsupported) if the middle isn't a
+        // pure skill list (e.g. "+1 to <S>, +1 to <S> …", per-skill deltas).
+        rule(r"\+(\d+) to (.+?) during your next turn roll", |c| {
+            let skills = skill_list(&c[2]);
+            if skills.is_empty() {
+                return None;
+            }
+            Some(eff(
+                on_hit(),
+                vec![Action::NextRollSkillBonus {
+                    who: Who::SelfSide,
+                    skills,
+                    delta: num(c, 1),
+                }],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // Self single-skill: "If your next turn roll is <S>[,] it is +N" (the value-keyed
+        // "is 10, it is +1" declines via SK — a separate roll-VALUE variant).
+        rule(
+            &format!(r"If your next turn roll is {SK},? it is \+(\d+)"),
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::NextRollSkillBonus {
+                        who: Who::SelfSide,
+                        skills: vec![skill(&c[1])],
+                        delta: num(c, 2),
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Opponent single-skill penalty: "If your opponent's next turn roll is <S>, their
+        // roll is -N" -> NextRollSkillBonus{OPP} (stored on the opponent, whose roll it
+        // modifies).
+        rule(
+            &format!(r"If your opponent's next turn roll is {SK},? their roll is (-\d+)"),
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::NextRollSkillBonus {
+                        who: Who::Opp,
+                        skills: vec![skill(&c[1])],
+                        delta: c[2].parse().ok()?,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"Your next turn roll is \+(\d+) for each (.+?) in your discard pile",
             |c| {

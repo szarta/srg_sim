@@ -855,6 +855,9 @@
                 "$ref": "#/$defs/RollDraw"
               },
               {
+                "$ref": "#/$defs/NextRollSkillBonus"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -1730,6 +1733,9 @@
                 "$ref": "#/$defs/RollDraw"
               },
               {
+                "$ref": "#/$defs/NextRollSkillBonus"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -2447,6 +2453,34 @@
       ],
       "type": "object"
     },
+    "NextRollSkillBonus": {
+      "additionalProperties": false,
+      "description": "One-turn skill-gated turn-roll bonus: \"+N to <S>, <S> during your next turn roll\" / \"if your [opponent's] next turn roll is <S>, it is +N\". `who` is whose roll it modifies (SelfSide = your own, Opp = your opponent's); `delta` applies to that side's IMMEDIATELY-next turn roll if it comes up one of `skills`, then the whole pending queue is drained (one-turn window, a non-match fizzles). Distinct from ModifyRoll{on_skill}, which waits indefinitely for one skill. schema v110",
+      "properties": {
+        "@type": {
+          "const": "NextRollSkillBonus"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Skill"
+          }
+        },
+        "delta": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "skills",
+        "delta"
+      ],
+      "type": "object"
+    },
     "FlipGimmick": {
       "additionalProperties": false,
       "properties": {
@@ -2855,6 +2889,9 @@
         },
         {
           "$ref": "#/$defs/RollDraw"
+        },
+        {
+          "$ref": "#/$defs/NextRollSkillBonus"
         },
         {
           "$ref": "#/$defs/FlipGimmick"
@@ -4533,6 +4570,9 @@
                 "$ref": "#/$defs/RollDraw"
               },
               {
+                "$ref": "#/$defs/NextRollSkillBonus"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -5590,5 +5630,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 109
+  "version": 110
 }

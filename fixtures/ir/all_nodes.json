@@ -364,6 +364,16 @@
     "count": 1
   },
   {
+    "@type": "NextRollSkillBonus",
+    "who": "SELF",
+    "skills": [
+      "Technique",
+      "Agility",
+      "Strike"
+    ],
+    "delta": 2
+  },
+  {
     "@type": "FlipGimmick",
     "who": "SELF"
   },

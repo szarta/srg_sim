@@ -66,6 +66,18 @@ pub struct SkillRollMod {
     pub delta: i64,
 }
 
+/// A pending ONE-TURN skill-gated turn-roll bonus: `delta` applies to the owner's very
+/// next turn roll IF that roll comes up one of `skills`, then the whole queue is drained
+/// (a non-match fizzles). Backs [`Action::NextRollSkillBonus`] — "+N to `<S>`, `<S>`
+/// during your next turn roll" / "if your [opponent's] next turn roll is `<S>`, it is
+/// +N". Distinct from [`SkillRollMod`], which waits INDEFINITELY for its one skill, and
+/// from the flat `pending_roll_mods.next_turn`, which is skill-agnostic.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SkillSetRollMod {
+    pub skills: Vec<Skill>,
+    pub delta: i64,
+}
+
 /// A pending one-shot "if your [opponent's] next turn roll is `<S>`, draw N": watches
 /// `watch`'s NEXT turn roll and, if it resolves to `skill`, the OWNER draws `count`.
 /// Unlike [`SkillRollMod`] (which waits, across turns, until its skill actually comes
@@ -143,6 +155,12 @@ pub struct PlayerState {
     /// observable projection like `pending_skill_roll_mods`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pending_roll_draws: Vec<PendingRollDraw>,
+    /// Pending ONE-TURN skill-gated turn-roll bonuses (see [`SkillSetRollMod`]) — each
+    /// applies to the owner's immediately-next turn roll if it comes up a listed skill,
+    /// then the queue is drained (one-turn window). Engine bookkeeping, excluded from the
+    /// observable projection like `pending_roll_mods`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pending_next_roll_skill_mods: Vec<SkillSetRollMod>,
     /// `db_uuid`s of THIS player's own hand cards they have REVEALED to the opponent
     /// (fog-of-war; [`Action::Reveal`]). Persists for the match — a card the opponent
     /// has seen stays known while it is in hand. Read by [`Self::observable`] to expose

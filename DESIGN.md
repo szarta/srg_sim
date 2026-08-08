@@ -264,6 +264,10 @@ ModifyRoll(who, delta, when=THIS|NEXT, per?, per_who=OPP, per_zone=IN_PLAY)  # d
 RollDraw(who, skill, count)   # one-shot roll-conditional draw: "if your [opponent's] next turn roll is <S>, draw N". `who`
                               # = whose NEXT turn roll to WATCH (SELF|OPP); the owner draws `count` if that roll resolves to
                               # `skill`. Armed on hit, fires-or-fizzles on that one turn roll and is consumed (schema v109)
+NextRollSkillBonus(who, skills, delta)  # one-turn skill-gated turn-roll bonus: "+N to <S>, <S> during your next turn roll" /
+                              # "if your [opponent's] next turn roll is <S>, it is +N". `delta` applies to `who`'s (SELF|OPP)
+                              # IMMEDIATELY-next turn roll if it comes up one of `skills`, then the queue is drained (one-turn
+                              # window, non-match fizzles). Unlike ModifyRoll{on_skill}, does NOT wait indefinitely (schema v110)
 BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, target_lowest?, per_crowd?, cap?, per?, per_zone=IN_PLAY, per_excludes_self=False)
                                                  # target_lowest -> retarget to the LOWEST base skill ("+N to your lowest skill"); mirrors target_highest. schema v93
                                                  # per=CardFilter -> bonus = delta * (count of the target's cards
