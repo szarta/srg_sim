@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 106;
+pub const SCHEMA_VERSION: i64 = 107;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1619,6 +1619,13 @@ pub enum Action {
     TurnRollBonus {
         skill: Skill,
         delta: i64,
+        /// Symmetric modifier: when set, the bonus applies to WHOEVER rolls `skill`
+        /// for their turn roll, not just the owner — "if either player rolls Power for
+        /// their turn roll, their roll is +1". `turn_roll_bonus` picks up an
+        /// `either` bonus from the opponent's board too. Additive/skip-when-false.
+        /// schema v107
+        #[serde(default, skip_serializing_if = "is_false")]
+        either: bool,
     },
     BreakoutModifier {
         delta: i64,
@@ -1636,6 +1643,13 @@ pub enum Action {
         /// opponent's `Opp` mods. schema v94
         #[serde(default)]
         who: Who,
+        /// Symmetric modifier: when set, the bonus applies to WHOEVER is rolling the
+        /// breakout (the defender), regardless of `who` or which board it sits on — "if
+        /// either player rolls Agility for their breakout roll, their roll is -1".
+        /// `breakout_mods_from` admits an `either` mod on top of the `who` match.
+        /// Additive/skip-when-false. schema v107
+        #[serde(default, skip_serializing_if = "is_false")]
+        either: bool,
     },
     LowestRollWins,
     FlipGimmickSigns {
@@ -2801,6 +2815,13 @@ pub enum IrNode {
     TurnRollBonus {
         skill: Skill,
         delta: i64,
+        /// Symmetric modifier: when set, the bonus applies to WHOEVER rolls `skill`
+        /// for their turn roll, not just the owner — "if either player rolls Power for
+        /// their turn roll, their roll is +1". `turn_roll_bonus` picks up an
+        /// `either` bonus from the opponent's board too. Additive/skip-when-false.
+        /// schema v107
+        #[serde(default, skip_serializing_if = "is_false")]
+        either: bool,
     },
     BreakoutModifier {
         delta: i64,
@@ -2818,6 +2839,13 @@ pub enum IrNode {
         /// opponent's `Opp` mods. schema v94
         #[serde(default)]
         who: Who,
+        /// Symmetric modifier: when set, the bonus applies to WHOEVER is rolling the
+        /// breakout (the defender), regardless of `who` or which board it sits on — "if
+        /// either player rolls Agility for their breakout roll, their roll is -1".
+        /// `breakout_mods_from` admits an `either` mod on top of the `who` match.
+        /// Additive/skip-when-false. schema v107
+        #[serde(default, skip_serializing_if = "is_false")]
+        either: bool,
     },
     LowestRollWins,
     FlipGimmickSigns {

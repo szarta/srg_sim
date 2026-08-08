@@ -790,6 +790,52 @@ fn finish_rider_grammar() {
     assert_eq!(a["@type"], "Unsupported");
 }
 
+/// Symmetric "if either player rolls <S> for their {turn|breakout|Finish} roll" modifier
+/// (task #131, v107): signed delta, optional roll-word in the consequent, and the right
+/// action per roll type with `either` set.
+#[test]
+fn either_player_roll_modifier_grammar() {
+    fn a1(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Turn roll -> TurnRollBonus{either}; bare "their roll is +N".
+    let a = a1("If either player rolls Grapple for their turn roll, their roll is +1.")["actions"]
+        [0]
+    .clone();
+    assert_eq!(a["@type"], "TurnRollBonus");
+    assert_eq!(a["skill"], "Grapple");
+    assert_eq!(a["delta"], 1);
+    assert_eq!(a["either"], true);
+    // "their turn roll is -N" variant.
+    let a = a1("If either player rolls Agility for their turn roll, their turn roll is -1.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["delta"], -1);
+    assert_eq!(a["either"], true);
+
+    // Breakout -> BreakoutModifier{either, when_skill}; signed, case-robust.
+    let a = a1("If either player rolls Agility for their Breakout roll, their roll is -1.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["@type"], "BreakoutModifier");
+    assert_eq!(a["when_skill"], "Agility");
+    assert_eq!(a["delta"], -1);
+    assert_eq!(a["either"], true);
+
+    // Finish -> FinishRollBonus{either}; the previously-dead field is now set, and the
+    // -N / "their Finish roll is" variants parse.
+    let a = a1("If either player rolls Submission for their Finish roll, their Finish roll is -1.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["@type"], "FinishRollBonus");
+    assert_eq!(a["when_skill"], "Submission");
+    assert_eq!(a["delta"], -1);
+    assert_eq!(a["either"], true);
+}
+
 /// In-play-removal grammar (task #121): discard an opponent's in-play card.
 #[test]
 fn in_play_removal_grammar() {

@@ -304,11 +304,13 @@ fn negate_action(action: &Action) -> Action {
             attempts,
             when_skill,
             who,
+            either,
         } => Action::BreakoutModifier {
             delta: -*delta,
             attempts: *attempts,
             when_skill: *when_skill,
             who: *who,
+            either: *either,
         },
         other => other.clone(),
     }
@@ -4772,9 +4774,22 @@ impl Engine {
     /// "+N to your Finish rolls" from the finisher's live effects (in-play combo,
     /// gimmick, entrance), each gated by its condition and by its `when_skill`.
     fn finish_roll_bonus(&self, key: &str, skill: Skill, base: i64) -> i64 {
+        // The finisher's own bonuses, plus the opponent's `either` bonuses — "if either
+        // player rolls <S> for their Finish roll, their roll is -1" applies to whoever
+        // is finishing, so it counts from the other board too.
+        let opp = self.state.opponent_of(key);
+        self.finish_bonus_from(key, skill, base, false)
+            + self.finish_bonus_from(&opp, skill, base, true)
+    }
+
+    /// Sum `owner`'s active `FinishRollBonus` for a Finish roll of `skill` at `base`.
+    /// `either_only` restricts to symmetric (`either`) bonuses — the mode used when
+    /// scanning the *opponent's* board, where only "if either player rolls …" reaches the
+    /// finisher's roll.
+    fn finish_bonus_from(&self, owner: &str, skill: Skill, base: i64, either_only: bool) -> i64 {
         let mut total = 0;
-        for (src, eff) in self.standing_effects_sourced(key) {
-            if !conditions::holds(&eff.condition, &self.state, key, None) {
+        for (src, eff) in self.standing_effects_sourced(owner) {
+            if !conditions::holds(&eff.condition, &self.state, owner, None) {
                 continue;
             }
             for a in &eff.actions {
@@ -4789,9 +4804,12 @@ impl Engine {
                     per_divisor,
                     cap,
                     per_excludes_self,
-                    ..
+                    either,
                 } = a
                 {
+                    if either_only && !either {
+                        continue;
+                    }
                     // Base-roll gate: "If your Finish roll is N or less/greater" reads
                     // the base (the skill's stat, before any bonuses) — DESIGN §3.
                     if when_base_le.is_some_and(|t| base > t)
@@ -4804,7 +4822,7 @@ impl Engine {
                         // `per_zone` matching the filter)` — "+1 per Spotlight in play".
                         let bonus = match per {
                             Some(f) => {
-                                let who = self.target(*per_who, key);
+                                let who = self.target(*per_who, owner);
                                 // "for each OTHER …": drop the source card (found on the
                                 // counted board by uuid) — only bites a SELF-board count.
                                 let board = &self.state.players[&who].in_play;
@@ -4836,14 +4854,30 @@ impl Engine {
     /// only in the roll-off, so a "during turn rolls" buff never leaks into finish rolls,
     /// stops, or skill comparisons.
     fn turn_roll_bonus(&self, key: &str, skill: Skill) -> i64 {
+        // `key`'s own bonuses (self-only and `either`), plus the opponent's `either`
+        // bonuses — "if either player rolls <S> for their turn roll, their roll is +N"
+        // applies to whoever rolls, so it counts from the other board too.
+        let opp = self.state.opponent_of(key);
+        self.turn_roll_bonus_from(key, skill, false) + self.turn_roll_bonus_from(&opp, skill, true)
+    }
+
+    /// Sum `owner`'s active `TurnRollBonus{skill}` deltas. `either_only` restricts to
+    /// symmetric (`either`) bonuses — the mode used when scanning the *opponent's* board,
+    /// where only "if either player rolls …" modifiers reach `key`'s roll.
+    fn turn_roll_bonus_from(&self, owner: &str, skill: Skill, either_only: bool) -> i64 {
         let mut total = 0;
-        for eff in self.standing_effects(key) {
-            if !conditions::holds(&eff.condition, &self.state, key, None) {
+        for eff in self.standing_effects(owner) {
+            if !conditions::holds(&eff.condition, &self.state, owner, None) {
                 continue;
             }
             for a in &eff.actions {
-                if let Action::TurnRollBonus { skill: s, delta } = a {
-                    if *s == skill {
+                if let Action::TurnRollBonus {
+                    skill: s,
+                    delta,
+                    either,
+                } = a
+                {
+                    if *s == skill && (!either_only || *either) {
                         total += *delta;
                     }
                 }
@@ -4910,11 +4944,14 @@ impl Engine {
                     attempts,
                     when_skill,
                     who,
+                    either,
                 } = a
                 {
                     let attempt_ok = attempts.is_none() || *attempts == Some(attempt_no);
                     let skill_ok = when_skill.is_none() || *when_skill == Some(rolled);
-                    if *who == want && attempt_ok && skill_ok {
+                    // An `either` mod applies to whoever is rolling the breakout,
+                    // regardless of `who`; otherwise the `who` side must match `want`.
+                    if (*either || *who == want) && attempt_ok && skill_ok {
                         total += *delta;
                     }
                 }
@@ -12032,6 +12069,119 @@ mod finish_base_gate_tests {
             engine.finish_roll_bonus("A", Skill::Power, 5),
             2,
             "clamped to cap"
+        );
+    }
+}
+
+/// Symmetric "if either player rolls <S> for their {turn|breakout|Finish} roll" modifier
+/// (task #131, v107): an `either` mod on ONE player's board reaches the OTHER player's
+/// roll (it applies to whoever rolls), while a non-`either` mod stays with its owner.
+#[cfg(test)]
+mod either_roll_tests {
+    use super::*;
+    use crate::policy::{HeuristicPolicy, Policies};
+    use serde_json::json;
+
+    fn eng() -> Engine {
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": {"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5},
+                    "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(Policies::new(
+                Box::new(HeuristicPolicy::heuristic()),
+                Box::new(HeuristicPolicy::heuristic()),
+            )),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn card_with(action: serde_json::Value) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": "e", "name": "e",
+            "number": 1, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{"@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"}, "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "", "source": "card", "optional": false, "actions": [action]}]}))
+        .unwrap()
+    }
+
+    fn put_on_b(e: &mut Engine, action: serde_json::Value) {
+        e.state.players.get_mut("B").unwrap().in_play = vec![card_with(action)];
+    }
+
+    #[test]
+    fn either_modifier_reaches_the_opponent_of_its_owner() {
+        // Turn: "if either player rolls Power for their turn roll, +1" on B's board.
+        let mut e = eng();
+        put_on_b(
+            &mut e,
+            json!({"@type": "TurnRollBonus", "skill": "Power", "delta": 1, "either": true}),
+        );
+        assert_eq!(
+            e.turn_roll_bonus("A", Skill::Power),
+            1,
+            "A gets B's either turn mod"
+        );
+        assert_eq!(e.turn_roll_bonus("A", Skill::Agility), 0, "skill-gated");
+        assert_eq!(e.turn_roll_bonus("B", Skill::Power), 1, "owner gets it too");
+
+        // Breakout: "if either player rolls Agility for their breakout roll, -1" on B.
+        let mut e = eng();
+        put_on_b(
+            &mut e,
+            json!({"@type": "BreakoutModifier", "delta": -1, "attempts": null,
+            "when_skill": "Agility", "who": "SELF", "either": true}),
+        );
+        assert_eq!(
+            e.breakout_bonus("A", 1, Skill::Agility),
+            -1,
+            "A's Agility breakout gets it"
+        );
+        assert_eq!(e.breakout_bonus("A", 1, Skill::Power), 0, "skill-gated");
+
+        // Finish: "if either player rolls Submission for their Finish roll, -1" on B —
+        // exercises the previously-dead `either` field, now read from the other board.
+        let mut e = eng();
+        put_on_b(
+            &mut e,
+            json!({"@type": "FinishRollBonus", "delta": -1, "when_skill": "Submission",
+            "either": true, "when_base_le": null, "when_base_ge": null, "per": null,
+            "per_who": "SELF", "per_zone": "IN_PLAY"}),
+        );
+        assert_eq!(
+            e.finish_roll_bonus("A", Skill::Submission, 5),
+            -1,
+            "A's Submission finish gets it"
+        );
+        assert_eq!(e.finish_roll_bonus("A", Skill::Power, 5), 0, "skill-gated");
+    }
+
+    #[test]
+    fn non_either_modifier_stays_with_its_owner() {
+        let mut e = eng();
+        put_on_b(
+            &mut e,
+            json!({"@type": "TurnRollBonus", "skill": "Power", "delta": 1, "either": false}),
+        );
+        assert_eq!(
+            e.turn_roll_bonus("A", Skill::Power),
+            0,
+            "self-only mod does not cross boards"
+        );
+        assert_eq!(
+            e.turn_roll_bonus("B", Skill::Power),
+            1,
+            "owner still gets it"
         );
     }
 }

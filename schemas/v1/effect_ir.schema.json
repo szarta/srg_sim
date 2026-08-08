@@ -474,6 +474,10 @@
         "delta": {
           "type": "integer"
         },
+        "either": {
+          "description": "Symmetric: the modifier applies to whoever rolls, from either board (\"if either player rolls <S> for their roll, their roll is +/-N\"). Absent = false. schema v107",
+          "type": "boolean"
+        },
         "when_skill": {
           "anyOf": [
             {
@@ -2219,6 +2223,10 @@
         },
         "delta": {
           "type": "integer"
+        },
+        "either": {
+          "description": "Symmetric: the modifier applies to whoever rolls, from either board (\"if either player rolls <S> for their roll, their roll is +/-N\"). Absent = false. schema v107",
+          "type": "boolean"
         },
         "skill": {
           "$ref": "#/$defs/Skill"
@@ -5541,5 +5549,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 106
+  "version": 107
 }

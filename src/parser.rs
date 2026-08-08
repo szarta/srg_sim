@@ -1262,7 +1262,11 @@ fn buff(skill: Skill, delta: i64, who: Who) -> Action {
 fn turn_roll_bonuses(skills: Vec<Skill>, delta: i64) -> Vec<Action> {
     skills
         .into_iter()
-        .map(|skill| Action::TurnRollBonus { skill, delta })
+        .map(|skill| Action::TurnRollBonus {
+            skill,
+            delta,
+            either: false,
+        })
         .collect()
 }
 
@@ -2293,6 +2297,7 @@ fn breakout_mod_who(
         attempts,
         when_skill,
         who,
+        either: false,
     }
 }
 
@@ -4702,9 +4707,51 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Symmetric roll modifier (task #131): "If either player rolls <S> for their
+        // {turn|breakout|Finish} roll, their [<roll> ]roll is ±N" — applies to WHOEVER
+        // rolls that skill for that roll type, from either board. The delta is SIGNED
+        // and the consequent's roll word is optional ("their roll is" / "their turn roll
+        // is"). Turn -> TurnRollBonus{either}; breakout -> BreakoutModifier{either};
+        // Finish -> FinishRollBonus{either} (now consumed by the opponent-board scan).
         rule(
             &format!(
-                r"If either play(?:er)? rolls {SK} for their Finish roll, their roll is \+(\d+)"
+                r"If [Ee]ither play(?:er)? rolls {SK} for their turn roll, their (?:turn )?roll is ([+-]\d+)"
+            ),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::TurnRollBonus {
+                        skill: skill(&c[1]),
+                        delta: num(c, 2),
+                        either: true,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(
+            &format!(
+                r"If [Ee]ither play(?:er)? rolls {SK} for their [Bb]reakout roll, their (?:[Bb]reakout )?roll is ([+-]\d+)"
+            ),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::BreakoutModifier {
+                        delta: num(c, 2),
+                        attempts: None,
+                        when_skill: Some(skill(&c[1])),
+                        who: Who::SelfSide,
+                        either: true,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(
+            &format!(
+                r"If [Ee]ither play(?:er)? rolls {SK} for their Finish roll, their (?:Finish )?roll is ([+-]\d+)"
             ),
             |c| {
                 Some(eff(

@@ -125,12 +125,14 @@
     "attempts": null,
     "delta": 0,
     "when_skill": null,
-    "who": "OPP"
+    "who": "OPP",
+    "either": true
   },
   {
     "@type": "TurnRollBonus",
     "delta": 0,
-    "skill": "Power"
+    "skill": "Power",
+    "either": true
   },
   {
     "@type": "BuffSkill",
