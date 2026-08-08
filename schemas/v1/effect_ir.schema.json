@@ -2237,6 +2237,17 @@
         "@type": {
           "const": "FinishRollBonus"
         },
+        "cap": {
+          "description": "Clamps the per-count product (\"(Max +M)\"); the per-scaled bonus never exceeds cap. Null = uncapped. schema v106",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "delta": {
           "type": "integer"
         },
@@ -2262,6 +2273,10 @@
               "type": "null"
             }
           ]
+        },
+        "per_excludes_self": {
+          "description": "Exclude the source card from the per count (\"for each other <X> you have in play\"). Absent = false. schema v106",
+          "type": "boolean"
         },
         "per_who": {
           "$ref": "#/$defs/Who"
@@ -5526,5 +5541,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 105
+  "version": 106
 }

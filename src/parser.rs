@@ -2243,7 +2243,40 @@ fn finish_bonus(delta: i64, when_skill: Option<Skill>, either: bool) -> Action {
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
         per_divisor: None,
+        cap: None,
+        per_excludes_self: false,
     }
+}
+
+/// A Static per-count [`Action::FinishRollBonus`]: `delta * floor(count of `per_who`'s
+/// in-play `per`-matching cards / divisor)`, clamped to `cap`, dropping the source card
+/// when `exclude_self` ("for each OTHER …"). The `per`-count Finish family builder.
+fn finish_per(
+    delta: i64,
+    per: CardFilter,
+    per_who: Who,
+    cap: Option<i64>,
+    divisor: Option<i64>,
+    exclude_self: bool,
+) -> Effect {
+    eff(
+        Trigger::Static,
+        vec![Action::FinishRollBonus {
+            delta,
+            when_skill: None,
+            either: false,
+            when_base_le: None,
+            when_base_ge: None,
+            per: Some(per),
+            per_who,
+            per_zone: CountZone::InPlay,
+            per_divisor: divisor,
+            cap,
+            per_excludes_self: exclude_self,
+        }],
+        Condition::Always,
+        Duration::WhileInPlay,
+    )
 }
 
 /// A breakout-roll modifier on `who`'s breakout rolls (`SelfSide` = the owner's own,
@@ -4790,52 +4823,57 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        // "Your Finish roll is +N for each <order/atk> you have in play" — a per-count
-        // Finish bonus. `count_filter` declines name-based / capped forms (they stay
-        // Unsupported), so only the clean order/atk-in-play shapes match here.
+        // "Your Finish roll[s] is/are +N for each [other] <X> [you have|your opponent has]
+        // in play [with 'Y' in the name/text] [(Max +M)]" — the per-count Finish bonus
+        // family (task #131, schema v106). Board picks per_who; a TYPE descriptor routes
+        // through count_filter, a bare "card … with 'Y' in the name/text" through
+        // name_or_text_filter (a combined type+name — "other Submission … with 'Bomb'" —
+        // isn't expressible in one CardFilter, so it declines). "other" sets
+        // per_excludes_self (drops the source card from the count); "(Max +M)" -> cap.
         rule(
-            r"Your Finish rolls? (?:is|are) ([+-]\d+) for each (?:other )?(.+?) you have in play",
+            r#"Your Finish rolls? (?:is|are) ([+-]\d+) for each (other )?(.+?) (you have|your opponent has) in play(?: with (.+?) in the (name|text))?(?: \(Max \+?(\d+)\))?"#,
             |c| {
-                let per = count_filter(&c[2])?;
-                Some(eff(
-                    Trigger::Static,
-                    vec![Action::FinishRollBonus {
-                        delta: num(c, 1),
-                        when_skill: None,
-                        either: false,
-                        when_base_le: None,
-                        when_base_ge: None,
-                        per: Some(per),
-                        per_who: Who::SelfSide,
-                        per_zone: CountZone::InPlay,
-                        per_divisor: None,
-                    }],
-                    Condition::Always,
-                    Duration::WhileInPlay,
+                let per = match c.get(5) {
+                    Some(names) => {
+                        // Name/text filter only when the descriptor is a bare "card".
+                        let bare = c[3].trim_end_matches('s').eq_ignore_ascii_case("card");
+                        let list = quoted_names(names.as_str());
+                        if !bare || list.is_empty() {
+                            return None;
+                        }
+                        name_or_text_filter(&c[6], list)
+                    }
+                    None => count_filter(&c[3])?,
+                };
+                let per_who = if &c[4] == "your opponent has" {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
+                let cap = c.get(7).map(|m| m.as_str().parse::<i64>().unwrap());
+                Some(finish_per(
+                    num(c, 1),
+                    per,
+                    per_who,
+                    cap,
+                    None,
+                    c.get(2).is_some(),
                 ))
             },
         ),
         // Same, phrased "for every N <X> you have in play" — the divisor floors the
         // count ("+1 for every 3 Strikes you have in play", The Ride Along).
         rule(
-            r"Your Finish rolls? (?:is|are) ([+-]\d+) for every (\d+) (?:other )?(.+?) you have in play",
+            r"Your Finish rolls? (?:is|are) ([+-]\d+) for every (\d+) (other )?(.+?) you have in play",
             |c| {
-                let per = count_filter(&c[3])?;
-                Some(eff(
-                    Trigger::Static,
-                    vec![Action::FinishRollBonus {
-                        delta: num(c, 1),
-                        when_skill: None,
-                        either: false,
-                        when_base_le: None,
-                        when_base_ge: None,
-                        per: Some(per),
-                        per_who: Who::SelfSide,
-                        per_zone: CountZone::InPlay,
-                        per_divisor: Some(num(c, 2)),
-                    }],
-                    Condition::Always,
-                    Duration::WhileInPlay,
+                let per = count_filter(&c[4])?;
+                Some(finish_per(
+                    num(c, 1),
+                    per,
+                    Who::SelfSide,
+                    None,
+                    Some(num(c, 2)),
+                    c.get(3).is_some(),
                 ))
             },
         ),
@@ -4858,6 +4896,8 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         per_who: Who::SelfSide,
                         per_zone: CountZone::FlippedThisTurn,
                         per_divisor: None,
+                        cap: None,
+                        per_excludes_self: false,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -4915,6 +4955,8 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         per_who: Who::SelfSide,
                         per_zone: CountZone::InPlay,
                         per_divisor: None,
+                        cap: None,
+                        per_excludes_self: false,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -4936,6 +4978,8 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         per_who: Who::SelfSide,
                         per_zone: CountZone::InPlay,
                         per_divisor: None,
+                        cap: None,
+                        per_excludes_self: false,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,

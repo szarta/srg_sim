@@ -761,9 +761,32 @@ fn finish_rider_grammar() {
     assert_eq!(a["delta"], 1);
     assert_eq!(a["per"]["atk_type"], "Strike");
     assert_eq!(a["per_zone"], "IN_PLAY");
-    // Name-based / capped per-counts are declined (stay Unsupported).
+
+    // Per-count Finish family (task #131, v106): name filter + "(Max +M)" cap.
     let a =
         frb("Your Finish roll is +1 for each card you have in play with \"Slammin\" in the name.");
+    assert_eq!(a["@type"], "FinishRollBonus");
+    assert_eq!(a["per"]["name_contains"], serde_json::json!(["Slammin"]));
+    let a = frb(
+        "Your Finish roll is +1 for each card you have in play with \"Chug\" in the name (Max +2).",
+    );
+    assert_eq!(a["cap"], 2);
+
+    // "for each other <type>" -> per_excludes_self (self-exclude, refactored fold).
+    let a = frb("Your Finish roll is +1 for each other Submission you have in play (Max +2).");
+    assert_eq!(a["per_excludes_self"], true);
+    assert_eq!(a["per"]["atk_type"], "Submission");
+    assert_eq!(a["cap"], 2);
+
+    // Opponent-board count -> per_who OPP (FinishRollBonus already had the field).
+    let a = frb("Your Finish roll is +1 for each Grapple your opponent has in play (Max +2).");
+    assert_eq!(a["per_who"], "OPP");
+    assert_eq!(a["per"]["atk_type"], "Grapple");
+
+    // A combined type+name ("other Submission … with 'Bomb'") isn't one CardFilter -> declines.
+    let a = frb(
+        "Your Finish rolls are +1 for each other Submission you have in play with \"Bomb\" in the name (Max +2).",
+    );
     assert_eq!(a["@type"], "Unsupported");
 }
 

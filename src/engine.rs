@@ -284,6 +284,8 @@ fn negate_action(action: &Action) -> Action {
             per_who,
             per_zone,
             per_divisor,
+            cap,
+            per_excludes_self,
         } => Action::FinishRollBonus {
             delta: -*delta,
             when_skill: *when_skill,
@@ -294,6 +296,8 @@ fn negate_action(action: &Action) -> Action {
             per_who: *per_who,
             per_zone: *per_zone,
             per_divisor: *per_divisor,
+            cap: *cap,
+            per_excludes_self: *per_excludes_self,
         },
         Action::BreakoutModifier {
             delta,
@@ -718,6 +722,31 @@ impl Engine {
         // (its `CopyText` clause), so a copied Static finish/roll bonus is read here
         // like any other standing effect (DESIGN.md §3, `Action::CopyText`).
         out.extend(self.state.copied_effects(key));
+        out
+    }
+
+    /// [`standing_effects`](Self::standing_effects) paired with each effect's SOURCE card
+    /// `db_uuid` (`None` for gimmick / entrance / copied effects, which carry no in-play
+    /// card). A per-count reader that needs "for each OTHER …" exclusion resolves the
+    /// source on the counted board by this uuid — the flattening
+    /// [`standing_effects`](Self::standing_effects) can't express.
+    fn standing_effects_sourced(&self, key: &str) -> Vec<(Option<String>, Effect)> {
+        let mut out: Vec<(Option<String>, Effect)> = self
+            .gimmick_standing_effects(key)
+            .into_iter()
+            .map(|e| (None, e))
+            .collect();
+        for card in &self.state.players[key].in_play {
+            for eff in &card.effects {
+                out.push((Some(card.db_uuid.clone()), eff.clone()));
+            }
+        }
+        out.extend(
+            self.state
+                .copied_effects(key)
+                .into_iter()
+                .map(|e| (None, e)),
+        );
         out
     }
 
@@ -4744,7 +4773,7 @@ impl Engine {
     /// gimmick, entrance), each gated by its condition and by its `when_skill`.
     fn finish_roll_bonus(&self, key: &str, skill: Skill, base: i64) -> i64 {
         let mut total = 0;
-        for eff in self.standing_effects(key) {
+        for (src, eff) in self.standing_effects_sourced(key) {
             if !conditions::holds(&eff.condition, &self.state, key, None) {
                 continue;
             }
@@ -4758,6 +4787,8 @@ impl Engine {
                     per_who,
                     per_zone,
                     per_divisor,
+                    cap,
+                    per_excludes_self,
                     ..
                 } = a
                 {
@@ -4771,16 +4802,27 @@ impl Engine {
                     if when_skill.is_none() || *when_skill == Some(skill) {
                         // Flat `delta`, or `delta * (count of `per_who`'s cards in
                         // `per_zone` matching the filter)` — "+1 per Spotlight in play".
-                        let mult = match per {
+                        let bonus = match per {
                             Some(f) => {
                                 let who = self.target(*per_who, key);
-                                let count = self.state.count_in_zone(f, *per_zone, &who);
+                                // "for each OTHER …": drop the source card (found on the
+                                // counted board by uuid) — only bites a SELF-board count.
+                                let board = &self.state.players[&who].in_play;
+                                let exclude = per_excludes_self
+                                    .then(|| src.as_deref())
+                                    .flatten()
+                                    .and_then(|u| board.iter().find(|c| c.db_uuid == u));
+                                let count =
+                                    self.state.count_in_zone_excl(f, *per_zone, &who, exclude);
                                 // "+1 for every N X" divides the match count first.
-                                count / per_divisor.unwrap_or(1).max(1)
+                                let mult = count / per_divisor.unwrap_or(1).max(1);
+                                let raw = *delta * mult;
+                                // "(Max +M)" clamps the per-count product, not the flat.
+                                cap.map_or(raw, |c| raw.min(c))
                             }
-                            None => 1,
+                            None => *delta,
                         };
-                        total += *delta * mult;
+                        total += bonus;
                     }
                 }
             }
@@ -11930,6 +11972,67 @@ mod finish_base_gate_tests {
         assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 8), -3);
         assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 9), -3);
         assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 7), 0);
+    }
+
+    /// Per-count Finish bonus (task #131, v106): `+delta` per matching card, with a
+    /// `cap` clamp and `per_excludes_self` dropping the SOURCE card (the "fc" Finish, a
+    /// Strike, from `engine_with`). Exercises the refactored source-threaded fold.
+    fn frb_per(delta: i64, atk: &str, exclude: bool, cap: Option<i64>) -> serde_json::Value {
+        json!([{
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "FinishRollBonus", "delta": delta, "when_skill": null,
+                "either": false, "when_base_le": null, "when_base_ge": null,
+                "per": {"@type": "CardFilter", "atk_type": atk}, "per_who": "SELF",
+                "per_zone": "IN_PLAY", "cap": cap, "per_excludes_self": exclude}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "", "source": "card", "optional": false
+        }])
+    }
+
+    fn strike(uuid: &str) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid,
+            "number": 1, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []}))
+        .unwrap()
+    }
+
+    #[test]
+    fn per_count_finish_bonus_excludes_source_and_caps() {
+        let add_strikes = |e: &mut Engine, n: usize| {
+            let ip = &mut e.state.players.get_mut("A").unwrap().in_play;
+            for i in 0..n {
+                ip.push(strike(&format!("x{i}")));
+            }
+        };
+
+        // "+1 for each OTHER Strike you have in play": source fc + 1 extra -> counts 1.
+        let mut engine = engine_with(frb_per(1, "Strike", true, None));
+        add_strikes(&mut engine, 1);
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Power, 5),
+            1,
+            "source excluded"
+        );
+
+        // No exclude: fc + 1 extra both count -> +2 (the control).
+        let mut engine = engine_with(frb_per(1, "Strike", false, None));
+        add_strikes(&mut engine, 1);
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Power, 5),
+            2,
+            "source counts itself"
+        );
+
+        // "(Max +2)" clamps the product: fc + 2 extra = 3 Strikes, +1 each, cap 2 -> 2.
+        let mut engine = engine_with(frb_per(1, "Strike", false, Some(2)));
+        add_strikes(&mut engine, 2);
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Power, 5),
+            2,
+            "clamped to cap"
+        );
     }
 }
 

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 105;
+pub const SCHEMA_VERSION: i64 = 106;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1600,6 +1600,15 @@ pub enum Action {
         /// (The Ride Along). Only meaningful with `per` set. schema v74
         #[serde(default)]
         per_divisor: Option<i64>,
+        /// Clamps the per-count product ("… (Max +2)") — the `per`-scaled bonus never
+        /// exceeds `cap`. `None` = uncapped. Additive/skip-when-none. schema v106
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cap: Option<i64>,
+        /// Exclude the SOURCE card from the `per` count — "for each OTHER `<X>` you have
+        /// in play", the FinishRollBonus analogue of `BuffSkill.per_excludes_self`.
+        /// Additive/skip-when-false. schema v106
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_excludes_self: bool,
     },
     /// A standing bonus to the owner's TURN roll, applied only when the randomly
     /// rolled skill equals `skill`: "Your Power is +N during turn rolls." Read by
@@ -2773,6 +2782,15 @@ pub enum IrNode {
         /// (The Ride Along). Only meaningful with `per` set. schema v74
         #[serde(default)]
         per_divisor: Option<i64>,
+        /// Clamps the per-count product ("… (Max +2)") — the `per`-scaled bonus never
+        /// exceeds `cap`. `None` = uncapped. Additive/skip-when-none. schema v106
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cap: Option<i64>,
+        /// Exclude the SOURCE card from the `per` count — "for each OTHER `<X>` you have
+        /// in play", the FinishRollBonus analogue of `BuffSkill.per_excludes_self`.
+        /// Additive/skip-when-false. schema v106
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_excludes_self: bool,
     },
     /// A standing bonus to the owner's TURN roll, applied only when the randomly
     /// rolled skill equals `skill`: "Your Power is +N during turn rolls." Read by

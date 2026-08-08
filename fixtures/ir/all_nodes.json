@@ -335,7 +335,9 @@
     "per_zone": "IN_PLAY",
     "when_base_ge": null,
     "when_base_le": null,
-    "when_skill": null
+    "when_skill": null,
+    "cap": 2,
+    "per_excludes_self": true
   },
   {
     "@type": "Flip",
