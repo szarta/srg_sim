@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 103;
+pub const SCHEMA_VERSION: i64 = 104;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -640,6 +640,15 @@ pub enum Trigger {
     /// the `RollContext`, so a `RollValue` / `RollWasSkill` condition gates on it ("if
     /// your opponent rolls 10 for their Breakout roll, you lose"). schema v72
     OnBreakoutRoll {
+        who: Who,
+    },
+    /// Fires when the `who`-side re-rolls their TURN roll (at the roll-off, after the
+    /// re-rolled die lands). `who` from the owner's POV: `SelfSide` = "when you re-roll
+    /// your turn roll", `Opp` = "when your opponent/target re-rolls their turn roll". A
+    /// roll-modifier body ("their roll is -1", "your roll is +2") adjusts the re-rolled
+    /// value; other bodies (draw, shuffle-self from discard) resolve normally. Fired by
+    /// `run_on_reroll` at the `offer_rerolls` site. schema v104
+    OnReroll {
         who: Who,
     },
     /// Fires when the `who`-side's deck is shuffled by a card/gimmick EFFECT (any
@@ -1841,6 +1850,15 @@ pub enum IrNode {
     /// the `RollContext`, so a `RollValue` / `RollWasSkill` condition gates on it ("if
     /// your opponent rolls 10 for their Breakout roll, you lose"). schema v72
     OnBreakoutRoll {
+        who: Who,
+    },
+    /// Fires when the `who`-side re-rolls their TURN roll (at the roll-off, after the
+    /// re-rolled die lands). `who` from the owner's POV: `SelfSide` = "when you re-roll
+    /// your turn roll", `Opp` = "when your opponent/target re-rolls their turn roll". A
+    /// roll-modifier body ("their roll is -1", "your roll is +2") adjusts the re-rolled
+    /// value; other bodies (draw, shuffle-self from discard) resolve normally. Fired by
+    /// `run_on_reroll` at the `offer_rerolls` site. schema v104
+    OnReroll {
         who: Who,
     },
     /// Fires when the `who`-side's deck is shuffled by a card/gimmick EFFECT (any

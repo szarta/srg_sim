@@ -730,6 +730,7 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
             | Trigger::OnHit { .. }
             | Trigger::OnStop { .. }
             | Trigger::OnBreakout { .. }
+            | Trigger::OnReroll { .. }
     ) {
         return None;
     }
@@ -1354,6 +1355,21 @@ fn reroll_cost(text: &str) -> Option<RerollCost> {
         ));
     }
     None
+}
+
+/// Route an OnReroll trigger body: normalize its roll-modifier phrasings so the shared
+/// grammar matches — "your/their roll is ±N" → "…turn roll is ±N", and the "would
+/// re-roll … that roll is +N" self case's "that roll" → "your turn roll" — then delegate
+/// to [`trigger_body`], which handles draw / roll-mod / shuffle-self / "you may" bodies.
+/// The roll-mod body becomes a `ModifyRoll{This}` the engine folds into the re-rolled
+/// value; every OnReroll clause's roll-mod always targets the re-rolling player.
+fn on_reroll_body(who: Who, body: &str) -> Option<Effect> {
+    static THAT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\bthat roll is").unwrap());
+    static BARE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)\b(your|their) roll is").unwrap());
+    let norm = THAT.replace_all(body, "your turn roll is").into_owned();
+    let norm = BARE.replace_all(&norm, "${1} turn roll is").into_owned();
+    trigger_body(Trigger::OnReroll { who }, &norm)
 }
 
 /// A `BuffSkill` scaled by the count of the owner's in-play cards matching `per`
@@ -2897,6 +2913,24 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // Opponent-directed current-roll modifier ("Their turn roll is -N" / "Your
+        // opponent's turn roll is -N") — the This-scope sibling of the Self rule above,
+        // and the roll-mod body for an OnReroll{Opp} clause ("when your opponent re-rolls
+        // their turn roll, their roll is -1"). Signed, so a rare "+N" also maps.
+        rule(r"(?:Their|Your opponent's) turn roll is ([+-]?\d+)", |c| {
+            Some(eff(
+                on_hit(),
+                vec![modify_roll(
+                    Who::Opp,
+                    num(c, 1),
+                    RollWhen::This,
+                    None,
+                    Who::Opp,
+                )],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
         rule(r"Your opponent's next turn roll is -(\d+)", |c| {
             Some(eff(
                 on_hit(),
@@ -3230,6 +3264,19 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 e.optional = c.get(1).is_some();
                 Some(e)
             },
+        ),
+        // OnReroll trigger (schema v104): fires when a TURN roll is re-rolled. "When you
+        // [would] re-roll your turn roll[,:] <body>" -> OnReroll{Self}; "When your
+        // opponent/target re-rolls their turn roll[,:] <body>" -> OnReroll{Opp}. The body
+        // (draw, roll-mod, shuffle-self) routes via `on_reroll_body`; the WHILE_IN_DISCARD
+        // variants reach here through `while_in_discard_effect` after its prefix is stripped.
+        rule(
+            r"(?:When|If|Whenever) you (?:would )?re-?roll your turn roll[,:] (.+)",
+            |c| on_reroll_body(Who::SelfSide, &c[1]),
+        ),
+        rule(
+            r"(?:When|If|Whenever) your (?:opponent|target) re-?rolls their turn roll[,:] (.+)",
+            |c| on_reroll_body(Who::Opp, &c[1]),
         ),
         // Extra-card grant (PlayExtraCard, previously override-only): "You may play an
         // additional card this turn". `order=None` (any card); N>1 grants loop as N

@@ -5433,7 +5433,12 @@ impl Engine {
                 (&ctx_b, &ctx_a)
             };
             if let Some(target) = self.offer_reroll(owner, own_ctx, opp_ctx)? {
-                let (ns, nv) = self.roll_for(&target, false);
+                let (ns, mut nv) = self.roll_for(&target, false);
+                // OnReroll effects fire on the just-re-rolled die: a roll-modifier body
+                // ("their roll is -1", "your roll is +2") adjusts the value here — the
+                // re-roll's `roll_for` skips pending mods, so a `ModifyRoll{This}` would
+                // otherwise be lost — while draw / shuffle-self bodies resolve in place.
+                nv += self.run_on_reroll(&target)?;
                 // Stamp the re-rolled side's turn so a `RerolledTurnRoll` finish rider
                 // ("… or you re-rolled your turn roll" — King Brian Cage) resolves.
                 let turn = self.state.turn_no;
@@ -5459,6 +5464,72 @@ impl Engine {
             }
         }
         Ok((sa, va, sb, vb))
+    }
+
+    /// Fire OnReroll effects after `target`'s turn die was re-rolled (schema v104).
+    /// Scans both sides — `target`'s own `OnReroll{SelfSide}` and the opponent's
+    /// `OnReroll{Opp}` ("when your opponent re-rolls") — plus their WHILE_IN_DISCARD
+    /// self-triggers (with `self_card` bound so a "shuffle this card into your deck"
+    /// body resurrects the right card). Returns the summed roll-modifier delta, applied
+    /// to the re-rolled value by the caller; all other actions resolve in place. A no-op
+    /// (delta 0) when no side has an OnReroll effect — the corpus stays byte-identical.
+    fn run_on_reroll(&mut self, target: &str) -> Eng<i64> {
+        let opp = self.state.opponent_of(target);
+        let mut delta = 0;
+        for (owner, want) in [(target.to_owned(), Who::SelfSide), (opp, Who::Opp)] {
+            for eff in self.standing_effects(&owner) {
+                if matches!(eff.trigger, Trigger::OnReroll { who } if who == want) {
+                    delta += self.fire_on_reroll(&eff, &owner)?;
+                }
+            }
+            for (uuid, eff) in self.discard_self_triggers(&owner) {
+                if matches!(eff.trigger, Trigger::OnReroll { who } if who == want) {
+                    self.self_card = Some(uuid);
+                    let r = self.fire_on_reroll(&eff, &owner);
+                    self.self_card = None;
+                    delta += r?;
+                }
+            }
+        }
+        Ok(delta)
+    }
+
+    /// Fire one OnReroll effect (frequency + condition + optional gated like
+    /// [`fire_if_ready`](Self::fire_if_ready)), returning the summed `ModifyRoll` delta
+    /// — applied to the re-rolled value by the caller, since a re-roll's `roll_for`
+    /// skips the pending-mod path a normal `ModifyRoll{This}` uses. Every non-`ModifyRoll`
+    /// action (draw, shuffle-self) resolves normally.
+    fn fire_on_reroll(&mut self, eff: &Effect, owner: &str) -> Eng<i64> {
+        if !(self.may_fire(eff, owner)
+            && conditions::holds(&eff.condition, &self.state, owner, None))
+        {
+            return Ok(0);
+        }
+        if eff.optional && !self.take_optional(eff, owner)? {
+            return Ok(0);
+        }
+        self.mark_fired(eff, owner);
+        let mut delta = 0;
+        for a in &eff.actions {
+            if let Action::ModifyRoll {
+                delta: d,
+                per,
+                per_who,
+                per_zone,
+                ..
+            } = a
+            {
+                let mut dd = *d;
+                if let Some(per) = per {
+                    let counter = self.target(*per_who, owner);
+                    dd *= self.state.count_in_zone(per, *per_zone, &counter);
+                }
+                delta += dd;
+            } else {
+                self.apply_action(a, owner, &eff.raw_clause)?;
+            }
+        }
+        Ok(delta)
     }
 
     /// Offer each side its "switch the rolled skill" option (Scott Prime). A taken
@@ -6129,6 +6200,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::StartOfMatch => "StartOfMatch",
         Trigger::OnBreakout { .. } => "OnBreakout",
         Trigger::OnBreakoutRoll { .. } => "OnBreakoutRoll",
+        Trigger::OnReroll { .. } => "OnReroll",
         Trigger::OnShuffle { .. } => "OnShuffle",
         Trigger::OnFlip { .. } => "OnFlip",
         Trigger::OnDiscardMove { .. } => "OnDiscardMove",
@@ -6601,6 +6673,47 @@ mod breakout_modifier_tests {
             "A",
             &cost(RerollCostKind::ShuffleInPlay, None, Some(potion))
         ));
+    }
+
+    /// OnReroll dispatch (schema v104): `run_on_reroll(target)` fires the target's own
+    /// `OnReroll{SelfSide}` and the opponent's `OnReroll{Opp}`, summing roll-modifier
+    /// deltas (applied to the re-rolled value) while other actions resolve. A board with
+    /// no OnReroll returns delta 0.
+    #[test]
+    fn on_reroll_dispatch_sums_deltas_from_both_sides() {
+        fn reroll_mod(who: &str, mod_who: &str, delta: i64) -> Value {
+            json!({
+                "@type": "Effect", "trigger": {"@type": "OnReroll", "who": who},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "ModifyRoll", "who": mod_who, "delta": delta,
+                    "when": "THIS", "per": null, "per_who": "OPP", "per_zone": "IN_PLAY"}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "t", "source": "gimmick", "optional": false
+            })
+        }
+
+        // No OnReroll anywhere → delta 0.
+        let mut e = engine();
+        assert_eq!(e.run_on_reroll("A").expect("none"), 0);
+
+        // A's own "when you re-roll, your roll is +2" fires on A's reroll.
+        let mut e = engine();
+        push_gimmick(&mut e, "A", reroll_mod("SELF", "SELF", 2));
+        assert_eq!(e.run_on_reroll("A").expect("self"), 2);
+        // ...but not on B's reroll (A's SelfSide keys off A's own die).
+        assert_eq!(e.run_on_reroll("B").expect("self-not-b"), 0);
+
+        // B's "when your opponent re-rolls, their roll is -1" fires on A's reroll.
+        let mut e = engine();
+        push_gimmick(&mut e, "B", reroll_mod("OPP", "OPP", -1));
+        assert_eq!(e.run_on_reroll("A").expect("opp"), -1);
+
+        // Both sides stack on A's reroll: +2 (A self) and -1 (B opp) → +1.
+        let mut e = engine();
+        push_gimmick(&mut e, "A", reroll_mod("SELF", "SELF", 2));
+        push_gimmick(&mut e, "B", reroll_mod("OPP", "OPP", -1));
+        assert_eq!(e.run_on_reroll("A").expect("both"), 1);
     }
 
     fn strike_cards(n: usize) -> Vec<Card> {

@@ -1770,6 +1770,57 @@ fn costed_reroll_grammar() {
     assert_eq!(a["@type"], "Unsupported");
 }
 
+/// OnReroll trigger grammar (schema v104): "When you/your opponent [would] re-roll
+/// [your|their] turn roll, <body>" -> OnReroll{who} with the body routed through the
+/// shared grammar (roll-mod normalized to "turn roll", draw, compound, shuffle-self).
+/// The WHILE_IN_DISCARD variants keep the trigger and gain the discard duration.
+#[test]
+fn on_reroll_trigger_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Self, roll-modifier body ("your roll is +2" -> ModifyRoll{Self, +2, This}).
+    let e = one("When you re-roll your turn roll, your roll is +2.");
+    assert_eq!(e["trigger"]["@type"], "OnReroll");
+    assert_eq!(e["trigger"]["who"], "SELF");
+    assert_eq!(e["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+    assert_eq!(e["actions"][0]["delta"], 2);
+    assert_eq!(e["actions"][0]["when"], "THIS");
+
+    // Self, compound body (draw + roll-mod).
+    let e = one("When you re-roll your turn roll, draw 1 card and your roll is +1.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][1]["@type"], "ModifyRoll");
+
+    // Opponent, negative roll-mod ("their roll is -2" -> ModifyRoll{Opp, -2, This}).
+    let e = one("When your opponent re-rolls their turn roll, their roll is -2.");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["delta"], -2);
+
+    // "would re-roll … that roll is +N" self variant.
+    let e = one("When you would re-roll your turn roll, that roll is +2.");
+    assert_eq!(e["trigger"]["@type"], "OnReroll");
+    assert_eq!(e["actions"][0]["delta"], 2);
+
+    // WHILE_IN_DISCARD: opponent roll-mod + self-resurrect shuffle.
+    let e = one("When this card is in your discard pile and your opponent re-rolls their turn roll, their roll is -1.");
+    assert_eq!(e["trigger"]["@type"], "OnReroll");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["actions"][0]["delta"], -1);
+
+    let e = one("When this card is in your discard pile and you re-roll your turn roll, you may shuffle this card into your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnReroll");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+    assert_eq!(e["optional"], true);
+}
+
 /// Inline frequency prefix routing: a `freq_header` fused to its body on one clause
 /// ("Once per turn: <body>", "Once a turn, <body>", "N times per match: <body>") applies
 /// the frequency to that body alone and routes the residual through the grammar. The

@@ -596,6 +596,17 @@ class OnBreakoutRoll(IRNode):
 
 
 @dataclass(frozen=True)
+class OnReroll(IRNode):
+    """Fires when the ``who``-side re-rolls their TURN roll (at the roll-off, after the
+    re-rolled die lands; run_on_reroll). ``who`` from the owner's POV: ``SELF`` = "when
+    you re-roll your turn roll", ``OPP`` = "when your opponent/target re-rolls". A
+    roll-modifier body ("their roll is -1") adjusts the re-rolled value; other bodies
+    (draw, shuffle-self from discard) resolve normally. schema v104"""
+
+    who: Who
+
+
+@dataclass(frozen=True)
 class OnShuffle(IRNode):
     """Fires when the ``who``-side's deck is shuffled by a card/gimmick EFFECT (any
     effect-caused shuffle: explicit "shuffle your deck", or the incidental shuffle after
@@ -2050,6 +2061,7 @@ Trigger = (
     | StartOfMatch
     | OnBreakout
     | OnBreakoutRoll
+    | OnReroll
     | OnShuffle
     | OnFlip
     | OnDiscardMove

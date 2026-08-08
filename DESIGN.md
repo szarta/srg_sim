@@ -107,6 +107,7 @@ OnBury(who, from_hand_only?, also_discard?)  # when an EFFECT/Gimmick causes the
                              #   on an effect-caused hand discard (Tommy "bury or discard"). schema v15
 StartOfTurn / StartOfMatch
 OnBreakout(who?)             # after a breakout: who=None any ("after a breakout" — Copy Kat); SELF you broke out; OPP your opponent broke out. Fires BEFORE the boards clear so a card-based recur still sees its card. schema v29
+OnReroll(who)                # when who re-rolls their TURN roll (at the roll-off, after the die lands; run_on_reroll). who=SELF "when you re-roll"; OPP "when your opponent re-rolls". A roll-mod body ("their roll is -1") adjusts the re-rolled value; draw / shuffle-self resolve normally. schema v104
 OnShuffle(who)               # when who's deck is shuffled by a card/gimmick EFFECT (search/tutor/shuffle-into-deck/hand-into-deck or explicit "shuffle your deck") — NOT the setup shuffle. who=OPP "when your opponent shuffles their deck" (Memes Dealer V2). schema v32
 OnFlip(who, count?)          # when who flips cards (Flip mills deck→discard). count = exact-size gate ("when you flip exactly 3 cards" — Evee); None = any flip. Fired by run_on_flip. schema v84
 OnDiscardMove(who)           # when one or more cards LEAVE who's discard pile via a card/gimmick EFFECT (recur-to-hand / shuffle-into-deck / recur-to-deck-top /

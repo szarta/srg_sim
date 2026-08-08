@@ -707,6 +707,10 @@
     "filter": null
   },
   {
+    "@type": "OnReroll",
+    "who": "SELF"
+  },
+  {
     "@type": "RevealAndDiscard",
     "count": 0,
     "who": "SELF"

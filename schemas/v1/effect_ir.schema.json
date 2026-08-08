@@ -2855,6 +2855,9 @@
           "$ref": "#/$defs/OnBreakout"
         },
         {
+          "$ref": "#/$defs/OnReroll"
+        },
+        {
           "$ref": "#/$defs/OnShuffle"
         },
         {
@@ -3797,6 +3800,22 @@
       "required": [
         "@type",
         "skills",
+        "who"
+      ],
+      "type": "object"
+    },
+    "OnReroll": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnReroll"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
         "who"
       ],
       "type": "object"
@@ -5503,5 +5522,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 103
+  "version": 104
 }
