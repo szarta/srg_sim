@@ -369,6 +369,26 @@ class CardFilter(IRNode):
     is_stop: bool | None = None
 
 
+class RerollCostKind(Enum):
+    """How a costed :class:`Reroll` is paid. schema v103"""
+
+    SHUFFLE_IN_PLAY = "SHUFFLE_IN_PLAY"  # shuffle a matching in-play card into the deck
+    BURY_FROM_HAND = "BURY_FROM_HAND"  # bury ``count`` cards from hand
+    DISCARD_FROM_HAND = "DISCARD_FROM_HAND"  # discard ``count`` (matching) cards from hand
+
+
+@dataclass(frozen=True)
+class RerollCost(IRNode):
+    """The payment a costed :class:`Reroll` demands. ``kind`` selects the payment;
+    ``count`` the hand-payment size (``None`` for SHUFFLE_IN_PLAY); ``filter`` scopes
+    which card (the in-play card to shuffle, or the typed hand cards to discard).
+    schema v103"""
+
+    kind: RerollCostKind = RerollCostKind.SHUFFLE_IN_PLAY
+    count: int | None = None
+    filter: CardFilter | None = None
+
+
 # ---------------------------------------------------------------------------
 # Triggers — WHEN an effect fires
 # ---------------------------------------------------------------------------
@@ -1398,15 +1418,18 @@ class Reroll(IRNode):
     # ``THIS`` re-rolls the current roll (structural, read in the roll-off); ``NEXT``
     # grants a one-shot re-roll for the owner's next turn roll (King Brian Cage).
     when: RollWhen = RollWhen.THIS
-    # An in-play card the owner must shuffle into their deck to re-roll (Mr. Hyde:
-    # "shuffle 1 card with 'Potion' in the name that you have in play into your deck
-    # to re-roll"). ``None`` = free; when set, the re-roll is offered only while a
-    # matching card is in play, and taking it shuffles one away. schema v48
-    cost: CardFilter | None = None
+    # The payment required to re-roll (``None`` = free): a ShuffleInPlay cost (Mr.
+    # Hyde's "Potion") or a hand cost ("bury 4 cards in your hand to re-roll",
+    # "discard 1 Finish from your hand to re-roll"). schema v48 → v103 (RerollCost).
+    cost: RerollCost | None = None
     # Scope: False (default) = the turn roll-off (offer_reroll); True = the FINISH
     # roll (offer_finish_reroll in the finish sequence) — "you may re-roll your Finish
     # roll" (59 cards, e.g. Tomato Tomato Jr.). Keeps the paths from cross-firing. v76
     finish: bool = False
+    # Scope: True = a BREAKOUT roll (offer_breakout_reroll in the breakout loop) —
+    # "re-roll your Breakout roll" / "force your opponent to re-roll their Breakout
+    # roll". Mutually exclusive with ``finish``; both False = the turn roll. schema v102
+    breakout: bool = False
 
 
 @dataclass(frozen=True)

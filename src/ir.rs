@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 102;
+pub const SCHEMA_VERSION: i64 = 103;
 
 // ---------------------------------------------------------------------------
 // `@type` tags for product structs
@@ -74,6 +74,7 @@ type_tag!(EffectTag, "Effect");
 type_tag!(CardFilterTag, "CardFilter");
 type_tag!(FrequencyGuardTag, "FrequencyGuard");
 type_tag!(ChoiceOptionTag, "ChoiceOption");
+type_tag!(RerollCostTag, "RerollCost");
 
 // ---------------------------------------------------------------------------
 // Scalar enums
@@ -482,6 +483,33 @@ pub struct CardFilter {
     /// `Some(false)` = must NOT be a stop, `None` = unconstrained. schema v62
     #[serde(default)]
     pub is_stop: Option<bool>,
+}
+
+/// How a costed [`Action::Reroll`] is paid. `ShuffleInPlay` shuffles one card the
+/// owner has in play (matching the cost's `filter`) into their deck — the original
+/// re-roll cost (Mr. Hyde's "Potion"). `BuryFromHand` / `DiscardFromHand` are hand
+/// payments (`count` cards, optionally matching `filter` for the discard case) — the
+/// "bury 4 cards in your hand to re-roll" / "discard 1 Finish from your hand to
+/// re-roll" family. schema v103
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RerollCostKind {
+    ShuffleInPlay,
+    BuryFromHand,
+    DiscardFromHand,
+}
+
+/// The cost of a [`Action::Reroll`] (the payment offered alongside the re-roll). Its
+/// `kind` selects the payment; `count` is the hand-payment size (`None` for
+/// `ShuffleInPlay`); `filter` scopes which card — the in-play card to shuffle, or the
+/// hand cards to discard when typed ("discard 1 Finish"). schema v103
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RerollCost {
+    #[serde(rename = "@type", default)]
+    pub node_type: RerollCostTag,
+    pub kind: RerollCostKind,
+    pub count: Option<i64>,
+    pub filter: Option<CardFilter>,
 }
 
 /// The frequency guard attached to every [`Effect`].
@@ -1319,12 +1347,13 @@ pub enum Action {
         /// may re-roll your next turn roll" — King Brian Cage / El Gato Shinobi).
         #[serde(default)]
         when: RollWhen,
-        /// An in-play card the owner must shuffle into their deck to re-roll (Mr.
-        /// Hyde: "shuffle 1 card with 'Potion' in the name that you have in play into
-        /// your deck to re-roll"). `None` = free. When set, the re-roll is offered
-        /// only while a matching card is in play, and taking it shuffles one away.
+        /// The payment required to re-roll (`None` = free). A `ShuffleInPlay` cost is
+        /// offered only while a matching in-play card exists and shuffles one away (Mr.
+        /// Hyde's "Potion"); a `BuryFromHand`/`DiscardFromHand` cost is offered only
+        /// while the hand can pay and sheds `count` cards ("bury 4 cards in your hand to
+        /// re-roll", "discard 1 Finish from your hand to re-roll"). schema v103
         #[serde(default)]
-        cost: Option<CardFilter>,
+        cost: Option<RerollCost>,
         /// Scope: `false` (default) = the turn-roll off, offered in `offer_reroll`;
         /// `true` = the FINISH roll, offered in `offer_finish_reroll` inside the
         /// finish sequence ("you may re-roll your Finish roll" — 59 cards, e.g.
@@ -1698,6 +1727,7 @@ pub enum IrNode {
     CardFilter(CardFilter),
     ChoiceOption(ChoiceOption),
     FrequencyGuard(FrequencyGuard),
+    RerollCost(RerollCost),
 
     // Triggers
     OnPlay,
@@ -2474,12 +2504,13 @@ pub enum IrNode {
         /// may re-roll your next turn roll" — King Brian Cage / El Gato Shinobi).
         #[serde(default)]
         when: RollWhen,
-        /// An in-play card the owner must shuffle into their deck to re-roll (Mr.
-        /// Hyde: "shuffle 1 card with 'Potion' in the name that you have in play into
-        /// your deck to re-roll"). `None` = free. When set, the re-roll is offered
-        /// only while a matching card is in play, and taking it shuffles one away.
+        /// The payment required to re-roll (`None` = free). A `ShuffleInPlay` cost is
+        /// offered only while a matching in-play card exists and shuffles one away (Mr.
+        /// Hyde's "Potion"); a `BuryFromHand`/`DiscardFromHand` cost is offered only
+        /// while the hand can pay and sheds `count` cards ("bury 4 cards in your hand to
+        /// re-roll", "discard 1 Finish from your hand to re-roll"). schema v103
         #[serde(default)]
-        cost: Option<CardFilter>,
+        cost: Option<RerollCost>,
         /// Scope: `false` (default) = the turn-roll off, offered in `offer_reroll`;
         /// `true` = the FINISH roll, offered in `offer_finish_reroll` inside the
         /// finish sequence ("you may re-roll your Finish roll" — 59 cards, e.g.

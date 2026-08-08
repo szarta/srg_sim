@@ -7910,17 +7910,21 @@ ceb9126b162c4be69b9291c088d3fe5b:
     choose: false
     when: THIS
     cost:
-      '@type': CardFilter
-      atk_type: null
-      name: null
-      name_contains:
-      - Potion
-      number: null
-      play_order: null
-      play_orders: []
-      raw: null
-      tag: null
-      text_contains: []
+      '@type': RerollCost
+      kind: SHUFFLE_IN_PLAY
+      count: null
+      filter:
+        '@type': CardFilter
+        atk_type: null
+        name: null
+        name_contains:
+        - Potion
+        number: null
+        play_order: null
+        play_orders: []
+        raw: null
+        tag: null
+        text_contains: []
   duration: INSTANT
   frequency:
     '@type': FrequencyGuard

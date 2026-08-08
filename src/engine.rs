@@ -19,8 +19,9 @@ use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, CountZone, DeckEnd, Dest,
-    Direction, Duration, Effect, EffectSource, LoseKind, PlayOrder, RevealDest, RevealFrom,
-    RevealMatch, RevealSource, RollWhen, ScryRest, ShuffleSource, Skill, Trigger, Who,
+    Direction, Duration, Effect, EffectSource, LoseKind, PlayOrder, RerollCost, RerollCostKind,
+    RevealDest, RevealFrom, RevealMatch, RevealSource, RollWhen, ScryRest, ShuffleSource, Skill,
+    Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -4585,8 +4586,8 @@ impl Engine {
             {
                 continue;
             }
-            if let Some(filter) = &cost {
-                if !self.has_in_play(finisher, filter) {
+            if let Some(c) = &cost {
+                if !self.can_pay_reroll(finisher, c) {
                     continue;
                 }
             }
@@ -4594,8 +4595,8 @@ impl Engine {
                 continue;
             }
             self.mark_fired(eff, finisher);
-            if let Some(filter) = &cost {
-                self.pay_reroll_cost(finisher, filter)?;
+            if let Some(c) = &cost {
+                self.pay_reroll(finisher, c)?;
             }
             // The paired non-Reroll actions ("draw 1 card to re-roll") resolve here.
             for a in &eff.actions {
@@ -4637,8 +4638,8 @@ impl Engine {
                 {
                     continue;
                 }
-                if let Some(filter) = &cost {
-                    if !self.has_in_play(&owner, filter) {
+                if let Some(c) = &cost {
+                    if !self.can_pay_reroll(&owner, c) {
                         continue;
                     }
                 }
@@ -4646,8 +4647,8 @@ impl Engine {
                     continue;
                 }
                 self.mark_fired(eff, &owner);
-                if let Some(filter) = &cost {
-                    self.pay_reroll_cost(&owner, filter)?;
+                if let Some(c) = &cost {
+                    self.pay_reroll(&owner, c)?;
                 }
                 for a in &eff.actions {
                     if !matches!(a, Action::Reroll { .. }) {
@@ -5577,11 +5578,11 @@ impl Engine {
             {
                 continue;
             }
-            // A costed re-roll (Mr. Hyde) is offered only while the owner can pay it —
-            // an in-play card matching `cost` to shuffle away. Unaffordable ⇒ not
+            // A costed re-roll is offered only while the owner can pay it (an in-play
+            // card to shuffle, or enough hand cards to bury/discard). Unaffordable ⇒ not
             // offered, and the frequency charge is left unspent.
-            if let Some(filter) = &cost {
-                if !self.has_in_play(owner, filter) {
+            if let Some(c) = &cost {
+                if !self.can_pay_reroll(owner, c) {
                     continue;
                 }
             }
@@ -5589,8 +5590,8 @@ impl Engine {
                 continue; // declined "you may" — charge left for a later roll
             }
             self.mark_fired(eff, owner);
-            if let Some(filter) = &cost {
-                self.pay_reroll_cost(owner, filter)?;
+            if let Some(c) = &cost {
+                self.pay_reroll(owner, c)?;
             }
             let target = if choose {
                 self.decide_reroll_target(owner)?
@@ -5621,6 +5622,54 @@ impl Engine {
             .in_play
             .iter()
             .any(|c| conditions::card_matches(c, filter))
+    }
+
+    /// Whether `owner` can afford re-roll cost `c` — checked BEFORE the re-roll is
+    /// offered, so an unaffordable cost leaves the frequency charge unspent (schema
+    /// v103). ShuffleInPlay needs a matching in-play card; the hand costs need `count`
+    /// (matching) cards in hand.
+    fn can_pay_reroll(&self, owner: &str, c: &RerollCost) -> bool {
+        match c.kind {
+            RerollCostKind::ShuffleInPlay => c
+                .filter
+                .as_ref()
+                .is_some_and(|f| self.has_in_play(owner, f)),
+            RerollCostKind::BuryFromHand | RerollCostKind::DiscardFromHand => {
+                let need = c.count.unwrap_or(0).max(0) as usize;
+                let hand = &self.state.players[owner].hand;
+                let have = match &c.filter {
+                    Some(f) => hand
+                        .iter()
+                        .filter(|c| conditions::card_matches(c, f))
+                        .count(),
+                    None => hand.len(),
+                };
+                have >= need
+            }
+        }
+    }
+
+    /// Pay re-roll cost `c` (affordability already confirmed by `can_pay_reroll`).
+    /// ShuffleInPlay shuffles one in-play card away; the hand costs shed `count` cards
+    /// (the owner picks — never random — mirroring the "you may bury/discard" choice).
+    fn pay_reroll(&mut self, owner: &str, c: &RerollCost) -> Eng<()> {
+        match c.kind {
+            RerollCostKind::ShuffleInPlay => {
+                if let Some(f) = &c.filter {
+                    self.pay_reroll_cost(owner, f)?;
+                }
+            }
+            RerollCostKind::BuryFromHand => {
+                let n = c.count.unwrap_or(0).max(0) as usize;
+                let filter = c.filter.clone().unwrap_or_default();
+                self.bury_from_hand(owner, owner, n, false, &filter)?;
+            }
+            RerollCostKind::DiscardFromHand => {
+                let n = c.count.unwrap_or(0).max(0) as usize;
+                self.discard_from_hand(owner, owner, n, false, c.filter.as_ref())?;
+            }
+        }
+        Ok(())
     }
 
     /// Pay a costed re-roll: shuffle the first in-play card matching `filter` into
@@ -6512,6 +6561,46 @@ mod breakout_modifier_tests {
         push_gimmick(&mut e, "A", breakout_reroll("SELF", once));
         assert!(e.offer_breakout_reroll("A").expect("first"));
         assert!(!e.offer_breakout_reroll("A").expect("second"));
+    }
+
+    /// Re-roll hand-cost affordability (schema v103): a `BuryFromHand`/`DiscardFromHand`
+    /// cost is payable only while the hand holds `count` (matching) cards; a
+    /// `ShuffleInPlay` cost needs a matching in-play card. Payment itself delegates to
+    /// the already-tested `bury_from_hand`/`discard_from_hand`/`pay_reroll_cost`.
+    #[test]
+    fn reroll_hand_cost_affordability() {
+        let cost = |kind, count, filter| RerollCost {
+            node_type: crate::ir::RerollCostTag,
+            kind,
+            count,
+            filter,
+        };
+        let mut e = engine();
+        for c in strike_cards(3) {
+            e.state.players.get_mut("A").unwrap().hand.push(c);
+        }
+        // 3 Strikes in hand: bury/discard up to 3, not 4.
+        assert!(e.can_pay_reroll("A", &cost(RerollCostKind::BuryFromHand, Some(3), None)));
+        assert!(!e.can_pay_reroll("A", &cost(RerollCostKind::BuryFromHand, Some(4), None)));
+        assert!(e.can_pay_reroll("A", &cost(RerollCostKind::DiscardFromHand, Some(2), None)));
+        // Typed cost: no Submission in hand -> unaffordable.
+        let subm = CardFilter {
+            atk_type: Some(AtkType::Submission),
+            ..Default::default()
+        };
+        assert!(!e.can_pay_reroll(
+            "A",
+            &cost(RerollCostKind::DiscardFromHand, Some(1), Some(subm))
+        ));
+        // ShuffleInPlay with no matching in-play card -> unaffordable.
+        let potion = CardFilter {
+            name_contains: vec!["Potion".to_owned()],
+            ..Default::default()
+        };
+        assert!(!e.can_pay_reroll(
+            "A",
+            &cost(RerollCostKind::ShuffleInPlay, None, Some(potion))
+        ));
     }
 
     fn strike_cards(n: usize) -> Vec<Card> {
@@ -11318,9 +11407,10 @@ mod reroll_cost_tests {
             "trigger": {"@type": "Static"},
             "condition": {"@type": "Always"},
             "actions": [{"@type": "Reroll", "who": "SELF", "once": true, "choose": false,
-                "when": "THIS", "cost": {"@type": "CardFilter", "atk_type": null, "name": null,
+                "when": "THIS", "cost": {"@type": "RerollCost", "kind": "SHUFFLE_IN_PLAY",
+                    "count": null, "filter": {"@type": "CardFilter", "atk_type": null, "name": null,
                     "name_contains": ["Potion"], "number": null, "play_order": null,
-                    "play_orders": [], "raw": null, "tag": null, "text_contains": []}}],
+                    "play_orders": [], "raw": null, "tag": null, "text_contains": []}}}],
             "duration": "INSTANT",
             "frequency": {"@type": "FrequencyGuard", "kind": "ONCE_PER_TURN", "n": null},
             "raw_clause": "hyde", "source": "gimmick", "optional": true

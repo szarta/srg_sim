@@ -1712,6 +1712,64 @@ fn reroll_grammar() {
     assert_eq!(e["optional"], true);
 }
 
+/// Costed re-roll grammar (schema v103): "[You may] <hand-cost> to <re-roll body>" —
+/// the cost prefix parses to a `RerollCost` attached to the body's `Reroll`. Covers
+/// bury-from-hand, discard-from-hand (untyped/typed), and composition with a re-roll
+/// scope (finish/breakout) and an inline freq prefix. Non-cost prefixes decline.
+#[test]
+fn costed_reroll_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Bury N from hand -> BuryFromHand{count}, finish scope preserved.
+    let e = one("You may bury 4 cards in your hand to re-roll your Finish roll.");
+    let a = &e["actions"][0];
+    assert_eq!(a["@type"], "Reroll");
+    assert_eq!(a["finish"], true);
+    assert_eq!(a["cost"]["@type"], "RerollCost");
+    assert_eq!(a["cost"]["kind"], "BURY_FROM_HAND");
+    assert_eq!(a["cost"]["count"], 4);
+    assert_eq!(a["cost"]["filter"], Value::Null);
+    assert_eq!(e["optional"], true);
+
+    // Discard N (untyped) from hand -> DiscardFromHand, null filter.
+    let a = one("You may discard 1 card from your hand to re-roll your turn roll.")["actions"][0]
+        .clone();
+    assert_eq!(a["cost"]["kind"], "DISCARD_FROM_HAND");
+    assert_eq!(a["cost"]["count"], 1);
+    assert_eq!(a["cost"]["filter"], Value::Null);
+
+    // Typed discard cost -> filter carries the play order.
+    let a = one("You may discard 1 Finish from your hand to re-roll your Finish roll.")["actions"]
+        [0]
+    .clone();
+    assert_eq!(a["cost"]["kind"], "DISCARD_FROM_HAND");
+    assert_eq!(a["cost"]["filter"]["play_order"], "Finish");
+
+    // Composes with a breakout body and force-opponent.
+    let a = one("You may discard 1 card from your hand to force your opponent to re-roll their Breakout roll.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["breakout"], true);
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(a["cost"]["kind"], "DISCARD_FROM_HAND");
+
+    // Composes with an inline freq prefix.
+    let e = one("Once per turn: You may bury 3 cards in your hand to re-roll your Finish roll.");
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
+    assert_eq!(e["actions"][0]["cost"]["count"], 3);
+
+    // Non-cost prefix declines (stays Unsupported, no silent cost drop): "discard this
+    // card" (hand-activated) and a non-payment "to" clause.
+    let a = one("You may discard this card from your hand to re-roll your Breakout roll.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["@type"], "Unsupported");
+}
+
 /// Inline frequency prefix routing: a `freq_header` fused to its body on one clause
 /// ("Once per turn: <body>", "Once a turn, <body>", "N times per match: <body>") applies
 /// the frequency to that body alone and routes the residual through the grammar. The

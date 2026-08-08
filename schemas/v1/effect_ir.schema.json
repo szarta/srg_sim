@@ -2801,6 +2801,9 @@
           "$ref": "#/$defs/FrequencyGuard"
         },
         {
+          "$ref": "#/$defs/RerollCost"
+        },
+        {
           "$ref": "#/$defs/GimmickFlipped"
         },
         {
@@ -4149,6 +4152,52 @@
       ],
       "type": "object"
     },
+    "RerollCost": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RerollCost"
+        },
+        "kind": {
+          "$ref": "#/$defs/RerollCostKind"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type",
+        "kind",
+        "count",
+        "filter"
+      ],
+      "type": "object"
+    },
+    "RerollCostKind": {
+      "enum": [
+        "SHUFFLE_IN_PLAY",
+        "BURY_FROM_HAND",
+        "DISCARD_FROM_HAND"
+      ],
+      "type": "string"
+    },
     "Reroll": {
       "additionalProperties": false,
       "properties": {
@@ -4161,7 +4210,7 @@
         "cost": {
           "anyOf": [
             {
-              "$ref": "#/$defs/CardFilter"
+              "$ref": "#/$defs/RerollCost"
             },
             {
               "type": "null"
@@ -5454,5 +5503,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 102
+  "version": 103
 }

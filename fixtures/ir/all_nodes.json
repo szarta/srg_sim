@@ -701,6 +701,12 @@
     "who": "SELF"
   },
   {
+    "@type": "RerollCost",
+    "kind": "SHUFFLE_IN_PLAY",
+    "count": null,
+    "filter": null
+  },
+  {
     "@type": "RevealAndDiscard",
     "count": 0,
     "who": "SELF"

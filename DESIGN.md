@@ -267,10 +267,14 @@ BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, target_low
                                                  # = cards flipped this turn, "for each Strike flipped: +1 to Strike"); schema v7/v74
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
 AddText(name_contains=[...], effects=[Effect...])  # Static gimmick: the owner's played cards whose title matches (case-insensitive OR) gain `effects` (their own triggers, usually OnPlay), injected at play time alongside the card's own. El Super Santa/Sabu. schema v25
-Reroll(who, once=True, choose=False, when=THIS, cost?, finish=False)  # who=SELF/OPP die; choose=owner picks a player;
-                              # when=NEXT grants a one-shot re-roll for the owner's next turn roll
-                              # (schema v9 choose, v10 when). Structural read in the roll-off. finish=True (v76):
-                              # a FINISH-roll re-roll, offered in offer_finish_reroll ("you may re-roll your Finish roll").
+Reroll(who, once=True, choose=False, when=THIS, cost?, finish=False, breakout=False)  # who=SELF/OPP die; choose=owner picks
+                              # a player; when=NEXT grants a one-shot re-roll for the owner's next turn roll
+                              # (schema v9 choose, v10 when). Structural read in the roll-off. finish=True (v76): a
+                              # FINISH-roll re-roll (offer_finish_reroll); breakout=True (v102): a BREAKOUT-roll re-roll
+                              # (offer_breakout_reroll) — "re-roll your Breakout roll" / "force your opponent to re-roll…".
+                              # cost? = RerollCost{kind, count?, filter?} (v103): SHUFFLE_IN_PLAY (shuffle a matching
+                              # in-play card away, Mr. Hyde) | BURY_FROM_HAND | DISCARD_FROM_HAND ("bury/discard N cards
+                              # from your hand to re-roll"); offered only while affordable, paid on election.
 CoupledDiscard(offset)        # "discard any number from your hand, opp discards that number `offset`" (Dismantler,
                               # offset -1). Actor's count N is an engine heuristic (min(self_hand, opp_hand+1)); the
                               # self-discard fires OnBury; opp then sheds max(0, N+offset). schema v76

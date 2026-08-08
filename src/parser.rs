@@ -18,8 +18,9 @@ use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
     CountZone, DeckEnd, Dest, Direction, DqScope, Duration, Effect, EffectSource, EffectTag,
-    Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RevealSource,
-    RollWhen, ScryRest, ShuffleSource, Skill, Trigger, Vs, Who,
+    Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RerollCost,
+    RerollCostKind, RerollCostTag, RevealSource, RollWhen, ScryRest, ShuffleSource, Skill, Trigger,
+    Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -1311,6 +1312,48 @@ fn reroll_breakout(who: Who) -> Action {
         finish: false,
         breakout: true,
     }
+}
+
+/// Parse a re-roll COST prefix into a [`RerollCost`] (schema v103): "bury N cards in
+/// your hand" → `BuryFromHand`; "discard N `<object>` [from your hand]" →
+/// `DiscardFromHand` (object via `recur_filter`: bare "card(s)" = any, else a typed /
+/// named filter). `None` for shapes we don't model here — reveal costs, "discard this
+/// card" self-discard (hand-activated), "up to N".
+fn reroll_cost(text: &str) -> Option<RerollCost> {
+    static BURY: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^bury (\d+|a|one) cards? in your hand$").unwrap());
+    static DISCARD: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^discard (\d+|a|one) (.+?)(?: from your hand)?$").unwrap()
+    });
+    let node = |kind, count, filter| RerollCost {
+        node_type: RerollCostTag,
+        kind,
+        count: Some(count),
+        filter,
+    };
+    let t = text.trim();
+    if let Some(c) = BURY.captures(t) {
+        return Some(node(
+            RerollCostKind::BuryFromHand,
+            count_or_word(&c[1]),
+            None,
+        ));
+    }
+    if let Some(c) = DISCARD.captures(t) {
+        let obj = c[2].trim();
+        if obj.eq_ignore_ascii_case("this card") {
+            return None; // self-discard: hand-activated, out of scope
+        }
+        let filter = recur_filter(obj)?;
+        // A bare "card"/"cards" object is the default (match-any) filter → carry None.
+        let filter = (filter != CardFilter::default()).then_some(filter);
+        return Some(node(
+            RerollCostKind::DiscardFromHand,
+            count_or_word(&c[1]),
+            filter,
+        ));
+    }
+    None
 }
 
 /// A `BuffSkill` scaled by the count of the owner's in-play cards matching `per`
@@ -3165,6 +3208,25 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     Condition::Always,
                     Duration::Instant,
                 );
+                e.optional = c.get(1).is_some();
+                Some(e)
+            },
+        ),
+        // Costed re-roll (schema v103): "[You may] <hand-cost> to <re-roll body>" —
+        // "bury 4 cards in your hand to re-roll your Finish roll", "discard 1 Finish
+        // from your hand to force your opponent to re-roll their breakout roll". Parse
+        // the cost prefix and re-parse the body through the whole grammar; the body must
+        // resolve to a single Reroll, onto which the cost is attached. Declines (falls to
+        // Unsupported) when the cost or body doesn't parse — never a silent cost drop.
+        rule(
+            r"(?:(You may) )?(.+?) to ((?:[Ff]orce|[Mm]ake) your opponent .*re-?roll .+|[Rr]e-?roll .+)",
+            |c| {
+                let cost = reroll_cost(&c[2])?;
+                let mut e = match_grammar(&c[3])?;
+                match e.actions.as_mut_slice() {
+                    [Action::Reroll { cost: slot, .. }] => *slot = Some(cost),
+                    _ => return None,
+                }
                 e.optional = c.get(1).is_some();
                 Some(e)
             },
