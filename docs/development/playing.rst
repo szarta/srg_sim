@@ -2,21 +2,22 @@ Playing a match and reviewing it
 ================================
 
 |project| can be driven by a human at the terminal, not only by two policies.
-You play one side seeing **only what a player at the table would know**; the
-engine plays the other. Afterwards a **review** pass reconstructs, for every
-decision you made, both that redacted view *and* the full oracle state — the
-opponent's hand, deck order and all — so a stronger line can be judged in
-hindsight without having influenced the live choice.
+You play one side seeing **only what a player at the table would know** — the
+same redacted view the web frontend renders over the decision protocol; the
+engine plays the other side. The full oracle state (the opponent's hand, deck
+order, and RNG) can be surfaced alongside it for post-game critique, without
+having influenced the live choice.
 
 This is the loop behind todo #42: *learn how a human plays, and critique the
-decisions after the fact.* Nothing here changes the game-log schema — a human
-match is an ordinary log with ``kind: "real"`` and ``policy: "human"`` (see
-:file:`DESIGN.md` §7/§8).
+decisions after the fact.* Nothing here changes the game-log schema — an
+interactive game is replayed and archived through the same **match record**
+consumers use for engine-run and real-life-transcribed matches (see
+:file:`schemas/v1/match_record.md`, :file:`DESIGN.md` §8.1).
 
 The two information views
 -------------------------
 
-Every position has two projections of one shared ``GameState``:
+Every position has two projections of one shared engine state:
 
 .. list-table::
    :header-rows: 1
@@ -25,25 +26,27 @@ Every position has two projections of one shared ``GameState``:
    * - View
      - What it shows
    * - **Player view**
-     - ``GameState.observable(you)`` — your own hand in full; the opponent's
-       hand and **both** decks as *counts only* (deck order is hidden from
-       everyone, owner included). This is what ``HumanPolicy`` renders, so you
-       can never accidentally act on hidden state.
+     - The per-seat observable frame the decision protocol sends you: your own
+       hand in full; the opponent's hand and **both** decks as *counts only*
+       (deck order is hidden from everyone, owner included). This is all ``srg
+       repl`` shows you, so you can never accidentally act on hidden state.
    * - **Oracle view**
-     - ``GameState.to_dict()`` — the complete position: both hands, deck order,
-       crowd meter, and the RNG state. What the engine sees, and what the review
-       recovers for critique.
+     - The loss-less full position: both hands, deck order, crowd meter, and the
+       RNG state. What the engine sees; surfaced with ``repl --debug`` and
+       recoverable by replaying a recorded match's frames.
 
 Playing a match
 ---------------
 
-Pass ``human`` as a policy to the ``play`` command. You play that side; the other
-side is whichever engine policy you name (``smart`` is the strongest built-in).
-Write the log with ``--out`` so you can review it later::
+Use ``repl``: name the two decks, pick which seat you play with ``--human`` and
+the AI policy for the other seat with ``--opponent`` (``smart`` is the strongest
+built-in). Write a JSONL observer transcript with ``--transcript`` so you (or
+Claude) can review it later; add ``--debug`` to fold the full oracle state into
+each decision::
 
-    srg-sim play decks/bull.yaml decks/fae.yaml \
-        --seed 5 --policy-a human --policy-b smart \
-        --out game.jsonl
+    srg repl decks/bull.yaml decks/fae.yaml \
+        --human A --opponent smart --seed 5 \
+        --transcript game.jsonl
 
 At each of your decisions you are shown the player view and a numbered menu of
 the legal options; type the option number. For example::
@@ -63,79 +66,51 @@ the legal options; type the option number. For example::
       3) pass
     choose [1-3]:
 
-The engine marks the resulting log ``kind: "real"`` (a human took at least one
-decision), which is what tells ``review`` — and you — that it is a played match
-rather than a simulated one.
-
 .. note::
 
    Playing against the engine is deliberately **not** coached: your decisions are
    captured unassisted so they are a clean signal of how you actually play. All
-   critique happens *after* the match, from the review (todo #42, decision 2).
+   critique happens *after* the match, from the transcript (todo #42, decision 2).
 
 Reviewing a match
 -----------------
 
-``review`` replays the recorded match and reconstructs both views at every
-decision. Restrict to your own side with ``--player`` and export the records as
-newline-delimited JSON with ``--ndjson``::
+The ``--transcript`` file is a JSONL feed of the raw wire traffic (each decision
+point's observable frame, legal set, and the chosen action, with card names
+resolved); ``--debug`` additionally stamps the loss-less full state at each
+decision. Read the observable frame to reproduce the decision you faced, then the
+debug oracle to score it against a line only hindsight allows (DESIGN.md §10 M4,
+*"how a human differs"*). This is the artifact to hand to a reviewer — human or
+Claude — for a post-game debrief.
 
-    srg-sim review game.jsonl --player A --ndjson review_A.ndjson
+For a portable, hand-authorable archive, record the match instead of (or in
+addition to) transcribing it::
 
-::
+    srg record decks/bull.yaml decks/fae.yaml --out game.json --seed 5
+    srg validate-record game.json --cards cards.yaml
 
-    review: real log, 385 events — B wins by finish in 41 turns
-      26 decision(s) reconstructed (player A)
-      ndjson: review_A.ndjson
-
-Each NDJSON line is one decision::
-
-    {
-      "turn": 2, "point": "turn_action", "player": "A", "policy": "human",
-      "legal":  [ ...the options you chose among... ],
-      "chosen": { "kind": "play", "number": 27, ... },
-      "player_view": { ...observable(A): opponent hand as a count... },
-      "oracle":      { ...full state: opponent's actual hand + deck order... }
-    }
-
-Read ``player_view`` to reproduce the decision you faced, then ``oracle`` to score
-it against a line only hindsight allows (DESIGN.md §10 M4, *"how a human
-differs"*). This is the artifact to hand to a reviewer — human or Claude — for a
-post-game debrief, and the same records feed the imitation-learning export
-(todo #36).
+A **match record** is the versioned interchange format consumers store and
+replay: a sequence of observable frames plus a replay seed, so a viewer walks the
+same frame sequence for an engine-run game and for a match transcribed from real
+life. ``validate-record`` gates an imported or hand-authored archive (with
+``--cards`` it also resolves every card uuid). See
+:file:`schemas/v1/match_record.md`.
 
 How it works (and why it needs no schema change)
 ------------------------------------------------
 
 Because every random step flows through the seeded RNG and every human choice is
-recorded as a ``decision`` event, **replaying the recorded decisions reproduces
-the match exactly** — byte-for-byte. Two small pieces exploit that:
+recorded as a decision, **replaying the recorded decisions reproduces the match
+exactly**. A match record therefore stores only the observable frames and the
+replay seed; the full oracle state is materialized **on demand** by re-running
+the engine to any decision point — the "observable-state ref" DESIGN.md §8
+promised — rather than baked into the archive, which would leak hidden state and
+could not be hand-authored.
 
-* :class:`srg_sim.policy.ReplayPolicy` feeds a side's recorded ``chosen`` options
-  back in order, so any recorded match (``sim`` *or* ``real``) is deterministically
-  replayable — a human game included, which a plain seed-replay cannot do.
-* :func:`srg_sim.review.reconstruct` drives the engine with a ``ReplayPolicy`` per
-  side and snapshots ``observable(key)`` and ``to_dict()`` at the instant the
-  engine consults the policy. That instant is the *only* place the two views line
-  up with the recorded choice, so the oracle state is materialized **on demand**
-  rather than stored in the log — the "observable-state ref" DESIGN.md §8 promised.
+.. note::
 
-The programmatic entry point mirrors the CLI::
-
-    from srg_sim.gamelog import GameLog
-    from srg_sim.loader import CardIndex
-    from srg_sim import rules_parser as rp
-    from srg_sim.review import reconstruct
-
-    log = GameLog.read("game.jsonl")
-    index = CardIndex.from_yaml()          # defaults to the card-DB snapshot
-    recon = reconstruct(log, index, rp.load_overrides())
-
-    for rec in recon.for_player("A"):      # your decisions, in order
-        print(rec.turn, rec.point, rec.chosen)
-        rec.player_view                    # what you saw
-        rec.oracle                         # the full truth
-
-``reconstruct`` rebuilds the decks from the log header via the card index; a
-lower-level :func:`srg_sim.review.reconstruct_with_decks` takes already-compiled
-decks, so the reconstruction is testable without the card DB.
+   **Superseded.** The retired Python engine exposed this as a ``srg-sim review``
+   command and a ``srg_sim.review.reconstruct`` API that snapshotted both views at
+   each decision. In the Rust engine the same capability lives in the match-record
+   format (``srg record`` / ``validate-record``) and the ``repl --transcript`` /
+   ``--debug`` feed; there is no separate ``review`` subcommand.

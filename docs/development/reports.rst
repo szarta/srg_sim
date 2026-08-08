@@ -1,58 +1,30 @@
 Matchup reports
 ===============
 
-``srg-sim report`` builds a **two-competitor matchup scorecard** — a self-contained
-Sphinx project rendered to HTML and, with ``--pdf``, a xelatex PDF. It is the
-expanded successor to the old ``fae_comp`` scorecards: for each competitor it pulls
-the card art, the turn-roll win %, per-Crowd-Meter finish odds with finish images,
-the skill stops that come online in *this* matchup, the most-open finish line, and
-the skill-requirement payoff cards the competitor uniquely enables. All of the odds
-reuse the validated finish/breakout and skill-stop math the engine runs — the
-report never re-derives it.
+A **two-competitor matchup scorecard** — card art, turn-roll win %, per-Crowd-Meter
+finish odds with finish images, the skill stops that come online in *this* matchup,
+the most-open finish line, and the skill-requirement payoff cards a competitor
+uniquely enables. All of the odds reuse the validated finish/breakout and skill-stop
+math the engine runs — the report never re-derives it.
 
-Building a report
------------------
+.. admonition:: Status — a consumer feature, not in ``srg`` today
+   :class: important
 
-::
+   The scorecard was built by the **Python** ``srg-sim report`` command
+   (``srg_sim.report/``). Per the substrate split it is a **consumer**
+   (presentation, not rules), so it lives *outside* the ``srg-core`` engine
+   crate; it was retired with the rest of the Python CLI surface at the Rust
+   migration (task #79) and is **not** a ``srg`` subcommand. It is slated to be
+   rebuilt as a consumer on top of ``srg-core``'s public API — most naturally in
+   the **web presentation layer** (see :doc:`../design/substrate-split`,
+   "Consumers"). The validated math it needs — turn-roll enumeration, finish and
+   breakout odds, skill-stop evaluation — already lives in ``srg-core``; a rebuilt
+   report calls the engine rather than re-deriving anything. The generated
+   scorecards under ``docs/reports/<slug>/`` (git-ignored, excluded from the
+   developer-docs build, embedding converted card art) are historical outputs of
+   the Python generator, kept for reference.
 
-    srg-sim report "Soborno" "Mrs. Apocalypse" --pdf
-
-::
-
-    report: docs/reports/soborno-vs-mrs-apocalypse
-      html: docs/reports/soborno-vs-mrs-apocalypse/_build/html/index.html
-      pdf:  docs/reports/soborno-vs-mrs-apocalypse/_build/latex/matchup.pdf
-
-Each competitor is resolved by name (exact, then unique substring) or ``db_uuid``,
-so ``"Mrs. Apocalypse"`` and ``"Soborno"`` both work, and an ambiguous fragment
-lists its candidates. Reports are generated under ``docs/reports/<slug>/`` — a
-directory that is git-ignored and excluded from the developer-docs build, since it
-embeds converted card art (not vendored; see :file:`CLAUDE.md`).
-
-Flags:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 22 78
-
-   * - Flag
-     - Effect
-   * - ``--pdf``
-     - Also build the xelatex PDF (needs ``xelatex`` + ImageMagick ``convert`` on PATH).
-   * - ``--no-html``
-     - Skip the HTML build (just write ``index.rst`` + ``conf.py``).
-   * - ``--cm 1-5``
-     - Crowd-Meter range (or ``--cm 1,3,5`` list) for the finish-odds columns.
-   * - ``--mc N``
-     - Monte-Carlo rolls for the turn-odds sim fallback (default 50 000).
-   * - ``--out DIR``
-     - Output root (default ``docs/reports``).
-   * - ``--cards PATH``
-     - Card export to resolve against (default: the DB snapshot).
-
-An ``invoke`` wrapper mirrors the CLI::
-
-    invoke report --a Soborno --b "Mrs. Apocalypse" --pdf
+The rest of this page is the **spec** the rebuild should honor.
 
 What each section reports
 -------------------------
@@ -60,55 +32,36 @@ What each section reports
 - **Turn roll %** — the chance to win the opening roll-off. When neither competitor
   has an effect that touches a roll, it is an **exact** 6×6 face enumeration; when
   either does (a lowest-wins flip, a persistent skill buff, a comeback), it falls
-  back to a seeded engine Monte-Carlo (``Engine._turn_roll``) so every gimmick is
-  honored.
+  back to a seeded engine Monte-Carlo over the roll-off so every gimmick is honored.
 - **Finish odds (CM0–5)** — for **every** signature finish, the success probability
-  at each Crowd Meter from :func:`srg_sim.finish.finish_odds`, alongside the finish's
-  card image and combo bonus. A **better logoless alternative** is listed only when a
-  generic ``Logoless`` finish beats the signature over the **early** Crowd Meter
-  (CM0–2), where finishes are actually contested — past CM2 everything saturates.
-  The competitor's stats and gimmick text are *not* printed (they're on the card image).
+  at each Crowd Meter (the engine's finish math), alongside the finish's card image
+  and combo bonus. A **better logoless alternative** is listed only when a generic
+  ``Logoless`` finish beats the signature over the **early** Crowd Meter (CM0–2),
+  where finishes are actually contested — past CM2 everything saturates. The
+  competitor's stats and gimmick text are *not* printed (they're on the card image).
 - **Skill stops / most-open line** — whether the *defender* can skill-stop each
-  attack type (:func:`srg_sim.stops.evaluate_stop`), and the strongest line to throw
-  (best odds among open lanes, at the contested Crowd Meter).
-- **Key skill-requirement cards** — a hand-curated priority set
-  (``srg_sim/report/skill_cards.yaml``): auto-include payoffs first, then the Equal-8
-  skill stops (critical in the equal-stat matchups). For each the report shows the
-  requirement, whether the competitor can run it, and whether its stop is **live** for
-  this stat line / matchup. Deckbuilding allows only two such cards, so only the top
-  few are shown; the no-requirement disruption Leads (Apocalypse / Rejected!) are a
-  standing note.
+  attack type (the engine's stop evaluation), and the strongest line to throw (best
+  odds among open lanes, at the contested Crowd Meter).
+- **Key skill-requirement cards** — a hand-curated priority set (a
+  ``skill_cards.yaml``): auto-include payoffs first, then the Equal-8 skill stops
+  (critical in the equal-stat matchups). For each the report shows the requirement,
+  whether the competitor can run it, and whether its stop is **live** for this stat
+  line / matchup. Deckbuilding allows only two such cards, so only the top few are
+  shown; the no-requirement disruption Leads (Apocalypse / Rejected!) are a standing
+  note.
 
 Honesty about coverage
------------------------
+----------------------
 
-If a competitor's gimmick isn't yet modeled by the rules parser, the report says
-so in a prominent warning and notes that the turn-roll odds and comp-type reflect
-the **base stat line only** — the gimmick's raw text is still shown. Nothing is
-silently dropped (:file:`DESIGN.md` §4).
+If a competitor's gimmick isn't yet modeled by the rules parser, the report must say
+so in a prominent warning and note that the turn-roll odds and comp-type reflect the
+**base stat line only** — the gimmick's raw text is still shown. Nothing is silently
+dropped (:file:`DESIGN.md` §4).
 
-Deferred (Phase 2)
-------------------
+Deferred
+--------
 
 Curated free-form notes, a "notable cards" list, and a full sample decklist are
-authored per competitor in ``srg_sim/report/overrides.yaml`` (keyed by name or
-uuid); the comp-type label is auto-derived now and can be overridden there. A full
-30-card sample-decklist generator is its own later task — the report shows the
-signature + logoless finish pool in the meantime.
-
-Programmatic entry point
-------------------------
-
-::
-
-    from srg_sim.report.carddb import ReportCardDB
-    from srg_sim.report.model import build_matchup
-
-    db = ReportCardDB.from_yaml()               # defaults to the card-DB snapshot
-    data = build_matchup(db, "Soborno", "Mrs. Apocalypse")
-    print(data.turn.method, data.a.turn_win, data.b.turn_win)
-    for line in data.a.finish_lines:
-        print(line.atk_type, line.best and line.best.finish.name, line.open_lane)
-
-:func:`srg_sim.report.build.build_report` wraps this with image conversion and the
-Sphinx HTML/PDF build.
+authored per competitor (keyed by name or uuid); the comp-type label is auto-derived
+and can be overridden there. A full 30-card sample-decklist generator is its own
+later task — the report shows the signature + logoless finish pool in the meantime.
