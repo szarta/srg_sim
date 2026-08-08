@@ -2958,6 +2958,22 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // Gag "no-op" look: "Look at your opponent's hand, choose N cards and put them
+        // back in your opponent's hand" (Medieval Prankster's "I Got Your Nose!") — the
+        // choose-and-put-right-back changes nothing, so it is functionally just a Peek
+        // (its only value is fog-of-war). User-confirmed 2026-08-08. Placed before the
+        // bare Peek rule (whose `$` anchor can't reach past the trailing gag text).
+        rule(
+            r"Look at your opponent'?s hand, choose \d+ cards? and put (?:it|them) back in your opponent'?s hand",
+            |_| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::Peek { who: Who::Opp }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"Look at your opponent'?s hand", |_| {
             Some(eff(
                 on_hit(),
@@ -4358,6 +4374,23 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![Action::AddFromDiscard {
                         filter: recur_filter(&c[2])?,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Gag "no-op" recur: "Choose N card(s) in your discard pile and shuffle it/them
+        // into your hand" (1 Jump, 1 Whistle & 1 Fart) — shuffling the HAND does nothing,
+        // so this is just a recur from discard to hand (AddFromDiscard adds one). The
+        // shuffle-your-hand flavor is a non-effect. User-confirmed 2026-08-08.
+        rule(
+            r"Choose \d+ (.+?) in your discard pile and shuffle (?:it|them) into your hand",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::AddFromDiscard {
+                        filter: recur_filter(&c[1])?,
                     }],
                     Condition::Always,
                     Duration::Instant,

@@ -201,6 +201,18 @@ fn hand_bury_grammar() {
     assert_eq!(d["selector"]["play_order"], "Followup");
     assert_eq!(d["selector"]["atk_type"], "Strike");
 
+    // Gag "no-op" clauses (Medieval Prankster finishes): choosing cards and putting
+    // them right back is functionally just a Peek (fog of war); choosing a discard-pile
+    // card and "shuffling it into your hand" is just a recur to hand (the shuffle is a
+    // non-effect). User-confirmed 2026-08-08.
+    let d = only_action(
+        "Look at your opponent's hand, choose 3 cards and put them back in your opponent's hand.",
+    );
+    assert_eq!(d["@type"], "Peek");
+    assert_eq!(d["who"], "OPP");
+    let d = only_action("Choose 1 card in your discard pile and shuffle it into your hand.");
+    assert_eq!(d["@type"], "AddFromDiscard");
+
     // Draw-then-bury-self rider: Draw then Bury{SELF,HAND}, independent counts.
     let effs = parse_text(
         "Draw 2 cards, then bury 1 card in your hand.",
