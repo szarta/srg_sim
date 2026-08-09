@@ -1402,6 +1402,77 @@ fn roll_trigger_body_split() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Standalone roll-phase header (task #131): "When you roll <S> for your turn roll:"
+/// on its own line opens an OnRoll window over the clauses that follow — the standalone
+/// twin of the inline split above. Multi-skill headers fire on any roll gated by an OR
+/// of RollWasSkill; an unparseable body clause stays Unsupported (never dropped).
+#[test]
+fn standalone_roll_header_composes_a_window() {
+    // Single-skill header + a compound body clause -> the header is consumed (no separate
+    // Unsupported effect) and the body fires under OnRoll{skill}, not its default trigger.
+    let effs = parse_text(
+        "When you roll Grapple for your turn roll:\nDraw 1 card and bury 1 card in your hand.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "header consumed, one body effect");
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Grapple");
+    assert_eq!(e["trigger"]["who"], "SELF");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][1]["@type"], "Bury");
+
+    // The window persists over MULTIPLE following body clauses; a body with no grammar
+    // stays Unsupported rather than being silently dropped.
+    let effs = parse_text(
+        "When you roll Agility for your turn roll:\nDraw 1 card.\nPonder your legacy.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2, "two body clauses, header consumed");
+    let a = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(a["trigger"]["skill"], "Agility");
+    assert_eq!(a["actions"][0]["@type"], "Draw");
+    let b = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(b["actions"][0]["@type"], "Unsupported");
+
+    // Multi-skill OR header: OnRoll{None} gated by an OR of RollWasSkill on the listed
+    // skills, so the body fires on any of them.
+    let effs = parse_text(
+        "When you roll Strike, Grapple, or Submission for your turn roll:\nDraw 1 card.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1);
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert!(e["trigger"]["skill"].is_null(), "fires on any roll");
+    assert_eq!(e["condition"]["@type"], "Or");
+    let skills: Vec<&str> = e["condition"]["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["skill"].as_str().unwrap())
+        .collect();
+    assert_eq!(skills, ["Strike", "Grapple", "Submission"]);
+
+    // A bare header with no body left below it stays Unsupported (never dropped).
+    let effs = parse_text(
+        "When you roll Power for your turn roll:",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert!(
+        effs.is_empty(),
+        "a header alone opens a window and emits nothing"
+    );
+}
+
 /// Generic OPPONENT roll trigger-body split (task #131): "When your opponent rolls
 /// <Skill> for their turn roll[:,] <body>" -> body re-parsed with OnRoll{Opp}. The
 /// "their roll is ±N" phrasing normalizes to a ModifyRoll{Opp,This}; "you"/"they"

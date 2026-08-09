@@ -6201,6 +6201,40 @@ fn window_header(clause: &str) -> Option<Condition> {
     Some(Condition::DuringTurn { who })
 }
 
+/// A STANDALONE roll-phase trigger header ("When you roll `<S>` for your turn roll:")
+/// whose body lands on the FOLLOWING clauses — the standalone twin of the inline
+/// "When you roll `<S>` for your turn roll, `<body>`" grammar rule. Returns the
+/// [`Trigger::OnRoll`] it opens plus an optional gate: for the multi-skill OR form the
+/// trigger fires on any roll (`OnRoll{None}`) and the gate ([`roll_was_any`]) restricts
+/// it to the named skills, mirroring the inline multi-skill rule. The window persists
+/// over the clauses that follow (like [`window_header`]) until end of text. `None` for
+/// any non-header clause (a "your lowest skill" header has no named skill and declines).
+fn roll_header(clause: &str) -> Option<(Trigger, Option<Condition>)> {
+    static SINGLE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(r"^When you roll {SK} for your turn roll:$")).unwrap()
+    });
+    static MULTI: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(
+            r"^When you roll ({SKNC}(?:,? (?:or )?{SKNC})+) for your turn roll:$"
+        ))
+        .unwrap()
+    });
+    let stripped = clause.trim();
+    if let Some(c) = SINGLE.captures(stripped) {
+        return Some((on_roll(skill(&c[1]), Who::SelfSide), None));
+    }
+    if let Some(c) = MULTI.captures(stripped) {
+        return Some((
+            Trigger::OnRoll {
+                skill: None,
+                who: Who::SelfSide,
+            },
+            Some(roll_was_any(&c[1])?),
+        ));
+    }
+    None
+}
+
 /// Non-effect metadata (a deck-build "Skill Requirement:" line): recognized and
 /// skipped, neither an effect nor Unsupported.
 fn is_metadata(clause: &str) -> bool {
@@ -6303,6 +6337,10 @@ pub fn parse_text(
     let mut freq = Frequency::Unlimited;
     let mut n = None;
     let mut window = Condition::Always;
+    // An active standalone roll-phase trigger window ("When you roll <S> for your turn
+    // roll:"): the OnRoll trigger to stamp on the following clauses, plus an optional gate
+    // (the multi-skill OR restriction). Set by `roll_header`, persists until end of text.
+    let mut roll_win: Option<(Trigger, Option<Condition>)> = None;
     // AND the active turn-window onto an effect's condition (a no-op when Always).
     let scope = |mut eff: Effect, window: &Condition| {
         if !matches!(window, Condition::Always) {
@@ -6347,6 +6385,12 @@ pub fn parse_text(
         }
         if let Some(cond) = window_header(clause) {
             window = cond;
+            i += 1;
+            continue;
+        }
+        // Standalone roll-phase header: open an OnRoll window over the clauses that follow.
+        if let Some(win) = roll_header(clause) {
+            roll_win = Some(win);
             i += 1;
             continue;
         }
@@ -6444,6 +6488,27 @@ pub fn parse_text(
             }
             i += 1;
             continue;
+        }
+        // Under an active roll-phase window, re-parse the body clause with the OnRoll
+        // trigger stamped on (and the multi-skill gate AND-ed onto its condition). Falls
+        // through to the plain compile below when the body has no grammar, so an
+        // unparseable body stays Unsupported rather than being silently dropped.
+        if let Some((trigger, gate)) = &roll_win {
+            if let Some(mut eff) = trigger_body(trigger.clone(), clause) {
+                if let Some(g) = gate {
+                    eff.condition = and_conds(g.clone(), eff.condition);
+                }
+                eff.raw_clause = clause.clone();
+                eff.source = source;
+                eff.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(eff, &window));
+                i += 1;
+                continue;
+            }
         }
         effects.push(scope(compile(clause, source, freq, n), &window));
         i += 1;
