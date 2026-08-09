@@ -2697,7 +2697,12 @@ fn build_skill_buff_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
-        rule(&format!(r"\+(\d+) to {SK}"), |c| {
+        // Bare skill finish-roll bonus stat line — the printed "+N to <S>" (and the
+        // negative "-N to <S>", a finish-roll penalty; both signs appear together on a
+        // card, e.g. "-3 to Technique / +4 to Grapple"). Folds into the card's
+        // finish_bonuses. The `$` anchor leaves the "… during turn rolls" phrasing to its
+        // own later rule.
+        rule(&format!(r"([+-]\d+) to {SK}"), |c| {
             Some(eff(
                 Trigger::Static,
                 vec![Action::FinishBonus {

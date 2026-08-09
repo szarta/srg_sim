@@ -4,7 +4,7 @@
 {"domain":"skill_buff","index":2,"pattern":"^(?:If this match has [Nn]o [Dd]isqualifications,? \\+(\\d+) to (Power|Technique|Agility|Strike|Submission|Grapple))$"},
 {"domain":"skill_buff","index":3,"pattern":"^(?:\\+(\\d+) to (?:your )?Finish rolls?)$"},
 {"domain":"skill_buff","index":4,"pattern":"^(?:Your Finish rolls? (?:is|are) ([+-]\\d+))$"},
-{"domain":"skill_buff","index":5,"pattern":"^(?:\\+(\\d+) to (Power|Technique|Agility|Strike|Submission|Grapple))$"},
+{"domain":"skill_buff","index":5,"pattern":"^(?:([+-]\\d+) to (Power|Technique|Agility|Strike|Submission|Grapple))$"},
 {"domain":"skill_buff","index":6,"pattern":"^(?:Your (Power|Technique|Agility|Strike|Submission|Grapple) skill is \\+(\\d+) for each card you have in play with (.+?) in the name(?: \\(Max \\+(\\d+)\\))?)$"},
 {"domain":"skill_buff","index":7,"pattern":"^(?:Your (.+?) (?:is|are) \\+(\\d+) during (?:your )?turn rolls)$"},
 {"domain":"skill_buff","index":8,"pattern":"^(?:\\+(\\d+) to (Power|Technique|Agility|Strike|Submission|Grapple) during (?:your )?turn rolls)$"},

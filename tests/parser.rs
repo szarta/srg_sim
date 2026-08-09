@@ -835,6 +835,17 @@ fn finish_rider_grammar() {
         "Your Finish rolls are +1 for each other Submission you have in play with \"Bomb\" in the name (Max +2).",
     );
     assert_eq!(a["@type"], "Unsupported");
+
+    // Bare "+N to <S>" printed stat line -> FinishBonus (summed into the card's
+    // finish_bonuses). The negative "-N to <S>" is the same, a finish-roll penalty.
+    let a = frb("+4 to Grapple");
+    assert_eq!(a["@type"], "FinishBonus");
+    assert_eq!(a["skill"], "Grapple");
+    assert_eq!(a["delta"], 4);
+    let a = frb("-3 to Technique");
+    assert_eq!(a["@type"], "FinishBonus");
+    assert_eq!(a["skill"], "Technique");
+    assert_eq!(a["delta"], -3);
 }
 
 /// Symmetric "if either player rolls <S> for their {turn|breakout|Finish} roll" modifier
