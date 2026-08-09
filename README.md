@@ -25,7 +25,12 @@ byte-for-byte; the parser compiles card `rules_text` to the Effect IR with a
 coverage report. Current focus is the **whole-DB coverage grind** — top-96
 competitors are 100% modeled, and the remaining long tail of card clauses is
 mapped to grammar (or overrides) family by family, driving the whole-DB
-`Unsupported` count down. See [`docs/development/coverage-grind.rst`](docs/development/coverage-grind.rst).
+`Unsupported` count down. The grind is guided by three docs: the
+[rule pipeline map](docs/development/rule-pipeline.rst) (clause → IR → engine, and
+where each change lands), the generated
+[grammar catalog](docs/development/grammar-catalog.md) (every rule + real example
+clauses — what already parses), and the
+[coverage-grind playbook](docs/development/coverage-grind.rst) (procedure and traps).
 
 Roadmap (see [`DESIGN.md`](DESIGN.md) §10):
 
