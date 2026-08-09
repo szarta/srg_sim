@@ -5129,20 +5129,17 @@ impl Engine {
                     // per-count parallel of `finish_bonus_from`. Counted from `owner`'s
                     // POV (they declared it), so `per_who=Opp` counts the OTHER board.
                     total += match per {
-                        Some(f) => {
-                            let counted = self.target(*per_who, owner);
-                            let board = &self.state.players[&counted].in_play;
-                            let exclude = per_excludes_self
-                                .then(|| src.as_deref())
-                                .flatten()
-                                .and_then(|u| board.iter().find(|c| c.db_uuid == u));
-                            let n = self
-                                .state
-                                .count_in_zone_excl(f, *per_zone, &counted, exclude);
-                            let mult = n / per_divisor.unwrap_or(1).max(1);
-                            let raw = *delta * mult;
-                            cap.map_or(raw, |c| raw.min(c))
-                        }
+                        Some(f) => self.per_count_product(
+                            *delta,
+                            f,
+                            *per_who,
+                            *per_zone,
+                            *per_divisor,
+                            *cap,
+                            *per_excludes_self,
+                            src.as_deref(),
+                            owner,
+                        ),
                         None => *delta,
                     };
                 }
@@ -5151,13 +5148,122 @@ impl Engine {
         total
     }
 
+    /// The per-count product for a `per`-scaled modifier: `delta * floor(count / divisor)`
+    /// clamped to `cap`, where the count is `per_who`'s cards (from `owner`'s POV) in
+    /// `per_zone` matching `f`, optionally excluding the `src` card ("for each OTHER …").
+    /// Shared by the breakout roll/attempt per-count paths.
+    #[allow(clippy::too_many_arguments)]
+    fn per_count_product(
+        &self,
+        delta: i64,
+        f: &CardFilter,
+        per_who: Who,
+        per_zone: CountZone,
+        per_divisor: Option<i64>,
+        cap: Option<i64>,
+        excludes_self: bool,
+        src: Option<&str>,
+        owner: &str,
+    ) -> i64 {
+        let counted = self.target(per_who, owner);
+        let board = &self.state.players[&counted].in_play;
+        let exclude = excludes_self
+            .then_some(src)
+            .flatten()
+            .and_then(|u| board.iter().find(|c| c.db_uuid == u));
+        let n = self
+            .state
+            .count_in_zone_excl(f, per_zone, &counted, exclude);
+        let mult = n / per_divisor.unwrap_or(1).max(1);
+        cap.map_or(delta * mult, |c| (delta * mult).min(c))
+    }
+
+    /// Number of breakout attempts `defender` gets this turn — the "reduced / extra
+    /// breakout rolls" family. Base is `BREAKOUT_ATTEMPTS`, overridden by any
+    /// `BreakoutAttempts{set}` ("your opponent gets 2 Breakout rolls this turn") and
+    /// shifted by `BreakoutAttempts{delta}` ("gets 1 additional / 1 fewer Breakout
+    /// roll"). Both boards contribute — a `SelfSide` effect on the defender and an `Opp`
+    /// effect on the finisher — the count-family parallel of [`breakout_bonus`](Self::breakout_bonus).
+    /// Multiple `set`s take the smallest (most restrictive). The result is clamped to
+    /// `[1, BREAKOUT_ATTEMPTS + 7]`: a defender always gets at least one roll, and the
+    /// ceiling caps the loop. Returns `BREAKOUT_ATTEMPTS` unchanged when no such card is
+    /// in play, keeping the frozen corpus byte-identical.
+    fn breakout_attempts_for(&self, defender: &str) -> usize {
+        let base = BREAKOUT_ATTEMPTS as i64;
+        let opp = self.state.opponent_of(defender);
+        let mut set_val: Option<i64> = None;
+        let mut delta = 0;
+        self.collect_breakout_attempts(defender, Who::SelfSide, &mut set_val, &mut delta);
+        self.collect_breakout_attempts(&opp, Who::Opp, &mut set_val, &mut delta);
+        if set_val.is_none() && delta == 0 {
+            return BREAKOUT_ATTEMPTS; // no count-modifier in play — byte-identical path
+        }
+        (set_val.unwrap_or(base) + delta).clamp(1, base + 7) as usize
+    }
+
+    /// Fold `owner`'s standing `BreakoutAttempts` effects whose `who == want` (and whose
+    /// condition holds from `owner`'s POV) into a running `set`/`delta`: `set` keeps the
+    /// smallest value seen, `delta` sums (with any `per`-count scaling applied).
+    fn collect_breakout_attempts(
+        &self,
+        owner: &str,
+        want: Who,
+        set_val: &mut Option<i64>,
+        delta: &mut i64,
+    ) {
+        for (src, eff) in self.standing_effects_sourced(owner) {
+            if !conditions::holds(&eff.condition, &self.state, owner, None) {
+                continue;
+            }
+            for a in &eff.actions {
+                let Action::BreakoutAttempts {
+                    delta: d,
+                    set,
+                    who,
+                    per,
+                    per_who,
+                    per_zone,
+                    per_divisor,
+                    cap,
+                    per_excludes_self,
+                } = a
+                else {
+                    continue;
+                };
+                if *who != want {
+                    continue;
+                }
+                if let Some(s) = set {
+                    *set_val = Some(set_val.map_or(*s, |cur| cur.min(*s)));
+                }
+                *delta += match per {
+                    Some(f) => self.per_count_product(
+                        *d,
+                        f,
+                        *per_who,
+                        *per_zone,
+                        *per_divisor,
+                        *cap,
+                        *per_excludes_self,
+                        src.as_deref(),
+                        owner,
+                    ),
+                    None => *d,
+                };
+            }
+        }
+    }
+
     /// Up to `BREAKOUT_ATTEMPTS` defender rolls; the first that beats the finish
     /// value breaks out. Returns whether the defender broke out.
     fn breakout(&mut self, defender: &str, finish_value: i64) -> Eng<bool> {
         let cm = self.state.crowd_meter;
         let mut rolls: Vec<BreakoutRoll> = Vec::new();
         let mut broke = false;
-        for i in 0..BREAKOUT_ATTEMPTS {
+        // `BREAKOUT_ATTEMPTS` by default; raised/lowered by any `BreakoutAttempts`
+        // ("your opponent gets 2 Breakout rolls this turn" / "1 additional/fewer").
+        let attempts = self.breakout_attempts_for(defender);
+        for i in 0..attempts {
             let mut skill = self.state.rng.roll();
             // Optional breakout-roll re-roll ("re-roll your Breakout roll" / "force your
             // opponent to re-roll their Breakout roll", v102), bounded to avoid loops.
@@ -6742,6 +6848,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::FinishRollBonus { .. } => "FinishRollBonus",
         Action::TurnRollBonus { .. } => "TurnRollBonus",
         Action::BreakoutModifier { .. } => "BreakoutModifier",
+        Action::BreakoutAttempts { .. } => "BreakoutAttempts",
         Action::LowestRollWins => "LowestRollWins",
         Action::FlipGimmickSigns { .. } => "FlipGimmickSigns",
         Action::Unstoppable { .. } => "Unstoppable",
@@ -6978,6 +7085,49 @@ mod breakout_modifier_tests {
         );
         assert_eq!(engine.breakout_bonus("A", 1, Skill::Strike), 5);
         assert_eq!(engine.breakout_bonus("A", 2, Skill::Strike), 8);
+    }
+
+    /// A `Static` gimmick `BreakoutAttempts` effect (schema v113): `set` overrides the
+    /// base count, `delta` shifts it, `who` names the affected side.
+    fn attempts_eff(delta: i64, set: Value, who: &str) -> Value {
+        json!({
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "BreakoutAttempts", "delta": delta, "set": set, "who": who}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "t", "source": "gimmick", "optional": false
+        })
+    }
+
+    #[test]
+    fn breakout_attempt_count_set_and_delta_from_both_boards() {
+        // Baseline: no modifier → the default BREAKOUT_ATTEMPTS.
+        let mut engine = engine();
+        assert_eq!(engine.breakout_attempts_for("A"), BREAKOUT_ATTEMPTS);
+
+        // B (the finisher) declares "your opponent gets 2 Breakout rolls" (set=2, who=OPP):
+        // A, the defender, gets 2.
+        push_gimmick(&mut engine, "B", attempts_eff(0, json!(2), "OPP"));
+        assert_eq!(engine.breakout_attempts_for("A"), 2);
+        // The same effect is OPP-directed, so it never touches B's own count.
+        assert_eq!(engine.breakout_attempts_for("B"), BREAKOUT_ATTEMPTS);
+
+        // A adds "you get 1 additional Breakout roll" (delta=+1, who=SELF): 2 + 1 = 3.
+        push_gimmick(&mut engine, "A", attempts_eff(1, Value::Null, "SELF"));
+        assert_eq!(engine.breakout_attempts_for("A"), 3);
+    }
+
+    #[test]
+    fn breakout_attempt_count_floors_at_one() {
+        // Two "1 fewer" from the finisher drive A's count from base 3 to 1; a third would
+        // reach 0 but the count floors at 1 — a defender always gets at least one roll.
+        let mut engine = engine();
+        push_gimmick(&mut engine, "B", attempts_eff(-1, Value::Null, "OPP"));
+        push_gimmick(&mut engine, "B", attempts_eff(-1, Value::Null, "OPP"));
+        assert_eq!(engine.breakout_attempts_for("A"), 1);
+        push_gimmick(&mut engine, "B", attempts_eff(-1, Value::Null, "OPP"));
+        assert_eq!(engine.breakout_attempts_for("A"), 1);
     }
 
     /// A breakout `Reroll` (schema v102): the defender's own `who:SELF` and the

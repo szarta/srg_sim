@@ -1782,6 +1782,8 @@ fn num(c: &Captures, i: usize) -> i64 {
 fn count_or_word(s: &str) -> i64 {
     match s.to_ascii_lowercase().as_str() {
         "a" | "an" | "one" => 1,
+        "two" => 2,
+        "three" => 3,
         d => d.parse().unwrap_or(1),
     }
 }
@@ -2423,6 +2425,46 @@ fn breakout_per_target(
         _ => return None,
     };
     Some((per, per_who, per_zone))
+}
+
+/// The affected side of a breakout-attempt-count clause, from the owner's POV: "you get
+/// …" -> `SelfSide`; "your opponent"/"they get …" -> `Opp` (in this family "they" is the
+/// opponent). Used by the [`Action::BreakoutAttempts`] rules.
+fn attempts_who(subject: &str) -> Who {
+    if subject.trim().eq_ignore_ascii_case("you") {
+        Who::SelfSide
+    } else {
+        Who::Opp
+    }
+}
+
+/// A [`Action::BreakoutAttempts`] modifying `who`'s breakout-roll COUNT — `set` overrides
+/// the base ("gets N Breakout rolls"), else `delta` shifts it ("gets N additional/fewer").
+/// `per` (with per_who/per_zone/cap/exclude_self) scales `delta` per counted card. The
+/// count-family sibling of [`breakout_per`]. schema v113
+fn breakout_attempts_action(
+    delta: i64,
+    set: Option<i64>,
+    who: Who,
+    per: Option<(CardFilter, Who, CountZone)>,
+    cap: Option<i64>,
+    exclude_self: bool,
+) -> Action {
+    let (per, per_who, per_zone) = match per {
+        Some((f, w, z)) => (Some(f), w, z),
+        None => (None, Who::SelfSide, CountZone::InPlay),
+    };
+    Action::BreakoutAttempts {
+        delta,
+        set,
+        who,
+        per,
+        per_who,
+        per_zone,
+        per_divisor: None,
+        cap,
+        per_excludes_self: exclude_self,
+    }
 }
 
 /// A rolled-skill-gated SELF breakout-roll bonus ("+1 to Strike during your breakout
@@ -5279,6 +5321,74 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     Trigger::Static,
                     actions,
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Per-count breakout-ATTEMPT-count modifier: "[Your opponent|You|They] gets N
+        // (additional|fewer) Breakout roll[s] [this turn] for each [other] <X> [you have|
+        // they have|your opponent has] in play | in <x>'s discard pile [with 'Y' in the
+        // name/text] [(Max +M)]" — scales the roll COUNT (BreakoutAttempts), the count
+        // sibling of the per-count VALUE rule above (task #131, schema v113). "fewer" ->
+        // negative delta, else additive; the "for each" tail routes through the shared
+        // breakout_per_target. A selector that can't map declines -> stays Unsupported.
+        // Listed before the flat rule so the more-specific per-count form wins.
+        rule(
+            r#"([Yy]our opponent|[Yy]ou|[Tt]hey) gets? (\d+|one|two|three|a|an) (additional |more |fewer )?[Bb]reakout [Rr]olls?(?: this turn)? for each (other )?(.+?)(?: (you have|they have|your opponent has) in play| in (your opponent'?s|your|their) discard pile)(?: with (.+?) in the (name|text))?(?: \(Max \+?(\d+)\))?(?: this turn)?"#,
+            |c| {
+                let who = attempts_who(&c[1]);
+                let n = count_or_word(&c[2]);
+                let fewer = c
+                    .get(3)
+                    .is_some_and(|m| m.as_str().trim().eq_ignore_ascii_case("fewer"));
+                let per = breakout_per_target(
+                    &c[5],
+                    c.get(6).map(|m| m.as_str()),
+                    c.get(7).map(|m| m.as_str()),
+                    c.get(8).map(|m| m.as_str()),
+                    c.get(9).map(|m| m.as_str()),
+                )?;
+                let cap = c.get(10).map(|m| m.as_str().parse::<i64>().unwrap());
+                Some(eff(
+                    Trigger::Static,
+                    vec![breakout_attempts_action(
+                        if fewer { -n } else { n },
+                        None,
+                        who,
+                        Some(per),
+                        cap,
+                        c.get(4).is_some(),
+                    )],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Flat breakout-attempt-count modifier: "[Your opponent|You|They] gets N
+        // [additional|more|fewer] Breakout roll[s] [on all breakouts] [this turn]" — the
+        // "reduced / extra breakout rolls" family (task #131, schema v113). Bare "gets N
+        // Breakout rolls" SETS the attempt count to N ("your opponent gets 2 Breakout
+        // rolls this turn"); "additional"/"more" -> +N, "fewer" -> -N. `who` (Opp for
+        // "your opponent"/"they", SelfSide for "you") names the affected side. Gated
+        // forms ("If <state>, …") flow through the generic gate rule + gate_body.
+        rule(
+            r"([Yy]our opponent|[Yy]ou|[Tt]hey) gets? (\d+|one|two|three|a|an) (additional |more |fewer )?[Bb]reakout [Rr]olls?(?: on all breakouts)?(?: this turn)?",
+            |c| {
+                let who = attempts_who(&c[1]);
+                let n = count_or_word(&c[2]);
+                let (delta, set) = match c
+                    .get(3)
+                    .map(|m| m.as_str().trim().to_lowercase())
+                    .as_deref()
+                {
+                    Some("additional") | Some("more") => (n, None),
+                    Some("fewer") => (-n, None),
+                    _ => (0, Some(n)), // bare "gets N Breakout rolls" = SET the count
+                };
+                Some(eff(
+                    Trigger::Static,
+                    vec![breakout_attempts_action(delta, set, who, None, None, false)],
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))

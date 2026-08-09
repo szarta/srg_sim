@@ -129,6 +129,12 @@
     "either": true
   },
   {
+    "@type": "BreakoutAttempts",
+    "delta": 0,
+    "set": 2,
+    "who": "OPP"
+  },
+  {
     "@type": "TurnRollBonus",
     "delta": 0,
     "skill": "Power",

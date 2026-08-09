@@ -1828,6 +1828,81 @@ fn breakout_per_count_grammar() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Breakout-ATTEMPT-count family (task #131, schema v113): "gets N Breakout rolls" SETS
+/// the count; "additional/more/fewer" shifts it; a "for each" tail scales per counted
+/// card. Distinct from BreakoutModifier (which shifts a roll's VALUE).
+#[test]
+fn breakout_attempts_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Bare "gets N Breakout rolls this turn" SETS the count (delta 0), who=Opp.
+    let a = &one("Your opponent gets 2 Breakout rolls this turn.")["actions"][0];
+    assert_eq!(a["@type"], "BreakoutAttempts");
+    assert_eq!(a["set"], 2);
+    assert_eq!(a["delta"], 0);
+    assert_eq!(a["who"], "OPP");
+
+    // "gets 1 Breakout roll this turn" (singular, word/number both) SETS to 1.
+    let a = &one("Your opponent gets 1 breakout roll this turn.")["actions"][0];
+    assert_eq!(a["set"], 1);
+
+    // "fewer" -> negative delta, no set.
+    let a = &one("Your opponent gets 1 fewer Breakout roll this turn.")["actions"][0];
+    assert_eq!(a["delta"], -1);
+    assert_eq!(a["set"], Value::Null);
+    assert_eq!(a["who"], "OPP");
+
+    // "additional" on the SELF side -> +delta, who=SELF (skipped in serialization).
+    let a = &one("You get 1 additional breakout roll.")["actions"][0];
+    assert_eq!(a["delta"], 1);
+    assert_eq!(a["set"], Value::Null);
+    assert_eq!(a["who"], Value::Null); // SELF default -> absent
+
+    // "on all breakouts" decoration parses the same.
+    let a = &one("You get 1 additional breakout roll on all breakouts.")["actions"][0];
+    assert_eq!(a["delta"], 1);
+
+    // "2 additional Breakout rolls" (plural, no "this turn") -> +2 to the opponent.
+    let a = &one("Your opponent gets 2 additional Breakout rolls.")["actions"][0];
+    assert_eq!(a["delta"], 2);
+    assert_eq!(a["who"], "OPP");
+
+    // Per-count additional, name-descriptor over the SELF board, capped.
+    let a = &one(
+        "You get 1 additional Breakout roll for each card you have in play with \"Boss\" in the name (Max +6).",
+    )["actions"][0];
+    assert_eq!(a["@type"], "BreakoutAttempts");
+    assert_eq!(a["delta"], 1);
+    assert_eq!(a["cap"], 6);
+    assert_eq!(a["per"]["name_contains"], serde_json::json!(["Boss"]));
+    assert_eq!(a["who"], Value::Null); // SELF
+
+    // Per-count "fewer" reads the opponent's discard pile ("in your ... discard pile" =
+    // self here since "your" possessive), typed selector.
+    let a = &one("Your opponent gets 1 fewer Breakout roll for each Finish in your discard pile.")
+        ["actions"][0];
+    assert_eq!(a["delta"], -1);
+    assert_eq!(a["per_zone"], "DISCARD");
+    assert_eq!(a["per_who"], Value::Null); // SELF ("your discard pile")
+    assert_eq!(a["per"]["play_order"], "Finish");
+
+    // A gate flows through the generic gate rule: "If the Crowd Meter is 3 or greater, …"
+    // -> a CrowdMeterCompare-gated "fewer" (delta -1).
+    let e = one("If the Crowd Meter is 3 or greater, your opponent gets 1 fewer Breakout roll.");
+    assert_eq!(e["actions"][0]["@type"], "BreakoutAttempts");
+    assert_eq!(e["actions"][0]["delta"], -1);
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+
+    // A crowd-meter-scaled count ("equal to the Crowd Meter") has no fixed number and
+    // stays Unsupported rather than mis-parsing.
+    let e = one("Your opponent gets Breakout rolls equal to the Crowd Meter +1 (Max +3).");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Opponent per-count next-turn-roll penalty (task #130): "Your opponent's next turn roll
 /// is -N for each [other] <X> you have in play" -> ModifyRoll{who:OPP, per, per_who:SELF} —
 /// the opp-directed mirror of the existing self per-count rule.

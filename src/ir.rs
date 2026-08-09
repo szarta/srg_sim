@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 112;
+pub const SCHEMA_VERSION: i64 = 113;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1728,6 +1728,41 @@ pub enum Action {
         #[serde(default, skip_serializing_if = "is_false")]
         per_excludes_self: bool,
     },
+    /// Modifies the NUMBER of breakout attempts (rolls) the affected player gets this
+    /// turn — the "reduced / extra breakout rolls" family, distinct from
+    /// [`Action::BreakoutModifier`] (which shifts a roll's VALUE, not the count). `set`
+    /// overrides the base `BREAKOUT_ATTEMPTS` ("your opponent gets 2 Breakout rolls this
+    /// turn"); `delta` shifts it ("gets 1 additional / 1 fewer Breakout roll"). `who`
+    /// names the affected side from the OWNER's POV — `Opp` = "your opponent gets …",
+    /// `SelfSide` = "you get …". Read by `breakout_attempts_for`, which sums both boards
+    /// and clamps the result. schema v113
+    BreakoutAttempts {
+        /// Additive shift: +N "additional/more", -N "fewer". 0 when only `set` applies.
+        delta: i64,
+        /// Absolute override of the base attempt count ("gets N Breakout rolls"); `None`
+        /// = shift the base by `delta` only. When several effects set, the smallest wins.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        set: Option<i64>,
+        /// Affected side from the owner's POV: `SelfSide` = the owner's own breakout
+        /// attempts, `Opp` = the owner's opponent's. Default `SelfSide`.
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+        /// Per-count scaling of `delta` — "1 additional Breakout roll for each Skill
+        /// Requirement card they have in play". Same machinery as
+        /// [`Action::BreakoutModifier::per`]; all skip-when-default. schema v113
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        per: Option<CardFilter>,
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        per_who: Who,
+        #[serde(default, skip_serializing_if = "is_in_play_zone")]
+        per_zone: CountZone,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        per_divisor: Option<i64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cap: Option<i64>,
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_excludes_self: bool,
+    },
     LowestRollWins,
     FlipGimmickSigns {
         who: Who,
@@ -2984,6 +3019,41 @@ pub enum IrNode {
         cap: Option<i64>,
         /// Exclude the SOURCE card from the `per` count — "for each OTHER `<X>` you have
         /// in play". schema v112
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_excludes_self: bool,
+    },
+    /// Modifies the NUMBER of breakout attempts (rolls) the affected player gets this
+    /// turn — the "reduced / extra breakout rolls" family, distinct from
+    /// [`Action::BreakoutModifier`] (which shifts a roll's VALUE, not the count). `set`
+    /// overrides the base `BREAKOUT_ATTEMPTS` ("your opponent gets 2 Breakout rolls this
+    /// turn"); `delta` shifts it ("gets 1 additional / 1 fewer Breakout roll"). `who`
+    /// names the affected side from the OWNER's POV — `Opp` = "your opponent gets …",
+    /// `SelfSide` = "you get …". Read by `breakout_attempts_for`, which sums both boards
+    /// and clamps the result. schema v113
+    BreakoutAttempts {
+        /// Additive shift: +N "additional/more", -N "fewer". 0 when only `set` applies.
+        delta: i64,
+        /// Absolute override of the base attempt count ("gets N Breakout rolls"); `None`
+        /// = shift the base by `delta` only. When several effects set, the smallest wins.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        set: Option<i64>,
+        /// Affected side from the owner's POV: `SelfSide` = the owner's own breakout
+        /// attempts, `Opp` = the owner's opponent's. Default `SelfSide`.
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+        /// Per-count scaling of `delta` — "1 additional Breakout roll for each Skill
+        /// Requirement card they have in play". Same machinery as
+        /// [`Action::BreakoutModifier::per`]; all skip-when-default. schema v113
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        per: Option<CardFilter>,
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        per_who: Who,
+        #[serde(default, skip_serializing_if = "is_in_play_zone")]
+        per_zone: CountZone,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        per_divisor: Option<i64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cap: Option<i64>,
         #[serde(default, skip_serializing_if = "is_false")]
         per_excludes_self: bool,
     },

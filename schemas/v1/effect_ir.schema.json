@@ -455,6 +455,83 @@
       ],
       "type": "object"
     },
+    "BreakoutAttempts": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BreakoutAttempts"
+        },
+        "cap": {
+          "description": "Clamps the per-count product (\"(Max +M)\"). Absent = uncapped. schema v113",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "delta": {
+          "description": "Additive shift on the base attempt count: +N \"additional/more\", -N \"fewer\". 0 when only `set` applies. schema v113",
+          "type": "integer"
+        },
+        "per": {
+          "description": "When set, delta is scaled by the count of per_who's cards in per_zone matching this filter (\"1 additional Breakout roll for each Skill Requirement card they have in play\"). Absent = flat delta. schema v113",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_divisor": {
+          "description": "Integer divisor on the per-count before scaling. schema v113",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_excludes_self": {
+          "description": "Exclude the source card from the per count. Absent = false. schema v113",
+          "type": "boolean"
+        },
+        "per_who": {
+          "description": "Whose board/pile the per count reads. Absent = SELF. schema v113",
+          "$ref": "#/$defs/Who"
+        },
+        "per_zone": {
+          "description": "Which zone the per count reads. Absent = IN_PLAY. schema v113",
+          "$ref": "#/$defs/CountZone"
+        },
+        "set": {
+          "description": "Absolute override of the base attempt count (\"gets N Breakout rolls\"); absent = shift the base by delta only. When several effects set, the smallest wins. schema v113",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "who": {
+          "description": "Affected side from the owner's POV: SELF = the owner's own breakout attempts, OPP = the owner's opponent's. Absent = SELF. schema v113",
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "delta"
+      ],
+      "type": "object"
+    },
     "BreakoutModifier": {
       "additionalProperties": false,
       "properties": {
@@ -1048,6 +1125,9 @@
               },
               {
                 "$ref": "#/$defs/TurnRollBonus"
+              },
+              {
+                "$ref": "#/$defs/BreakoutAttempts"
               },
               {
                 "$ref": "#/$defs/BreakoutModifier"
@@ -1929,6 +2009,9 @@
               },
               {
                 "$ref": "#/$defs/TurnRollBonus"
+              },
+              {
+                "$ref": "#/$defs/BreakoutAttempts"
               },
               {
                 "$ref": "#/$defs/BreakoutModifier"
@@ -2899,6 +2982,9 @@
         },
         {
           "$ref": "#/$defs/ChooseName"
+        },
+        {
+          "$ref": "#/$defs/BreakoutAttempts"
         },
         {
           "$ref": "#/$defs/BreakoutModifier"
@@ -4799,6 +4885,9 @@
                 "$ref": "#/$defs/TurnRollBonus"
               },
               {
+                "$ref": "#/$defs/BreakoutAttempts"
+              },
+              {
                 "$ref": "#/$defs/BreakoutModifier"
               },
               {
@@ -5712,5 +5801,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 112
+  "version": 113
 }
