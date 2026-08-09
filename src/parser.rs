@@ -2473,8 +2473,36 @@ fn breakout_mod(delta: i64, when_skill: Option<Skill>) -> Action {
     breakout_mod_who(delta, Who::SelfSide, None, when_skill)
 }
 
-#[allow(clippy::too_many_lines)]
+// ---------------------------------------------------------------------------
+// Grammar rule table (regex -> Effect builder).
+//
+// `match_grammar` takes the FIRST rule whose regex matches, so ORDER IS
+// SEMANTIC: more-specific patterns must precede the general fallbacks. The table
+// is split into domain sub-tables purely for navigability; `build_rules`
+// concatenates them in the original single-`vec![]` order. Do not reorder the
+// `extend` calls, or rules within a sub-table, without re-checking the parser
+// golden (fixtures/parser/cards.ir.json via tests/parser_parity.rs).
+// ---------------------------------------------------------------------------
 fn build_rules() -> Vec<(Regex, Builder)> {
+    let mut rules = Vec::new();
+    rules.extend(build_skill_buff_rules());
+    rules.extend(build_draw_search_rules());
+    rules.extend(build_turn_roll_rules());
+    rules.extend(build_dq_loss_rules());
+    rules.extend(build_flip_crowd_reroll_rules());
+    rules.extend(build_flip_trigger_rules());
+    rules.extend(build_bury_discard_rules());
+    rules.extend(build_removal_hand_rules());
+    rules.extend(build_recur_rules());
+    rules.extend(build_unstoppable_draw_rules());
+    rules.extend(build_reveal_alsolead_rules());
+    rules.extend(build_finish_breakout_rules());
+    rules.extend(build_stop_trigger_rules());
+    rules
+}
+
+/// Finish- and skill-roll buffs: flat, per-count, extreme (lowest/highest), and Crowd-Meter-scaled skill bonuses.
+fn build_skill_buff_rules() -> Vec<(Regex, Builder)> {
     vec![
         // "If this match has [No] [Dd]isqualifications, <effect>" — the DQ-state gate
         // (schema v83, MatchHasNoDisqualifications). Cardona's Pizza Cutter family; the
@@ -2804,6 +2832,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
             r"Your (.+?) (?:is|are) \+ the [Cc]rowd [Mm]eter(?: \((?:Max|max) \+?(\d+)\))?",
             |c| crowd_meter_buff(&c[1], c.get(2)),
         ),
+    ]
+}
+
+/// Draw, discard, reveal, search, shuffle, and peek — self / opponent / each-player.
+fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
+    vec![
         rule(r"Each player draws? (\d+) cards?", |c| {
             let n = num(c, 1);
             Some(eff(
@@ -3123,6 +3157,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+    ]
+}
+
+/// Turn-roll modifiers (per-count, conditional, multi-turn, opponent-directed) and hand-size caps.
+fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // Per-count self turn-roll bonus. The optional `with "X" in the name` suffix
         // (which trails "you have in play", so a single capture can't reach it) routes
         // through `in_play_filter` — a name-substring filter when present, else the
@@ -3514,6 +3554,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+    ]
+}
+
+/// If-stopped / breakout-roll loss family (pay-or-lose, discard-or-lose, pinfall).
+fn build_dq_loss_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // DQ-CAUSE family (task #94). The plain "If [this card is] stopped[,] you lose
         // the match via disqualification[s]" self-loss — case/punctuation/plural
         // insensitive, so the many DB spellings collapse to one rule.
@@ -3629,6 +3675,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+    ]
+}
+
+/// Flip N, Crowd-Meter swings, turn/finish/breakout/costed re-rolls, and extra-card grants.
+fn build_flip_crowd_reroll_rules() -> Vec<(Regex, Builder)> {
+    vec![
         rule(r"Flip (?:up to )?(\d+) cards?", |c| {
             Some(eff(
                 on_hit(),
@@ -3802,6 +3854,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Some(e)
             },
         ),
+    ]
+}
+
+/// Gimmick-blank, flip-until, flip self-triggers, flip-pool selects, and standing flip triggers.
+fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // "[Your opponent's] Gimmick is blank" -> a Static `BlankGimmick` marker (the
         // action pre-existed but was override-only). Self ("Your Gimmick is blank") vs
         // opponent; WhileInPlay. Gated variants ("If the Crowd Meter is N or greater, …")
@@ -4042,6 +4100,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
         rule(r"(?:When|After) you flip (\d+) or more cards,? (.+)", |c| {
             trigger_body(on_flip_standing(Some(num(c, 1)), true), &c[2])
         }),
+    ]
+}
+
+/// Provenance-gated flip triggers, per-count bury, and bury/discard across discard piles.
+fn build_bury_discard_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // Provenance-gated flip self-trigger (schema v87). "flipped by \"<X>\"": the
         // flip must have been caused by a card whose name matches -> FlippedByName. All
         // are the Set-Up-the-Ladder ladder-match cards; add-to-hand. (Comma optional.)
@@ -4237,6 +4301,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+    ]
+}
+
+/// In-play removal (discard the opponent's board) and hand disruption (bury/discard from hand).
+fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // --- In-play removal: discard an opponent's in-play card (task #121) ---
         // "Discard N cards your opponent has in play" / "Choose N ... and discard
         // it/them" are the same IR; the filtered form gates by order/atk.
@@ -4503,6 +4573,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+    ]
+}
+
+/// Recursion: discard->hand, shuffle-into-deck, recur-to-deck-top, and conditional recur.
+fn build_recur_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // Recur from discard -> hand (task #122). Broadened from cards/atk-only to a
         // selector: "card(s)" (any), order/atk (count_filter), or name-substring
         // ("with \"X\" in the name"). `recur_filter` declines shapes we don't model
@@ -4690,6 +4766,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+    ]
+}
+
+/// Unstoppable-by gates and draw riders (deck-position, conditional, on-roll).
+fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // "(This card) cannot be stopped by <order>" — unstoppable against a stopper
         // of that play order (extends the original Follow-Ups-only rule to Leads and
         // Finishes and the "This card " lead-in).
@@ -4951,6 +5033,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+    ]
+}
+
+/// Reveal-and-discard, the also-a-<order> family, and no-DQ / cannot-be-disqualified rules.
+fn build_reveal_alsolead_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // Reveal-and-discard, single/conditional phrasing: "[Your opponent|They] randomly
         // reveal(s) N card(s) in their hand[;:,] if it is a Stop, they discard it" — the
         // opponent reveals N random hand cards and discards any that are stops. With N
@@ -5068,6 +5156,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+    ]
+}
+
+/// Symmetric roll mods, Finish-roll skill gates, breakout bonuses/attempts, and per-count Finish.
+fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // Symmetric roll modifier (task #131): "If either player rolls <S> for their
         // {turn|breakout|Finish} roll, their [<roll> ]roll is ±N" — applies to WHOEVER
         // rolls that skill for that roll type, from either board. The delta is SIGNED
@@ -5557,6 +5651,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+    ]
+}
+
+/// Stop rules and generic trigger-body splits (on hit/roll/breakout/stop/start) plus the catch-all gate.
+fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
+    vec![
         // "Stop \"X\"[, \"Y\"][ or \"Z\"]" — stop a specifically-NAMED attack (no
         // order/type constraint), an OR-list of card names. One Stop whose `target`
         // name-filter matches any attack with one of those names (order/atk_type None
