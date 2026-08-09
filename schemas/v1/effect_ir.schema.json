@@ -471,12 +471,57 @@
             }
           ]
         },
+        "cap": {
+          "description": "Clamps the per-count product (\"(Max +M)\"); the per-scaled bonus never exceeds cap. Absent = uncapped. schema v112",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "delta": {
           "type": "integer"
         },
         "either": {
           "description": "Symmetric: the modifier applies to whoever rolls, from either board (\"if either player rolls <S> for their roll, their roll is +/-N\"). Absent = false. schema v107",
           "type": "boolean"
+        },
+        "per": {
+          "description": "When set, delta is scaled by the count of per_who's cards in per_zone matching this filter (\"for each Stop they have in play\"). Absent = flat delta. schema v112",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_divisor": {
+          "description": "Integer divisor on the per-count before scaling (count = floor(matches / per_divisor)). schema v112",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "per_excludes_self": {
+          "description": "Exclude the source card from the per count (\"for each other <X> you have in play\"). Absent = false. schema v112",
+          "type": "boolean"
+        },
+        "per_who": {
+          "description": "Whose board/pile the per count reads. Absent = SELF. schema v112",
+          "$ref": "#/$defs/Who"
+        },
+        "per_zone": {
+          "description": "Which zone the per count reads. Absent = IN_PLAY. schema v112",
+          "$ref": "#/$defs/CountZone"
         },
         "when_skill": {
           "anyOf": [
@@ -5667,5 +5712,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 111
+  "version": 112
 }

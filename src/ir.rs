@@ -25,13 +25,27 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 111;
+pub const SCHEMA_VERSION: i64 = 112;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
 /// byte-identical, the same low-churn tactic as `Option` fields with `Option::is_none`.
 fn is_false(b: &bool) -> bool {
     !*b
+}
+
+/// `skip_serializing_if` predicate for a `Who` field that carries the enum default
+/// (`SelfSide`): used on per-count fields added to an EXISTING node so pre-field
+/// fixtures — which never wrote a `per_who` — stay byte-identical. A per-count node
+/// counting the OWNER's board (`SelfSide`) also omits it; only an `Opp` count writes it.
+fn is_self_who(w: &Who) -> bool {
+    matches!(w, Who::SelfSide)
+}
+
+/// `skip_serializing_if` predicate for a `CountZone` field at its default (`InPlay`) —
+/// same low-churn tactic as [`is_self_who`] for per-count fields on an existing node.
+fn is_in_play_zone(z: &CountZone) -> bool {
+    matches!(z, CountZone::InPlay)
 }
 
 // ---------------------------------------------------------------------------
@@ -1688,6 +1702,31 @@ pub enum Action {
         /// Additive/skip-when-false. schema v107
         #[serde(default, skip_serializing_if = "is_false")]
         either: bool,
+        /// When set, `delta` is scaled by `count of `per_who`'s cards in `per_zone`
+        /// matching this filter` — "your opponent's breakout rolls are +1 for each Stop
+        /// they have in play", the `BreakoutModifier` analogue of
+        /// [`Action::FinishRollBonus::per`]. `None` = flat `delta`. All the per-count
+        /// fields are additive/skip-when-default so pre-per breakout fixtures stay
+        /// byte-identical. schema v112
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        per: Option<CardFilter>,
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        per_who: Who,
+        #[serde(default, skip_serializing_if = "is_in_play_zone")]
+        per_zone: CountZone,
+        /// Integer divisor on the per-count before scaling by `delta` (the count is
+        /// `floor(matches / per_divisor)`); `None`/`Some(1)` = one bonus per match.
+        /// schema v112
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        per_divisor: Option<i64>,
+        /// Clamps the per-count product ("… (Max +M)") — the `per`-scaled bonus never
+        /// exceeds `cap`. `None` = uncapped. schema v112
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cap: Option<i64>,
+        /// Exclude the SOURCE card from the `per` count — "for each OTHER `<X>` you have
+        /// in play". schema v112
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_excludes_self: bool,
     },
     LowestRollWins,
     FlipGimmickSigns {
@@ -2922,6 +2961,31 @@ pub enum IrNode {
         /// Additive/skip-when-false. schema v107
         #[serde(default, skip_serializing_if = "is_false")]
         either: bool,
+        /// When set, `delta` is scaled by `count of `per_who`'s cards in `per_zone`
+        /// matching this filter` — "your opponent's breakout rolls are +1 for each Stop
+        /// they have in play", the `BreakoutModifier` analogue of
+        /// [`Action::FinishRollBonus::per`]. `None` = flat `delta`. All the per-count
+        /// fields are additive/skip-when-default so pre-per breakout fixtures stay
+        /// byte-identical. schema v112
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        per: Option<CardFilter>,
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        per_who: Who,
+        #[serde(default, skip_serializing_if = "is_in_play_zone")]
+        per_zone: CountZone,
+        /// Integer divisor on the per-count before scaling by `delta` (the count is
+        /// `floor(matches / per_divisor)`); `None`/`Some(1)` = one bonus per match.
+        /// schema v112
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        per_divisor: Option<i64>,
+        /// Clamps the per-count product ("… (Max +M)") — the `per`-scaled bonus never
+        /// exceeds `cap`. `None` = uncapped. schema v112
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cap: Option<i64>,
+        /// Exclude the SOURCE card from the `per` count — "for each OTHER `<X>` you have
+        /// in play". schema v112
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_excludes_self: bool,
     },
     LowestRollWins,
     FlipGimmickSigns {

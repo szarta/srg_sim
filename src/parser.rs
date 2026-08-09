@@ -2323,7 +2323,106 @@ fn breakout_mod_who(
         when_skill,
         who,
         either: false,
+        per: None,
+        per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
+        per_divisor: None,
+        cap: None,
+        per_excludes_self: false,
     }
+}
+
+/// A Static per-count [`Action::BreakoutModifier`] on `who`'s breakout rolls: `delta *
+/// (count of `per_who`'s in-play `per`-matching cards)`, clamped to `cap`, dropping the
+/// source card when `exclude_self` ("for each OTHER …"). `attempts` gates a single roll
+/// index (`None` = every attempt) — an ordinal clause emits one per index. The breakout
+/// parallel of [`finish_per`]. schema v112
+#[allow(clippy::too_many_arguments)]
+fn breakout_per(
+    delta: i64,
+    who: Who,
+    attempts: Option<i64>,
+    per: CardFilter,
+    per_who: Who,
+    per_zone: CountZone,
+    cap: Option<i64>,
+    exclude_self: bool,
+) -> Action {
+    Action::BreakoutModifier {
+        delta,
+        attempts,
+        when_skill: None,
+        who,
+        either: false,
+        per: Some(per),
+        per_who,
+        per_zone,
+        per_divisor: None,
+        cap,
+        per_excludes_self: exclude_self,
+    }
+}
+
+/// Resolve the "for each <sel> …" tail shared by the per-count breakout rules into
+/// `(filter, per_who, per_zone)`. Mirrors the per-count Finish rule: a TYPE selector
+/// routes through `count_filter`; a bare "card … with 'Y' in the name/text" routes
+/// through `name_or_text_filter` (a combined type+name isn't one `CardFilter`, so it
+/// declines). Exactly one of `inplay`/`disc` is `Some` — `inplay` names whose in-play
+/// board to count ("you have"=self, else opp); `disc` names whose discard pile
+/// ("your"=self, "their"/"your opponent's"=opp). Returns `None` when the selector
+/// can't be mapped, so an unhandled shape stays Unsupported.
+/// Parse an ordinal token — "1st"/"2nd"/"3rd"/… or the word forms "first"/"second"/
+/// "third" — to its 1-based index, for the attempt-indexed breakout rules.
+fn ordinal_num(tok: &str) -> Option<i64> {
+    match tok.to_lowercase().as_str() {
+        "first" => Some(1),
+        "second" => Some(2),
+        "third" => Some(3),
+        t => t
+            .trim_end_matches(|c: char| c.is_alphabetic())
+            .parse::<i64>()
+            .ok(),
+    }
+}
+
+fn breakout_per_target(
+    sel: &str,
+    inplay: Option<&str>,
+    disc: Option<&str>,
+    names: Option<&str>,
+    kind: Option<&str>,
+) -> Option<(CardFilter, Who, CountZone)> {
+    let per = match names {
+        Some(list_text) => {
+            let bare = sel.trim_end_matches('s').eq_ignore_ascii_case("card");
+            let list = quoted_names(list_text);
+            if !bare || list.is_empty() {
+                return None;
+            }
+            name_or_text_filter(kind.unwrap_or("name"), list)
+        }
+        None => count_filter(sel)?,
+    };
+    let (per_who, per_zone) = match (inplay, disc) {
+        (Some(g), _) => {
+            let w = if g.eq_ignore_ascii_case("you have") {
+                Who::SelfSide
+            } else {
+                Who::Opp
+            };
+            (w, CountZone::InPlay)
+        }
+        (_, Some(g)) => {
+            let w = if g.eq_ignore_ascii_case("your") {
+                Who::SelfSide
+            } else {
+                Who::Opp
+            };
+            (w, CountZone::Discard)
+        }
+        _ => return None,
+    };
+    Some((per, per_who, per_zone))
 }
 
 /// A rolled-skill-gated SELF breakout-roll bonus ("+1 to Strike during your breakout
@@ -4963,6 +5062,12 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         when_skill: Some(skill(&c[1])),
                         who: Who::SelfSide,
                         either: true,
+                        per: None,
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::InPlay,
+                        per_divisor: None,
+                        cap: None,
+                        per_excludes_self: false,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -5085,6 +5190,95 @@ fn build_rules() -> Vec<(Regex, Builder)> {
                         Some(num(c, 2)),
                         None,
                     )],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Per-count breakout modifier: "[Your opponent's|Their] breakout rolls are ±N for
+        // each [other] <X> [you have|they have|your opponent has] in play | in <x>'s
+        // discard pile [with 'Y' in the name/text] [(Max +M)]" — the BreakoutModifier
+        // analogue of the per-count Finish rule below (task #131, schema v112). The
+        // subject prefix picks whose breakout rolls (who); the "for each" tail picks the
+        // counted board/pile (per_who/per_zone) via breakout_per_target. A selector that
+        // can't be mapped declines -> stays Unsupported.
+        rule(
+            r#"([Yy]our opponent's |[Yy]our |[Tt]heir )[Bb]reakout [Rr]olls? (?:is|are) ([+-]\d+) for each (other )?(.+?)(?: (you have|they have|your opponent has) in play| in (your opponent'?s|your|their) discard pile)(?: with (.+?) in the (name|text))?(?: \(Max \+?(\d+)\))?"#,
+            |c| {
+                let who = if c[1].trim().eq_ignore_ascii_case("your") {
+                    Who::SelfSide
+                } else {
+                    Who::Opp
+                };
+                let (per, per_who, per_zone) = breakout_per_target(
+                    &c[4],
+                    c.get(5).map(|m| m.as_str()),
+                    c.get(6).map(|m| m.as_str()),
+                    c.get(7).map(|m| m.as_str()),
+                    c.get(8).map(|m| m.as_str()),
+                )?;
+                let cap = c.get(9).map(|m| m.as_str().parse::<i64>().unwrap());
+                Some(eff(
+                    Trigger::Static,
+                    vec![breakout_per(
+                        num(c, 2),
+                        who,
+                        None,
+                        per,
+                        per_who,
+                        per_zone,
+                        cap,
+                        c.get(3).is_some(),
+                    )],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Ordinal per-count breakout modifier: "[Your opponent's] Nst [and Nnd] breakout
+        // roll[s] is/are ±N for each <X> …" — the attempt-indexed form of the rule above.
+        // Each ordinal emits one attempt-gated BreakoutModifier (BreakoutModifier.attempts
+        // is a single index), so "1st and 2nd" -> two actions sharing the per-count.
+        rule(
+            r#"([Yy]our opponent's |[Yy]our |[Tt]heir )(\d+(?:st|nd|rd|th)|first|second|third)(?: and (\d+(?:st|nd|rd|th)|first|second|third))? [Bb]reakout [Rr]olls? (?:is|are) ([+-]\d+) for each (other )?(.+?)(?: (you have|they have|your opponent has) in play| in (your opponent'?s|your|their) discard pile)(?: with (.+?) in the (name|text))?(?: \(Max \+?(\d+)\))?"#,
+            |c| {
+                let who = if c[1].trim().eq_ignore_ascii_case("your") {
+                    Who::SelfSide
+                } else {
+                    Who::Opp
+                };
+                let (per, per_who, per_zone) = breakout_per_target(
+                    &c[6],
+                    c.get(7).map(|m| m.as_str()),
+                    c.get(8).map(|m| m.as_str()),
+                    c.get(9).map(|m| m.as_str()),
+                    c.get(10).map(|m| m.as_str()),
+                )?;
+                let cap = c.get(11).map(|m| m.as_str().parse::<i64>().unwrap());
+                let delta = num(c, 4);
+                let excl = c.get(5).is_some();
+                let attempts: Vec<i64> = [c.get(2), c.get(3)]
+                    .iter()
+                    .filter_map(|m| m.and_then(|x| ordinal_num(x.as_str())))
+                    .collect();
+                let actions = attempts
+                    .into_iter()
+                    .map(|n| {
+                        breakout_per(
+                            delta,
+                            who,
+                            Some(n),
+                            per.clone(),
+                            per_who,
+                            per_zone,
+                            cap,
+                            excl,
+                        )
+                    })
+                    .collect();
+                Some(eff(
+                    Trigger::Static,
+                    actions,
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))

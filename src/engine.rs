@@ -308,12 +308,24 @@ fn negate_action(action: &Action) -> Action {
             when_skill,
             who,
             either,
+            per,
+            per_who,
+            per_zone,
+            per_divisor,
+            cap,
+            per_excludes_self,
         } => Action::BreakoutModifier {
             delta: -*delta,
             attempts: *attempts,
             when_skill: *when_skill,
             who: *who,
             either: *either,
+            per: per.clone(),
+            per_who: *per_who,
+            per_zone: *per_zone,
+            per_divisor: *per_divisor,
+            cap: *cap,
+            per_excludes_self: *per_excludes_self,
         },
         other => other.clone(),
     }
@@ -5086,7 +5098,7 @@ impl Engine {
     /// condition is evaluated from `owner`'s point of view (they declared it).
     fn breakout_mods_from(&self, owner: &str, attempt_no: i64, rolled: Skill, want: Who) -> i64 {
         let mut total = 0;
-        for eff in self.standing_effects(owner) {
+        for (src, eff) in self.standing_effects_sourced(owner) {
             if !conditions::holds(&eff.condition, &self.state, owner, None) {
                 continue;
             }
@@ -5097,15 +5109,42 @@ impl Engine {
                     when_skill,
                     who,
                     either,
+                    per,
+                    per_who,
+                    per_zone,
+                    per_divisor,
+                    cap,
+                    per_excludes_self,
                 } = a
                 {
                     let attempt_ok = attempts.is_none() || *attempts == Some(attempt_no);
                     let skill_ok = when_skill.is_none() || *when_skill == Some(rolled);
                     // An `either` mod applies to whoever is rolling the breakout,
                     // regardless of `who`; otherwise the `who` side must match `want`.
-                    if (*either || *who == want) && attempt_ok && skill_ok {
-                        total += *delta;
+                    if !((*either || *who == want) && attempt_ok && skill_ok) {
+                        continue;
                     }
+                    // Flat `delta`, or `delta * (count of `per_who`'s cards in `per_zone`
+                    // matching the filter)` — "+1 for each Stop they have in play"; the
+                    // per-count parallel of `finish_bonus_from`. Counted from `owner`'s
+                    // POV (they declared it), so `per_who=Opp` counts the OTHER board.
+                    total += match per {
+                        Some(f) => {
+                            let counted = self.target(*per_who, owner);
+                            let board = &self.state.players[&counted].in_play;
+                            let exclude = per_excludes_self
+                                .then(|| src.as_deref())
+                                .flatten()
+                                .and_then(|u| board.iter().find(|c| c.db_uuid == u));
+                            let n = self
+                                .state
+                                .count_in_zone_excl(f, *per_zone, &counted, exclude);
+                            let mult = n / per_divisor.unwrap_or(1).max(1);
+                            let raw = *delta * mult;
+                            cap.map_or(raw, |c| raw.min(c))
+                        }
+                        None => *delta,
+                    };
                 }
             }
         }
@@ -6863,6 +6902,82 @@ mod breakout_modifier_tests {
         // A's own board carries no SelfSide mod, and B's mod is OPP-directed, so B's own
         // breakout roll is unaffected.
         assert_eq!(engine.breakout_bonus("B", 1, Skill::Strike), 0);
+    }
+
+    /// A `Grapple` `Lead` card for populating a per-count board.
+    fn grapple(uuid: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": uuid, "name": "G", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []
+        }))
+        .unwrap()
+    }
+
+    /// A per-count `BreakoutModifier` gimmick effect (schema v112).
+    fn per_count_mod(delta: i64, attempts: Value, who: &str, per_who: &str, cap: Value) -> Value {
+        json!({
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "BreakoutModifier", "delta": delta, "attempts": attempts,
+                "when_skill": null, "who": who, "per_who": per_who, "cap": cap,
+                "per": {"@type": "CardFilter", "number": null, "atk_type": "Grapple",
+                        "play_order": null, "tag": null, "name": null, "raw": null}}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "t", "source": "gimmick", "optional": false
+        })
+    }
+
+    #[test]
+    fn per_count_breakout_scales_by_the_counted_board_caps_and_gates_attempts() {
+        let mut engine = engine();
+        // Three Grapples on A's board (the per-count source), one on B's.
+        for u in ["g1", "g2", "g3"] {
+            engine
+                .state
+                .players
+                .get_mut("A")
+                .unwrap()
+                .in_play
+                .push(grapple(u));
+        }
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .in_play
+            .push(grapple("g4"));
+
+        // B declares: "your opponent's breakout rolls are +1 for each Grapple they have in
+        // play" — who=OPP (applies to B's opponent A), per_who=OPP (counts A's board).
+        // 3 Grapples * 1 = 3, uncapped.
+        push_gimmick(
+            &mut engine,
+            "B",
+            per_count_mod(1, Value::Null, "OPP", "OPP", Value::Null),
+        );
+        assert_eq!(engine.breakout_bonus("A", 1, Skill::Strike), 3);
+
+        // A caps its own per-count buff at +2 ("(Max +2)") over its own 3-Grapple board.
+        push_gimmick(
+            &mut engine,
+            "A",
+            per_count_mod(1, Value::Null, "SELF", "SELF", json!(2)),
+        );
+        // A now sees B's OPP mod (+3) plus its own capped SELF mod (min(3,2)=2) = +5.
+        assert_eq!(engine.breakout_bonus("A", 1, Skill::Strike), 5);
+
+        // An attempt-gated per-count mod on B (attempts=2) only bites A's 2nd roll: the 1st
+        // sees +3 (B uncapped) +2 (A capped) = 5; the 2nd adds another +3 = 8.
+        push_gimmick(
+            &mut engine,
+            "B",
+            per_count_mod(1, json!(2), "OPP", "OPP", Value::Null),
+        );
+        assert_eq!(engine.breakout_bonus("A", 1, Skill::Strike), 5);
+        assert_eq!(engine.breakout_bonus("A", 2, Skill::Strike), 8);
     }
 
     /// A breakout `Reroll` (schema v102): the defender's own `who:SELF` and the

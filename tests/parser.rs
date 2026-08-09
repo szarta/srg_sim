@@ -1747,9 +1747,84 @@ fn breakout_roll_bonus() {
     // The self forms stay who=SELF.
     let e = one("Your breakout rolls are +1.");
     assert_eq!(e["actions"][0]["who"], "SELF");
+}
 
-    // Per-count opp form ("for each …") has no per-count on this action -> declines.
-    let e = one("Your opponent's breakout rolls are -1 for each Stop they have in play.");
+/// Per-count breakout modifier (task #131, schema v112): "[Your opponent's] breakout
+/// rolls are ±N for each <X> [you have|they have] in play | in <x>'s discard pile
+/// [with 'Y' in the name] [(Max +M)]" -> BreakoutModifier with per/per_who/per_zone/cap/
+/// per_excludes_self, mirroring the per-count Finish rule. Ordinals emit one attempt-gated
+/// action each.
+#[test]
+fn breakout_per_count_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Opp breakout, per Stop on the opponent's own board (they have).
+    let a = &one("Your opponent's breakout rolls are +2 for each Stop they have in play.")
+        ["actions"][0];
+    assert_eq!(a["@type"], "BreakoutModifier");
+    assert_eq!(a["delta"], 2);
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(a["per_who"], "OPP");
+    assert_eq!(a["per"]["is_stop"], true);
+    assert_eq!(a["attempts"], Value::Null);
+
+    // Self breakout, per opponent's board, with a (Max +M) cap and a bare-N cap form.
+    let a = &one("Your breakout rolls are +1 for each Grapple your opponent has in play (Max +3).")
+        ["actions"][0];
+    assert_eq!(a["who"], "SELF");
+    assert_eq!(a["per_who"], "OPP");
+    assert_eq!(a["per"]["atk_type"], "Grapple");
+    assert_eq!(a["cap"], 3);
+
+    // Name-descriptor selector over an OR-list of names ("card … with 'X' or 'Y'").
+    let a = &one(
+        "Your opponent's breakout rolls are -1 for each card you have in play with \"Rope\" or \"Twist\" in the name.",
+    )["actions"][0];
+    assert_eq!(a["delta"], -1);
+    // per_who=SELF is the default -> skipped in serialization (absent), keeping pre-per
+    // breakout fixtures byte-identical.
+    assert_eq!(a["per_who"], Value::Null);
+    assert_eq!(
+        a["per"]["name_contains"],
+        serde_json::json!(["Rope", "Twist"])
+    );
+
+    // Discard-pile zone: "for each Finish in their discard pile" -> per_zone=DISCARD, per_who=OPP.
+    let a = &one("Your opponent's breakout rolls are -1 for each Finish in their discard pile.")
+        ["actions"][0];
+    assert_eq!(a["per_zone"], "DISCARD");
+    assert_eq!(a["per_who"], "OPP");
+    assert_eq!(a["per"]["play_order"], "Finish");
+
+    // "other" sets per_excludes_self.
+    let a = &one("Your opponent's breakout rolls are -1 for each other Lead you have in play.")
+        ["actions"][0];
+    assert_eq!(a["per_excludes_self"], true);
+    assert_eq!(a["per"]["play_order"], "Lead");
+
+    // Ordinal "1st and 2nd" -> two attempt-gated actions sharing the per-count.
+    let e = one(
+        "Your opponent's 1st and 2nd Breakout rolls are -1 for each card you have in play with \"Arm\" in the name.",
+    );
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["attempts"], 1);
+    assert_eq!(acts[1]["attempts"], 2);
+    assert_eq!(acts[0]["per"]["name_contains"], serde_json::json!(["Arm"]));
+    assert_eq!(acts[1]["delta"], -1);
+
+    // Word-form ordinal ("first"/"second") maps to the same attempt index.
+    let e = one("Your opponent's first breakout roll is -1 for each Follow Up you have in play.");
+    assert_eq!(e["actions"][0]["attempts"], 1);
+    assert_eq!(e["actions"][0]["per"]["play_order"], "Followup");
+
+    // A bare "card" with no name descriptor isn't a count_filter (as with the Finish
+    // rule) -> declines rather than mis-mapping to match-any.
+    let e = one("Your opponent's breakout rolls are +1 for each card they have in play.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
