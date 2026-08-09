@@ -259,10 +259,12 @@ fn negate_action(action: &Action) -> Action {
             delta,
             who,
             duration,
+            set,
         } => Action::MaxHandSize {
             delta: -*delta,
             who: *who,
             duration: *duration,
+            set: *set, // an absolute set is not a signed delta — carried through unchanged
         },
         Action::MinHandSize {
             delta,

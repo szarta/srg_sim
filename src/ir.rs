@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 113;
+pub const SCHEMA_VERSION: i64 = 114;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1365,6 +1365,13 @@ pub enum Action {
         delta: i64,
         who: Who,
         duration: Duration,
+        /// Absolute maximum ("your opponent's maximum handsize is N") — overrides the
+        /// base cap rather than shifting it; the LOWEST active set wins, then `delta`
+        /// mods apply on top. `None` = a pure delta modifier (the historical form).
+        /// Additive/skip-when-none, so pre-set fixtures round-trip byte-identically.
+        /// schema v114
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        set: Option<i64>,
     },
     /// Minimum-handsize modifier (Quadruple H). NOT a draw-up floor: per the SRG
     /// ruling the minimum is a floor on the MAXIMUM, folded in `effective_hand_cap`.
@@ -2659,6 +2666,13 @@ pub enum IrNode {
         delta: i64,
         who: Who,
         duration: Duration,
+        /// Absolute maximum ("your opponent's maximum handsize is N") — overrides the
+        /// base cap rather than shifting it; the LOWEST active set wins, then `delta`
+        /// mods apply on top. `None` = a pure delta modifier (the historical form).
+        /// Additive/skip-when-none, so pre-set fixtures round-trip byte-identically.
+        /// schema v114
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        set: Option<i64>,
     },
     /// Minimum-handsize modifier (Quadruple H). NOT a draw-up floor: per the SRG
     /// ruling the minimum is a floor on the MAXIMUM, folded in `effective_hand_cap`.

@@ -3736,6 +3736,38 @@ fn while_in_discard_onroll_self_recursion() {
     );
 }
 
+/// Absolute maximum-handsize set ("... maximum handsize is N", task #131): the cap
+/// becomes N (set field), distinct from the signed "+/-N" delta form. The timed "until
+/// the end of the turn" variant declines (needs the timed-buff path, not this standing fold).
+#[test]
+fn absolute_max_handsize_grammar() {
+    fn a0(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        serde_json::to_value(&effs[0]).unwrap()["actions"][0].clone()
+    }
+
+    // Opponent absolute set.
+    let a = a0("Your opponent's maximum handsize is 3.");
+    assert_eq!(a["@type"], "MaxHandSize");
+    assert_eq!(a["set"], 3);
+    assert_eq!(a["delta"], 0);
+    assert_eq!(a["who"], "OPP");
+
+    // Self absolute set.
+    let a = a0("Your maximum handsize is 4.");
+    assert_eq!(a["set"], 4);
+    assert_eq!(a["who"], "SELF");
+
+    // The signed delta form still maps to a delta (no set).
+    let a = a0("Your opponent's maximum handsize is -2.");
+    assert_eq!(a["delta"], -2);
+    assert!(a["set"].is_null(), "a delta mod has no absolute set");
+
+    // The timed "until the end of the turn" variant is NOT modeled as a permanent set.
+    let a = a0("Your opponent's maximum handsize is 3 until the end of the turn.");
+    assert_eq!(a["@type"], "Unsupported");
+}
+
 /// "If this is a Steel Cage or Liger's Den match, you may flip both cards instead"
 /// (Friends and Rivals family): the preceding "each player reveals the top card of
 /// their deck and adds it to their hand" is rewritten so the add applies only OUTSIDE

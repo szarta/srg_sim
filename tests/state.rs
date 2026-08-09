@@ -116,6 +116,20 @@ fn hand_size_bounds_clamp_the_minimum_and_maximum() {
         9,
         "an in-bounds max is unchanged"
     );
+
+    // Absolute set ("maximum handsize is N") OVERRIDES the base (5), not shifts it.
+    let set = |n: i64| json!({"@type": "MaxHandSize", "delta": 0, "who": "SELF", "duration": "WHILE_IN_PLAY", "set": n});
+    assert_eq!(cap_with(json!([set(4)])), 4, "set overrides base 5 -> 4");
+    // Two sets: the LOWEST wins.
+    assert_eq!(cap_with(json!([set(6), set(4)])), 4, "lowest set wins");
+    // A delta applies ON TOP of the set (set 6 + delta -1 = 5).
+    assert_eq!(
+        cap_with(json!([set(6), max_mod(-1)])),
+        5,
+        "delta applies on top of the set"
+    );
+    // The set is still floored at the min (set 2 clamps up to MIN_HAND_SIZE 3).
+    assert_eq!(cap_with(json!([set(2)])), 3, "set floored at MIN_HAND_SIZE");
 }
 
 #[test]

@@ -324,6 +324,26 @@ pub struct FlipProvenance {
     pub source_name: Option<String>,
 }
 
+/// The active hand-size modifiers one board contributes to a target's cap: `max_mods`
+/// and `min_mods` are summed deltas; `set` is the lowest absolute `MaxHandSize.set`
+/// ("maximum handsize is N"), which overrides the base cap. See [`GameState::effective_hand_cap`].
+#[derive(Default, Clone, Copy)]
+struct HandMods {
+    max_mods: i64,
+    min_mods: i64,
+    set: Option<i64>,
+}
+
+impl HandMods {
+    fn merge(&mut self, other: HandMods) {
+        self.max_mods += other.max_mods;
+        self.min_mods += other.min_mods;
+        if let Some(s) = other.set {
+            self.set = Some(self.set.map_or(s, |cur| cur.min(s)));
+        }
+    }
+}
+
 fn default_active() -> String {
     "A".to_owned()
 }
@@ -940,32 +960,34 @@ impl GameState {
     /// [`MIN_HAND_SIZE`]** (3) — no stack of modifiers pushes past either.
     pub fn effective_hand_cap(&self, key: &str, base: i64, holds: Option<&ConditionHolds>) -> i64 {
         let (mut max_mods, mut min_mods) = (0, 0);
+        let mut min_set: Option<i64> = None;
         for (owner, player) in &self.players {
-            let (mx, mn) = self.owner_hand_mods(key, owner, player, holds);
-            max_mods += mx;
-            min_mods += mn;
+            let m = self.owner_hand_mods(key, owner, player, holds);
+            max_mods += m.max_mods;
+            min_mods += m.min_mods;
+            if let Some(s) = m.set {
+                min_set = Some(min_set.map_or(s, |cur: i64| cur.min(s))); // lowest set wins
+            }
         }
-        // The minimum is a floor on the maximum, itself clamped to ≤ MAX_MIN_HAND_SIZE;
-        // and the maximum can never fall below MIN_HAND_SIZE.
+        // An absolute "maximum handsize is N" set overrides the base cap (lowest wins);
+        // delta mods then apply on top. The minimum is a floor on the maximum, itself
+        // clamped to ≤ MAX_MIN_HAND_SIZE; the maximum can never fall below MIN_HAND_SIZE.
+        let cap_base = min_set.unwrap_or(base);
         let floor = (MIN_HAND_SIZE + min_mods).clamp(0, MAX_MIN_HAND_SIZE);
-        (base + max_mods).max(floor).max(MIN_HAND_SIZE)
+        (cap_base + max_mods).max(floor).max(MIN_HAND_SIZE)
     }
 
-    /// `(max_mods, min_mods)` this player's active Static hand modifiers contribute
-    /// to `target`'s cap.
+    /// The active Static hand modifiers this player contributes to `target`'s cap.
     fn owner_hand_mods(
         &self,
         target: &str,
         owner: &str,
         player: &PlayerState,
         holds: Option<&ConditionHolds>,
-    ) -> (i64, i64) {
+    ) -> HandMods {
         let gimmick_active = !self.is_gimmick_blanked(owner);
-        let mut total = (0, 0);
-        let mut add = |(mx, mn): (i64, i64)| {
-            total.0 += mx;
-            total.1 += mn;
-        };
+        let mut total = HandMods::default();
+        let mut add = |m: HandMods| total.merge(m);
         add(self.fold_hand_mods(
             &player.competitor.effects,
             gimmick_active,
@@ -980,8 +1002,8 @@ impl GameState {
         total
     }
 
-    /// `(max_mods, min_mods)` from `effects`: sums active Static `MaxHandSize` into
-    /// the first, `MinHandSize` into the second.
+    /// Active Static hand modifiers from `effects`: delta `MaxHandSize` into `max_mods`,
+    /// `MinHandSize` into `min_mods`, and the lowest absolute `MaxHandSize.set` into `set`.
     fn fold_hand_mods(
         &self,
         effects: &[crate::ir::Effect],
@@ -989,27 +1011,35 @@ impl GameState {
         target: &str,
         owner: &str,
         holds: Option<&ConditionHolds>,
-    ) -> (i64, i64) {
+    ) -> HandMods {
+        let mut out = HandMods::default();
         if !active {
-            return (0, 0);
+            return out;
         }
-        let (mut max_mods, mut min_mods) = (0, 0);
         for eff in effects {
             if !matches!(eff.trigger, Trigger::Static) {
                 continue;
             }
             for action in &eff.actions {
-                let (slot, delta, who) = match action {
-                    Action::MaxHandSize { delta, who, .. } => (&mut max_mods, delta, who),
-                    Action::MinHandSize { delta, who, .. } => (&mut min_mods, delta, who),
-                    _ => continue,
-                };
-                if targets(owner, *who, target) && condition_ok(&eff.condition, holds) {
-                    *slot += *delta;
+                match action {
+                    Action::MaxHandSize {
+                        delta, who, set, ..
+                    } if targets(owner, *who, target) && condition_ok(&eff.condition, holds) => {
+                        out.max_mods += *delta;
+                        if let Some(s) = set {
+                            out.set = Some(out.set.map_or(*s, |cur| cur.min(*s)));
+                        }
+                    }
+                    Action::MinHandSize { delta, who, .. }
+                        if targets(owner, *who, target) && condition_ok(&eff.condition, holds) =>
+                    {
+                        out.min_mods += *delta;
+                    }
+                    _ => {}
                 }
             }
         }
-        (max_mods, min_mods)
+        out
     }
 
     // --- information model --------------------------------------------------

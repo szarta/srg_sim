@@ -1230,6 +1230,18 @@ fn max_hand(delta: i64, who: Who) -> Action {
         delta,
         who,
         duration: Duration::WhileInPlay,
+        set: None,
+    }
+}
+
+/// An ABSOLUTE maximum-handsize set ("your opponent's maximum handsize is N") — the cap
+/// becomes `n` (lowest active set wins) rather than shifting by a delta.
+fn max_hand_set(n: i64, who: Who, duration: Duration) -> Action {
+    Action::MaxHandSize {
+        delta: 0,
+        who,
+        duration,
+        set: Some(n),
     }
 }
 
@@ -3629,6 +3641,35 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
             Some(eff(
                 Trigger::Static,
                 vec![buff(skill(&c[1]), -num(c, 2), Who::Opp)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
+        // Absolute maximum-handsize SET ("... maximum handsize is N", no sign) — the cap
+        // becomes N (vs the signed delta rules just below). Standing (WhileInPlay) only:
+        // the "until the end of the turn" timed variant needs the timed-buff path (not this
+        // board-standing fold) and stays Unsupported rather than modeled as permanent.
+        // Placed before the delta rules (which require a [+-] sign, so an unsigned digit
+        // never reaches them).
+        rule(
+            r"(?:Your opponent's|Your target's|Their) maximum hand ?size is (\d+)",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![max_hand_set(num(c, 1), Who::Opp, Duration::WhileInPlay)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(r"Your maximum hand ?size is (\d+)", |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![max_hand_set(
+                    num(c, 1),
+                    Who::SelfSide,
+                    Duration::WhileInPlay,
+                )],
                 Condition::Always,
                 Duration::WhileInPlay,
             ))

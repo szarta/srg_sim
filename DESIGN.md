@@ -278,7 +278,7 @@ BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, target_low
                                                  # per_excludes_self -> drop the SOURCE card from that count ("for each OTHER <X> you have in play"); skip-when-false additive. schema v105
                                                  # ("+1 for each card in play with 'Chin' in the name, Max +3"; FLIPPED_THIS_TURN
                                                  # = cards flipped this turn, "for each Strike flipped: +1 to Strike"); schema v7/v74
-MaxHandSize(delta, who, duration=WHILE_IN_PLAY)  # Static: signed cap modifier, folds into the derived hand cap
+MaxHandSize(delta, who, duration=WHILE_IN_PLAY, set=None)  # Static cap mod: signed delta, or absolute set ("handsize is N", lowest wins, overrides base)
 AddText(name_contains=[...], effects=[Effect...])  # Static gimmick: the owner's played cards whose title matches (case-insensitive OR) gain `effects` (their own triggers, usually OnPlay), injected at play time alongside the card's own. El Super Santa/Sabu. schema v25
 Reroll(who, once=True, choose=False, when=THIS, cost?, finish=False, breakout=False)  # who=SELF/OPP die; choose=owner picks
                               # a player; when=NEXT grants a one-shot re-roll for the owner's next turn roll
