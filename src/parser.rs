@@ -2476,32 +2476,98 @@ fn breakout_mod(delta: i64, when_skill: Option<Skill>) -> Action {
 // ---------------------------------------------------------------------------
 // Grammar rule table (regex -> Effect builder).
 //
-// `match_grammar` takes the FIRST rule whose regex matches, so ORDER IS
-// SEMANTIC: more-specific patterns must precede the general fallbacks. The table
-// is split into domain sub-tables purely for navigability; `build_rules`
-// concatenates them in the original single-`vec![]` order. Do not reorder the
-// `extend` calls, or rules within a sub-table, without re-checking the parser
-// golden (fixtures/parser/cards.ir.json via tests/parser_parity.rs).
+// `match_grammar` takes the FIRST rule whose regex matches, so ORDER IS SEMANTIC:
+// more-specific patterns must precede the general fallbacks. The table is split
+// into domain sub-tables purely for navigability; both `build_rules` (the live
+// `RULES`) and `rule_catalog` (the grammar-catalog tooling) read the SAME ordered
+// `domain_tables`, so the catalog order matches `RULES` by construction. Do not
+// reorder `domain_tables`, or rules within a sub-table, without re-checking the
+// parser golden (fixtures/parser/cards.ir.json via tests/parser_parity.rs).
 // ---------------------------------------------------------------------------
-fn build_rules() -> Vec<(Regex, Builder)> {
-    let mut rules = Vec::new();
-    rules.extend(build_skill_buff_rules());
-    rules.extend(build_draw_search_rules());
-    rules.extend(build_turn_roll_rules());
-    rules.extend(build_dq_loss_rules());
-    rules.extend(build_flip_crowd_reroll_rules());
-    rules.extend(build_flip_trigger_rules());
-    rules.extend(build_bury_discard_rules());
-    rules.extend(build_removal_hand_rules());
-    rules.extend(build_recur_rules());
-    rules.extend(build_unstoppable_draw_rules());
-    rules.extend(build_reveal_alsolead_rules());
-    rules.extend(build_finish_breakout_rules());
-    rules.extend(build_stop_trigger_rules());
-    rules
+
+/// One domain sub-table: a short name and one-line description (both surfaced in
+/// the generated grammar catalog) plus its ordered `(regex, builder)` rules.
+type DomainTable = (&'static str, &'static str, Vec<(Regex, Builder)>);
+
+/// The ordered grammar domains — THE single source of rule order. `build_rules`
+/// flattens it into `RULES`; `rule_catalog` walks it for the catalog. Keep both
+/// this list and each `build_*_rules` body in precedence order (first match wins).
+fn domain_tables() -> Vec<DomainTable> {
+    vec![
+        ("skill_buff", "Finish- and skill-roll buffs: flat, per-count, extreme (lowest/highest), and Crowd-Meter-scaled skill bonuses.", build_skill_buff_rules()),
+        ("draw_search", "Draw, discard, reveal, search, shuffle, and peek — self / opponent / each-player.", build_draw_search_rules()),
+        ("turn_roll", "Turn-roll modifiers (per-count, conditional, multi-turn, opponent-directed) and hand-size caps.", build_turn_roll_rules()),
+        ("dq_loss", "If-stopped / breakout-roll loss family (pay-or-lose, discard-or-lose, pinfall).", build_dq_loss_rules()),
+        ("flip_crowd_reroll", "Flip N, Crowd-Meter swings, turn/finish/breakout/costed re-rolls, and extra-card grants.", build_flip_crowd_reroll_rules()),
+        ("flip_trigger", "Gimmick-blank, flip-until, flip self-triggers, flip-pool selects, and standing flip triggers.", build_flip_trigger_rules()),
+        ("bury_discard", "Provenance-gated flip triggers, per-count bury, and bury/discard across discard piles.", build_bury_discard_rules()),
+        ("removal_hand", "In-play removal (discard the opponent's board) and hand disruption (bury/discard from hand).", build_removal_hand_rules()),
+        ("recur", "Recursion: discard->hand, shuffle-into-deck, recur-to-deck-top, and conditional recur.", build_recur_rules()),
+        ("unstoppable_draw", "Unstoppable-by gates and draw riders (deck-position, conditional, on-roll).", build_unstoppable_draw_rules()),
+        ("reveal_alsolead", "Reveal-and-discard, the also-a-<order> family, and no-DQ / cannot-be-disqualified rules.", build_reveal_alsolead_rules()),
+        ("finish_breakout", "Symmetric roll mods, Finish-roll skill gates, breakout bonuses/attempts, and per-count Finish.", build_finish_breakout_rules()),
+        ("stop_trigger", "Stop rules and generic trigger-body splits (on hit/roll/breakout/stop/start) plus the catch-all gate.", build_stop_trigger_rules()),
+    ]
 }
 
-/// Finish- and skill-roll buffs: flat, per-count, extreme (lowest/highest), and Crowd-Meter-scaled skill bonuses.
+fn build_rules() -> Vec<(Regex, Builder)> {
+    domain_tables()
+        .into_iter()
+        .flat_map(|(_, _, table)| table)
+        .collect()
+}
+
+/// A single grammar rule, as surfaced by [`rule_catalog`].
+pub struct RuleInfo {
+    /// The domain sub-table this rule belongs to.
+    pub domain: &'static str,
+    /// One-line description of the domain.
+    pub description: &'static str,
+    /// Global precedence index into `RULES` (lower = matched first).
+    pub index: usize,
+    /// The rule's anchored regex source.
+    pub pattern: String,
+}
+
+/// Every grammar rule in precedence order, tagged with its domain — the inventory
+/// behind the generated grammar catalog. Built from the same `domain_tables` as
+/// `RULES`, so `index` lines up with the live table.
+pub fn rule_catalog() -> Vec<RuleInfo> {
+    let mut out = Vec::new();
+    for (domain, description, table) in domain_tables() {
+        for (re, _) in &table {
+            let index = out.len();
+            out.push(RuleInfo {
+                domain,
+                description,
+                index,
+                pattern: re.as_str().to_owned(),
+            });
+        }
+    }
+    out
+}
+
+/// The canonical rule-inventory JSON (one `{index, domain, pattern}` object per line,
+/// in precedence order): the DB-free contract that guards the grammar catalog against
+/// silent drift. `srg grammar-catalog` writes it to `fixtures/parser/rule_index.json`;
+/// `tests/grammar_catalog.rs` asserts the committed copy still equals this, so adding
+/// or reordering a rule without regenerating the catalog fails the suite.
+pub fn rule_index_json() -> String {
+    let rows: Vec<String> = rule_catalog()
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "index": r.index,
+                "domain": r.domain,
+                "pattern": r.pattern,
+            })
+            .to_string()
+        })
+        .collect();
+    format!("[\n{}\n]\n", rows.join(",\n"))
+}
+
 fn build_skill_buff_rules() -> Vec<(Regex, Builder)> {
     vec![
         // "If this match has [No] [Dd]isqualifications, <effect>" — the DQ-state gate
@@ -2835,7 +2901,6 @@ fn build_skill_buff_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Draw, discard, reveal, search, shuffle, and peek — self / opponent / each-player.
 fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
     vec![
         rule(r"Each player draws? (\d+) cards?", |c| {
@@ -3160,7 +3225,6 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Turn-roll modifiers (per-count, conditional, multi-turn, opponent-directed) and hand-size caps.
 fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
     vec![
         // Per-count self turn-roll bonus. The optional `with "X" in the name` suffix
@@ -3557,7 +3621,6 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// If-stopped / breakout-roll loss family (pay-or-lose, discard-or-lose, pinfall).
 fn build_dq_loss_rules() -> Vec<(Regex, Builder)> {
     vec![
         // DQ-CAUSE family (task #94). The plain "If [this card is] stopped[,] you lose
@@ -3678,7 +3741,6 @@ fn build_dq_loss_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Flip N, Crowd-Meter swings, turn/finish/breakout/costed re-rolls, and extra-card grants.
 fn build_flip_crowd_reroll_rules() -> Vec<(Regex, Builder)> {
     vec![
         rule(r"Flip (?:up to )?(\d+) cards?", |c| {
@@ -3857,7 +3919,6 @@ fn build_flip_crowd_reroll_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Gimmick-blank, flip-until, flip self-triggers, flip-pool selects, and standing flip triggers.
 fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
     vec![
         // "[Your opponent's] Gimmick is blank" -> a Static `BlankGimmick` marker (the
@@ -4103,7 +4164,6 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Provenance-gated flip triggers, per-count bury, and bury/discard across discard piles.
 fn build_bury_discard_rules() -> Vec<(Regex, Builder)> {
     vec![
         // Provenance-gated flip self-trigger (schema v87). "flipped by \"<X>\"": the
@@ -4304,7 +4364,6 @@ fn build_bury_discard_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// In-play removal (discard the opponent's board) and hand disruption (bury/discard from hand).
 fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
     vec![
         // --- In-play removal: discard an opponent's in-play card (task #121) ---
@@ -4576,7 +4635,6 @@ fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Recursion: discard->hand, shuffle-into-deck, recur-to-deck-top, and conditional recur.
 fn build_recur_rules() -> Vec<(Regex, Builder)> {
     vec![
         // Recur from discard -> hand (task #122). Broadened from cards/atk-only to a
@@ -4769,7 +4827,6 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Unstoppable-by gates and draw riders (deck-position, conditional, on-roll).
 fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
     vec![
         // "(This card) cannot be stopped by <order>" — unstoppable against a stopper
@@ -5036,7 +5093,6 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Reveal-and-discard, the also-a-<order> family, and no-DQ / cannot-be-disqualified rules.
 fn build_reveal_alsolead_rules() -> Vec<(Regex, Builder)> {
     vec![
         // Reveal-and-discard, single/conditional phrasing: "[Your opponent|They] randomly
@@ -5159,7 +5215,6 @@ fn build_reveal_alsolead_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Symmetric roll mods, Finish-roll skill gates, breakout bonuses/attempts, and per-count Finish.
 fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
     vec![
         // Symmetric roll modifier (task #131): "If either player rolls <S> for their
@@ -5654,7 +5709,6 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
     ]
 }
 
-/// Stop rules and generic trigger-body splits (on hit/roll/breakout/stop/start) plus the catch-all gate.
 fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
     vec![
         // "Stop \"X\"[, \"Y\"][ or \"Z\"]" — stop a specifically-NAMED attack (no
@@ -6086,16 +6140,46 @@ fn is_metadata(clause: &str) -> bool {
     META.is_match(clause.trim())
 }
 
-fn match_grammar(clause: &str) -> Option<Effect> {
+/// The first rule whose regex matches AND whose builder accepts the clause,
+/// returned as `(index into RULES, built effect)`. Shared by `match_grammar` (the
+/// parse path) and `matching_rule` (the grammar-catalog attribution path) so they
+/// can never diverge on which rule wins.
+fn first_match(clause: &str) -> Option<(usize, Effect)> {
     let stripped = clause.trim().trim_end_matches('.').trim();
-    for (re, builder) in RULES.iter() {
+    for (i, (re, builder)) in RULES.iter().enumerate() {
         if let Some(caps) = re.captures(stripped) {
             if let Some(eff) = builder(&caps) {
-                return Some(eff); // a builder may decline (unmodelled target/desc)
+                return Some((i, eff)); // a builder may decline (unmodelled target/desc)
             }
         }
     }
     None
+}
+
+fn match_grammar(clause: &str) -> Option<Effect> {
+    first_match(clause).map(|(_, eff)| eff)
+}
+
+/// Index into `RULES` of the first rule that handles `clause`, or `None` when no
+/// single rule does (it may still parse via a composition, or be Unsupported).
+/// Tooling-only: pairs with [`rule_catalog`] to attribute real clauses to rules.
+fn matching_rule(clause: &str) -> Option<usize> {
+    first_match(clause).map(|(i, _)| i)
+}
+
+/// Each grammar-relevant clause in `text` — frequency headers and metadata filtered
+/// out, matching `coverage` — paired with the index of the first rule that matches
+/// it (`None` = handled only by a composition, or unsupported). Feeds the grammar
+/// catalog's per-rule examples.
+pub fn clause_rule_hits(text: &str) -> Vec<(String, Option<usize>)> {
+    split_clauses(text)
+        .into_iter()
+        .filter(|c| freq_header(c).is_none() && !is_metadata(c))
+        .map(|c| {
+            let hit = matching_rule(&c);
+            (c, hit)
+        })
+        .collect()
 }
 
 fn compile(clause: &str, source: EffectSource, freq: Frequency, n: Option<i64>) -> Effect {

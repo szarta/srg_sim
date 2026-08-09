@@ -96,6 +96,19 @@ enum Command {
         #[arg(long, default_value = "fixtures/parser/clauses.json")]
         path: PathBuf,
     },
+    /// Regenerate the grammar catalog: a readable per-rule reference (with real DB
+    /// example clauses) plus the gated rule inventory. Run after adding/changing rules.
+    GrammarCatalog {
+        /// The readable catalog markdown.
+        #[arg(long, default_value = "docs/development/grammar-catalog.md")]
+        doc: PathBuf,
+        /// The gated rule inventory (checked by tests/grammar_catalog.rs).
+        #[arg(long, default_value = "fixtures/parser/rule_index.json")]
+        index: PathBuf,
+        /// Path to the cards.yaml export (defaults to the DB snapshot).
+        #[arg(long)]
+        cards: Option<PathBuf>,
+    },
     /// Print engine build info.
     Info,
     /// Deck-testing harness: report each deck's unmodeled clauses, then play N
@@ -273,6 +286,9 @@ fn main() -> anyhow::Result<()> {
         Command::Replay { log, cards } => commands::replay(&cards_or_default(cards), &log),
         Command::CardsIr { out, cards } => commands::gen_cards_ir(&cards_or_default(cards), &out),
         Command::ParserFixture { path } => commands::regen_parser_fixture(&path),
+        Command::GrammarCatalog { doc, index, cards } => {
+            commands::gen_grammar_catalog(&cards_or_default(cards), &doc, &index)
+        }
         Command::Audit {
             deck_a,
             deck_b,

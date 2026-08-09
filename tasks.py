@@ -6,6 +6,7 @@ Usage:
     invoke build          # cargo build (--release optional)
     invoke overrides      # regen overrides.ir.json from overrides.yaml (self-contained)
     invoke cards-ir       # regen the parser golden fixtures/parser/cards.ir.json (Rust)
+    invoke grammar-catalog# regen docs/development/grammar-catalog.md + rule_index.json
     invoke bump-version   # bump the crate version in Cargo.toml (dry-run with no args)
 
 Install invoke: pip install invoke   (or use the shared venv's copy)
@@ -66,6 +67,20 @@ def cards_ir(c):
     parser oracle). Requires a built binary — builds it first.
     """
     c.run("cargo run --quiet --features cli -- cards-ir", pty=True)
+
+
+@task(name="grammar-catalog")
+def grammar_catalog(c):
+    """Regenerate the grammar catalog: `docs/development/grammar-catalog.md` (a readable
+    per-rule reference with real DB example clauses) and `fixtures/parser/rule_index.json`
+    (the DB-free rule inventory).
+
+    Run after adding or changing a grammar rule, then review the diff. The inventory is
+    gated by `tests/grammar_catalog.rs`, so a rule change without regenerating fails the
+    suite. The catalog is the "what shapes are already handled?" reference for the
+    coverage grind. Requires a built binary.
+    """
+    c.run("cargo run --quiet --features cli -- grammar-catalog", pty=True)
 
 
 @task(name="parser-fixture")

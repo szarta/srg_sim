@@ -55,6 +55,7 @@ invoke test           # cargo test — the suite (separate from check)
 invoke build          # cargo build (--release for optimized)
 invoke overrides      # regen overrides.ir.json from ./overrides.yaml (single source; self-contained)
 invoke cards-ir       # regen the parser golden fixtures/parser/cards.ir.json (Rust parser)
+invoke grammar-catalog # regen docs/development/grammar-catalog.md (rule reference) + rule_index.json
 invoke bump-version   # bump the crate version in Cargo.toml (dry-run with no args)
 ```
 
