@@ -29,9 +29,18 @@ use std::sync::LazyLock;
 /// The hand-authored override table: `db_uuid -> compiled effects`.
 pub type Overrides = BTreeMap<String, Vec<Effect>>;
 
-// ---------------------------------------------------------------------------
-// Small constructors mirroring the effects.py dataclass defaults
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------
+// Effect / action / filter constructors — the small builders the grammar
+// rules call. Grouped by concern so a rule author can scan for an existing
+// helper before writing a new one (sections below, in order): effect/trigger,
+// card filters, reveal, draw/discard, roll mods, flip, scry, search, bury,
+// skill buffs, re-rolls, DQ/lose, hand size, conditions, trigger-body & gates,
+// text util.
+// --------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------
+// Effect & trigger constructors
+// --------------------------------------------------------------------------
 
 fn guard() -> FrequencyGuard {
     FrequencyGuard {
@@ -98,13 +107,6 @@ fn on_hit_named(atk_type: Option<AtkType>, names: Vec<String>, in_text: bool) ->
     }
 }
 
-fn cf_atk(a: AtkType) -> CardFilter {
-    CardFilter {
-        atk_type: Some(a),
-        ..Default::default()
-    }
-}
-
 /// "When `who` rolls `skill` for their turn roll" — a standing trigger fired on the
 /// turn roll-off (the effect owner's card must be in play). `who == SelfSide` = "when
 /// you roll"; `who == Opp` = "when your opponent rolls".
@@ -115,9 +117,58 @@ fn on_roll(s: Skill, who: Who) -> Trigger {
     }
 }
 
+/// "When you flip [any number of | N or more] cards, <action>" — a STANDING flip
+/// trigger (`on_self: false`), fired by `run_on_flip` from an in-play card. `count`
+/// = `None` for "any number", `Some(n)` with `at_least` for an "n or more" threshold.
+fn on_flip_standing(count: Option<i64>, at_least: bool) -> Trigger {
+    Trigger::OnFlip {
+        who: Who::SelfSide,
+        count,
+        at_least,
+        on_self: false,
+    }
+}
+
+/// The DQ-CAUSE trigger: "if [this card is] stopped" (the stopped card's own
+/// side), shared by the whole family (task #94).
+fn on_your_stop() -> Trigger {
+    Trigger::OnStop {
+        dir: Direction::Yours,
+        order: None,
+    }
+}
+
+/// The stopper's side: "when you stop a card" — the effect fires for the player who
+/// PLAYED the stop (Direction::Theirs, "they stopped a card"), the mirror of
+/// [`on_your_stop`].
+fn on_their_stop() -> Trigger {
+    Trigger::OnStop {
+        dir: Direction::Theirs,
+        order: None,
+    }
+}
+
+// --------------------------------------------------------------------------
+// Card filters (`CardFilter`)
+// --------------------------------------------------------------------------
+
+fn cf_atk(a: AtkType) -> CardFilter {
+    CardFilter {
+        atk_type: Some(a),
+        ..Default::default()
+    }
+}
+
 fn cf_order(o: PlayOrder) -> CardFilter {
     CardFilter {
         play_order: Some(o),
+        ..Default::default()
+    }
+}
+
+fn cf_name(names: Vec<String>) -> CardFilter {
+    CardFilter {
+        name_contains: names,
         ..Default::default()
     }
 }
@@ -129,12 +180,84 @@ fn quoted_names(text: &str) -> Vec<String> {
     Q.captures_iter(text).map(|c| c[1].to_owned()).collect()
 }
 
-fn cf_name(names: Vec<String>) -> CardFilter {
+/// A card-substring filter over the title (`"X" in the name`) or the rules text
+/// (`"X" in the text`) — picks the attribute from the phrasing captured as `attr`.
+fn name_or_text_filter(attr: &str, names: Vec<String>) -> CardFilter {
+    if attr == "text" {
+        CardFilter {
+            text_contains: names,
+            ..Default::default()
+        }
+    } else {
+        cf_name(names)
+    }
+}
+
+fn cf_tag(tag: &str) -> CardFilter {
     CardFilter {
-        name_contains: names,
+        tag: Some(tag.to_owned()),
         ..Default::default()
     }
 }
+
+/// The card-selector inside a recur/discard clause ("N cards", "N Finish", "N cards
+/// with \"X\" in the name", "N Follow Up Strike"). `None` if the descriptor is one we
+/// don't model (e.g. "stop", which has no CardFilter attribute).
+fn recur_filter(desc: &str) -> Option<CardFilter> {
+    let d = desc.trim();
+    if d.eq_ignore_ascii_case("card") || d.eq_ignore_ascii_case("cards") {
+        return Some(CardFilter::default());
+    }
+    if d.contains("in the name") {
+        let names = quoted_names(d);
+        return (!names.is_empty()).then(|| cf_name(names));
+    }
+    // A trailing " card"/" cards" is noise on a typed selector ("Lead cards" -> "Lead");
+    // strip it so count_filter sees the bare type.
+    let d = d
+        .strip_suffix(" cards")
+        .or_else(|| d.strip_suffix(" card"))
+        .unwrap_or(d);
+    // count_filter lowercases + strips a trailing 's' ("Strikes"->"strike"); the
+    // `es`-fallback covers sibilant plurals it misses ("Finishes"->"finish").
+    count_filter(d).or_else(|| d.strip_suffix("es").and_then(count_filter))
+}
+
+/// The card-selector inside a "for each `<X>` flipped" per-count over the turn's
+/// flips — an attack type, a Stop, an "X in the name" substring, or bare "card"
+/// (every flip). `None` for a descriptor with no filter.
+fn flipped_filter(desc: &str) -> Option<CardFilter> {
+    let d = desc.trim();
+    if d.eq_ignore_ascii_case("stop") || d.eq_ignore_ascii_case("stops") {
+        return Some(CardFilter {
+            is_stop: Some(true),
+            ..Default::default()
+        });
+    }
+    recur_filter(d)
+}
+
+/// The per-count / shuffle selector for a "… `<pre>` you have in play [with `<names>`
+/// in the name]" clause — a name-substring filter when the name qualifier is present,
+/// else the `<pre>` descriptor via [`recur_filter`] (card / type / order). `None` for
+/// a descriptor with no CardFilter.
+fn in_play_filter(pre: &str, names: Option<&str>) -> Option<CardFilter> {
+    if let Some(n) = names {
+        let names = quoted_names(n);
+        return (!names.is_empty()).then(|| cf_name(names));
+    }
+    recur_filter(pre)
+}
+
+/// "If you have a(nother) `<desc>` in play, …" as a `HasInPlay(SELF, …, ≥1)` gate.
+/// `None` for descriptors with no CardFilter (e.g. "stop").
+fn has_in_play_desc(desc: &str) -> Option<Condition> {
+    Some(has_in_play(Who::SelfSide, count_filter(desc.trim())?, 1))
+}
+
+// --------------------------------------------------------------------------
+// Reveal / flip-reveal
+// --------------------------------------------------------------------------
 
 /// The match test inside a reveal-then clause — the "`<X>`" in "if `<X>`, `<consequence>`":
 /// a name/text substring ("it has \"Guitar\" in the name") or an attack type ("it is a
@@ -287,68 +410,9 @@ fn is_reveal_top_both(eff: &Effect) -> bool {
         )
 }
 
-/// A card-substring filter over the title (`"X" in the name`) or the rules text
-/// (`"X" in the text`) — picks the attribute from the phrasing captured as `attr`.
-fn name_or_text_filter(attr: &str, names: Vec<String>) -> CardFilter {
-    if attr == "text" {
-        CardFilter {
-            text_contains: names,
-            ..Default::default()
-        }
-    } else {
-        cf_name(names)
-    }
-}
-
-fn cf_tag(tag: &str) -> CardFilter {
-    CardFilter {
-        tag: Some(tag.to_owned()),
-        ..Default::default()
-    }
-}
-
-/// The card-selector inside a recur/discard clause ("N cards", "N Finish", "N cards
-/// with \"X\" in the name", "N Follow Up Strike"). `None` if the descriptor is one we
-/// don't model (e.g. "stop", which has no CardFilter attribute).
-fn recur_filter(desc: &str) -> Option<CardFilter> {
-    let d = desc.trim();
-    if d.eq_ignore_ascii_case("card") || d.eq_ignore_ascii_case("cards") {
-        return Some(CardFilter::default());
-    }
-    if d.contains("in the name") {
-        let names = quoted_names(d);
-        return (!names.is_empty()).then(|| cf_name(names));
-    }
-    // A trailing " card"/" cards" is noise on a typed selector ("Lead cards" -> "Lead");
-    // strip it so count_filter sees the bare type.
-    let d = d
-        .strip_suffix(" cards")
-        .or_else(|| d.strip_suffix(" card"))
-        .unwrap_or(d);
-    // count_filter lowercases + strips a trailing 's' ("Strikes"->"strike"); the
-    // `es`-fallback covers sibilant plurals it misses ("Finishes"->"finish").
-    count_filter(d).or_else(|| d.strip_suffix("es").and_then(count_filter))
-}
-
-/// The card-selector inside a "for each `<X>` flipped" per-count over the turn's
-/// flips — an attack type, a Stop, an "X in the name" substring, or bare "card"
-/// (every flip). `None` for a descriptor with no filter.
-fn flipped_filter(desc: &str) -> Option<CardFilter> {
-    let d = desc.trim();
-    if d.eq_ignore_ascii_case("stop") || d.eq_ignore_ascii_case("stops") {
-        return Some(CardFilter {
-            is_stop: Some(true),
-            ..Default::default()
-        });
-    }
-    recur_filter(d)
-}
-
-/// "If you have a(nother) `<desc>` in play, …" as a `HasInPlay(SELF, …, ≥1)` gate.
-/// `None` for descriptors with no CardFilter (e.g. "stop").
-fn has_in_play_desc(desc: &str) -> Option<Condition> {
-    Some(has_in_play(Who::SelfSide, count_filter(desc.trim())?, 1))
-}
+// --------------------------------------------------------------------------
+// Draw & discard actions
+// --------------------------------------------------------------------------
 
 fn draw(n: i64, who: Who, source: DeckEnd, per: Option<CardFilter>, per_who: Who) -> Action {
     Action::Draw {
@@ -377,6 +441,38 @@ fn draw_crowd(offset: i64, cap: Option<i64>) -> Action {
         from_crowd: true,
     }
 }
+
+fn discard(count: i64, who: Who, random: bool, per: Option<CardFilter>, per_who: Who) -> Action {
+    Action::Discard {
+        selector: CardFilter::default(),
+        count,
+        who,
+        random,
+        per,
+        per_who,
+        choose: false,
+        all: false,
+    }
+}
+
+/// "Look at your opponent's hand, choose N card(s) and discard it/them" — the
+/// effect owner picks from the opponent's hand. `selector` gates which cards.
+fn discard_choose(count: i64, selector: CardFilter) -> Action {
+    Action::Discard {
+        selector,
+        count,
+        who: Who::Opp,
+        random: false,
+        per: None,
+        per_who: Who::SelfSide,
+        choose: true,
+        all: false,
+    }
+}
+
+// --------------------------------------------------------------------------
+// Roll modifiers
+// --------------------------------------------------------------------------
 
 fn modify_roll(
     who: Who,
@@ -410,33 +506,9 @@ fn modify_roll_on_skill(delta: i64, skill: Skill) -> Action {
     }
 }
 
-fn discard(count: i64, who: Who, random: bool, per: Option<CardFilter>, per_who: Who) -> Action {
-    Action::Discard {
-        selector: CardFilter::default(),
-        count,
-        who,
-        random,
-        per,
-        per_who,
-        choose: false,
-        all: false,
-    }
-}
-
-/// "Look at your opponent's hand, choose N card(s) and discard it/them" — the
-/// effect owner picks from the opponent's hand. `selector` gates which cards.
-fn discard_choose(count: i64, selector: CardFilter) -> Action {
-    Action::Discard {
-        selector,
-        count,
-        who: Who::Opp,
-        random: false,
-        per: None,
-        per_who: Who::SelfSide,
-        choose: true,
-        all: false,
-    }
-}
+// --------------------------------------------------------------------------
+// Flip actions
+// --------------------------------------------------------------------------
 
 fn flip(n: i64, who: Who) -> Action {
     Action::Flip {
@@ -472,27 +544,730 @@ fn flip_self(action: Action, optional: bool, cond: Condition) -> Effect {
     }
 }
 
-/// "When you flip [any number of | N or more] cards, <action>" — a STANDING flip
-/// trigger (`on_self: false`), fired by `run_on_flip` from an in-play card. `count`
-/// = `None` for "any number", `Some(n)` with `at_least` for an "n or more" threshold.
-fn on_flip_standing(count: Option<i64>, at_least: bool) -> Trigger {
-    Trigger::OnFlip {
-        who: Who::SelfSide,
+/// "If this card is flipped for your Gimmick, <action>" — a per-card flip self-trigger
+/// gated on the flip being gimmick-caused ([`Condition::FlippedForGimmick`], read from
+/// `GameState::flip_provenance`).
+fn flip_self_gimmick(action: Action, optional: bool) -> Effect {
+    flip_self(action, optional, Condition::FlippedForGimmick)
+}
+
+/// "[randomly] add N of the flipped cards to your hand" -> [`Action::AddFlippedToHand`].
+/// `count_word` is a number / "one" / "all" / "the" (`all`/`the` -> all matching);
+/// `filter_word` is `cards` (any) or an attack type.
+fn add_flipped_action(count_word: &str, filter_word: &str, random: bool) -> Action {
+    let count = match count_word.to_ascii_lowercase().as_str() {
+        "all" | "the" => None,
+        "one" => Some(1),
+        d => d.parse::<i64>().ok(),
+    };
+    let f = filter_word.to_ascii_lowercase();
+    let f = f.strip_suffix('s').unwrap_or(&f);
+    let filter = if f == "card" {
+        CardFilter::default()
+    } else {
+        cf_atk(count_atk(f))
+    };
+    Action::AddFlippedToHand {
         count,
-        at_least,
-        on_self: false,
+        filter,
+        random,
     }
 }
 
-/// Uppercase the first character (body clauses are lowercase mid-sentence, but the
-/// grammar's rules expect sentence case).
-fn capitalize_first(s: &str) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
-        None => String::new(),
+/// "<flipper> flips N cards for each <desc> <per_who> ha(s|ve) in play" — the
+/// per-count flip family, mirroring [`per_draw`].
+fn per_flip(n: i64, who: Who, desc: &str, per_who: Who) -> Option<Effect> {
+    let per = count_filter(desc)?;
+    Some(eff(
+        on_hit(),
+        vec![Action::Flip {
+            n,
+            who,
+            per: Some(per),
+            per_who,
+            until: None,
+            until_to_hand: false,
+        }],
+        Condition::Always,
+        Duration::Instant,
+    ))
+}
+
+/// "Flip cards until you flip a <desc>[, add that <desc> to your hand]" — the
+/// flip-until family. Mills the deck one card at a time until a card matching
+/// `desc` surfaces; that card goes to the hand when `to_hand`, else to the
+/// discard with the rest. Returns `None` when `desc` is not a recognized filter.
+fn flip_until(desc: &str, to_hand: bool) -> Option<Effect> {
+    let until = count_filter(desc)?;
+    Some(eff(
+        on_hit(),
+        vec![Action::Flip {
+            n: 0,
+            who: Who::SelfSide,
+            per: None,
+            per_who: Who::SelfSide,
+            until: Some(until),
+            until_to_hand: to_hand,
+        }],
+        Condition::Always,
+        Duration::Instant,
+    ))
+}
+
+// --------------------------------------------------------------------------
+// Scry
+// --------------------------------------------------------------------------
+
+/// "Look at / Reveal the top N cards of your deck, add M to your hand and flip
+/// the others" — a self-deck [`Action::Scry`] that mills its leftovers
+/// ([`ScryRest::Flip`]). "Look at" keeps the window private; "Reveal" makes the
+/// ids public.
+fn scry_flip(reveal: bool, top: i64, to_hand: i64) -> Action {
+    Action::Scry {
+        deck: Who::SelfSide,
+        top,
+        bottom: 0,
+        reveal,
+        to_hand,
+        bury: 0,
+        rest: ScryRest::Flip,
     }
 }
+
+/// "Look at / Reveal the top card of `deck`'s deck, you may flip it" — a single-card
+/// peek with an *optional* flip ([`ScryRest::MayFlip`]): the actor sees the top card,
+/// then mills it only when worthwhile (deny an opponent their Finish/stop, or shed
+/// your own junk) and otherwise leaves it on top.
+fn scry_may_flip(reveal: bool, deck: Who) -> Action {
+    Action::Scry {
+        deck,
+        top: 1,
+        bottom: 0,
+        reveal,
+        to_hand: 0,
+        bury: 0,
+        rest: ScryRest::MayFlip,
+    }
+}
+
+// --------------------------------------------------------------------------
+// Search
+// --------------------------------------------------------------------------
+
+fn search(filter: CardFilter, dest: Dest, count: i64) -> Action {
+    Action::Search {
+        filter,
+        dest,
+        count,
+    }
+}
+
+/// Parse a `Search` selector — "a Finish", "2 cards", "up to 3 cards", "1 card with
+/// \"Ladder\" in the name" — into `(filter, count)`, reusing [`recur_filter`] for the
+/// typed/named descriptor. `None` for a selector with no CardFilter (Spotlight, Skill
+/// Requirement, …), so those clauses stay Unsupported rather than mis-modeling.
+fn search_target(sel: &str) -> Option<(CardFilter, i64)> {
+    static LEAD: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^(?:up to )?(a|an|\d+) (.+)$").unwrap());
+    let caps = LEAD.captures(sel.trim())?;
+    let head = caps[1].to_lowercase();
+    let count = if head == "a" || head == "an" {
+        1
+    } else {
+        head.parse().ok()?
+    };
+    Some((recur_filter(&caps[2])?, count))
+}
+
+// --------------------------------------------------------------------------
+// Bury
+// --------------------------------------------------------------------------
+
+fn bury(count: i64, who: Who) -> Action {
+    Action::Bury {
+        choose: false,
+        selector: CardFilter::default(),
+        count,
+        who,
+        random: false,
+        source: BuryFrom::Discard,
+        per: None,
+        per_who: Who::SelfSide,
+        all: false,
+    }
+}
+
+/// "Bury N [`<selector>`] cards in any/either player's discard pile" — the actor picks
+/// `count` cards matching `selector` from EITHER discard pile (`choose: true`; `who`
+/// is ignored). Each buried card returns to ITS OWNER's deck bottom.
+fn bury_choose(count: i64, selector: CardFilter) -> Action {
+    Action::Bury {
+        choose: true,
+        selector,
+        count,
+        who: Who::SelfSide,
+        random: false,
+        source: BuryFrom::Discard,
+        per: None,
+        per_who: Who::SelfSide,
+        all: false,
+    }
+}
+
+/// "Bury `count` per `per`-matching card you have in play" (schema v83). `random` is
+/// forced on for a HAND source (the hand owner sheds without choosing). The per-count
+/// always ranges over the SELF board ("… for each `<X>` you have in play").
+fn bury_per(count: i64, who: Who, source: BuryFrom, per: CardFilter, random: bool) -> Action {
+    Action::Bury {
+        choose: false,
+        selector: CardFilter::default(),
+        count,
+        who,
+        random: random || source == BuryFrom::Hand,
+        source,
+        per: Some(per),
+        per_who: Who::SelfSide,
+        all: false,
+    }
+}
+
+/// An `OnPlay` per-count bury effect (Cardona family); `None` if the per-descriptor
+/// has no CardFilter.
+fn per_bury(
+    count: i64,
+    who: Who,
+    source: BuryFrom,
+    pre: &str,
+    names: Option<&str>,
+    random: bool,
+) -> Option<Effect> {
+    let per = in_play_filter(pre, names)?;
+    Some(eff(
+        Trigger::OnPlay,
+        vec![bury_per(count, who, source, per, random)],
+        Condition::Always,
+        Duration::Instant,
+    ))
+}
+
+/// Bury `count` card(s) from a player's HAND (SRG hand disruption). `random` = the
+/// hand owner loses a random card; `choose` = the EFFECT OWNER looks and picks (only
+/// meaningful with `who == Opp`). Routes to the engine's `bury_from_hand`.
+fn bury_hand(count: i64, who: Who, random: bool, choose: bool) -> Action {
+    Action::Bury {
+        choose,
+        selector: CardFilter::default(),
+        count,
+        who,
+        random,
+        source: BuryFrom::Hand,
+        per: None,
+        per_who: Who::SelfSide,
+        all: false,
+    }
+}
+
+/// "They bury all `<type>` cards" — bury EVERY hand card matching `selector` (schema
+/// v90, `all`). The hand owner sheds without choosing; `count` is a placeholder (the
+/// dispatch derives it from the hand size).
+fn bury_all_hand(selector: CardFilter, who: Who) -> Action {
+    Action::Bury {
+        choose: false,
+        selector,
+        count: 0,
+        who,
+        random: false,
+        source: BuryFrom::Hand,
+        per: None,
+        per_who: Who::SelfSide,
+        all: true,
+    }
+}
+
+/// "They discard all `<type>`" — discard EVERY hand card matching `selector` (schema
+/// v90, `all`). Sibling of [`bury_all_hand`].
+fn discard_all_hand(selector: CardFilter, who: Who) -> Action {
+    Action::Discard {
+        selector,
+        count: 0,
+        who,
+        random: false,
+        per: None,
+        per_who: Who::SelfSide,
+        choose: false,
+        all: true,
+    }
+}
+
+/// Bury a player's ENTIRE discard pile at random (Rejected!: "Each player
+/// randomly buries their discard pile"). `count == DECK_SIZE` is the whole-pile
+/// idiom (the engine's `bury_from_discard` clamps by breaking when the pile is
+/// empty); `random` routes each pick through the RNG.
+fn bury_whole_discard(who: Who) -> Action {
+    Action::Bury {
+        choose: false,
+        selector: CardFilter::default(),
+        count: DECK_SIZE as i64,
+        who,
+        random: true,
+        source: BuryFrom::Discard,
+        per: None,
+        per_who: Who::SelfSide,
+        all: false,
+    }
+}
+
+// --------------------------------------------------------------------------
+// Skill buffs & scaling
+// --------------------------------------------------------------------------
+
+fn buff(skill: Skill, delta: i64, who: Who) -> Action {
+    Action::BuffSkill {
+        skill,
+        delta,
+        who,
+        duration: Duration::WhileInPlay,
+        target_highest: false,
+        target_lowest: false,
+        per_crowd: false,
+        cap: None,
+        per: None,
+        per_zone: CountZone::InPlay,
+        per_excludes_self: false,
+    }
+}
+
+/// One standing [`Action::TurnRollBonus`] per skill — "Your Power and Strike are +N
+/// during turn rolls" fans out to a bonus on each named skill.
+fn turn_roll_bonuses(skills: Vec<Skill>, delta: i64) -> Vec<Action> {
+    skills
+        .into_iter()
+        .map(|skill| Action::TurnRollBonus {
+            skill,
+            delta,
+            either: false,
+        })
+        .collect()
+}
+
+/// "+N to your lowest/highest skill" -> a [`Action::BuffSkill`] whose target skill is
+/// resolved dynamically at derived-stats time (`resolve_buff`). The `skill` field is a
+/// placeholder (never read when `target_lowest`/`target_highest` is set).
+fn buff_extreme(highest: bool, delta: i64, who: Who) -> Action {
+    Action::BuffSkill {
+        skill: Skill::ALL[0],
+        delta,
+        who,
+        duration: Duration::WhileInPlay,
+        target_highest: highest,
+        target_lowest: !highest,
+        per_crowd: false,
+        cap: None,
+        per: None,
+        per_zone: CountZone::InPlay,
+        per_excludes_self: false,
+    }
+}
+
+/// A `BuffSkill` scaled by the count of the owner's in-play cards matching `per`
+/// (clamped to `cap`) — "your Technique and Grapple are +1 for each card you have
+/// in play with 'Breaker' in the name". `per: None` = a flat +`delta`. `exclude_self`
+/// drops the source card from the count ("for each OTHER card …").
+fn buff_per(
+    skill: Skill,
+    delta: i64,
+    per: Option<CardFilter>,
+    cap: Option<i64>,
+    exclude_self: bool,
+) -> Action {
+    Action::BuffSkill {
+        skill,
+        delta,
+        who: Who::SelfSide,
+        duration: Duration::WhileInPlay,
+        target_highest: false,
+        target_lowest: false,
+        per_crowd: false,
+        cap,
+        per,
+        per_zone: CountZone::InPlay,
+        per_excludes_self: exclude_self,
+    }
+}
+
+/// Build a Static multi-skill [`BuffSkill`] scaled by the count of a card TYPE on the
+/// owner's board — "Your X and Y are +N for each `<type>` you have in play (Max +M)".
+/// `skills_text` is a skill/and/comma list, `per_text` a type descriptor routed through
+/// [`count_filter`] (atk / play order / stop). Declines if the skill list is empty or
+/// the type descriptor isn't a countable type (e.g. bare "card" — owned by the name
+/// rules), so a non-type "for each …" falls through to Unsupported.
+fn type_count_buff(
+    skills_text: &str,
+    delta: i64,
+    per_text: &str,
+    cap: Option<regex::Match>,
+    exclude_self: bool,
+) -> Option<Effect> {
+    let skills = skill_list(skills_text);
+    let per = count_filter(per_text)?;
+    if skills.is_empty() {
+        return None;
+    }
+    let cap = cap.map(|m| m.as_str().parse::<i64>().unwrap());
+    let actions = skills
+        .into_iter()
+        .map(|s| buff_per(s, delta, Some(per.clone()), cap, exclude_self))
+        .collect();
+    Some(eff(
+        Trigger::Static,
+        actions,
+        Condition::Always,
+        Duration::WhileInPlay,
+    ))
+}
+
+/// Build a Static multi-skill [`BuffSkill`] whose delta is the live Crowd Meter —
+/// "Your X [and Y] is/are + the Crowd Meter [(Max +M)]" (`per_crowd`, the same dynamic
+/// delta Copy Kat uses, previously override-only). Declines when the skill list is empty
+/// (so "Your Finish roll …" / "Your breakout rolls …" — different mechanisms — fall
+/// through), keeping this to plain skill buffs.
+fn crowd_meter_buff(skills_text: &str, cap: Option<regex::Match>) -> Option<Effect> {
+    let skills = skill_list(skills_text);
+    if skills.is_empty() {
+        return None;
+    }
+    let cap = cap.map(|m| m.as_str().parse::<i64>().unwrap());
+    let actions = skills
+        .into_iter()
+        .map(|s| Action::BuffSkill {
+            skill: s,
+            delta: 1,
+            who: Who::SelfSide,
+            duration: Duration::WhileInPlay,
+            target_highest: false,
+            target_lowest: false,
+            per_crowd: true,
+            cap,
+            per: None,
+            per_zone: CountZone::InPlay,
+            per_excludes_self: false,
+        })
+        .collect();
+    Some(eff(
+        Trigger::Static,
+        actions,
+        Condition::Always,
+        Duration::WhileInPlay,
+    ))
+}
+
+// --------------------------------------------------------------------------
+// Re-rolls
+// --------------------------------------------------------------------------
+
+/// A `Reroll` of the owner's (`SelfSide`) or opponent's turn/finish roll. `when` picks
+/// the current roll (`This`, structural) vs a one-shot for the NEXT turn roll; `finish`
+/// scopes it to the Finish roll. The action pre-existed (override-only) — this is the
+/// first grammar for it. `once`/`choose`/`cost` stay at their defaults.
+fn reroll(who: Who, when: RollWhen, finish: bool) -> Action {
+    Action::Reroll {
+        who,
+        once: false,
+        choose: false,
+        when,
+        cost: None,
+        finish,
+        breakout: false,
+    }
+}
+
+/// A `Reroll` of the DEFENDER's breakout roll — `who: SelfSide` (the defender re-rolls
+/// their own: "re-roll your Breakout roll") or `Opp` ("force your opponent to re-roll
+/// their Breakout roll", the finisher forcing the defender). Always `This` (structural,
+/// read in the breakout loop); never a `Next` grant.
+fn reroll_breakout(who: Who) -> Action {
+    Action::Reroll {
+        who,
+        once: false,
+        choose: false,
+        when: RollWhen::This,
+        cost: None,
+        finish: false,
+        breakout: true,
+    }
+}
+
+/// Parse a re-roll COST prefix into a [`RerollCost`] (schema v103): "bury N cards in
+/// your hand" → `BuryFromHand`; "discard N `<object>` [from your hand]" →
+/// `DiscardFromHand` (object via `recur_filter`: bare "card(s)" = any, else a typed /
+/// named filter). `None` for shapes we don't model here — reveal costs, "discard this
+/// card" self-discard (hand-activated), "up to N".
+fn reroll_cost(text: &str) -> Option<RerollCost> {
+    static BURY: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^bury (\d+|a|one) cards? in your hand$").unwrap());
+    static DISCARD: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^discard (\d+|a|one) (.+?)(?: from your hand)?$").unwrap()
+    });
+    let node = |kind, count, filter| RerollCost {
+        node_type: RerollCostTag,
+        kind,
+        count: Some(count),
+        filter,
+    };
+    let t = text.trim();
+    if let Some(c) = BURY.captures(t) {
+        return Some(node(
+            RerollCostKind::BuryFromHand,
+            count_or_word(&c[1]),
+            None,
+        ));
+    }
+    if let Some(c) = DISCARD.captures(t) {
+        let obj = c[2].trim();
+        if obj.eq_ignore_ascii_case("this card") {
+            return None; // self-discard: hand-activated, out of scope
+        }
+        let filter = recur_filter(obj)?;
+        // A bare "card"/"cards" object is the default (match-any) filter → carry None.
+        let filter = (filter != CardFilter::default()).then_some(filter);
+        return Some(node(
+            RerollCostKind::DiscardFromHand,
+            count_or_word(&c[1]),
+            filter,
+        ));
+    }
+    None
+}
+
+/// Route an OnReroll trigger body: normalize its roll-modifier phrasings so the shared
+/// grammar matches — "your/their roll is ±N" → "…turn roll is ±N", and the "would
+/// re-roll … that roll is +N" self case's "that roll" → "your turn roll" — then delegate
+/// to [`trigger_body`], which handles draw / roll-mod / shuffle-self / "you may" bodies.
+/// The roll-mod body becomes a `ModifyRoll{This}` the engine folds into the re-rolled
+/// value; every OnReroll clause's roll-mod always targets the re-rolling player.
+fn on_reroll_body(who: Who, body: &str) -> Option<Effect> {
+    static THAT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\bthat roll is").unwrap());
+    let norm = THAT.replace_all(body, "your turn roll is").into_owned();
+    trigger_body(Trigger::OnReroll { who }, &norm_roll_is_phrasing(&norm))
+}
+
+/// Normalize a bare "your/their roll is ±N" roll-modifier phrasing to the canonical
+/// "…turn roll is ±N" the [`ModifyRoll`] grammar (`Your turn roll is …` /
+/// `Their turn roll is …`) matches. Shared by the OnReroll and OnRoll body routers,
+/// whose clauses write the roll modifier as "their roll is -1" mid-body.
+fn norm_roll_is_phrasing(body: &str) -> String {
+    static BARE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)\b(your|their) roll is").unwrap());
+    BARE.replace_all(body, "${1} turn roll is").into_owned()
+}
+
+/// Route an OnRoll trigger body where the roller is the effect owner's OPPONENT ("When
+/// your opponent rolls `<S>` for their turn roll, `<body>`"). Normalizes the "their roll
+/// is ±N" roll-modifier phrasing, then delegates to [`trigger_body`] with `OnRoll{Opp}`
+/// — the "you"/"they" subjects in the body resolve to owner/opponent through the shared
+/// grammar exactly as the self mirror does.
+fn on_roll_opp_body(s: Skill, body: &str) -> Option<Effect> {
+    trigger_body(on_roll(s, Who::Opp), &norm_roll_is_phrasing(body))
+}
+
+// --------------------------------------------------------------------------
+// DQ / lose-the-match
+// --------------------------------------------------------------------------
+
+/// A Static "no disqualifications" match-rule toggle (`DisqualificationRule` was
+/// previously override-only). `Match` scope = "the match has no disqualifications";
+/// `SelfSide` = "you cannot be disqualified".
+fn dq_rule(scope: DqScope) -> Effect {
+    eff(
+        Trigger::Static,
+        vec![Action::DisqualificationRule {
+            enabled: false,
+            scope,
+        }],
+        Condition::Always,
+        Duration::WhileInPlay,
+    )
+}
+
+/// "If stopped, you lose the match via `kind`" — an OnStop(Yours) self-loss gated on
+/// `cond`: the loss fires only while `cond` holds. Pass `Always` for the plain form,
+/// or `Not(escape)` for an "... unless <escape>" variant (the loss is voided when the
+/// escape holds).
+fn lose_via(kind: LoseKind, cond: Condition) -> Effect {
+    eff(
+        on_your_stop(),
+        vec![Action::LoseBy {
+            kind,
+            who: Who::SelfSide,
+        }],
+        cond,
+        Duration::Instant,
+    )
+}
+
+/// "If stopped, discard N card(s) from your hand OR you lose the match via
+/// disqualification" — the stopped player may pay the discard cost instead of taking
+/// the DQ loss (task #94). Offered cost-first; a player who cannot pay is still
+/// offered the discard (a minor fidelity gap on an empty hand). Existing nodes only.
+fn discard_or_lose(count: i64) -> Effect {
+    let pay = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: format!("Discard {count} from your hand"),
+        actions: vec![discard(count, Who::SelfSide, false, None, Who::SelfSide)],
+    };
+    let lose = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: "Lose the match via disqualification".to_owned(),
+        actions: vec![Action::LoseBy {
+            kind: LoseKind::Disqualification,
+            who: Who::SelfSide,
+        }],
+    };
+    eff(
+        on_your_stop(),
+        vec![Action::Choice {
+            options: vec![pay, lose],
+        }],
+        Condition::Always,
+        Duration::Instant,
+    )
+}
+
+/// "If stopped, unless you discard N <type> from your hand, you lose ..." — a
+/// pay-or-lose where the cost is discarding a specific attack type (task #94). Like
+/// [`discard_or_lose`] but the discard carries a type `selector`.
+fn discard_type_or_lose(count: i64, atk_type: AtkType) -> Effect {
+    let pay = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: format!("Discard {count} {} from your hand", atk_type.name()),
+        actions: vec![Action::Discard {
+            selector: cf_atk(atk_type),
+            count,
+            who: Who::SelfSide,
+            random: false,
+            per: None,
+            per_who: Who::SelfSide,
+            choose: false,
+            all: false,
+        }],
+    };
+    let lose = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: "Lose the match via disqualification".to_owned(),
+        actions: vec![Action::LoseBy {
+            kind: LoseKind::Disqualification,
+            who: Who::SelfSide,
+        }],
+    };
+    eff(
+        on_your_stop(),
+        vec![Action::Choice {
+            options: vec![pay, lose],
+        }],
+        Condition::Always,
+        Duration::Instant,
+    )
+}
+
+/// The "take the loss" branch shared by the pay-or-lose Choice family (task #94).
+fn dq_lose_option() -> ChoiceOption {
+    ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label: "Lose the match via disqualification".to_owned(),
+        actions: vec![Action::LoseBy {
+            kind: LoseKind::Disqualification,
+            who: Who::SelfSide,
+        }],
+    }
+}
+
+/// An OnStop "pay `pay_actions` (labelled `label`) OR lose via disqualification"
+/// Choice effect (task #94).
+fn pay_or_lose(label: String, pay_actions: Vec<Action>) -> Effect {
+    let pay = ChoiceOption {
+        node_type: ChoiceOptionTag,
+        label,
+        actions: pay_actions,
+    };
+    eff(
+        on_your_stop(),
+        vec![Action::Choice {
+            options: vec![pay, dq_lose_option()],
+        }],
+        Condition::Always,
+        Duration::Instant,
+    )
+}
+
+/// "If stopped, discard N from your hand and bury this card or lose ..." — pay the
+/// discard-plus-bury-the-stopped-card cost, or take the loss.
+fn discard_bury_or_lose(count: i64) -> Effect {
+    pay_or_lose(
+        format!("Discard {count} and bury this card"),
+        vec![
+            discard(count, Who::SelfSide, false, None, Who::SelfSide),
+            Action::BuryThisCard,
+        ],
+    )
+}
+
+/// "If stopped, randomly bury your hand or you lose ..." — bury the ENTIRE hand at
+/// random (the count caps the whole possible hand; the bury loops until the hand is
+/// empty), or take the loss.
+fn bury_hand_or_lose() -> Effect {
+    pay_or_lose(
+        "Randomly bury your hand".to_owned(),
+        vec![bury_hand(DECK_SIZE as i64, Who::SelfSide, true, false)],
+    )
+}
+
+// --------------------------------------------------------------------------
+// Hand size
+// --------------------------------------------------------------------------
+
+fn max_hand(delta: i64, who: Who) -> Action {
+    Action::MaxHandSize {
+        delta,
+        who,
+        duration: Duration::WhileInPlay,
+    }
+}
+
+fn min_hand(delta: i64, who: Who) -> Action {
+    Action::MinHandSize {
+        delta,
+        who,
+        duration: Duration::WhileInPlay,
+    }
+}
+
+// --------------------------------------------------------------------------
+// Conditions
+// --------------------------------------------------------------------------
+
+fn has_in_play(who: Who, filter: CardFilter, count: i64) -> Condition {
+    Condition::HasInPlay {
+        who,
+        filter,
+        count,
+        cmp: Comparator::Ge,
+    }
+}
+
+/// `who`'s hand size `cmp` a literal `value` — "you have N or more cards in your
+/// hand" (`Ge`, SELF) / "your opponent has N or fewer" (`Le`, OPP).
+fn hand_size(cmp: Comparator, who: Who, value: i64) -> Condition {
+    Condition::HandSizeCompare {
+        cmp,
+        vs: Vs::Value,
+        value: Some(value),
+        who,
+    }
+}
+
+// --------------------------------------------------------------------------
+// Trigger-body composition & gate parsers
+// --------------------------------------------------------------------------
 
 /// Trigger-body split: re-parse a clause's BODY through the whole grammar and attach
 /// `trigger`, so a "<trigger prefix>, <body>" clause reuses every body rule (draw /
@@ -993,723 +1768,17 @@ fn roll_was_any(list: &str) -> Option<Condition> {
     })
 }
 
-/// "If this card is flipped for your Gimmick, <action>" — a per-card flip self-trigger
-/// gated on the flip being gimmick-caused ([`Condition::FlippedForGimmick`], read from
-/// `GameState::flip_provenance`).
-fn flip_self_gimmick(action: Action, optional: bool) -> Effect {
-    flip_self(action, optional, Condition::FlippedForGimmick)
-}
+// --------------------------------------------------------------------------
+// Text utilities
+// --------------------------------------------------------------------------
 
-/// "[randomly] add N of the flipped cards to your hand" -> [`Action::AddFlippedToHand`].
-/// `count_word` is a number / "one" / "all" / "the" (`all`/`the` -> all matching);
-/// `filter_word` is `cards` (any) or an attack type.
-fn add_flipped_action(count_word: &str, filter_word: &str, random: bool) -> Action {
-    let count = match count_word.to_ascii_lowercase().as_str() {
-        "all" | "the" => None,
-        "one" => Some(1),
-        d => d.parse::<i64>().ok(),
-    };
-    let f = filter_word.to_ascii_lowercase();
-    let f = f.strip_suffix('s').unwrap_or(&f);
-    let filter = if f == "card" {
-        CardFilter::default()
-    } else {
-        cf_atk(count_atk(f))
-    };
-    Action::AddFlippedToHand {
-        count,
-        filter,
-        random,
-    }
-}
-
-/// "<flipper> flips N cards for each <desc> <per_who> ha(s|ve) in play" — the
-/// per-count flip family, mirroring [`per_draw`].
-fn per_flip(n: i64, who: Who, desc: &str, per_who: Who) -> Option<Effect> {
-    let per = count_filter(desc)?;
-    Some(eff(
-        on_hit(),
-        vec![Action::Flip {
-            n,
-            who,
-            per: Some(per),
-            per_who,
-            until: None,
-            until_to_hand: false,
-        }],
-        Condition::Always,
-        Duration::Instant,
-    ))
-}
-
-/// "Flip cards until you flip a <desc>[, add that <desc> to your hand]" — the
-/// flip-until family. Mills the deck one card at a time until a card matching
-/// `desc` surfaces; that card goes to the hand when `to_hand`, else to the
-/// discard with the rest. Returns `None` when `desc` is not a recognized filter.
-fn flip_until(desc: &str, to_hand: bool) -> Option<Effect> {
-    let until = count_filter(desc)?;
-    Some(eff(
-        on_hit(),
-        vec![Action::Flip {
-            n: 0,
-            who: Who::SelfSide,
-            per: None,
-            per_who: Who::SelfSide,
-            until: Some(until),
-            until_to_hand: to_hand,
-        }],
-        Condition::Always,
-        Duration::Instant,
-    ))
-}
-
-/// "Look at / Reveal the top N cards of your deck, add M to your hand and flip
-/// the others" — a self-deck [`Action::Scry`] that mills its leftovers
-/// ([`ScryRest::Flip`]). "Look at" keeps the window private; "Reveal" makes the
-/// ids public.
-fn scry_flip(reveal: bool, top: i64, to_hand: i64) -> Action {
-    Action::Scry {
-        deck: Who::SelfSide,
-        top,
-        bottom: 0,
-        reveal,
-        to_hand,
-        bury: 0,
-        rest: ScryRest::Flip,
-    }
-}
-
-/// "Look at / Reveal the top card of `deck`'s deck, you may flip it" — a single-card
-/// peek with an *optional* flip ([`ScryRest::MayFlip`]): the actor sees the top card,
-/// then mills it only when worthwhile (deny an opponent their Finish/stop, or shed
-/// your own junk) and otherwise leaves it on top.
-fn scry_may_flip(reveal: bool, deck: Who) -> Action {
-    Action::Scry {
-        deck,
-        top: 1,
-        bottom: 0,
-        reveal,
-        to_hand: 0,
-        bury: 0,
-        rest: ScryRest::MayFlip,
-    }
-}
-
-fn search(filter: CardFilter, dest: Dest, count: i64) -> Action {
-    Action::Search {
-        filter,
-        dest,
-        count,
-    }
-}
-
-/// Parse a `Search` selector — "a Finish", "2 cards", "up to 3 cards", "1 card with
-/// \"Ladder\" in the name" — into `(filter, count)`, reusing [`recur_filter`] for the
-/// typed/named descriptor. `None` for a selector with no CardFilter (Spotlight, Skill
-/// Requirement, …), so those clauses stay Unsupported rather than mis-modeling.
-fn search_target(sel: &str) -> Option<(CardFilter, i64)> {
-    static LEAD: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(?i)^(?:up to )?(a|an|\d+) (.+)$").unwrap());
-    let caps = LEAD.captures(sel.trim())?;
-    let head = caps[1].to_lowercase();
-    let count = if head == "a" || head == "an" {
-        1
-    } else {
-        head.parse().ok()?
-    };
-    Some((recur_filter(&caps[2])?, count))
-}
-
-fn bury(count: i64, who: Who) -> Action {
-    Action::Bury {
-        choose: false,
-        selector: CardFilter::default(),
-        count,
-        who,
-        random: false,
-        source: BuryFrom::Discard,
-        per: None,
-        per_who: Who::SelfSide,
-        all: false,
-    }
-}
-
-/// "Bury N [`<selector>`] cards in any/either player's discard pile" — the actor picks
-/// `count` cards matching `selector` from EITHER discard pile (`choose: true`; `who`
-/// is ignored). Each buried card returns to ITS OWNER's deck bottom.
-fn bury_choose(count: i64, selector: CardFilter) -> Action {
-    Action::Bury {
-        choose: true,
-        selector,
-        count,
-        who: Who::SelfSide,
-        random: false,
-        source: BuryFrom::Discard,
-        per: None,
-        per_who: Who::SelfSide,
-        all: false,
-    }
-}
-
-/// "Bury `count` per `per`-matching card you have in play" (schema v83). `random` is
-/// forced on for a HAND source (the hand owner sheds without choosing). The per-count
-/// always ranges over the SELF board ("… for each `<X>` you have in play").
-fn bury_per(count: i64, who: Who, source: BuryFrom, per: CardFilter, random: bool) -> Action {
-    Action::Bury {
-        choose: false,
-        selector: CardFilter::default(),
-        count,
-        who,
-        random: random || source == BuryFrom::Hand,
-        source,
-        per: Some(per),
-        per_who: Who::SelfSide,
-        all: false,
-    }
-}
-
-/// The per-count / shuffle selector for a "… `<pre>` you have in play [with `<names>`
-/// in the name]" clause — a name-substring filter when the name qualifier is present,
-/// else the `<pre>` descriptor via [`recur_filter`] (card / type / order). `None` for
-/// a descriptor with no CardFilter.
-fn in_play_filter(pre: &str, names: Option<&str>) -> Option<CardFilter> {
-    if let Some(n) = names {
-        let names = quoted_names(n);
-        return (!names.is_empty()).then(|| cf_name(names));
-    }
-    recur_filter(pre)
-}
-
-/// An `OnPlay` per-count bury effect (Cardona family); `None` if the per-descriptor
-/// has no CardFilter.
-fn per_bury(
-    count: i64,
-    who: Who,
-    source: BuryFrom,
-    pre: &str,
-    names: Option<&str>,
-    random: bool,
-) -> Option<Effect> {
-    let per = in_play_filter(pre, names)?;
-    Some(eff(
-        Trigger::OnPlay,
-        vec![bury_per(count, who, source, per, random)],
-        Condition::Always,
-        Duration::Instant,
-    ))
-}
-
-/// Bury `count` card(s) from a player's HAND (SRG hand disruption). `random` = the
-/// hand owner loses a random card; `choose` = the EFFECT OWNER looks and picks (only
-/// meaningful with `who == Opp`). Routes to the engine's `bury_from_hand`.
-fn bury_hand(count: i64, who: Who, random: bool, choose: bool) -> Action {
-    Action::Bury {
-        choose,
-        selector: CardFilter::default(),
-        count,
-        who,
-        random,
-        source: BuryFrom::Hand,
-        per: None,
-        per_who: Who::SelfSide,
-        all: false,
-    }
-}
-
-/// "They bury all `<type>` cards" — bury EVERY hand card matching `selector` (schema
-/// v90, `all`). The hand owner sheds without choosing; `count` is a placeholder (the
-/// dispatch derives it from the hand size).
-fn bury_all_hand(selector: CardFilter, who: Who) -> Action {
-    Action::Bury {
-        choose: false,
-        selector,
-        count: 0,
-        who,
-        random: false,
-        source: BuryFrom::Hand,
-        per: None,
-        per_who: Who::SelfSide,
-        all: true,
-    }
-}
-
-/// "They discard all `<type>`" — discard EVERY hand card matching `selector` (schema
-/// v90, `all`). Sibling of [`bury_all_hand`].
-fn discard_all_hand(selector: CardFilter, who: Who) -> Action {
-    Action::Discard {
-        selector,
-        count: 0,
-        who,
-        random: false,
-        per: None,
-        per_who: Who::SelfSide,
-        choose: false,
-        all: true,
-    }
-}
-
-/// Bury a player's ENTIRE discard pile at random (Rejected!: "Each player
-/// randomly buries their discard pile"). `count == DECK_SIZE` is the whole-pile
-/// idiom (the engine's `bury_from_discard` clamps by breaking when the pile is
-/// empty); `random` routes each pick through the RNG.
-fn bury_whole_discard(who: Who) -> Action {
-    Action::Bury {
-        choose: false,
-        selector: CardFilter::default(),
-        count: DECK_SIZE as i64,
-        who,
-        random: true,
-        source: BuryFrom::Discard,
-        per: None,
-        per_who: Who::SelfSide,
-        all: false,
-    }
-}
-
-fn buff(skill: Skill, delta: i64, who: Who) -> Action {
-    Action::BuffSkill {
-        skill,
-        delta,
-        who,
-        duration: Duration::WhileInPlay,
-        target_highest: false,
-        target_lowest: false,
-        per_crowd: false,
-        cap: None,
-        per: None,
-        per_zone: CountZone::InPlay,
-        per_excludes_self: false,
-    }
-}
-
-/// One standing [`Action::TurnRollBonus`] per skill — "Your Power and Strike are +N
-/// during turn rolls" fans out to a bonus on each named skill.
-fn turn_roll_bonuses(skills: Vec<Skill>, delta: i64) -> Vec<Action> {
-    skills
-        .into_iter()
-        .map(|skill| Action::TurnRollBonus {
-            skill,
-            delta,
-            either: false,
-        })
-        .collect()
-}
-
-/// "+N to your lowest/highest skill" -> a [`Action::BuffSkill`] whose target skill is
-/// resolved dynamically at derived-stats time (`resolve_buff`). The `skill` field is a
-/// placeholder (never read when `target_lowest`/`target_highest` is set).
-fn buff_extreme(highest: bool, delta: i64, who: Who) -> Action {
-    Action::BuffSkill {
-        skill: Skill::ALL[0],
-        delta,
-        who,
-        duration: Duration::WhileInPlay,
-        target_highest: highest,
-        target_lowest: !highest,
-        per_crowd: false,
-        cap: None,
-        per: None,
-        per_zone: CountZone::InPlay,
-        per_excludes_self: false,
-    }
-}
-
-/// A `Reroll` of the owner's (`SelfSide`) or opponent's turn/finish roll. `when` picks
-/// the current roll (`This`, structural) vs a one-shot for the NEXT turn roll; `finish`
-/// scopes it to the Finish roll. The action pre-existed (override-only) — this is the
-/// first grammar for it. `once`/`choose`/`cost` stay at their defaults.
-fn reroll(who: Who, when: RollWhen, finish: bool) -> Action {
-    Action::Reroll {
-        who,
-        once: false,
-        choose: false,
-        when,
-        cost: None,
-        finish,
-        breakout: false,
-    }
-}
-
-/// A `Reroll` of the DEFENDER's breakout roll — `who: SelfSide` (the defender re-rolls
-/// their own: "re-roll your Breakout roll") or `Opp` ("force your opponent to re-roll
-/// their Breakout roll", the finisher forcing the defender). Always `This` (structural,
-/// read in the breakout loop); never a `Next` grant.
-fn reroll_breakout(who: Who) -> Action {
-    Action::Reroll {
-        who,
-        once: false,
-        choose: false,
-        when: RollWhen::This,
-        cost: None,
-        finish: false,
-        breakout: true,
-    }
-}
-
-/// Parse a re-roll COST prefix into a [`RerollCost`] (schema v103): "bury N cards in
-/// your hand" → `BuryFromHand`; "discard N `<object>` [from your hand]" →
-/// `DiscardFromHand` (object via `recur_filter`: bare "card(s)" = any, else a typed /
-/// named filter). `None` for shapes we don't model here — reveal costs, "discard this
-/// card" self-discard (hand-activated), "up to N".
-fn reroll_cost(text: &str) -> Option<RerollCost> {
-    static BURY: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(?i)^bury (\d+|a|one) cards? in your hand$").unwrap());
-    static DISCARD: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"(?i)^discard (\d+|a|one) (.+?)(?: from your hand)?$").unwrap()
-    });
-    let node = |kind, count, filter| RerollCost {
-        node_type: RerollCostTag,
-        kind,
-        count: Some(count),
-        filter,
-    };
-    let t = text.trim();
-    if let Some(c) = BURY.captures(t) {
-        return Some(node(
-            RerollCostKind::BuryFromHand,
-            count_or_word(&c[1]),
-            None,
-        ));
-    }
-    if let Some(c) = DISCARD.captures(t) {
-        let obj = c[2].trim();
-        if obj.eq_ignore_ascii_case("this card") {
-            return None; // self-discard: hand-activated, out of scope
-        }
-        let filter = recur_filter(obj)?;
-        // A bare "card"/"cards" object is the default (match-any) filter → carry None.
-        let filter = (filter != CardFilter::default()).then_some(filter);
-        return Some(node(
-            RerollCostKind::DiscardFromHand,
-            count_or_word(&c[1]),
-            filter,
-        ));
-    }
-    None
-}
-
-/// Route an OnReroll trigger body: normalize its roll-modifier phrasings so the shared
-/// grammar matches — "your/their roll is ±N" → "…turn roll is ±N", and the "would
-/// re-roll … that roll is +N" self case's "that roll" → "your turn roll" — then delegate
-/// to [`trigger_body`], which handles draw / roll-mod / shuffle-self / "you may" bodies.
-/// The roll-mod body becomes a `ModifyRoll{This}` the engine folds into the re-rolled
-/// value; every OnReroll clause's roll-mod always targets the re-rolling player.
-fn on_reroll_body(who: Who, body: &str) -> Option<Effect> {
-    static THAT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\bthat roll is").unwrap());
-    let norm = THAT.replace_all(body, "your turn roll is").into_owned();
-    trigger_body(Trigger::OnReroll { who }, &norm_roll_is_phrasing(&norm))
-}
-
-/// Normalize a bare "your/their roll is ±N" roll-modifier phrasing to the canonical
-/// "…turn roll is ±N" the [`ModifyRoll`] grammar (`Your turn roll is …` /
-/// `Their turn roll is …`) matches. Shared by the OnReroll and OnRoll body routers,
-/// whose clauses write the roll modifier as "their roll is -1" mid-body.
-fn norm_roll_is_phrasing(body: &str) -> String {
-    static BARE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(?i)\b(your|their) roll is").unwrap());
-    BARE.replace_all(body, "${1} turn roll is").into_owned()
-}
-
-/// Route an OnRoll trigger body where the roller is the effect owner's OPPONENT ("When
-/// your opponent rolls `<S>` for their turn roll, `<body>`"). Normalizes the "their roll
-/// is ±N" roll-modifier phrasing, then delegates to [`trigger_body`] with `OnRoll{Opp}`
-/// — the "you"/"they" subjects in the body resolve to owner/opponent through the shared
-/// grammar exactly as the self mirror does.
-fn on_roll_opp_body(s: Skill, body: &str) -> Option<Effect> {
-    trigger_body(on_roll(s, Who::Opp), &norm_roll_is_phrasing(body))
-}
-
-/// A `BuffSkill` scaled by the count of the owner's in-play cards matching `per`
-/// (clamped to `cap`) — "your Technique and Grapple are +1 for each card you have
-/// in play with 'Breaker' in the name". `per: None` = a flat +`delta`. `exclude_self`
-/// drops the source card from the count ("for each OTHER card …").
-fn buff_per(
-    skill: Skill,
-    delta: i64,
-    per: Option<CardFilter>,
-    cap: Option<i64>,
-    exclude_self: bool,
-) -> Action {
-    Action::BuffSkill {
-        skill,
-        delta,
-        who: Who::SelfSide,
-        duration: Duration::WhileInPlay,
-        target_highest: false,
-        target_lowest: false,
-        per_crowd: false,
-        cap,
-        per,
-        per_zone: CountZone::InPlay,
-        per_excludes_self: exclude_self,
-    }
-}
-
-/// Build a Static multi-skill [`BuffSkill`] scaled by the count of a card TYPE on the
-/// owner's board — "Your X and Y are +N for each `<type>` you have in play (Max +M)".
-/// `skills_text` is a skill/and/comma list, `per_text` a type descriptor routed through
-/// [`count_filter`] (atk / play order / stop). Declines if the skill list is empty or
-/// the type descriptor isn't a countable type (e.g. bare "card" — owned by the name
-/// rules), so a non-type "for each …" falls through to Unsupported.
-fn type_count_buff(
-    skills_text: &str,
-    delta: i64,
-    per_text: &str,
-    cap: Option<regex::Match>,
-    exclude_self: bool,
-) -> Option<Effect> {
-    let skills = skill_list(skills_text);
-    let per = count_filter(per_text)?;
-    if skills.is_empty() {
-        return None;
-    }
-    let cap = cap.map(|m| m.as_str().parse::<i64>().unwrap());
-    let actions = skills
-        .into_iter()
-        .map(|s| buff_per(s, delta, Some(per.clone()), cap, exclude_self))
-        .collect();
-    Some(eff(
-        Trigger::Static,
-        actions,
-        Condition::Always,
-        Duration::WhileInPlay,
-    ))
-}
-
-/// Build a Static multi-skill [`BuffSkill`] whose delta is the live Crowd Meter —
-/// "Your X [and Y] is/are + the Crowd Meter [(Max +M)]" (`per_crowd`, the same dynamic
-/// delta Copy Kat uses, previously override-only). Declines when the skill list is empty
-/// (so "Your Finish roll …" / "Your breakout rolls …" — different mechanisms — fall
-/// through), keeping this to plain skill buffs.
-fn crowd_meter_buff(skills_text: &str, cap: Option<regex::Match>) -> Option<Effect> {
-    let skills = skill_list(skills_text);
-    if skills.is_empty() {
-        return None;
-    }
-    let cap = cap.map(|m| m.as_str().parse::<i64>().unwrap());
-    let actions = skills
-        .into_iter()
-        .map(|s| Action::BuffSkill {
-            skill: s,
-            delta: 1,
-            who: Who::SelfSide,
-            duration: Duration::WhileInPlay,
-            target_highest: false,
-            target_lowest: false,
-            per_crowd: true,
-            cap,
-            per: None,
-            per_zone: CountZone::InPlay,
-            per_excludes_self: false,
-        })
-        .collect();
-    Some(eff(
-        Trigger::Static,
-        actions,
-        Condition::Always,
-        Duration::WhileInPlay,
-    ))
-}
-
-/// A Static "no disqualifications" match-rule toggle (`DisqualificationRule` was
-/// previously override-only). `Match` scope = "the match has no disqualifications";
-/// `SelfSide` = "you cannot be disqualified".
-fn dq_rule(scope: DqScope) -> Effect {
-    eff(
-        Trigger::Static,
-        vec![Action::DisqualificationRule {
-            enabled: false,
-            scope,
-        }],
-        Condition::Always,
-        Duration::WhileInPlay,
-    )
-}
-
-fn max_hand(delta: i64, who: Who) -> Action {
-    Action::MaxHandSize {
-        delta,
-        who,
-        duration: Duration::WhileInPlay,
-    }
-}
-
-fn min_hand(delta: i64, who: Who) -> Action {
-    Action::MinHandSize {
-        delta,
-        who,
-        duration: Duration::WhileInPlay,
-    }
-}
-
-/// The DQ-CAUSE trigger: "if [this card is] stopped" (the stopped card's own
-/// side), shared by the whole family (task #94).
-fn on_your_stop() -> Trigger {
-    Trigger::OnStop {
-        dir: Direction::Yours,
-        order: None,
-    }
-}
-
-/// The stopper's side: "when you stop a card" — the effect fires for the player who
-/// PLAYED the stop (Direction::Theirs, "they stopped a card"), the mirror of
-/// [`on_your_stop`].
-fn on_their_stop() -> Trigger {
-    Trigger::OnStop {
-        dir: Direction::Theirs,
-        order: None,
-    }
-}
-
-/// "If stopped, you lose the match via `kind`" — an OnStop(Yours) self-loss gated on
-/// `cond`: the loss fires only while `cond` holds. Pass `Always` for the plain form,
-/// or `Not(escape)` for an "... unless <escape>" variant (the loss is voided when the
-/// escape holds).
-fn lose_via(kind: LoseKind, cond: Condition) -> Effect {
-    eff(
-        on_your_stop(),
-        vec![Action::LoseBy {
-            kind,
-            who: Who::SelfSide,
-        }],
-        cond,
-        Duration::Instant,
-    )
-}
-
-/// "If stopped, discard N card(s) from your hand OR you lose the match via
-/// disqualification" — the stopped player may pay the discard cost instead of taking
-/// the DQ loss (task #94). Offered cost-first; a player who cannot pay is still
-/// offered the discard (a minor fidelity gap on an empty hand). Existing nodes only.
-fn discard_or_lose(count: i64) -> Effect {
-    let pay = ChoiceOption {
-        node_type: ChoiceOptionTag,
-        label: format!("Discard {count} from your hand"),
-        actions: vec![discard(count, Who::SelfSide, false, None, Who::SelfSide)],
-    };
-    let lose = ChoiceOption {
-        node_type: ChoiceOptionTag,
-        label: "Lose the match via disqualification".to_owned(),
-        actions: vec![Action::LoseBy {
-            kind: LoseKind::Disqualification,
-            who: Who::SelfSide,
-        }],
-    };
-    eff(
-        on_your_stop(),
-        vec![Action::Choice {
-            options: vec![pay, lose],
-        }],
-        Condition::Always,
-        Duration::Instant,
-    )
-}
-
-/// "If stopped, unless you discard N <type> from your hand, you lose ..." — a
-/// pay-or-lose where the cost is discarding a specific attack type (task #94). Like
-/// [`discard_or_lose`] but the discard carries a type `selector`.
-fn discard_type_or_lose(count: i64, atk_type: AtkType) -> Effect {
-    let pay = ChoiceOption {
-        node_type: ChoiceOptionTag,
-        label: format!("Discard {count} {} from your hand", atk_type.name()),
-        actions: vec![Action::Discard {
-            selector: cf_atk(atk_type),
-            count,
-            who: Who::SelfSide,
-            random: false,
-            per: None,
-            per_who: Who::SelfSide,
-            choose: false,
-            all: false,
-        }],
-    };
-    let lose = ChoiceOption {
-        node_type: ChoiceOptionTag,
-        label: "Lose the match via disqualification".to_owned(),
-        actions: vec![Action::LoseBy {
-            kind: LoseKind::Disqualification,
-            who: Who::SelfSide,
-        }],
-    };
-    eff(
-        on_your_stop(),
-        vec![Action::Choice {
-            options: vec![pay, lose],
-        }],
-        Condition::Always,
-        Duration::Instant,
-    )
-}
-
-/// The "take the loss" branch shared by the pay-or-lose Choice family (task #94).
-fn dq_lose_option() -> ChoiceOption {
-    ChoiceOption {
-        node_type: ChoiceOptionTag,
-        label: "Lose the match via disqualification".to_owned(),
-        actions: vec![Action::LoseBy {
-            kind: LoseKind::Disqualification,
-            who: Who::SelfSide,
-        }],
-    }
-}
-
-/// An OnStop "pay `pay_actions` (labelled `label`) OR lose via disqualification"
-/// Choice effect (task #94).
-fn pay_or_lose(label: String, pay_actions: Vec<Action>) -> Effect {
-    let pay = ChoiceOption {
-        node_type: ChoiceOptionTag,
-        label,
-        actions: pay_actions,
-    };
-    eff(
-        on_your_stop(),
-        vec![Action::Choice {
-            options: vec![pay, dq_lose_option()],
-        }],
-        Condition::Always,
-        Duration::Instant,
-    )
-}
-
-/// "If stopped, discard N from your hand and bury this card or lose ..." — pay the
-/// discard-plus-bury-the-stopped-card cost, or take the loss.
-fn discard_bury_or_lose(count: i64) -> Effect {
-    pay_or_lose(
-        format!("Discard {count} and bury this card"),
-        vec![
-            discard(count, Who::SelfSide, false, None, Who::SelfSide),
-            Action::BuryThisCard,
-        ],
-    )
-}
-
-/// "If stopped, randomly bury your hand or you lose ..." — bury the ENTIRE hand at
-/// random (the count caps the whole possible hand; the bury loops until the hand is
-/// empty), or take the loss.
-fn bury_hand_or_lose() -> Effect {
-    pay_or_lose(
-        "Randomly bury your hand".to_owned(),
-        vec![bury_hand(DECK_SIZE as i64, Who::SelfSide, true, false)],
-    )
-}
-
-fn has_in_play(who: Who, filter: CardFilter, count: i64) -> Condition {
-    Condition::HasInPlay {
-        who,
-        filter,
-        count,
-        cmp: Comparator::Ge,
-    }
-}
-
-/// `who`'s hand size `cmp` a literal `value` — "you have N or more cards in your
-/// hand" (`Ge`, SELF) / "your opponent has N or fewer" (`Le`, OPP).
-fn hand_size(cmp: Comparator, who: Who, value: i64) -> Condition {
-    Condition::HandSizeCompare {
-        cmp,
-        vs: Vs::Value,
-        value: Some(value),
-        who,
+/// Uppercase the first character (body clauses are lowercase mid-sentence, but the
+/// grammar's rules expect sentence case).
+fn capitalize_first(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
+        None => String::new(),
     }
 }
 
