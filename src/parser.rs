@@ -6138,6 +6138,12 @@ pub fn split_clauses(text: &str) -> Vec<String> {
 fn freq_header(clause: &str) -> Option<(Frequency, Option<i64>)> {
     static ONCE_MATCH: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^Once (?:per|a) match:?$").unwrap());
+    // "Once per turn roll" == "Once per turn" as a guard: the turn-roll phase (with all its
+    // bumps/re-rolls) is one phase per turn, and the per-turn counter clears at turn start,
+    // so both cap a roll-phase (OnRoll/OnReroll/OnBump) effect to once per roll-off. Matched
+    // before ONCE_TURN, whose `turn:?$` can't reach past "roll".
+    static ONCE_TURN_ROLL: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^Once (?:per|a) turn roll:?$").unwrap());
     static ONCE_TURN: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^Once (?:per|a) turn:?$").unwrap());
     static N_MATCH: LazyLock<Regex> =
@@ -6146,7 +6152,7 @@ fn freq_header(clause: &str) -> Option<(Frequency, Option<i64>)> {
     if ONCE_MATCH.is_match(stripped) {
         return Some((Frequency::OncePerMatch, None));
     }
-    if ONCE_TURN.is_match(stripped) {
+    if ONCE_TURN_ROLL.is_match(stripped) || ONCE_TURN.is_match(stripped) {
         return Some((Frequency::OncePerTurn, None));
     }
     if let Some(m) = N_MATCH.captures(stripped) {
@@ -6171,9 +6177,11 @@ fn uppercase_first(s: &str) -> String {
 /// and to which the frequency applies ALONE (unlike a standalone header, which persists
 /// over the following clauses). `None` when the clause is not so prefixed.
 fn inline_freq(clause: &str) -> Option<(Frequency, Option<i64>, &str)> {
+    // "Once per turn roll" is listed BEFORE "Once per turn" so the longer form wins (else
+    // "Once per turn" matches and the following `[:,]` fails on the " roll" that remains).
     static INLINE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
-            r"(?i)^(Once (?:per|a) match|Once (?:per|a) turn|(\d+) times per match)[:,]\s+(.+)$",
+            r"(?i)^(Once (?:per|a) match|Once (?:per|a) turn roll|Once (?:per|a) turn|(\d+) times per match)[:,]\s+(.+)$",
         )
         .unwrap()
     });

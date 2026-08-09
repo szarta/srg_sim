@@ -2255,6 +2255,31 @@ fn inline_freq_prefix_routes_the_body() {
         e["actions"][0]["raw_text"],
         "Once per turn: mumble frotz gibberish clause."
     );
+
+    // "Once per turn roll" == OncePerTurn: the turn-roll phase (bumps/re-rolls included)
+    // is one phase per turn and the per-turn counter clears at turn start, so both cap a
+    // roll-phase effect to once per roll-off. Inline form ("… roll:" longer alternative
+    // must win over "… turn").
+    let e = one("Once per turn roll: When you roll Strike, draw 1 card.");
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Strike");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+
+    // Standalone "Once per turn roll:" header: scopes the FOLLOWING clause, which carries
+    // the OncePerTurn guard.
+    let effs = parse_text(
+        "Once per turn roll:\nWhen you roll Power, draw 1 card.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1);
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["trigger"]["skill"], "Power");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
 }
 
 /// "[If/When <gate>,] this card is also a <order>" (task #130): the card gains an extra
