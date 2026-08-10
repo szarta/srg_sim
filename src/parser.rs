@@ -2579,6 +2579,7 @@ fn finish_bonus(delta: i64, when_skill: Option<Skill>, either: bool) -> Action {
         per_divisor: None,
         cap: None,
         per_excludes_self: false,
+        per_crowd: false,
     }
 }
 
@@ -2607,6 +2608,7 @@ fn finish_per(
             per_divisor: divisor,
             cap,
             per_excludes_self: exclude_self,
+            per_crowd: false,
         }],
         Condition::Always,
         Duration::WhileInPlay,
@@ -6095,6 +6097,36 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                         per_divisor: None,
                         cap: None,
                         per_excludes_self: false,
+                        per_crowd: false,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Crowd-Meter Finish bonus (task #131): "Your Finish roll[s] is/are + the Crowd
+        // Meter [(Max +N)]" -> FinishRollBonus{per_crowd} — a SECOND live-Crowd-Meter
+        // addend, ON TOP of the one the finish math already folds into every roll
+        // (user-confirmed: additional, not redundant). "+ double/triple/half the Crowd
+        // Meter" fails the literal "+ the" and stays tail (distinct multipliers).
+        rule(
+            r"Your Finish rolls? (?:is|are) \+ the Crowd Meter(?: \(Max \+?(\d+)\))?",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::FinishRollBonus {
+                        delta: 0,
+                        when_skill: None,
+                        either: false,
+                        when_base_le: None,
+                        when_base_ge: None,
+                        per: None,
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::InPlay,
+                        per_divisor: None,
+                        cap: c.get(1).map(|m| m.as_str().parse().unwrap()),
+                        per_excludes_self: false,
+                        per_crowd: true,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -6154,6 +6186,7 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                         per_divisor: None,
                         cap: None,
                         per_excludes_self: false,
+                        per_crowd: false,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -6177,6 +6210,7 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                         per_divisor: None,
                         cap: None,
                         per_excludes_self: false,
+                        per_crowd: false,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,

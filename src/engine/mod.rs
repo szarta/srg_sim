@@ -291,6 +291,7 @@ fn negate_action(action: &Action) -> Action {
             per_divisor,
             cap,
             per_excludes_self,
+            per_crowd,
         } => Action::FinishRollBonus {
             delta: -*delta,
             when_skill: *when_skill,
@@ -303,6 +304,7 @@ fn negate_action(action: &Action) -> Action {
             per_divisor: *per_divisor,
             cap: *cap,
             per_excludes_self: *per_excludes_self,
+            per_crowd: *per_crowd,
         },
         Action::BreakoutModifier {
             delta,
@@ -5045,6 +5047,7 @@ impl Engine {
                     cap,
                     per_excludes_self,
                     either,
+                    per_crowd,
                 } = a
                 {
                     if either_only && !either {
@@ -5058,6 +5061,13 @@ impl Engine {
                         continue;
                     }
                     if when_skill.is_none() || *when_skill == Some(skill) {
+                        // `per_crowd`: a SECOND live-Crowd-Meter addend (clamped to `cap`),
+                        // "Your Finish roll is + the Crowd Meter (Max +N)".
+                        if *per_crowd {
+                            total += cap
+                                .map_or(self.state.crowd_meter, |c| self.state.crowd_meter.min(c));
+                            continue;
+                        }
                         // Flat `delta`, or `delta * (count of `per_who`'s cards in
                         // `per_zone` matching the filter)` — "+1 per Spotlight in play".
                         let bonus = match per {

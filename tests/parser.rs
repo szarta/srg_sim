@@ -2966,13 +2966,11 @@ fn crowd_meter_buff_grammar() {
         .iter()
         .all(|a| a["per_crowd"] == true && a["cap"] == Value::Null));
 
-    // Different mechanisms / multiplier forms decline -> Unsupported.
-    for text in [
-        "Your Finish roll is + the Crowd Meter.",
-        "Your Technique and Submission are + double the Crowd Meter.",
-    ] {
-        assert_eq!(a1(text)["actions"][0]["@type"], "Unsupported", "{text:?}");
-    }
+    // A multiplier form ("+ double the Crowd Meter") is a distinct mechanism and declines
+    // -> Unsupported. ("Your Finish roll is + the Crowd Meter" is now a FinishRollBonus
+    // {per_crowd}, covered by `finish_crowd_meter_grammar`.)
+    let text = "Your Technique and Submission are + double the Crowd Meter.";
+    assert_eq!(a1(text)["actions"][0]["@type"], "Unsupported", "{text:?}");
 }
 
 /// Skill-buff family (task #119/#130): a standing skill buff gated on "another
@@ -3519,6 +3517,40 @@ fn opponent_turn_roll_mod_grammar() {
     assert!(
         v["actions"][0]["@type"] != "ModifyRoll" || v["actions"][0]["per"].is_object(),
         "the anchored bare rule must not swallow the per-count form"
+    );
+}
+
+/// Crowd-Meter Finish bonus (task #131): "Your Finish roll[s] is/are + the Crowd Meter
+/// [(Max +N)]" -> FinishRollBonus{per_crowd} (a second live-Crowd-Meter addend). Singular
+/// and plural, with/without the cap; a "+ double the Crowd Meter" multiplier declines.
+#[test]
+fn finish_crowd_meter_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        let v = serde_json::to_value(&effs[0]).unwrap();
+        assert_eq!(v["actions"][0]["@type"], "FinishRollBonus");
+        assert_eq!(v["actions"][0]["per_crowd"], true);
+        v
+    }
+
+    let v = one("Your Finish roll is + the Crowd Meter.");
+    assert!(v["actions"][0]["cap"].is_null(), "uncapped");
+
+    let v = one("Your Finish rolls are + the Crowd Meter (Max +3).");
+    assert_eq!(v["actions"][0]["cap"], 3);
+
+    // A multiplier ("+ double the Crowd Meter") fails the literal "+ the" and stays tail.
+    let effs = parse_text(
+        "Your Finish roll is + double the Crowd Meter.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(
+        v["actions"][0]["@type"], "Unsupported",
+        "the double-Crowd-Meter multiplier is not this rule"
     );
 }
 

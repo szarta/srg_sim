@@ -459,6 +459,47 @@ mod breakout_modifier_tests {
     }
 
     #[test]
+    fn finish_roll_bonus_per_crowd_adds_the_live_crowd_meter_capped() {
+        // "Your Finish roll is + the Crowd Meter (Max +2)" (task #131): a SECOND
+        // crowd-meter addend (the finish math already folds in the first), read live off
+        // the Crowd Meter and clamped to the cap.
+        let mut engine = engine();
+        push_gimmick(
+            &mut engine,
+            "A",
+            json!({
+                "@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "FinishRollBonus", "delta": 0, "when_skill": null,
+                    "either": false, "when_base_le": null, "when_base_ge": null,
+                    "per": null, "per_who": "SELF", "per_zone": "IN_PLAY", "per_divisor": null,
+                    "cap": 2, "per_crowd": true}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "t", "source": "gimmick", "optional": false
+            }),
+        );
+        engine.state.crowd_meter = 0;
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Grapple, 5),
+            0,
+            "no crowd, no extra bonus"
+        );
+        engine.state.crowd_meter = 1;
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Grapple, 5),
+            1,
+            "tracks the live Crowd Meter"
+        );
+        engine.state.crowd_meter = 5;
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Grapple, 5),
+            2,
+            "clamped to Max +2"
+        );
+    }
+
+    #[test]
     fn false_condition_and_wrong_side_do_not_count() {
         // A gated modifier whose condition is false contributes nothing, and a
         // modifier on B never leaks into A's breakout (each reads its own standing set).

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 122;
+pub const SCHEMA_VERSION: i64 = 123;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1731,6 +1731,14 @@ pub enum Action {
         /// Additive/skip-when-false. schema v106
         #[serde(default, skip_serializing_if = "is_false")]
         per_excludes_self: bool,
+        /// Dynamic delta = the Crowd Meter (clamped to `cap`), added ON TOP of the Crowd
+        /// Meter the finish math already folds into every roll — "Your Finish roll is + the
+        /// Crowd Meter (Max +N)", a SECOND crowd-meter addend. Mutually exclusive with the
+        /// flat `delta` / `per` count. `finish_bonus_from` reads the live Crowd Meter each
+        /// roll. Additive/skip-when-false, so pre-`per_crowd` fixtures round-trip.
+        /// schema v123
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_crowd: bool,
     },
     /// A standing bonus to the owner's TURN roll, applied only when the randomly
     /// rolled skill equals `skill`: "Your Power is +N during turn rolls." Read by
@@ -3093,6 +3101,14 @@ pub enum IrNode {
         /// Additive/skip-when-false. schema v106
         #[serde(default, skip_serializing_if = "is_false")]
         per_excludes_self: bool,
+        /// Dynamic delta = the Crowd Meter (clamped to `cap`), added ON TOP of the Crowd
+        /// Meter the finish math already folds into every roll — "Your Finish roll is + the
+        /// Crowd Meter (Max +N)", a SECOND crowd-meter addend. Mutually exclusive with the
+        /// flat `delta` / `per` count. `finish_bonus_from` reads the live Crowd Meter each
+        /// roll. Additive/skip-when-false, so pre-`per_crowd` fixtures round-trip.
+        /// schema v123
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_crowd: bool,
     },
     /// A standing bonus to the owner's TURN roll, applied only when the randomly
     /// rolled skill equals `skill`: "Your Power is +N during turn rolls." Read by

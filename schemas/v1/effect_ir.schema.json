@@ -2498,6 +2498,10 @@
             }
           ]
         },
+        "per_crowd": {
+          "description": "Dynamic delta = the live Crowd Meter (clamped to cap), a SECOND crowd-meter addend on top of the one the finish math already folds into every roll — \"Your Finish roll is + the Crowd Meter (Max +N)\". Mutually exclusive with the flat delta / per count. Absent = false. schema v123",
+          "type": "boolean"
+        },
         "per_divisor": {
           "anyOf": [
             {
@@ -5987,5 +5991,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 122
+  "version": 123
 }
