@@ -408,6 +408,50 @@ fn flip_both_instead(clause: &str) -> Option<Condition> {
     gate_condition(&c[1])
 }
 
+/// "If your `<S>` skill is greater than your opponent's `<S>` skill, `<body>` instead" — a
+/// skill-comparison that REPLACES the preceding sibling effect's consequence when the
+/// compare holds ("Draw 1 card. If your Power skill is greater than your opponent's Power
+/// skill, draw 2 cards instead."). Returns `(gate, replacement actions)`; `parse_text`
+/// gates the preceding base effect on `Not(gate)` and pushes the replacement — sharing the
+/// base's trigger — gated on `gate`, so exactly one fires (mirrors [`flip_both_instead`]).
+/// The word "instead" may sit at the body's end ("draw 2 cards instead") or mid-body
+/// ("your next turn roll is instead +2"); it is stripped before compiling. `None` when the
+/// clause isn't a skill-compare-instead or the body has no grammar — "put that card on top
+/// of your deck" (a flip referent) declines and stays Unsupported.
+fn skill_compare_instead(clause: &str, source: EffectSource) -> Option<(Condition, Vec<Action>)> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^If (your \w+ skill is (?:greater|higher) than your opponent.?s \w+ skill)[,:;] (.+)$",
+        )
+        .unwrap()
+    });
+    let caps = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    if !caps[2].to_lowercase().contains("instead") {
+        return None;
+    }
+    let cond = gate_condition(&caps[1])?;
+    // Strip "instead" wherever it sits, then collapse the doubled space it leaves.
+    let body = caps[2]
+        .replacen("instead ", "", 1)
+        .replacen(" instead", "", 1);
+    let body = body.split_whitespace().collect::<Vec<_>>().join(" ");
+    let is_unsupported = |e: &Effect| {
+        e.actions
+            .iter()
+            .any(|a| matches!(a, Action::Unsupported { .. }))
+    };
+    let mut compiled = compile(&body, source, Frequency::Unlimited, None);
+    // The body is the lowercase tail of the clause ("draw 2 cards"); retry sentence-cased
+    // so capital-anchored rules match (as `inline_freq` does for a promoted body).
+    if is_unsupported(&compiled) {
+        compiled = compile(&uppercase_first(&body), source, Frequency::Unlimited, None);
+    }
+    if is_unsupported(&compiled) {
+        return None;
+    }
+    Some((cond, compiled.actions))
+}
+
 /// Is `eff` the "each player reveals the top card of their deck and adds it to their
 /// hand" effect — an unconditional `OnHit` pair of top-of-deck Draws to SELF and OPP?
 /// The anchor a `flip both cards instead` clause rewrites.
@@ -7082,6 +7126,43 @@ pub fn parse_text(
                 };
                 effects.push(scope(plain, &window));
                 effects.push(scope(choice_eff, &window));
+                i += 1;
+                continue;
+            }
+        }
+        // "If your <S> skill is greater than your opponent's <S>, <body> instead" REPLACES
+        // the preceding sibling: gate the base on Not(compare) and add the replacement
+        // (sharing the base's trigger) on the compare, so exactly one fires. Only when the
+        // base's first action is the SAME variant as the replacement (a draw replaces a
+        // draw, a roll a roll) — otherwise the "instead" is not about this base, so leave
+        // it (falls through to Unsupported).
+        if let Some((cond, actions)) = skill_compare_instead(clause, source) {
+            let same_variant = effects.last().is_some_and(|base| {
+                base.actions
+                    .first()
+                    .zip(actions.first())
+                    .is_some_and(|(b, a)| std::mem::discriminant(b) == std::mem::discriminant(a))
+            });
+            if same_variant {
+                let mut base = effects.pop().unwrap();
+                let mut instead = eff(base.trigger.clone(), actions, cond.clone(), base.duration);
+                instead.raw_clause = clause.clone();
+                instead.source = source;
+                instead.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                // The base now applies only when the compare does NOT hold. It was already
+                // window-scoped when first pushed, so don't re-scope it.
+                base.condition = and_conds(
+                    Condition::Not {
+                        item: Box::new(cond),
+                    },
+                    base.condition,
+                );
+                effects.push(base);
+                effects.push(scope(instead, &window));
                 i += 1;
                 continue;
             }

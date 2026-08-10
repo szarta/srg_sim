@@ -3406,6 +3406,73 @@ fn opponent_turn_debuff_grammar() {
         .all(|a| a["@type"] == "TurnRollBonus" && a["who"] == "OPP"));
 }
 
+/// Skill-compare "...instead" sibling replacement (task #131, cluster e): a base effect
+/// followed by "If your <S> skill is greater than your opponent's <S> skill, <body>
+/// instead" splits into the base gated on Not(compare) and the replacement (same trigger)
+/// gated on the compare — so exactly one fires. Covers a draw base and a next-turn-roll
+/// base; a "put that card on top" body (a flip referent) declines and stays Unsupported.
+#[test]
+fn skill_compare_instead_grammar() {
+    // Draw base: "Draw 1 card." replaced by "draw 2 cards instead" on the compare.
+    let effs = parse_text(
+        "Draw 1 card. If your Power skill is greater than your opponent's Power skill, draw 2 cards instead.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2, "the base + the replacement");
+    let base = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(
+        base["condition"]["@type"], "Not",
+        "base gated on Not(compare)"
+    );
+    assert_eq!(base["condition"]["item"]["@type"], "SkillCompare");
+    assert_eq!(base["actions"][0]["@type"], "Draw");
+    assert_eq!(base["actions"][0]["n"], 1);
+    let instead = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(instead["condition"]["@type"], "SkillCompare");
+    assert_eq!(instead["actions"][0]["@type"], "Draw");
+    assert_eq!(instead["actions"][0]["n"], 2);
+    // Both hang off the same trigger (the base's).
+    assert_eq!(base["trigger"], instead["trigger"]);
+
+    // Next-turn-roll base, with "instead" mid-body ("is instead +2").
+    let effs = parse_text(
+        "Your next turn roll is +1. If your Strike skill is greater than your opponent's Strike skill; your next turn roll is instead +2.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2);
+    let base = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(base["condition"]["@type"], "Not");
+    assert_eq!(base["actions"][0]["@type"], "ModifyRoll");
+    let instead = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(instead["actions"][0]["@type"], "ModifyRoll");
+
+    // A "put that card on top" body references the flipped card, has no standalone
+    // grammar, so the composer declines and the clause stays Unsupported (never a silent
+    // drop, and the base flip is left intact and unconditional).
+    let effs = parse_text(
+        "Flip 1 card. If your Power skill is greater than your opponent's Power skill, put that card on top of your deck instead.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let last = serde_json::to_value(effs.last().unwrap()).unwrap();
+    assert_eq!(
+        last["actions"][0]["@type"], "Unsupported",
+        "the flip-referent instead stays Unsupported"
+    );
+    assert!(
+        effs.iter().all(|e| {
+            let v = serde_json::to_value(e).unwrap();
+            v["condition"]["@type"] != "Not"
+        }),
+        "the base flip was not re-gated"
+    );
+}
+
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
 /// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
 /// Order and attack-type gates parse; a name gate declines to Unsupported.
