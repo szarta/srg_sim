@@ -3473,6 +3473,55 @@ fn skill_compare_instead_grammar() {
     );
 }
 
+/// Opponent turn-roll modifiers (task #131), all riding TurnRollBonus{who:Opp} / the
+/// opponent NextRollSkillBonus / ModifyRoll{Opp,Next}: (A) the STANDING "If your opponent
+/// rolls <S> for their turn roll, their turn roll is -N"; (B) the one-shot "If your
+/// opponent's next turn roll is <S>, their turn roll is -N" (widened to accept "their turn
+/// roll"); (C) the skill-agnostic bare "Your opponent's next roll is -N".
+#[test]
+fn opponent_turn_roll_mod_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // (A) standing: every time the opponent rolls that skill.
+    let v = one("If your opponent rolls Power for their turn roll, their turn roll is -1.");
+    assert_eq!(v["trigger"]["@type"], "Static");
+    assert_eq!(v["actions"][0]["@type"], "TurnRollBonus");
+    assert_eq!(v["actions"][0]["who"], "OPP");
+    assert_eq!(v["actions"][0]["skill"], "Power");
+    assert_eq!(v["actions"][0]["delta"], -1);
+
+    // (B) one-shot skill-keyed, "their turn roll is -N" (the widened phrasing).
+    let v = one("If your opponent's next turn roll is Agility, their turn roll is -2.");
+    assert_eq!(v["actions"][0]["@type"], "NextRollSkillBonus");
+    assert_eq!(v["actions"][0]["who"], "OPP");
+    assert_eq!(v["actions"][0]["skills"][0], "Agility");
+    assert_eq!(v["actions"][0]["delta"], -2);
+
+    // (C) skill-agnostic bare "next roll" -> ModifyRoll on the opponent's next roll.
+    let v = one("Your opponent's next roll is -2.");
+    assert_eq!(v["actions"][0]["@type"], "ModifyRoll");
+    assert_eq!(v["actions"][0]["who"], "OPP");
+    assert_eq!(v["actions"][0]["when"], "NEXT");
+    assert_eq!(v["actions"][0]["delta"], -2);
+
+    // (C) guard: the per-count "for each" form must NOT be flattened to a plain delta.
+    let effs = parse_text(
+        "Your opponent's next roll is -1 for each Grapple you have in play.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert!(
+        v["actions"][0]["@type"] != "ModifyRoll" || v["actions"][0]["per"].is_object(),
+        "the anchored bare rule must not swallow the per-count form"
+    );
+}
+
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
 /// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
 /// Order and attack-type gates parse; a name gate declines to Unsupported.

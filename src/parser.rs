@@ -3754,10 +3754,10 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         // Opponent single-skill penalty: "If your opponent's next turn roll is <S>, their
-        // roll is -N" -> NextRollSkillBonus{OPP} (stored on the opponent, whose roll it
-        // modifies).
+        // [turn ]roll is -N" -> NextRollSkillBonus{OPP} (stored on the opponent, whose roll
+        // it modifies).
         rule(
-            &format!(r"If your opponent's next turn roll is {SK},? their roll is (-\d+)"),
+            &format!(r"If your opponent's next turn roll is {SK},? their (?:turn )?roll is (-\d+)"),
             |c| {
                 Some(eff(
                     on_hit(),
@@ -3923,6 +3923,24 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
             ))
         }),
         rule(r"Your opponent's next turn roll is -(\d+)", |c| {
+            Some(eff(
+                on_hit(),
+                vec![modify_roll(
+                    Who::Opp,
+                    -num(c, 1),
+                    RollWhen::Next,
+                    None,
+                    Who::Opp,
+                )],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // The bare "next roll" phrasing of the same debuff (task #131): "Your opponent's
+        // next roll is -N" == "…next turn roll is -N" -> ModifyRoll{Opp, Next}. Anchored so
+        // the per-count ("… for each …") and Crowd-Meter ("… - the Crowd Meter") forms fall
+        // through to their own rules rather than being flattened to a plain delta.
+        rule(r"^Your opponent's next roll is -(\d+)$", |c| {
             Some(eff(
                 on_hit(),
                 vec![modify_roll(
@@ -5665,6 +5683,32 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                         delta: num(c, 2),
                         who: Who::SelfSide,
                         either: true,
+                        per_crowd: false,
+                        cap: None,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Opponent-directed standing turn-roll modifier (task #131): "If your opponent
+        // rolls <S> for their turn roll, their [turn ]roll is -N" -> TurnRollBonus{who:Opp}.
+        // Read by turn_roll_bonus's opponent-board scan, so it bites the opponent's roll
+        // only (never the owner's). Distinct from the one-shot "next turn roll" form
+        // (NextRollSkillBonus): this is a STANDING modifier fired every time the opponent
+        // rolls <S>. The self mirror is the who:SelfSide default.
+        rule(
+            &format!(
+                r"If your opponent rolls {SK} for their turn roll, their (?:turn )?roll is ([+-]\d+)"
+            ),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::TurnRollBonus {
+                        skill: skill(&c[1]),
+                        delta: num(c, 2),
+                        who: Who::Opp,
+                        either: false,
                         per_crowd: false,
                         cap: None,
                     }],
