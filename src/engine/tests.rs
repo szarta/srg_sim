@@ -1430,6 +1430,60 @@ mod timed_buff_tests {
         );
     }
 
+    /// A "during your turn" standing buff — a Static self-side BuffSkill gated by
+    /// Condition::DuringTurn (task #131). It folds into the derived stat only while it is
+    /// the owner's turn (so it reaches your Finish rolls and skill requirements), stays
+    /// off during the opponent's turn, and — the fidelity point — is excluded from the
+    /// turn roll-off, where `in_turn_roll` is set even though `active` still names the
+    /// prior turn's winner. (The "and turn rolls" variant restores the roll via a
+    /// separate TurnRollBonus, exercised by the roll-bonus tests above.)
+    #[test]
+    fn during_turn_buff_gates_on_whose_turn_and_skips_the_roll_off() {
+        let mut engine = engine();
+        let card: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "dtb", "name": "dtb", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{"@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "DuringTurn", "who": "SELF"},
+                "actions": [{"@type": "BuffSkill", "skill": "Power", "delta": 2, "who": "SELF",
+                    "duration": "WHILE_IN_PLAY", "target_highest": false, "target_lowest": false,
+                    "per_crowd": false, "cap": null, "per": null, "per_zone": "IN_PLAY"}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "", "source": "card", "optional": false}]
+        }))
+        .unwrap();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card];
+        let base = engine.state.players["A"].competitor.stats.get(Skill::Power);
+
+        // It is A's turn: the buff applies.
+        engine.state.active = "A".to_owned();
+        engine.state.in_turn_roll = false;
+        assert_eq!(
+            engine.stat("A", Skill::Power),
+            base + 2,
+            "applies during the owner's turn"
+        );
+
+        // The opponent's turn: off.
+        engine.state.active = "B".to_owned();
+        assert_eq!(
+            engine.stat("A", Skill::Power),
+            base,
+            "off during the opponent's turn"
+        );
+
+        // The roll-off: `active` still names A (won last turn) but it is nobody's turn
+        // yet — the buff must NOT leak into A's turn roll.
+        engine.state.active = "A".to_owned();
+        engine.state.in_turn_roll = true;
+        assert_eq!(
+            engine.stat("A", Skill::Power),
+            base,
+            "excluded from the turn roll-off despite the stale active seat"
+        );
+    }
+
     /// "If you have another Follow Up or Finish Strike in play, your Technique skill
     /// is +1" (task #119/#130 skill-buff family): a Static buff gated on HasInPlay
     /// count>=2 of the play_orders OR-filter. The gate is re-evaluated live off the

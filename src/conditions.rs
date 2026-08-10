@@ -402,7 +402,13 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             let subject = who_key(state, owner, *who);
             state.players[&subject].gimmick_flipped
         }
-        Condition::DuringTurn { who } => state.active == who_key(state, owner, *who),
+        // False throughout the turn roll-off: it is nobody's turn yet (`active` still
+        // holds the prior turn's winner), so a "during your turn" standing buff must not
+        // bleed into the roll. "during your turn AND turn rolls" adds the roll via a
+        // separate TurnRollBonus, which is not DuringTurn-gated.
+        Condition::DuringTurn { who } => {
+            !state.in_turn_roll && state.active == who_key(state, owner, *who)
+        }
         Condition::CompetitorIs { name_contains } => {
             let name = &state.players[owner].competitor.name;
             any_substr_ci(name_contains, name)

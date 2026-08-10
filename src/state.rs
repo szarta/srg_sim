@@ -320,6 +320,15 @@ pub struct GameState {
     /// the match is explicitly set up as a stipulation.
     #[serde(default)]
     pub match_type: crate::ir::MatchType,
+    /// True only while the turn roll-off is resolving — the window between "roll to
+    /// decide the turn" and "the winner takes their turn", where it is nobody's turn yet
+    /// (`active` still holds the PRIOR turn's winner). A [`Condition::DuringTurn`] gate
+    /// reads false throughout, so a "during your turn" standing buff does NOT leak into
+    /// the turn roll (cards that DO want the roll say "during your turn AND turn rolls",
+    /// modeled with a separate `TurnRollBonus`). Serialized only when set, so a snapshot
+    /// taken mid-roll-off resumes correctly; absent (false) everywhere else.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub in_turn_roll: bool,
 }
 
 /// What caused the flip currently being resolved (see [`GameState::flip_provenance`]).
@@ -356,6 +365,11 @@ fn default_active() -> String {
     "A".to_owned()
 }
 
+/// Serde skip predicate: omit a `bool` field from a snapshot when it is `false`.
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
 impl GameState {
     /// A fresh game state over the given players and RNG (crowd meter 0, turn 0,
     /// player `A` active).
@@ -374,6 +388,7 @@ impl GameState {
             copy_guard: RefCell::new(HashSet::new()),
             flip_provenance: None,
             match_type: crate::ir::MatchType::Standard,
+            in_turn_roll: false,
         }
     }
 

@@ -6495,30 +6495,103 @@ fn scope_to_turn_roll(mut eff: Effect) -> Effect {
     eff.actions = eff
         .actions
         .into_iter()
-        .map(|a| match a {
-            Action::BuffSkill {
-                skill,
-                delta,
-                who: Who::SelfSide,
-                duration: Duration::WhileInPlay,
-                target_highest: false,
-                target_lowest: false,
-                per_crowd,
-                cap,
-                per: None,
-                per_zone: _,
-                per_excludes_self: false,
-            } => Action::TurnRollBonus {
-                skill,
-                delta,
-                either: false,
-                per_crowd,
-                cap,
-            },
-            other => other,
-        })
+        .map(|a| buff_to_turn_roll_bonus(&a).unwrap_or(a))
         .collect();
     eff
+}
+
+/// The roll-off parallel of a plain self-side skill buff: a flat ("your Power is +1") or
+/// dynamic Crowd-Meter ("your Technique is + the Crowd Meter (Max +3)") [`Action::BuffSkill`]
+/// maps to the [`Action::TurnRollBonus`] the turn-roll base reads, carrying `per_crowd`/`cap`.
+/// `None` for anything `TurnRollBonus` can't express — a card-count (`per`) or retargeted
+/// (`target_highest`/`_lowest`) buff, an opponent-directed buff, or a non-`BuffSkill` action.
+fn buff_to_turn_roll_bonus(a: &Action) -> Option<Action> {
+    match a {
+        Action::BuffSkill {
+            skill,
+            delta,
+            who: Who::SelfSide,
+            duration: Duration::WhileInPlay,
+            target_highest: false,
+            target_lowest: false,
+            per_crowd,
+            cap,
+            per: None,
+            per_excludes_self: false,
+            ..
+        } => Some(Action::TurnRollBonus {
+            skill: *skill,
+            delta: *delta,
+            either: false,
+            per_crowd: *per_crowd,
+            cap: *cap,
+        }),
+        _ => None,
+    }
+}
+
+/// "Your `<skills>` (skill) is/are +N \[+ the Crowd Meter] during your turn\[ and turn
+/// rolls]" — a standing skill buff scoped to the OWNER's turn. The turn window is a
+/// [`Condition::DuringTurn`] gate: the buff folds into derived stats only while it is your
+/// turn, so it reaches your Finish rolls and your skill requirements but not your
+/// opponent's turn, and the roll-off is excluded (`GameState::in_turn_roll`). "and turn
+/// rolls" ADDS the roll: a parallel [`Action::TurnRollBonus`] per buffed skill in a second,
+/// `Always`-gated effect (a `DuringTurn` gate would be suppressed in the roll-off, so it
+/// can't carry the roll piece). The head reuses the plain buff grammar
+/// ([`crowd_meter_buff`] and the flat "+N" rules), so single-skill, multi-skill, flat and
+/// Crowd-Meter forms all ride through — this composer only re-scopes the result. `None`
+/// when the head is not a self-side Static skill buff (falls through to Unsupported), or
+/// when "and turn rolls" is present but a buff can't map to a `TurnRollBonus` (so the roll
+/// piece is never silently dropped).
+fn during_turn_skill_buff(clause: &str, source: EffectSource) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^(.+?) during your turn( and turn rolls)?\.?$").unwrap());
+    let caps = RE.captures(clause.trim())?;
+    let and_rolls = caps.get(2).is_some();
+    let base = compile(
+        caps.get(1)?.as_str().trim(),
+        source,
+        Frequency::Unlimited,
+        None,
+    );
+    if base.trigger != Trigger::Static
+        || base.actions.is_empty()
+        || !base.actions.iter().all(|a| {
+            matches!(
+                a,
+                Action::BuffSkill {
+                    who: Who::SelfSide,
+                    ..
+                }
+            )
+        })
+    {
+        return None;
+    }
+    // Effect A: the buff, gated to your turn.
+    let mut turn_eff = base.clone();
+    turn_eff.condition = Condition::DuringTurn { who: Who::SelfSide };
+    let mut out = vec![turn_eff];
+    // Effect B ("and turn rolls"): the roll-off piece — one TurnRollBonus per buffed skill,
+    // Always-gated so it survives the roll-off. Decline the whole clause if any buff can't
+    // map, rather than drop that skill's roll bonus.
+    if and_rolls {
+        let bonuses: Vec<Action> = base
+            .actions
+            .iter()
+            .filter_map(buff_to_turn_roll_bonus)
+            .collect();
+        if bonuses.len() != base.actions.len() {
+            return None;
+        }
+        out.push(eff(
+            Trigger::Static,
+            bonuses,
+            Condition::Always,
+            Duration::WhileInPlay,
+        ));
+    }
+    Some(out)
 }
 
 /// Non-effect metadata (a deck-build "Skill Requirement:" line): recognized and
@@ -6776,6 +6849,23 @@ pub fn parse_text(
                 i += 1 + consumed;
                 continue;
             }
+        }
+        // "Your <skill> is +N during your turn[ and turn rolls]" — a self-turn-scoped
+        // standing buff: one DuringTurn-gated buff effect, plus (for "and turn rolls") a
+        // second Always-gated TurnRollBonus effect for the roll-off.
+        if let Some(effs) = during_turn_skill_buff(clause, source) {
+            for mut e in effs {
+                e.raw_clause = clause.clone();
+                e.source = source;
+                e.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(e, &window));
+            }
+            i += 1;
+            continue;
         }
         // "The player with the fewest/most cards in hand draws/discards N" — one
         // clause, TWO conditional effects (per-seat, tie resolves for both).

@@ -5469,8 +5469,13 @@ impl Engine {
     /// (OnWinTurn/OnLoseTurn for the outcome, OnRoll for each side's roll — the
     /// latter outcome-agnostic, DESIGN.md §6/§11).
     fn turn_roll(&mut self) -> Eng<String> {
+        // The roll-off is nobody's turn yet: gate `DuringTurn` off for its duration so a
+        // "during your turn" buff can't leak into the roll (the flag survives a mid-roll
+        // suspend via the snapshot). Cleared once the winner is known and it IS their turn.
+        self.state.in_turn_roll = true;
         let winner = self.roll_off()?;
         self.state.active = winner.clone();
+        self.state.in_turn_roll = false;
         let loser = self.state.opponent_of(&winner);
         let ctx_w = self.roll_ctx.get(&winner).cloned().unwrap_or_default();
         let ctx_l = self.roll_ctx.get(&loser).cloned().unwrap_or_default();

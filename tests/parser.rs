@@ -3136,6 +3136,75 @@ fn freq_prefixed_during_turn_header() {
     assert_eq!(follow["condition"]["@type"], "Always");
 }
 
+/// "Your <skill> is +N during your turn[ and turn rolls]" (task #131): a self-turn-scoped
+/// standing buff. "during your turn" -> one DuringTurn{SELF}-gated BuffSkill (reaches your
+/// Finish rolls + skill requirements, off on the opponent's turn); "and turn rolls" ADDS a
+/// second Always-gated TurnRollBonus for the roll-off (a DuringTurn gate is suppressed
+/// there). Reuses the flat/Crowd-Meter buff grammar for the head; the choose-a-skill form
+/// declines to Unsupported (distinct mechanic).
+#[test]
+fn during_turn_skill_buff_grammar() {
+    // Turn-only: one Static BuffSkill gated to your turn — no TurnRollBonus.
+    let effs = parse_text(
+        "Your Grapple skill is +2 during your turn.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "one effect: the DuringTurn buff only");
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["trigger"]["@type"], "Static");
+    assert_eq!(v["condition"]["@type"], "DuringTurn");
+    assert_eq!(v["condition"]["who"], "SELF");
+    assert_eq!(v["actions"][0]["@type"], "BuffSkill");
+    assert_eq!(v["actions"][0]["skill"], "Grapple");
+    assert_eq!(v["actions"][0]["delta"], 2);
+
+    // "and turn rolls": the DuringTurn buff PLUS an Always-gated TurnRollBonus (roll-off).
+    let effs = parse_text(
+        "Your Strike skill is +1 during your turn and turn rolls.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2, "the buff effect + the roll-off effect");
+    let buff = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(buff["condition"]["@type"], "DuringTurn");
+    assert_eq!(buff["actions"][0]["@type"], "BuffSkill");
+    assert_eq!(buff["actions"][0]["skill"], "Strike");
+    let roll = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(roll["condition"]["@type"], "Always");
+    assert_eq!(roll["actions"][0]["@type"], "TurnRollBonus");
+    assert_eq!(roll["actions"][0]["skill"], "Strike");
+    assert_eq!(roll["actions"][0]["delta"], 1);
+
+    // Dynamic Crowd-Meter head carries per_crowd through BOTH effects.
+    let effs = parse_text(
+        "Your Power is + the Crowd Meter during your turn and turn rolls.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2);
+    let buff = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(buff["actions"][0]["@type"], "BuffSkill");
+    assert_eq!(buff["actions"][0]["per_crowd"], true);
+    let roll = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(roll["actions"][0]["@type"], "TurnRollBonus");
+    assert_eq!(roll["actions"][0]["per_crowd"], true);
+
+    // The choose-a-skill form is a distinct mechanic (the player picks a skill at play
+    // time); the head is not a self-side buff, so the composer declines -> Unsupported.
+    let effs = parse_text(
+        "Choose 1 of your skills: That skill is +1 during your turn and turn rolls.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(effs.last().unwrap()).unwrap();
+    assert_eq!(v["actions"][0]["@type"], "Unsupported");
+}
+
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
 /// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
 /// Order and attack-type gates parse; a name gate declines to Unsupported.
