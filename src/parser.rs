@@ -6426,6 +6426,55 @@ fn roll_header(clause: &str) -> Option<(Trigger, Option<Condition>)> {
     None
 }
 
+/// A standalone "During your turn roll:" header — opens a turn-roll scope over the
+/// clauses that follow (like [`window_header`]/[`roll_header`], persists to end of
+/// text). Its body's STANDING skill buffs are turn-roll-scoped by [`scope_to_turn_roll`];
+/// every other body passes through as parsed (its own trigger already carries the
+/// timing). Only the bare header line matches — the inline "During your turn roll,
+/// <body>" comma forms stay their own clause.
+fn turn_roll_header(clause: &str) -> bool {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^During your turn rolls?:?$").unwrap());
+    RE.is_match(clause.trim())
+}
+
+/// Re-scope a turn-roll-header body: a Static, self-side, FIXED skill buff ("your Power
+/// is +1") is active only during the roll-off, so rewrite it to a [`Action::TurnRollBonus`]
+/// (the roll-off parallel of a plain [`Action::BuffSkill`], read by `turn_roll_bonus`),
+/// carrying the effect's condition. Dynamic buffs (`per`/`per_crowd`/`cap`/retargeted),
+/// opponent-directed buffs, timed buffs, and every non-`BuffSkill` action are left
+/// untouched — a triggered body already encodes its own roll timing.
+fn scope_to_turn_roll(mut eff: Effect) -> Effect {
+    if eff.trigger != Trigger::Static {
+        return eff;
+    }
+    eff.actions = eff
+        .actions
+        .into_iter()
+        .map(|a| match a {
+            Action::BuffSkill {
+                skill,
+                delta,
+                who: Who::SelfSide,
+                duration: Duration::WhileInPlay,
+                target_highest: false,
+                target_lowest: false,
+                per_crowd: false,
+                cap: None,
+                per: None,
+                per_zone: _,
+                per_excludes_self: false,
+            } => Action::TurnRollBonus {
+                skill,
+                delta,
+                either: false,
+            },
+            other => other,
+        })
+        .collect();
+    eff
+}
+
 /// Non-effect metadata (a deck-build "Skill Requirement:" line): recognized and
 /// skipped, neither an effect nor Unsupported.
 fn is_metadata(clause: &str) -> bool {
@@ -6532,6 +6581,10 @@ pub fn parse_text(
     // roll:"): the OnRoll trigger to stamp on the following clauses, plus an optional gate
     // (the multi-skill OR restriction). Set by `roll_header`, persists until end of text.
     let mut roll_win: Option<(Trigger, Option<Condition>)> = None;
+    // An active "During your turn roll:" header: standing self skill buffs in the
+    // following clauses are re-scoped to the roll-off (`scope_to_turn_roll`). Persists
+    // to end of text, like `window`/`roll_win`.
+    let mut turn_roll_scope = false;
     // AND the active turn-window onto an effect's condition (a no-op when Always).
     let scope = |mut eff: Effect, window: &Condition| {
         if !matches!(window, Condition::Always) {
@@ -6582,6 +6635,13 @@ pub fn parse_text(
         // Standalone roll-phase header: open an OnRoll window over the clauses that follow.
         if let Some(win) = roll_header(clause) {
             roll_win = Some(win);
+            i += 1;
+            continue;
+        }
+        // Standalone "During your turn roll:" header: open a turn-roll scope so the
+        // following standing skill buffs are re-scoped to the roll-off.
+        if turn_roll_header(clause) {
+            turn_roll_scope = true;
             i += 1;
             continue;
         }
@@ -6701,7 +6761,11 @@ pub fn parse_text(
                 continue;
             }
         }
-        effects.push(scope(compile(clause, source, freq, n), &window));
+        let mut compiled = compile(clause, source, freq, n);
+        if turn_roll_scope {
+            compiled = scope_to_turn_roll(compiled);
+        }
+        effects.push(scope(compiled, &window));
         i += 1;
     }
     effects

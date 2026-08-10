@@ -2979,6 +2979,55 @@ fn turn_roll_bonus_grammar() {
     assert_eq!(a["delta"], 1);
 }
 
+/// "During your turn roll:" header (task #131): opens a turn-roll scope over the
+/// following clauses. A STANDING self skill buff in the body is re-scoped to a
+/// TurnRollBonus (carrying its condition); non-buff bodies and dynamic buffs pass
+/// through; the header line itself is consumed (no Unsupported node).
+#[test]
+fn turn_roll_header_scopes_the_body() {
+    // Header + a conditional standing buff -> the buff becomes a conditional
+    // TurnRollBonus (the Fire/Hammer Power family). The header consumes to nothing,
+    // so exactly one effect remains.
+    let effs = parse_text(
+        "During your turn roll:\nWhen you have a card with \"Fire\" in the name in play, your Power is +1.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "header consumed, one body effect");
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["trigger"]["@type"], "Static");
+    assert_eq!(v["actions"][0]["@type"], "TurnRollBonus");
+    assert_eq!(v["actions"][0]["skill"], "Power");
+    assert_eq!(v["actions"][0]["delta"], 1);
+    // The buff's condition survives the re-scope.
+    assert_ne!(v["condition"]["@type"], "Always");
+
+    // A bare header with an UNSUPPORTED body: the header still consumes, the body
+    // stays explicitly Unsupported (never a silent drop).
+    let effs = parse_text(
+        "During your turn roll:\nYour opponent's maximum handsize is equal to your turn roll (Min 5).",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "only the body remains");
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["actions"][0]["@type"], "Unsupported");
+
+    // A plain unconditional buff under the header -> unconditional TurnRollBonus.
+    let effs = parse_text(
+        "During your turn roll:\nYour Strike is +2.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["actions"][0]["@type"], "TurnRollBonus");
+    assert_eq!(v["actions"][0]["skill"], "Strike");
+    assert_eq!(v["actions"][0]["delta"], 2);
+}
+
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
 /// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
 /// Order and attack-type gates parse; a name gate declines to Unsupported.
