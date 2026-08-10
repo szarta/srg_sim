@@ -2743,6 +2743,26 @@ fn pod_fidelity_grammar() {
     assert_eq!(a["who"], "OPP");
     assert_eq!(a["selector"]["play_order"], "Finish");
     assert_eq!(a["selector"]["tag"], "Spotlight");
+
+    // Named-card blank ("\"Apocalypse\" has blank text"): blanked on BOTH boards (the
+    // clause names no owner), one name-substring selector per side.
+    let e = a1("\"Apocalypse\" has blank text.");
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 2, "blanks the name on both boards");
+    let whos: Vec<&str> = acts.iter().map(|a| a["who"].as_str().unwrap()).collect();
+    assert!(whos.contains(&"SELF") && whos.contains(&"OPP"));
+    for a in acts {
+        assert_eq!(a["@type"], "BlankText");
+        assert_eq!(
+            a["selector"]["name_contains"],
+            serde_json::json!(["Apocalypse"])
+        );
+    }
+
+    // OR-list of names -> one selector holding all names, still on both boards.
+    let e = a1("\"Rejected\" or \"Derailed\" has blank text.");
+    let sel = &e["actions"][0]["selector"]["name_contains"];
+    assert_eq!(*sel, serde_json::json!(["Rejected", "Derailed"]));
 }
 
 /// Type-counted per-count buff (task #131): "Your X [and Y] is/are +N for each <type>

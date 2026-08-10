@@ -3217,6 +3217,37 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Named-card blank ("\"Apocalypse\" has blank text", "\"X\" or \"Y\" has blank
+        // text"): the named card(s) are blank whoever holds them. The clause names no
+        // owner (these target opponent counters — Apocalypse / Rejected / Derailed — but
+        // say only "X has blank text"), so blank the name on BOTH boards: BlankText{SELF}
+        // + BlankText{OPP} with the same name-substring OR-list selector (mirrors the
+        // two-action "each player" pattern; Who has no Both variant).
+        rule(
+            r#"("[^"]+"(?:,? (?:and |or )?"[^"]+")*) has blank text"#,
+            |c| {
+                let names = quoted_names(&c[1]);
+                if names.is_empty() {
+                    return None;
+                }
+                let sel = cf_name(names);
+                Some(eff(
+                    Trigger::Static,
+                    vec![
+                        Action::BlankText {
+                            selector: sel.clone(),
+                            who: Who::SelfSide,
+                        },
+                        Action::BlankText {
+                            selector: sel,
+                            who: Who::Opp,
+                        },
+                    ],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         rule(r"Your opponent draws? (\d+) cards?", |c| {
             Some(eff(
                 on_hit(),
