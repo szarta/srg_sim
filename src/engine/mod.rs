@@ -20,8 +20,8 @@ use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerI
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, CountZone, DeckEnd, Dest,
     Direction, Duration, Effect, EffectSource, LoseKind, PlayOrder, RerollCost, RerollCostKind,
-    RevealDest, RevealFrom, RevealMatch, RevealSource, RollWhen, ScryRest, ShuffleSource, Skill,
-    Trigger, Who,
+    RevealDest, RevealFrom, RevealMatch, RevealSource, RollWhen, ScryRest, SearchSource,
+    ShuffleSource, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -1242,7 +1242,8 @@ impl Engine {
                 filter,
                 dest,
                 count,
-            } => self.act_search(filter, *dest, *count, key)?,
+                source,
+            } => self.act_search(filter, *dest, *count, *source, key)?,
             Action::ShuffleDeck { who } => self.act_shuffle_deck(*who, key)?,
             Action::ShuffleIntoDeck { selector, source } => {
                 self.act_shuffle_into_deck(selector, *source, key)?
@@ -2223,13 +2224,28 @@ impl Engine {
         Ok(())
     }
 
-    fn act_search(&mut self, filter: &CardFilter, dest: Dest, count: i64, key: &str) -> Eng<()> {
+    fn act_search(
+        &mut self,
+        filter: &CardFilter,
+        dest: Dest,
+        count: i64,
+        source: SearchSource,
+        key: &str,
+    ) -> Eng<()> {
         if dest == Dest::Discard {
             return self.search_to_discard(filter, count, key);
         }
+        // Candidate pool: the deck, plus the discard pile when the clause searches
+        // "your deck or discard pile". The found card leaves whichever zone holds it.
+        let both = source == SearchSource::DeckOrDiscard;
         let matches: Vec<Card> = self.state.players[key]
             .deck
             .iter()
+            .chain(
+                both.then(|| self.state.players[key].discard.iter())
+                    .into_iter()
+                    .flatten(),
+            )
             .filter(|c| conditions::card_matches(c, filter))
             .cloned()
             .collect();
@@ -2238,10 +2254,18 @@ impl Engine {
         } else {
             Some(self.pick_from(key, &matches, "target")?)
         };
+        let mut from_discard = false;
         if let Some(card) = &picked {
             let player = self.state.players.get_mut(key).unwrap();
             if let Some(pos) = player.deck.iter().position(|c| c.db_uuid == card.db_uuid) {
                 player.deck.remove(pos);
+            } else if let Some(pos) = player
+                .discard
+                .iter()
+                .position(|c| c.db_uuid == card.db_uuid)
+            {
+                player.discard.remove(pos);
+                from_discard = true;
             }
         }
         // You looked through the deck — shuffle the remainder. The picked card is out
@@ -2260,8 +2284,8 @@ impl Engine {
                 t,
                 player: key.to_owned(),
                 cards: vec![card.db_uuid],
-                source: Some("deck".to_owned()),
-                hidden: true, // deck -> hand/deck: both private, opponent sees only counts
+                source: Some(if from_discard { "discard" } else { "deck" }.to_owned()),
+                hidden: true, // deck/discard -> hand/deck: private, opponent sees only counts
             }));
         }
         if dest == Dest::Hand {

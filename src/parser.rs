@@ -19,8 +19,8 @@ use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
     CountZone, DeckEnd, Dest, Direction, DqScope, Duration, Effect, EffectSource, EffectTag,
     Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RerollCost,
-    RerollCostKind, RerollCostTag, RevealSource, RollWhen, ScryRest, ShuffleSource, Skill, Trigger,
-    Vs, Who,
+    RerollCostKind, RerollCostTag, RevealSource, RollWhen, ScryRest, SearchSource, ShuffleSource,
+    Skill, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -659,6 +659,18 @@ fn search(filter: CardFilter, dest: Dest, count: i64) -> Action {
         filter,
         dest,
         count,
+        source: SearchSource::Deck,
+    }
+}
+
+/// A [`Action::Search`] that tutors from the deck OR the discard pile ("search your deck
+/// or discard pile for X").
+fn search_both(filter: CardFilter, dest: Dest, count: i64) -> Action {
+    Action::Search {
+        filter,
+        dest,
+        count,
+        source: SearchSource::DeckOrDiscard,
     }
 }
 
@@ -669,7 +681,15 @@ fn search(filter: CardFilter, dest: Dest, count: i64) -> Action {
 fn search_target(sel: &str) -> Option<(CardFilter, i64)> {
     static LEAD: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^(?:up to )?(a|an|\d+) (.+)$").unwrap());
-    let caps = LEAD.captures(sel.trim())?;
+    let sel = sel.trim();
+    // A bare quoted card name with no count ("Clothesline") -> that one named card.
+    if sel.starts_with('"') {
+        let names = quoted_names(sel);
+        if !names.is_empty() {
+            return Some((cf_name(names), 1));
+        }
+    }
+    let caps = LEAD.captures(sel)?;
     let head = caps[1].to_lowercase();
     let count = if head == "a" || head == "an" {
         1
@@ -3015,10 +3035,27 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Deck-OR-discard tutor: "Search your deck or discard pile for <SEL> and add
+        // it/them to your hand" -> Search{source:DeckOrDiscard} (the pool is deck ∪
+        // discard; the found card leaves whichever zone holds it). Placed before the plain
+        // deck rule. Compound tails ("…, or you may force a re-roll", "…: add 1 …") still
+        // decline and stay Unsupported.
+        rule(
+            r#"Search your deck or discard pile for (.+?) and add (?:it|them) to your hand"#,
+            |c| {
+                let (filter, count) = search_target(&c[1])?;
+                Some(eff(
+                    on_hit(),
+                    vec![search_both(filter, Dest::Hand, count)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Deck tutor (Search, previously override-only): "Search your deck for <SEL>
         // and <route>". Three destinations — hand, top of the shuffled deck, discard
-        // pile. Compound tails ("… , or each player buries", "…: add 1 …", "search your
-        // deck OR discard pile") decline here and stay Unsupported for now.
+        // pile. Compound tails ("… , or each player buries", "…: add 1 …") decline here
+        // and stay Unsupported for now.
         rule(
             r#"Search your deck for (.+?) and add (?:it|them) to your hand"#,
             |c| {

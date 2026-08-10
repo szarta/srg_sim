@@ -25,13 +25,17 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 114;
+pub const SCHEMA_VERSION: i64 = 115;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
 /// byte-identical, the same low-churn tactic as `Option` fields with `Option::is_none`.
 fn is_false(b: &bool) -> bool {
     !*b
+}
+
+fn is_default_search_source(s: &SearchSource) -> bool {
+    *s == SearchSource::Deck
 }
 
 /// `skip_serializing_if` predicate for a `Who` field that carries the enum default
@@ -236,6 +240,17 @@ pub enum ShuffleSource {
     #[default]
     Discard,
     InPlay,
+}
+
+/// Which zone(s) a [`Action::Search`] tutors from — `Deck` (the default, historical
+/// behaviour) or `DeckOrDiscard` ("search your deck or discard pile for X"): the pool
+/// is the union of both zones and the found card leaves whichever zone holds it. schema v115
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SearchSource {
+    #[default]
+    Deck,
+    DeckOrDiscard,
 }
 
 /// A match stipulation ("this is a Steel Cage Match"). The default `Standard` is a
@@ -1113,6 +1128,10 @@ pub enum Action {
         filter: CardFilter,
         dest: Dest,
         count: i64,
+        /// Which zone(s) to tutor from. Default `Deck`; `DeckOrDiscard` also scans the
+        /// discard pile. Skip-when-default, so pre-v115 fixtures round-trip identically.
+        #[serde(default, skip_serializing_if = "is_default_search_source")]
+        source: SearchSource,
     },
     ShuffleDeck {
         who: Who,
@@ -2414,6 +2433,10 @@ pub enum IrNode {
         filter: CardFilter,
         dest: Dest,
         count: i64,
+        /// Which zone(s) to tutor from. Default `Deck`; `DeckOrDiscard` also scans the
+        /// discard pile. Skip-when-default, so pre-v115 fixtures round-trip identically.
+        #[serde(default, skip_serializing_if = "is_default_search_source")]
+        source: SearchSource,
     },
     ShuffleDeck {
         who: Who,

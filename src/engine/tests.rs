@@ -985,6 +985,42 @@ mod on_stop_order_tests {
             "the order=Finish gate stays inert when a Lead is stopped"
         );
     }
+
+    /// "Search your deck OR discard pile": a `Search{source: DeckOrDiscard}` finds a
+    /// matching card sitting in the discard pile and moves it to hand.
+    #[test]
+    fn deck_or_discard_search_pulls_from_the_discard_pile() {
+        let mut engine = la_fenix_engine();
+        {
+            let a = engine.state.players.get_mut("A").unwrap();
+            a.deck.clear(); // isolate: the only candidate lives in the discard pile
+            a.discard
+                .push(serde_json::from_value(card("recalled", "Lead")).unwrap());
+        }
+        engine
+            .act_search(
+                &CardFilter::default(),
+                Dest::Hand,
+                1,
+                SearchSource::DeckOrDiscard,
+                "A",
+            )
+            .expect("search");
+        assert!(
+            engine.state.players["A"]
+                .hand
+                .iter()
+                .any(|c| c.db_uuid == "recalled"),
+            "the discard-pile card was tutored to hand"
+        );
+        assert!(
+            !engine.state.players["A"]
+                .discard
+                .iter()
+                .any(|c| c.db_uuid == "recalled"),
+            "it left the discard pile"
+        );
+    }
 }
 
 #[cfg(test)]

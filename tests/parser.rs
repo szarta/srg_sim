@@ -3456,6 +3456,23 @@ fn search_deck_tutor() {
     // A selector with no CardFilter (Spotlight) declines cleanly -> Unsupported.
     let e = a1("Search your deck for a Spotlight card and add it to your hand.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
+
+    // A bare quoted card name (no count) -> that one named card, count 1.
+    let e = a1("Search your deck for \"Clothesline\" and add it to your hand.");
+    assert_eq!(e["actions"][0]["filter"]["name_contains"][0], "Clothesline");
+    assert_eq!(e["actions"][0]["count"], 1);
+    assert_eq!(
+        e["actions"][0]["source"],
+        Value::Null,
+        "plain deck search: default source"
+    );
+
+    // "deck or discard pile" -> Search{source: DECK_OR_DISCARD}.
+    let e = a1("Search your deck or discard pile for \"Clothesline\" and add it to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "Search");
+    assert_eq!(e["actions"][0]["source"], "DECK_OR_DISCARD");
+    assert_eq!(e["actions"][0]["dest"], "HAND");
+    assert_eq!(e["actions"][0]["filter"]["name_contains"][0], "Clothesline");
 }
 
 /// No-DQ match rule (DisqualificationRule, previously override-only): "the match has no
