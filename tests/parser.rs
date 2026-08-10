@@ -201,6 +201,22 @@ fn hand_bury_grammar() {
     assert_eq!(d["selector"]["play_order"], "Followup");
     assert_eq!(d["selector"]["atk_type"], "Strike");
 
+    // Split-clause tail: a STANDALONE "Choose N <selector> and discard it" (following a
+    // separate "Look at your opponent's hand.") is the same opp-hand choose-discard.
+    let d = only_action("Choose 1 Follow Up and discard it.");
+    assert_eq!(d["@type"], "Discard");
+    assert_eq!(d["who"], "OPP");
+    assert_eq!(d["choose"], true);
+    assert_eq!(d["selector"]["play_order"], "Followup");
+    // Bare "card" -> match-any selector.
+    let d = only_action("Choose 2 cards and discard them.");
+    assert_eq!(d["count"], 2);
+    assert_eq!(d["selector"]["play_order"], Value::Null);
+    // "... your opponent has in play …" is board removal, NOT a hand discard: the selector
+    // declines recur_filter here, so the in-play removal rule handles it (RemoveFromPlay).
+    let d = only_action("Choose 1 card your opponent has in play and discard it.");
+    assert_eq!(d["@type"], "RemoveFromPlay");
+
     // Gag "no-op" clauses (Medieval Prankster finishes): choosing cards and putting
     // them right back is functionally just a Peek (fog of war); choosing a discard-pile
     // card and "shuffling it into your hand" is just a recur to hand (the shuffle is a

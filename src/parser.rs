@@ -4851,6 +4851,22 @@ fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Standalone opp-hand choose-discard: "Choose N <selector> and discard it/them" —
+        // the split-clause tail of "Look at your opponent's hand.\nChoose N X and discard
+        // it" (the inline comma form parses via the rules above). Every standalone
+        // choose-discard is either opp-HAND (here) or opp-BOARD ("... your opponent has in
+        // play …", which `recur_filter` declines so it falls to the in-play removal rule);
+        // none mean the actor's own hand. `recur_filter` parses the typed/order/name
+        // selector -> `discard_choose` (opp hand, effect owner picks).
+        rule(r"[Cc]hoose (\d+) (.+?) and discard (?:it|them)", |c| {
+            let filter = recur_filter(&c[2])?;
+            Some(eff(
+                on_hit(),
+                vec![discard_choose(num(c, 1), filter)],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
     ]
 }
 
