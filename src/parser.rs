@@ -1652,6 +1652,11 @@ fn gate_condition(text: &str) -> Option<Condition> {
     static HIT: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(?i)^you hit (?:a |an |another )?(.+?) (this|last) turn$").unwrap()
     });
+    // The opponent-side twin of HIT ("if your opponent hit a Submission last turn, …") —
+    // same HitCard, `who = Opp`, resolved against the opponent's hit history.
+    static HIT_OPP: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^your opponent hit (?:a |an |another )?(.+?) (this|last) turn$").unwrap()
+    });
     static OPP_PLAY: LazyLock<Regex> = LazyLock::new(|| {
         // Count is group 1 (a bare number, "or more" optional); the article "a"/"an"
         // ("your opponent has a Stop in play") is a countless branch that reads as 1.
@@ -1691,6 +1696,15 @@ fn gate_condition(text: &str) -> Option<Condition> {
             return Some(Condition::HitCard {
                 filter: f,
                 who: Who::SelfSide,
+                last_turn: c[2].eq_ignore_ascii_case("last"),
+            });
+        }
+    }
+    if let Some(c) = HIT_OPP.captures(t) {
+        if let Some(f) = recur_filter(c[1].trim()) {
+            return Some(Condition::HitCard {
+                filter: f,
+                who: Who::Opp,
                 last_turn: c[2].eq_ignore_ascii_case("last"),
             });
         }

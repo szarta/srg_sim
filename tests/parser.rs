@@ -2420,6 +2420,13 @@ fn hit_history_and_generic_gate() {
     assert_eq!(e["condition"]["last_turn"], false);
     assert_eq!(e["actions"][0]["@type"], "Draw");
 
+    // OPPONENT-side hit history ("if your opponent hit <X> last turn, …") -> HitCard{who:OPP}.
+    let e = one("If your opponent hit a Submission last turn, draw 1 card.");
+    assert_eq!(e["condition"]["@type"], "HitCard");
+    assert_eq!(e["condition"]["who"], "OPP");
+    assert_eq!(e["condition"]["last_turn"], true);
+    assert_eq!(e["condition"]["filter"]["atk_type"], "Submission");
+
     // Generic gate with a roll gate over a compound body.
     let e =
         one("If you rolled Power for your turn roll, draw 1 card and bury 1 card in your hand.");
