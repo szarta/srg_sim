@@ -3026,6 +3026,33 @@ fn turn_roll_header_scopes_the_body() {
     assert_eq!(v["actions"][0]["@type"], "TurnRollBonus");
     assert_eq!(v["actions"][0]["skill"], "Strike");
     assert_eq!(v["actions"][0]["delta"], 2);
+
+    // A DYNAMIC per-Crowd-Meter buff ("your Technique is + the Crowd Meter (max +3)")
+    // must stay turn-roll-scoped, not leak into effective_stats — it rides the
+    // TurnRollBonus's per_crowd/cap, not a full-time BuffSkill.
+    let effs = parse_text(
+        "During your turn roll:\nYour Technique is + the Crowd Meter (max +3).",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let a = serde_json::to_value(&effs[0]).unwrap()["actions"][0].clone();
+    assert_eq!(a["@type"], "TurnRollBonus");
+    assert_eq!(a["skill"], "Technique");
+    assert_eq!(a["per_crowd"], true);
+    assert_eq!(a["cap"], 3);
+
+    // WITHOUT the header, the same dynamic buff is a full-time BuffSkill (applies
+    // everywhere) — the header is what makes it roll-off-only.
+    let effs = parse_text(
+        "Your Technique is + the Crowd Meter (max +3).",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let a = serde_json::to_value(&effs[0]).unwrap()["actions"][0].clone();
+    assert_eq!(a["@type"], "BuffSkill");
+    assert_eq!(a["per_crowd"], true);
 }
 
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in

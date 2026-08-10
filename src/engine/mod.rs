@@ -5106,10 +5106,19 @@ impl Engine {
                     skill: s,
                     delta,
                     either,
+                    per_crowd,
+                    cap,
                 } = a
                 {
                     if *s == skill && (!either_only || *either) {
-                        total += *delta;
+                        // `per_crowd` uses the live Crowd Meter (clamped to `cap`) as the
+                        // delta — "your Technique is + the Crowd Meter (Max +3) during
+                        // your turn roll"; the flat `delta` otherwise.
+                        total += if *per_crowd {
+                            cap.map_or(self.state.crowd_meter, |c| self.state.crowd_meter.min(c))
+                        } else {
+                            *delta
+                        };
                     }
                 }
             }

@@ -2380,11 +2380,22 @@
         "@type": {
           "const": "TurnRollBonus"
         },
+        "cap": {
+          "description": "Clamps the per_crowd delta (\"Max +N\"). Absent = uncapped; ignored when per_crowd is false. schema v118",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
         "delta": {
           "type": "integer"
         },
         "either": {
           "description": "Symmetric: the modifier applies to whoever rolls, from either board (\"if either player rolls <S> for their roll, their roll is +/-N\"). Absent = false. schema v107",
+          "type": "boolean"
+        },
+        "per_crowd": {
+          "description": "Dynamic delta = the Crowd Meter (clamped to cap), not the flat delta — \"your <S> is + the Crowd Meter (Max +N) during your turn roll\". Turn-roll-scoped, so it never leaks into effective_stats. Absent = false. schema v118",
           "type": "boolean"
         },
         "skill": {
@@ -5852,5 +5863,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 117
+  "version": 118
 }

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 117;
+pub const SCHEMA_VERSION: i64 = 118;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1725,6 +1725,20 @@ pub enum Action {
         /// schema v107
         #[serde(default, skip_serializing_if = "is_false")]
         either: bool,
+        /// Dynamic delta = the Crowd Meter (clamped to `cap`), instead of the flat
+        /// `delta` — "your Technique is + the Crowd Meter (Max +3) during your turn
+        /// roll" (the roll-off parallel of a `per_crowd` [`Action::BuffSkill`]). A
+        /// turn-roll-scoped skill mod that must NOT leak into `effective_stats` (finish
+        /// rolls, skill requirements, comparisons), so it rides `TurnRollBonus` rather
+        /// than a full-time buff. `turn_roll_bonus` reads the live Crowd Meter each
+        /// roll-off. Additive/skip-when-false, so pre-v118 fixtures round-trip.
+        /// schema v118
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_crowd: bool,
+        /// Clamps the `per_crowd` delta ("Max +N"). `None` = uncapped. Ignored when
+        /// `per_crowd` is false. schema v118
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cap: Option<i64>,
     },
     BreakoutModifier {
         delta: i64,
@@ -3051,6 +3065,20 @@ pub enum IrNode {
         /// schema v107
         #[serde(default, skip_serializing_if = "is_false")]
         either: bool,
+        /// Dynamic delta = the Crowd Meter (clamped to `cap`), instead of the flat
+        /// `delta` — "your Technique is + the Crowd Meter (Max +3) during your turn
+        /// roll" (the roll-off parallel of a `per_crowd` [`Action::BuffSkill`]). A
+        /// turn-roll-scoped skill mod that must NOT leak into `effective_stats` (finish
+        /// rolls, skill requirements, comparisons), so it rides `TurnRollBonus` rather
+        /// than a full-time buff. `turn_roll_bonus` reads the live Crowd Meter each
+        /// roll-off. Additive/skip-when-false, so pre-v118 fixtures round-trip.
+        /// schema v118
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_crowd: bool,
+        /// Clamps the `per_crowd` delta ("Max +N"). `None` = uncapped. Ignored when
+        /// `per_crowd` is false. schema v118
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cap: Option<i64>,
     },
     BreakoutModifier {
         delta: i64,

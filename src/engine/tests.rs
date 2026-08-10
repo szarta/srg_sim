@@ -1387,6 +1387,49 @@ mod timed_buff_tests {
         );
     }
 
+    /// A per-Crowd-Meter TurnRollBonus ("your Technique is + the Crowd Meter (Max +3)
+    /// during your turn roll", task #131): the roll-off delta tracks the LIVE Crowd
+    /// Meter clamped to the cap, and — like every TurnRollBonus — never leaks into the
+    /// general derived stat.
+    #[test]
+    fn per_crowd_turn_roll_bonus_tracks_the_crowd_meter_capped() {
+        let mut engine = engine();
+        let card: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "pctrb", "name": "pctrb", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{"@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "TurnRollBonus", "skill": "Technique",
+                             "delta": 1, "per_crowd": true, "cap": 3}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "", "source": "card", "optional": false}]
+        }))
+        .unwrap();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card];
+
+        engine.state.crowd_meter = 2;
+        assert_eq!(
+            engine.turn_roll_bonus("A", Skill::Technique),
+            2,
+            "delta = the live Crowd Meter (2) under the cap"
+        );
+        engine.state.crowd_meter = 5;
+        assert_eq!(
+            engine.turn_roll_bonus("A", Skill::Technique),
+            3,
+            "clamped to the cap (+3) when the Crowd Meter exceeds it"
+        );
+        assert_eq!(
+            engine.stat("A", Skill::Technique),
+            engine.state.players["A"]
+                .competitor
+                .stats
+                .get(Skill::Technique),
+            "phase-scoped: never leaks into the general derived stat"
+        );
+    }
+
     /// "If you have another Follow Up or Finish Strike in play, your Technique skill
     /// is +1" (task #119/#130 skill-buff family): a Static buff gated on HasInPlay
     /// count>=2 of the play_orders OR-filter. The gate is re-evaluated live off the

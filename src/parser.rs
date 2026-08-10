@@ -890,6 +890,8 @@ fn turn_roll_bonuses(skills: Vec<Skill>, delta: i64) -> Vec<Action> {
             skill,
             delta,
             either: false,
+            per_crowd: false,
+            cap: None,
         })
         .collect()
 }
@@ -5486,6 +5488,8 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                         skill: skill(&c[1]),
                         delta: num(c, 2),
                         either: true,
+                        per_crowd: false,
+                        cap: None,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -6438,12 +6442,14 @@ fn turn_roll_header(clause: &str) -> bool {
     RE.is_match(clause.trim())
 }
 
-/// Re-scope a turn-roll-header body: a Static, self-side, FIXED skill buff ("your Power
-/// is +1") is active only during the roll-off, so rewrite it to a [`Action::TurnRollBonus`]
-/// (the roll-off parallel of a plain [`Action::BuffSkill`], read by `turn_roll_bonus`),
-/// carrying the effect's condition. Dynamic buffs (`per`/`per_crowd`/`cap`/retargeted),
-/// opponent-directed buffs, timed buffs, and every non-`BuffSkill` action are left
-/// untouched — a triggered body already encodes its own roll timing.
+/// Re-scope a turn-roll-header body: a Static, self-side skill buff ("your Power is +1",
+/// "your Technique is + the Crowd Meter (Max +3)") is active only during the roll-off, so
+/// rewrite it to a [`Action::TurnRollBonus`] (the roll-off parallel of a plain
+/// [`Action::BuffSkill`], read by `turn_roll_bonus`), carrying the effect's condition and
+/// the `per_crowd`/`cap` dynamic delta. Card-count (`per`) buffs, retargeted
+/// (`target_highest`/`_lowest`) buffs, opponent-directed buffs, timed buffs, and every
+/// non-`BuffSkill` action are left untouched — a triggered body already encodes its own
+/// roll timing, and `TurnRollBonus` carries no card-count / retarget delta.
 fn scope_to_turn_roll(mut eff: Effect) -> Effect {
     if eff.trigger != Trigger::Static {
         return eff;
@@ -6459,8 +6465,8 @@ fn scope_to_turn_roll(mut eff: Effect) -> Effect {
                 duration: Duration::WhileInPlay,
                 target_highest: false,
                 target_lowest: false,
-                per_crowd: false,
-                cap: None,
+                per_crowd,
+                cap,
                 per: None,
                 per_zone: _,
                 per_excludes_self: false,
@@ -6468,6 +6474,8 @@ fn scope_to_turn_roll(mut eff: Effect) -> Effect {
                 skill,
                 delta,
                 either: false,
+                per_crowd,
+                cap,
             },
             other => other,
         })
