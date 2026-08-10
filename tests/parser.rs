@@ -2798,6 +2798,18 @@ fn pod_fidelity_grammar() {
         .map(|a| a["who"].as_str().unwrap())
         .collect();
     assert!(whos.contains(&"SELF") && whos.contains(&"OPP"));
+
+    // Un-blank your Finishes (the 6 Splash Followups): the INVERSE of the blank family —
+    // one Unblank{SELF} over the Finish order, fired on hit like the sibling bury clause.
+    let e = a1("Un-blank your Finishes.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    let a = e["actions"][0].clone();
+    assert_eq!(a["@type"], "Unblank");
+    assert_eq!(a["who"], "SELF");
+    assert_eq!(a["selector"]["play_order"], "Finish");
+    // The unhyphenated spelling parses too.
+    let a = a1("Unblank your Finishes.")["actions"][0].clone();
+    assert_eq!(a["@type"], "Unblank");
 }
 
 /// Type-counted per-count buff (task #131): "Your X [and Y] is/are +N for each <type>

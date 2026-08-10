@@ -1088,6 +1088,9 @@
                 "$ref": "#/$defs/BlankText"
               },
               {
+                "$ref": "#/$defs/Unblank"
+              },
+              {
                 "$ref": "#/$defs/CopyText"
               },
               {
@@ -1970,6 +1973,9 @@
               },
               {
                 "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/Unblank"
               },
               {
                 "$ref": "#/$defs/CopyText"
@@ -2964,6 +2970,9 @@
         },
         {
           "$ref": "#/$defs/BlankText"
+        },
+        {
+          "$ref": "#/$defs/Unblank"
         },
         {
           "$ref": "#/$defs/CopyText"
@@ -4852,6 +4861,9 @@
                 "$ref": "#/$defs/BlankText"
               },
               {
+                "$ref": "#/$defs/Unblank"
+              },
+              {
                 "$ref": "#/$defs/CopyText"
               },
               {
@@ -5725,6 +5737,26 @@
       ],
       "type": "object"
     },
+    "Unblank": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "Unblank"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "who"
+      ],
+      "type": "object"
+    },
     "Unstoppable": {
       "additionalProperties": false,
       "properties": {
@@ -5820,5 +5852,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 116
+  "version": 117
 }

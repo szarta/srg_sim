@@ -495,6 +495,7 @@ impl Engine {
                         chosen_name: None,
                         pending_text: Vec::new(),
                         blank_until_next_turn: None,
+                        text_unblank: Vec::new(),
                         freq_counters: BTreeMap::new(),
                         gimmick_blanked: false,
                         gimmick_flipped: false,
@@ -1367,6 +1368,7 @@ impl Engine {
             Action::RollBoost { delta } => self.pending_roll_boost += *delta,
             Action::WinTie { who } => self.act_win_tie(*who, key),
             Action::BlankGimmick { who, duration } => self.act_blank_gimmick(*who, *duration, key),
+            Action::Unblank { selector, who } => self.act_unblank(selector, *who, key),
             Action::FlipGimmick { who } => self.act_flip_gimmick(*who, key),
             Action::LoseBy { kind, who } => self.act_lose_by(*kind, *who, key),
             Action::PlayExtraCard { .. } => self.act_play_extra_card(key),
@@ -2973,6 +2975,37 @@ impl Engine {
         }
         let detail = json!({"duration": serde_json::to_value(duration).unwrap()});
         self.log_effect(key, "BlankGimmick", Some(&target), detail);
+    }
+
+    /// "Un-blank your Finishes." — record `selector` on `who`'s persistent
+    /// `text_unblank` list so their matching cards are no longer text-blanked
+    /// (`is_text_blanked` consults it first, so the un-blank wins over every blank
+    /// source). Also drops any matching cards from `blanked_text` — a stop's
+    /// per-identity blank this turn is lifted immediately, not just going forward.
+    /// Rest-of-match, so it is never swept; idempotent (a repeat selector is harmless).
+    fn act_unblank(&mut self, selector: &CardFilter, who: Who, key: &str) {
+        let target = self.target(who, key);
+        let p = &self.state.players[&target];
+        let matching: Vec<String> = p
+            .hand
+            .iter()
+            .chain(&p.deck)
+            .chain(&p.discard)
+            .chain(&p.in_play)
+            .filter(|c| conditions::card_matches(c, selector))
+            .map(|c| c.db_uuid.clone())
+            .collect();
+        for uuid in &matching {
+            self.state.blanked_text.remove(uuid);
+        }
+        self.state
+            .players
+            .get_mut(&target)
+            .unwrap()
+            .text_unblank
+            .push(selector.clone());
+        let detail = json!({"count": matching.len()});
+        self.log_effect(key, "Unblank", Some(&target), detail);
     }
 
     /// Turn a competitor to its back side (Copy Kat V2): one-way and idempotent —
@@ -6861,6 +6894,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BlankGimmick { .. } => "BlankGimmick",
         Action::FlipGimmick { .. } => "FlipGimmick",
         Action::BlankText { .. } => "BlankText",
+        Action::Unblank { .. } => "Unblank",
         Action::CopyText { .. } => "CopyText",
         Action::BlankStoppedText => "BlankStoppedText",
         Action::BuryThisCard => "BuryThisCard",

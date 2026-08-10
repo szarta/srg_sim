@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 116;
+pub const SCHEMA_VERSION: i64 = 117;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1528,6 +1528,20 @@ pub enum Action {
         #[serde(default, skip_serializing_if = "is_false")]
         discard_only: bool,
     },
+    /// "Un-blank your Finishes." — the inverse of [`Action::BlankText`]: a one-shot that
+    /// RESTORES the text of `who`'s cards matching `selector`, overriding any blank on
+    /// them for the rest of the match (the 6 Splash / "your opponent buries … un-blank
+    /// your Finishes" Followups; `who` is always `SelfSide`, `selector` the Finish
+    /// order). The engine records the `selector` in `PlayerState.text_unblank`, which
+    /// [`GameState::is_text_blanked`](crate::state::GameState) consults FIRST — an
+    /// un-blank wins over every blank source (a continuous `BlankText`, a stop's
+    /// per-identity `blanked_text`). Duration is the rest of the match: a played card
+    /// with no stated end, and the blank it counters is a standing opponent declaration,
+    /// so the override must persist to be useful. schema v117
+    Unblank {
+        selector: CardFilter,
+        who: Who,
+    },
     /// "This card copies the text of …" — the Spotlight text-copy family (#2 "A Trip
     /// to the Upside Down", #9 "The D-Roll", #16 "Your Worst Nightmare!"). A passive
     /// marker read (never executed) by [`GameState::copied_effects`](crate::state::GameState):
@@ -2839,6 +2853,20 @@ pub enum IrNode {
         /// byte-identically. schema v116
         #[serde(default, skip_serializing_if = "is_false")]
         discard_only: bool,
+    },
+    /// "Un-blank your Finishes." — the inverse of [`Action::BlankText`]: a one-shot that
+    /// RESTORES the text of `who`'s cards matching `selector`, overriding any blank on
+    /// them for the rest of the match (the 6 Splash / "your opponent buries … un-blank
+    /// your Finishes" Followups; `who` is always `SelfSide`, `selector` the Finish
+    /// order). The engine records the `selector` in `PlayerState.text_unblank`, which
+    /// [`GameState::is_text_blanked`](crate::state::GameState) consults FIRST — an
+    /// un-blank wins over every blank source (a continuous `BlankText`, a stop's
+    /// per-identity `blanked_text`). Duration is the rest of the match: a played card
+    /// with no stated end, and the blank it counters is a standing opponent declaration,
+    /// so the override must persist to be useful. schema v117
+    Unblank {
+        selector: CardFilter,
+        who: Who,
     },
     /// "This card copies the text of …" — the Spotlight text-copy family (#2 "A Trip
     /// to the Upside Down", #9 "The D-Roll", #16 "Your Worst Nightmare!"). A passive

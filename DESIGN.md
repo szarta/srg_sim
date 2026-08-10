@@ -304,6 +304,8 @@ AlsoLead(condition, order=Lead)  # Static self-decl: also playable in `order`'s 
                               # (order=Followup -> "also a Follow Up", playable when a Lead is in play; schema v70)
 BlankText(selector, who, discard_only=False)   LoseBy(kind=DISQUALIFICATION|PINFALL, who)  # discard_only: blank only cards in the target's discard pile
   # Static decl: `who`'s cards matching `selector` fire no text & cannot stop while the source is in play ("your opponent's Spotlights are blank" — is_text_blanked). schema v27
+Unblank(selector, who)  # "Un-blank your Finishes." — the inverse: RESTORES `who`'s cards matching `selector`, overriding every blank source for the rest of the match.
+  # One-shot; records `selector` in PlayerState.text_unblank, which is_text_blanked checks FIRST (un-blank wins over a continuous BlankText or a stop's blanked_text). schema v117
 CopyText(selector, who, zone=IN_PLAY|DISCARD, copy_tags)  # "this card copies the text of …" (Spotlight text-copy family: #2/#9/#16). Static decl read
                              # (never executed) by GameState.copied_effects, folded into standing_effects: the effects of every card matching
                              # `selector` in `who`'s `zone` are RE-HOMED onto the copier and fire for as long as this clause's own duration holds (a

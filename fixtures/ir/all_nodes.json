@@ -80,6 +80,23 @@
     "who": "OPP"
   },
   {
+    "@type": "Unblank",
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "is_stop": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": "Finish",
+      "play_orders": [],
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    },
+    "who": "SELF"
+  },
+  {
     "@type": "CopyText",
     "copy_tags": false,
     "selector": {

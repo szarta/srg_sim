@@ -245,6 +245,58 @@ fn discard_only_blank_only_blanks_cards_in_the_discard_pile() {
     );
 }
 
+/// "Un-blank your Finishes." (`PlayerState.text_unblank`) overrides an active blank:
+/// a card matching one of the owner's own un-blank selectors is never text-blanked,
+/// even while a live `BlankText` targets it.
+#[test]
+fn text_unblank_overrides_an_active_blank() {
+    let mut base = positions()[0]["state"].clone();
+    for k in ["A", "B"] {
+        base["players"][k]["competitor"]["effects"] = json!([]);
+        base["players"][k]["entrance"]["effects"] = json!([]);
+        base["players"][k]["in_play"] = json!([]);
+        base["players"][k]["discard"] = json!([]);
+    }
+    // A's in-play card blanks ALL of B's cards (who=OPP, empty selector = anything).
+    let blank = json!({
+        "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+        "actions": [{"@type": "BlankText",
+            "selector": {"@type": "CardFilter", "number": null, "atk_type": null,
+                         "play_order": null, "tag": null, "name": null, "raw": null,
+                         "name_contains": [], "text_contains": []},
+            "who": "OPP"}],
+        "duration": "WHILE_IN_PLAY",
+        "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+        "raw_clause": "", "source": "card", "optional": false
+    });
+    let mut blanker = lead_card("blanker", 1);
+    blanker["effects"] = json!([blank]);
+    base["players"]["A"]["in_play"] = json!([blanker]);
+
+    // B holds a Finish card in play, currently blanked by A.
+    let mut finish_json = lead_card("finish", 2);
+    finish_json["play_order"] = json!("Finish");
+    let finish: Card = serde_json::from_value(finish_json.clone()).unwrap();
+    base["players"]["B"]["in_play"] = json!([finish_json]);
+
+    let mut s = base.clone();
+    assert!(
+        GameState::from_dict(s.clone())
+            .unwrap()
+            .is_text_blanked(&finish, "B"),
+        "the Finish is blanked by A's BlankText"
+    );
+
+    // "Un-blank your Finishes." — B's own Finish selector on text_unblank wins.
+    s["players"]["B"]["text_unblank"] = json!([{"@type": "CardFilter", "play_order": "Finish"}]);
+    assert!(
+        !GameState::from_dict(s)
+            .unwrap()
+            .is_text_blanked(&finish, "B"),
+        "the un-blank overrides the active blank"
+    );
+}
+
 /// A gimmick-sourced Static conditional `BlankGimmick` blanks the opponent (GM
 /// Calace V2 / Mr. Snap V1 shape) — but only while its count condition holds AND
 /// the owner's own gimmick is still active.

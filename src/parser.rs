@@ -192,6 +192,11 @@ fn blank_discard(who: Who) -> Action {
     }
 }
 
+/// Un-blank (restore) the matching card(s) — the inverse of [`blank_text`].
+fn unblank(selector: CardFilter, who: Who) -> Action {
+    Action::Unblank { selector, who }
+}
+
 /// Quoted names from a `with "X" [or "Y"] in the name` phrase (case-insensitive
 /// OR-substring — same convention as the name-substring override family).
 fn quoted_names(text: &str) -> Vec<String> {
@@ -3321,6 +3326,18 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "Un-blank your Finishes." — the inverse of the blank family: restore the text
+        // of your OWN Finish cards, overriding any blank on them for the rest of the
+        // match (the 6 Splash / "your opponent buries … un-blank your Finishes"
+        // Followups). Fires on hit like the sibling bury clause on the same card.
+        rule(r"Un-?blank your Finishes", |_| {
+            Some(eff(
+                on_hit(),
+                vec![unblank(cf_order(PlayOrder::Finish), Who::SelfSide)],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
         rule(r"Your opponent draws? (\d+) cards?", |c| {
             Some(eff(
                 on_hit(),

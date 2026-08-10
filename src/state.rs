@@ -210,6 +210,14 @@ pub struct PlayerState {
     /// blank and a stored permanent blank do not compose: last writer wins.
     #[serde(default)]
     pub blank_until_next_turn: Option<i64>,
+    /// Selectors this player has UN-blanked for the rest of the match — "Un-blank your
+    /// Finishes." ([`Action::Unblank`]). A card of this player matching any filter here
+    /// is never text-blanked ([`GameState::is_text_blanked`] checks this first), so the
+    /// un-blank overrides every blank source. Persistent match state (never swept), so
+    /// it outlives the source card leaving play, like every other stored blank flag.
+    /// Skips when empty, so pre-v117 state snapshots round-trip byte-identically.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub text_unblank: Vec<CardFilter>,
     #[serde(default)]
     pub freq_counters: BTreeMap<String, i64>,
     #[serde(default)]
@@ -561,6 +569,15 @@ impl GameState {
     /// opponent's Spotlights are blank" (the source stays in play). A blanked card
     /// fires none of its own effects and cannot stop.
     pub fn is_text_blanked(&self, card: &Card, owner: &str) -> bool {
+        // An un-blank ("Un-blank your Finishes.") overrides every blank source: a card
+        // matching one of the owner's own un-blank selectors is never text-blanked.
+        if self.players[owner]
+            .text_unblank
+            .iter()
+            .any(|f| conditions::card_matches(card, f))
+        {
+            return false;
+        }
         // A card blanked by a stop this turn stays blanked regardless of zone.
         if self.blanked_text.contains(&card.db_uuid) {
             return true;
