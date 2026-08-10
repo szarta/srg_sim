@@ -1387,6 +1387,72 @@ mod timed_buff_tests {
         );
     }
 
+    /// "Your opponent's Power is -2 during their turn and turn rolls" (task #131): the
+    /// opponent-directed two-piece debuff. It sits on A's board but bites B (A's opponent):
+    /// (A) a BuffSkill{who:Opp} gated DuringTurn{SELF} — because effective_stats keys the
+    /// gate to the buffed side (B), DuringTurn{SELF} reads as "active == B", so B's Power
+    /// is -2 on B's own turn and normal on A's turn; (B) a TurnRollBonus{who:Opp} that
+    /// reduces B's Power turn roll (via the opponent-board scan) but never A's own roll.
+    #[test]
+    fn opponent_turn_debuff_bites_the_opponents_turn_and_roll_only() {
+        let mut engine = engine();
+        let card: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "otd", "name": "otd", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [
+                {"@type": "Effect", "trigger": {"@type": "Static"},
+                    "condition": {"@type": "DuringTurn", "who": "SELF"},
+                    "actions": [{"@type": "BuffSkill", "skill": "Power", "delta": -2, "who": "OPP",
+                        "duration": "WHILE_IN_PLAY", "target_highest": false, "target_lowest": false,
+                        "per_crowd": false, "cap": null, "per": null, "per_zone": "IN_PLAY"}],
+                    "duration": "WHILE_IN_PLAY",
+                    "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                    "raw_clause": "", "source": "card", "optional": false},
+                {"@type": "Effect", "trigger": {"@type": "Static"},
+                    "condition": {"@type": "Always"},
+                    "actions": [{"@type": "TurnRollBonus", "skill": "Power", "delta": -2, "who": "OPP"}],
+                    "duration": "WHILE_IN_PLAY",
+                    "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                    "raw_clause": "", "source": "card", "optional": false}
+            ]
+        }))
+        .unwrap();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card];
+        let base = engine.state.players["B"].competitor.stats.get(Skill::Power);
+
+        // Piece (A): the stat debuff bites B only on B's own turn.
+        engine.state.in_turn_roll = false;
+        engine.state.active = "B".to_owned();
+        assert_eq!(
+            engine.stat("B", Skill::Power),
+            base - 2,
+            "B's Power is reduced on B's turn"
+        );
+        engine.state.active = "A".to_owned();
+        assert_eq!(
+            engine.stat("B", Skill::Power),
+            base,
+            "B's Power is normal on A's turn"
+        );
+
+        // Piece (B): the turn-roll debuff reaches B's roll but never A's own.
+        assert_eq!(
+            engine.turn_roll_bonus("B", Skill::Power),
+            -2,
+            "reduces the opponent's Power turn roll"
+        );
+        assert_eq!(
+            engine.turn_roll_bonus("B", Skill::Technique),
+            0,
+            "skill-gated to Power"
+        );
+        assert_eq!(
+            engine.turn_roll_bonus("A", Skill::Power),
+            0,
+            "does NOT touch the owner's own turn roll"
+        );
+    }
+
     /// A per-Crowd-Meter TurnRollBonus ("your Technique is + the Crowd Meter (Max +3)
     /// during your turn roll", task #131): the roll-off delta tracks the LIVE Crowd
     /// Meter clamped to the cap, and — like every TurnRollBonus — never leaks into the

@@ -3341,6 +3341,71 @@ fn during_opponent_turn_buff_grammar() {
     );
 }
 
+/// Opponent skill DEBUFF "during their turn and turn rolls" (task #131): two effects —
+/// a BuffSkill{who:Opp} gated DuringTurn{SELF} (the stat piece, resolved against the
+/// opponent by effective_stats) plus a TurnRollBonus{who:Opp} (the opponent's-roll piece).
+/// Single- and multi-skill; the bare "during their turn" form emits only the buff piece.
+#[test]
+fn opponent_turn_debuff_grammar() {
+    // "and turn rolls": the DuringTurn buff + the opponent-directed TurnRollBonus.
+    let effs = parse_text(
+        "Your opponent's Power is -1 during their turn and turn rolls.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2, "the stat debuff + the turn-roll debuff");
+    let buff = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(buff["condition"]["@type"], "DuringTurn");
+    assert_eq!(buff["condition"]["who"], "SELF", "the opponent's own turn");
+    assert_eq!(buff["actions"][0]["@type"], "BuffSkill");
+    assert_eq!(buff["actions"][0]["who"], "OPP");
+    assert_eq!(buff["actions"][0]["skill"], "Power");
+    assert_eq!(buff["actions"][0]["delta"], -1);
+    let roll = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(roll["condition"]["@type"], "Always");
+    assert_eq!(roll["actions"][0]["@type"], "TurnRollBonus");
+    assert_eq!(roll["actions"][0]["who"], "OPP");
+    assert_eq!(roll["actions"][0]["skill"], "Power");
+    assert_eq!(roll["actions"][0]["delta"], -1);
+
+    // Bare "during their turn" (no roll clause): the stat debuff only.
+    let effs = parse_text(
+        "Your opponent's Grapple is -2 during their turn.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "no roll clause -> no TurnRollBonus");
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["actions"][0]["@type"], "BuffSkill");
+    assert_eq!(v["actions"][0]["who"], "OPP");
+    assert_eq!(v["actions"][0]["delta"], -2);
+
+    // Multi-skill fans out to one BuffSkill + one TurnRollBonus per skill.
+    let effs = parse_text(
+        "Your opponent's Power and Technique are -1 during their turn and turn rolls.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let buff = serde_json::to_value(&effs[0]).unwrap();
+    let skills: Vec<&str> = buff["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| a["skill"].as_str().unwrap())
+        .collect();
+    assert_eq!(skills, ["Power", "Technique"]);
+    let roll = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(roll["actions"].as_array().unwrap().len(), 2);
+    assert!(roll["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|a| a["@type"] == "TurnRollBonus" && a["who"] == "OPP"));
+}
+
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
 /// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
 /// Order and attack-type gates parse; a name gate declines to Unsupported.

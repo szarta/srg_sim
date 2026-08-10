@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 121;
+pub const SCHEMA_VERSION: i64 = 122;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1741,6 +1741,14 @@ pub enum Action {
     TurnRollBonus {
         skill: Skill,
         delta: i64,
+        /// Whose turn roll this modifies, from the OWNER's point of view. `SelfSide`
+        /// (the default) = the owner's own turn roll ("your Power is +N during turn
+        /// rolls"); `Opp` = the owner's opponent's ("your opponent's Power is -N during
+        /// their turn rolls"). Read by `turn_roll_bonus`, which sums a roller's own
+        /// `SelfSide` mods with their opponent's `Opp` mods. Skip-when-`SelfSide`, so
+        /// pre-`who` fixtures round-trip byte-identical. schema v122
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
         /// Symmetric modifier: when set, the bonus applies to WHOEVER rolls `skill`
         /// for their turn roll, not just the owner — "if either player rolls Power for
         /// their turn roll, their roll is +1". `turn_roll_bonus` picks up an
@@ -3095,6 +3103,14 @@ pub enum IrNode {
     TurnRollBonus {
         skill: Skill,
         delta: i64,
+        /// Whose turn roll this modifies, from the OWNER's point of view. `SelfSide`
+        /// (the default) = the owner's own turn roll ("your Power is +N during turn
+        /// rolls"); `Opp` = the owner's opponent's ("your opponent's Power is -N during
+        /// their turn rolls"). Read by `turn_roll_bonus`, which sums a roller's own
+        /// `SelfSide` mods with their opponent's `Opp` mods. Skip-when-`SelfSide`, so
+        /// pre-`who` fixtures round-trip byte-identical. schema v122
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
         /// Symmetric modifier: when set, the bonus applies to WHOEVER rolls `skill`
         /// for their turn roll, not just the owner — "if either player rolls Power for
         /// their turn roll, their roll is +1". `turn_roll_bonus` picks up an

@@ -889,6 +889,7 @@ fn turn_roll_bonuses(skills: Vec<Skill>, delta: i64) -> Vec<Action> {
         .map(|skill| Action::TurnRollBonus {
             skill,
             delta,
+            who: Who::SelfSide,
             either: false,
             per_crowd: false,
             cap: None,
@@ -5618,6 +5619,7 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                     vec![Action::TurnRollBonus {
                         skill: skill(&c[1]),
                         delta: num(c, 2),
+                        who: Who::SelfSide,
                         either: true,
                         per_crowd: false,
                         cap: None,
@@ -6653,6 +6655,7 @@ fn buff_to_turn_roll_bonus(a: &Action) -> Option<Action> {
         } => Some(Action::TurnRollBonus {
             skill: *skill,
             delta: *delta,
+            who: Who::SelfSide,
             either: false,
             per_crowd: *per_crowd,
             cap: *cap,
@@ -6785,6 +6788,63 @@ fn during_opponent_turn_buff(clause: &str) -> Option<Vec<Effect>> {
         Condition::DuringTurn { who: Who::Opp },
         Duration::WhileInPlay,
     )])
+}
+
+/// "Your opponent's `<skills>` is/are -N during their turn\[ and turn rolls]" — a standing
+/// OPPONENT skill DEBUFF scoped to the opponent's turn, the opponent-directed mirror of
+/// [`during_turn_skill_buff`]'s two-piece split. (A) a [`Action::BuffSkill`]`{who:Opp}`
+/// gated on [`Condition::DuringTurn`]`{SELF}`: this buff folds onto the OPPONENT (the
+/// target), and `effective_stats` resolves the gate against the buffed side, so
+/// `DuringTurn{SELF}` reads as "active == the opponent" — the debuff bites the stops and
+/// Finishes the opponent makes on their own turn and never the roll-off. (B) for "and turn
+/// rolls", a [`Action::TurnRollBonus`]`{who:Opp}` (Always): `turn_roll_bonus` sums a
+/// roller's opponent's `Opp` mods, so this reduces the opponent's turn roll. `None` when
+/// the head is not an opponent skill debuff (falls through to Unsupported).
+fn opponent_turn_debuff(clause: &str) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^your opponent.?s (.+?) (?:is|are) ([+-]?\d+) during their turn( and turn rolls)?\.?$",
+        )
+        .unwrap()
+    });
+    let caps = RE.captures(clause.trim())?;
+    let skills = skill_list(&caps[1]);
+    if skills.is_empty() {
+        return None;
+    }
+    let delta: i64 = caps[2].parse().ok()?;
+    // (A) the standing skill debuff, gated to the opponent's own turn (DuringTurn{SELF}
+    // reads as the opponent's turn because effective_stats keys the gate to the buffed
+    // side — see the doc comment).
+    let buffs: Vec<Action> = skills.iter().map(|s| buff(*s, delta, Who::Opp)).collect();
+    let mut out = vec![eff(
+        Trigger::Static,
+        buffs,
+        Condition::DuringTurn { who: Who::SelfSide },
+        Duration::WhileInPlay,
+    )];
+    // (B) "and turn rolls": the opponent's-turn-roll piece — one TurnRollBonus{who:Opp}
+    // per skill, Always-gated (the roll-off timing is inherent to TurnRollBonus).
+    if caps.get(3).is_some() {
+        let rolls: Vec<Action> = skills
+            .iter()
+            .map(|s| Action::TurnRollBonus {
+                skill: *s,
+                delta,
+                who: Who::Opp,
+                either: false,
+                per_crowd: false,
+                cap: None,
+            })
+            .collect();
+        out.push(eff(
+            Trigger::Static,
+            rolls,
+            Condition::Always,
+            Duration::WhileInPlay,
+        ));
+    }
+    Some(out)
 }
 
 /// Non-effect metadata (a deck-build "Skill Requirement:" line): recognized and
@@ -7064,6 +7124,23 @@ pub fn parse_text(
         // standing buff gated to the OPPONENT's turn (DuringTurn{Opp}, resolved against the
         // buffed side by effective_stats). No roll-off piece (you don't roll on their turn).
         if let Some(effs) = during_opponent_turn_buff(clause) {
+            for mut e in effs {
+                e.raw_clause = clause.clone();
+                e.source = source;
+                e.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(e, &window));
+            }
+            i += 1;
+            continue;
+        }
+        // "Your opponent's <skill> is -N during their turn[ and turn rolls]" — an opponent
+        // skill DEBUFF: a DuringTurn-gated BuffSkill{Opp}, plus (for "and turn rolls") an
+        // Always-gated TurnRollBonus{Opp} for the opponent's roll-off.
+        if let Some(effs) = opponent_turn_debuff(clause) {
             for mut e in effs {
                 e.raw_clause = clause.clone();
                 e.source = source;

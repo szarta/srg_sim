@@ -2452,6 +2452,10 @@
         },
         "skill": {
           "$ref": "#/$defs/Skill"
+        },
+        "who": {
+          "$ref": "#/$defs/Who",
+          "description": "Whose turn roll this modifies, from the owner's POV. Absent = SelfSide (the owner's own roll, \"your <S> is +N during turn rolls\"); Opp = the owner's opponent's (\"your opponent's <S> is -N during their turn rolls\"). turn_roll_bonus sums a roller's own SelfSide mods with their opponent's Opp mods. schema v122"
         }
       },
       "required": [
@@ -5983,5 +5987,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 121
+  "version": 122
 }

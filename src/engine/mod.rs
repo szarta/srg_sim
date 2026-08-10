@@ -5094,17 +5094,22 @@ impl Engine {
     /// only in the roll-off, so a "during turn rolls" buff never leaks into finish rolls,
     /// stops, or skill comparisons.
     fn turn_roll_bonus(&self, key: &str, skill: Skill) -> i64 {
-        // `key`'s own bonuses (self-only and `either`), plus the opponent's `either`
-        // bonuses — "if either player rolls <S> for their turn roll, their roll is +N"
-        // applies to whoever rolls, so it counts from the other board too.
+        // A roller sums the `SelfSide` mods on their OWN board ("your Power is +N during
+        // turn rolls") with the `Opp` mods on their OPPONENT's board ("your opponent's
+        // Power is -N during their turn rolls"). An `either` mod ("if either player
+        // rolls …") applies to whoever rolls, so it counts from whichever board it sits
+        // on. Mirrors `breakout_bonus`.
         let opp = self.state.opponent_of(key);
-        self.turn_roll_bonus_from(key, skill, false) + self.turn_roll_bonus_from(&opp, skill, true)
+        self.turn_roll_bonus_from(key, skill, Who::SelfSide)
+            + self.turn_roll_bonus_from(&opp, skill, Who::Opp)
     }
 
-    /// Sum `owner`'s active `TurnRollBonus{skill}` deltas. `either_only` restricts to
-    /// symmetric (`either`) bonuses — the mode used when scanning the *opponent's* board,
-    /// where only "if either player rolls …" modifiers reach `key`'s roll.
-    fn turn_roll_bonus_from(&self, owner: &str, skill: Skill, either_only: bool) -> i64 {
+    /// Sum the `TurnRollBonus{skill}` deltas on `owner`'s board that reach the roller.
+    /// `applies_who` is the `who` value that targets the roller from THIS board —
+    /// `SelfSide` when `owner` is the roller (their own-roll mods), `Opp` when `owner` is
+    /// the roller's opponent (mods that debuff/buff the roller). An `either` mod counts
+    /// regardless of `who`.
+    fn turn_roll_bonus_from(&self, owner: &str, skill: Skill, applies_who: Who) -> i64 {
         let mut total = 0;
         for eff in self.standing_effects(owner) {
             if !conditions::holds(&eff.condition, &self.state, owner, None) {
@@ -5114,12 +5119,13 @@ impl Engine {
                 if let Action::TurnRollBonus {
                     skill: s,
                     delta,
+                    who,
                     either,
                     per_crowd,
                     cap,
                 } = a
                 {
-                    if *s == skill && (!either_only || *either) {
+                    if *s == skill && (*either || *who == applies_who) {
                         // `per_crowd` uses the live Crowd Meter (clamped to `cap`) as the
                         // delta — "your Technique is + the Crowd Meter (Max +3) during
                         // your turn roll"; the flat `delta` otherwise.
