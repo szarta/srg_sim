@@ -2382,6 +2382,16 @@ fn also_a_order_gates() {
     assert_eq!(e["actions"][0]["@type"], "Unstoppable");
     assert_eq!(e["condition"]["@type"], "FirstTurn");
 
+    // Broke-out-last-turn gate (schema v120): "you" -> SELF; "either/any player" -> Or.
+    let a = also("If you broke out last turn, this card is also a Lead.");
+    assert_eq!(a["condition"]["@type"], "BrokeOutLastTurn");
+    assert_eq!(a["condition"]["who"], "SELF");
+    let a = also("If either player broke out last turn, this card is also a Lead.");
+    assert_eq!(a["condition"]["@type"], "Or");
+    assert_eq!(a["condition"]["items"][0]["@type"], "BrokeOutLastTurn");
+    assert_eq!(a["condition"]["items"][0]["who"], "SELF");
+    assert_eq!(a["condition"]["items"][1]["who"], "OPP");
+
     // A gate gate_condition/stop_condition can't parse -> whole clause Unsupported.
     let e = one("If played as a Stop, this card is also a Finish.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");

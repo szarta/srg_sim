@@ -1740,6 +1740,20 @@ fn gate_condition(text: &str) -> Option<Condition> {
         "this is the first turn of the game" | "this is the first turn of the match" => {
             return Some(Condition::FirstTurn)
         }
+        "you broke out last turn" => {
+            return Some(Condition::BrokeOutLastTurn { who: Who::SelfSide })
+        }
+        "your opponent broke out last turn" => {
+            return Some(Condition::BrokeOutLastTurn { who: Who::Opp })
+        }
+        "either player broke out last turn" | "any player broke out last turn" => {
+            return Some(Condition::Or {
+                items: vec![
+                    Condition::BrokeOutLastTurn { who: Who::SelfSide },
+                    Condition::BrokeOutLastTurn { who: Who::Opp },
+                ],
+            })
+        }
         "you and your opponent rolled the same skill for your turn roll"
         | "you rolled the same skill as your opponent for your turn roll"
         | "you rolled the same skill as your opponent" => return Some(Condition::SameRolledSkill),

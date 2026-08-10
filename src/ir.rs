@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 119;
+pub const SCHEMA_VERSION: i64 = 120;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -874,6 +874,14 @@ pub enum Condition {
     /// lost the previous roll-off. Gates The SRG Boss's finish riders ("if you ended
     /// the last turn without playing a card, …"). schema v78
     EndedTurnNoPlay,
+    /// `who` broke out on the PREVIOUS turn — they were the defender of a Finish on turn
+    /// `turn_no - 1` and survived every Breakout roll. Reads `PlayerState.flags`
+    /// `["broke_out_turn"]`, stamped by `breakout` on success; false before turn 1 and
+    /// whenever `who` did not break out last turn. Gates "if you broke out last turn, this
+    /// card is also a Lead" ("either/any player" -> Or of both sides). schema v120
+    BrokeOutLastTurn {
+        who: Who,
+    },
     /// The owner re-rolled their turn roll **this** turn — any of their turn dice was
     /// re-rolled at the roll-off (a granted "re-roll your next turn roll", a standing
     /// `Reroll{This}`, or a bump re-roll). Reads `PlayerState.flags["rerolled_turn"]`,
@@ -2249,6 +2257,11 @@ pub enum IrNode {
     /// The owner ended the previous turn without playing a card (roll-off winner on
     /// `turn_no - 1` who passed). Reads `flags["last_pass_turn"]`. schema v78
     EndedTurnNoPlay,
+    /// `who` broke out on the previous turn (defender of a Finish on `turn_no - 1` who
+    /// survived every Breakout roll). Reads `flags["broke_out_turn"]`. schema v120
+    BrokeOutLastTurn {
+        who: Who,
+    },
     /// The owner re-rolled their turn roll this turn. Reads `flags["rerolled_turn"]`,
     /// stamped in `offer_rerolls`. Gates King Brian Cage's finish riders. schema v80
     RerolledTurnRoll,

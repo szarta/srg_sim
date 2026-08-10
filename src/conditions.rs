@@ -382,6 +382,14 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .and_then(serde_json::Value::as_i64)
                 == Some(state.turn_no - 1)
         }
+        Condition::BrokeOutLastTurn { who } => {
+            let subject = who_key(state, owner, *who);
+            state.players[&subject]
+                .flags
+                .get("broke_out_turn")
+                .and_then(serde_json::Value::as_i64)
+                == Some(state.turn_no - 1)
+        }
         Condition::RerolledTurnRoll => {
             state.players[owner]
                 .flags

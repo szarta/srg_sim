@@ -5377,6 +5377,16 @@ impl Engine {
             }
         }
         let t = self.state.turn_no;
+        // Stamp this turn number so `Condition::BrokeOutLastTurn` reads it next turn ("if
+        // you broke out last turn, …"), mirroring `do_pass`'s `last_pass_turn`.
+        if broke {
+            self.state
+                .players
+                .get_mut(defender)
+                .unwrap()
+                .flags
+                .insert("broke_out_turn".to_owned(), json!(t));
+        }
         self.log(Event::Breakout {
             t,
             defender: defender.to_owned(),

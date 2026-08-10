@@ -233,6 +233,9 @@
               "$ref": "#/$defs/EndedTurnNoPlay"
             },
             {
+              "$ref": "#/$defs/BrokeOutLastTurn"
+            },
+            {
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
@@ -367,6 +370,9 @@
               },
               {
                 "$ref": "#/$defs/EndedTurnNoPlay"
+              },
+              {
+                "$ref": "#/$defs/BrokeOutLastTurn"
               },
               {
                 "$ref": "#/$defs/RerolledTurnRoll"
@@ -745,6 +751,22 @@
         "@type",
         "draw",
         "uses"
+      ],
+      "type": "object"
+    },
+    "BrokeOutLastTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BrokeOutLastTurn"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
       ],
       "type": "object"
     },
@@ -1710,6 +1732,9 @@
               "$ref": "#/$defs/EndedTurnNoPlay"
             },
             {
+              "$ref": "#/$defs/BrokeOutLastTurn"
+            },
+            {
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
@@ -2210,6 +2235,9 @@
             },
             {
               "$ref": "#/$defs/EndedTurnNoPlay"
+            },
+            {
+              "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
@@ -3358,6 +3386,9 @@
           "$ref": "#/$defs/EndedTurnNoPlay"
         },
         {
+          "$ref": "#/$defs/BrokeOutLastTurn"
+        },
+        {
           "$ref": "#/$defs/ReturnToHand"
         },
         {
@@ -3775,6 +3806,9 @@
             },
             {
               "$ref": "#/$defs/EndedTurnNoPlay"
+            },
+            {
+              "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
@@ -4302,6 +4336,9 @@
               },
               {
                 "$ref": "#/$defs/EndedTurnNoPlay"
+              },
+              {
+                "$ref": "#/$defs/BrokeOutLastTurn"
               },
               {
                 "$ref": "#/$defs/RerolledTurnRoll"
@@ -5377,6 +5414,9 @@
               "$ref": "#/$defs/EndedTurnNoPlay"
             },
             {
+              "$ref": "#/$defs/BrokeOutLastTurn"
+            },
+            {
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
@@ -5899,5 +5939,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 119
+  "version": 120
 }
