@@ -111,6 +111,21 @@ Release runbook
 
 Run on the developer machine first, then on prod.
 
+.. note::
+
+   Steps 2–4 on prod are wrapped by two invoke tasks, so the recurring release is
+   ``git pull`` then::
+
+       invoke deploy              # cargo install + vendor the pkg + npm build; prints the two sudo lines
+       # …run the two printed `sudo` commands…
+       invoke verify-deployment   # installed binary + vendored pkg + service all agree, no schema skew
+
+   ``deploy`` does every root-free step and prints the ``sudo install`` /
+   ``systemctl restart`` commands rather than running them; ``verify-deployment``
+   gates on the ``effect_ir`` schema matching this checkout (the wire contract) and
+   reports the binary commit / one-commit pkg lag. The manual steps below are the
+   same commands, spelled out.
+
 **1. On the dev machine — build, verify, commit.**
 
 .. code-block:: bash
