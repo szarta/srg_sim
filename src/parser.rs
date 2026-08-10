@@ -1323,6 +1323,39 @@ fn hand_size(cmp: Comparator, who: Who, value: i64) -> Condition {
     }
 }
 
+/// `who`'s hand size `cmp` the OPPONENT's, relatively — "you have fewer cards in your hand
+/// than your opponent" (`Lt`, SELF), "the same number … as your opponent" (`Eq`).
+/// `vs: Vs::Opp, value: None` (the eval reads the other seat's hand as the right operand).
+fn hand_size_vs_opp(cmp: Comparator, who: Who) -> Condition {
+    Condition::HandSizeCompare {
+        cmp,
+        vs: Vs::Opp,
+        value: None,
+        who,
+    }
+}
+
+/// `who`'s count of ALL cards in play `cmp` `vs_who`'s — "you have fewer cards in play than
+/// your opponent" (`Lt`, SELF vs Opp). Match-all filter (every card in play counts).
+fn in_play_vs(cmp: Comparator, who: Who, vs_who: Who) -> Condition {
+    Condition::InPlayCompare {
+        filter: CardFilter::default(),
+        cmp,
+        who,
+        vs_who,
+    }
+}
+
+/// The comparator in a relative "fewer/less/more … than" gate: `more` -> `Gt`, `fewer` /
+/// `less` -> `Lt`.
+fn fewer_more_cmp(word: &str) -> Comparator {
+    if word.eq_ignore_ascii_case("more") {
+        Comparator::Gt
+    } else {
+        Comparator::Lt
+    }
+}
+
 // --------------------------------------------------------------------------
 // Trigger-body composition & gate parsers
 // --------------------------------------------------------------------------
@@ -2078,6 +2111,26 @@ fn stop_condition(text: &str) -> Option<Condition> {
     static HAND_OPP: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"^your opponent has (\d+) (?:or fewer cards|cards?) in their hand$").unwrap()
     });
+    static HAND_OPP_MORE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^your opponent has (\d+) or more cards in their hand$").unwrap()
+    });
+    // Relative hand-size gates vs the opponent ("fewer"/"less"/"more"), and the equal form.
+    static HAND_REL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^you have (fewer|less|more) cards in (?:your )?hand than your opponent$")
+            .unwrap()
+    });
+    static HAND_SAME: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^you have the same number of cards in (?:your )?hand as your opponent$")
+            .unwrap()
+    });
+    static HAND_OPP_REL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^your opponent has (fewer|less|more) cards in their hand than you$")
+            .unwrap()
+    });
+    // Relative in-play count vs the opponent ("you have fewer cards in play than your opponent").
+    static PLAY_REL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^you have (fewer|less|more) cards in play than your opponent$").unwrap()
+    });
     static PLAY_CNT: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(&format!(
             r"^you have (\d+) other {ATK}s?(?: cards)? in play$"
@@ -2173,6 +2226,21 @@ fn stop_condition(text: &str) -> Option<Condition> {
     }
     if let Some(c) = HAND_OPP.captures(t) {
         return Some(hand_size(Comparator::Le, Who::Opp, c[1].parse().ok()?));
+    }
+    if let Some(c) = HAND_OPP_MORE.captures(t) {
+        return Some(hand_size(Comparator::Ge, Who::Opp, c[1].parse().ok()?));
+    }
+    if let Some(c) = HAND_REL.captures(t) {
+        return Some(hand_size_vs_opp(fewer_more_cmp(&c[1]), Who::SelfSide));
+    }
+    if HAND_SAME.is_match(t) {
+        return Some(hand_size_vs_opp(Comparator::Eq, Who::SelfSide));
+    }
+    if let Some(c) = HAND_OPP_REL.captures(t) {
+        return Some(hand_size_vs_opp(fewer_more_cmp(&c[1]), Who::Opp));
+    }
+    if let Some(c) = PLAY_REL.captures(t) {
+        return Some(in_play_vs(fewer_more_cmp(&c[1]), Who::SelfSide, Who::Opp));
     }
     if let Some(c) = PLAY_CNT.captures(t) {
         return Some(has_in_play(

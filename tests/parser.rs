@@ -2333,6 +2333,41 @@ fn also_a_order_gates() {
     assert_eq!(a["condition"]["@type"], "HasInPlay");
     assert_eq!(a["condition"]["filter"]["play_order"], "Followup");
 
+    // Relative hand-size vs the opponent (fewer/more/same) — the reusable compare gates.
+    let a =
+        also("If you have fewer cards in your hand than your opponent, this card is also a Lead.");
+    assert_eq!(a["condition"]["@type"], "HandSizeCompare");
+    assert_eq!(a["condition"]["cmp"], "<");
+    assert_eq!(a["condition"]["vs"], "OPP");
+    assert_eq!(a["condition"]["who"], "SELF");
+    assert_eq!(a["condition"]["value"], Value::Null);
+
+    // Fixed opponent-hand threshold ("N or more").
+    let a = also("If your opponent has 7 or more cards in their hand, this card is also a Lead.");
+    assert_eq!(a["condition"]["@type"], "HandSizeCompare");
+    assert_eq!(a["condition"]["cmp"], ">=");
+    assert_eq!(a["condition"]["who"], "OPP");
+    assert_eq!(a["condition"]["value"], 7);
+
+    // Relative in-play count vs the opponent -> InPlayCompare with a match-all filter.
+    let a = also("If you have less cards in play than your opponent this card is also a Lead.");
+    assert_eq!(a["condition"]["@type"], "InPlayCompare");
+    assert_eq!(a["condition"]["cmp"], "<");
+    assert_eq!(a["condition"]["who"], "SELF");
+    assert_eq!(a["condition"]["vs_who"], "OPP");
+    assert_eq!(a["condition"]["filter"]["play_order"], Value::Null);
+    assert!(a["condition"]["filter"]["play_orders"]
+        .as_array()
+        .unwrap()
+        .is_empty());
+
+    // The same compare gates flow through the GENERIC "If <gate>, <body>" rule too.
+    let e = one("If you have more cards in your hand than your opponent, draw 1 card.");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["condition"]["@type"], "HandSizeCompare");
+    assert_eq!(e["condition"]["cmp"], ">");
+    assert_eq!(e["condition"]["vs"], "OPP");
+
     // A gate gate_condition/stop_condition can't parse -> whole clause Unsupported.
     let e = one("If played as a Stop, this card is also a Finish.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
