@@ -906,6 +906,9 @@
     "@type": "SameRolledSkill"
   },
   {
+    "@type": "FirstTurn"
+  },
+  {
     "@type": "DuringTurn",
     "who": "OPP"
   },

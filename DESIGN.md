@@ -180,6 +180,8 @@ PrintedRollValue(who, value) # the rolled skill's PRINTED (base, unbuffed) stat 
 SameRolledSkill              # you and your target rolled the SAME skill this turn-roll (Hex, Nic Nemeth):
                              # RollContext.skill == .opp_skill (new field carrying the other side's rolled skill,
                              # set only in the post-roll/pair contexts). Needs a roll ctx. schema v18
+FirstTurn                    # this is the first turn of the game (GameState.turn_no <= 1). Gates "if this is the first
+                             # turn of the game, this card is also a <order> / cannot be stopped". schema v119
 OppWonLastRoll               # the opponent won the PREVIOUS turn's roll-off (GameState.last_roll_winner); false on turn 1 (Dunn re-roll). schema v3.
 EndedTurnNoPlay              # the owner ended the PREVIOUS turn without playing a card — roll-off winner on turn_no-1 who
                              # passed (PlayerState.flags["last_pass_turn"]); false on turn 1 / after a play or lost roll-off.

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 118;
+pub const SCHEMA_VERSION: i64 = 119;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -856,6 +856,11 @@ pub enum Condition {
     /// Nic Nemeth). Reads the post-roll context's `skill` vs `opp_skill`; needs a
     /// roll context (false without one, and in single-sided re-roll/switch contexts).
     SameRolledSkill,
+    /// This is the first turn of the game (`GameState.turn_no <= 1` — 0 at setup, 1 once
+    /// the first turn begins). Gates the "if this is the first turn of the game, …" riders
+    /// (this card is also a `<order>` / cannot be stopped). A "considered first turn"
+    /// override that re-labels a later turn is a separate, unmodeled action. schema v119
+    FirstTurn,
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
@@ -2232,6 +2237,9 @@ pub enum IrNode {
     /// Nic Nemeth). Reads the post-roll context's `skill` vs `opp_skill`; needs a
     /// roll context (false without one, and in single-sided re-roll/switch contexts).
     SameRolledSkill,
+    /// This is the first turn of the game (`GameState.turn_no <= 1`). Gates the "if this is
+    /// the first turn of the game, …" riders. schema v119
+    FirstTurn,
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,

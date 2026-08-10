@@ -2368,6 +2368,20 @@ fn also_a_order_gates() {
     assert_eq!(e["condition"]["cmp"], ">");
     assert_eq!(e["condition"]["vs"], "OPP");
 
+    // First-turn-of-the-game gate (schema v119) — plain and compound (OR crowd meter).
+    let a = also("If this is the first turn of the game, this card is also a Finish.");
+    assert_eq!(a["condition"]["@type"], "FirstTurn");
+    let a = also(
+        "If this is the first turn of the game or the Crowd Meter is 2 or greater, this card is also a Lead.",
+    );
+    assert_eq!(a["condition"]["@type"], "Or");
+    assert_eq!(a["condition"]["items"][0]["@type"], "FirstTurn");
+    assert_eq!(a["condition"]["items"][1]["@type"], "CrowdMeterCompare");
+    // The first-turn gate also feeds the "cannot be stopped" body (Unstoppable).
+    let e = one("If this is the first turn of the game, this card cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["condition"]["@type"], "FirstTurn");
+
     // A gate gate_condition/stop_condition can't parse -> whole clause Unsupported.
     let e = one("If played as a Stop, this card is also a Finish.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
@@ -3592,8 +3606,12 @@ fn stop_eligibility_grammar() {
     assert_eq!(e["condition"]["value"], 7);
     let e = a1("When you and your opponent rolled the same skill for your turn roll, this card cannot be stopped.");
     assert_eq!(e["condition"]["@type"], "SameRolledSkill");
-    // An uncovered condition shape declines -> stays Unsupported (honest).
+    // First-turn gate (schema v119) now covers this "cannot be stopped" rider.
     let e = a1("If this is the first turn of the game, this card cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["condition"]["@type"], "FirstTurn");
+    // A still-uncovered condition shape ("played as a Stop") declines -> Unsupported (honest).
+    let e = a1("If played as a Stop, this card cannot be stopped.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 
     // "Cannot be stopped by \"X\"" -> Unstoppable keyed on the stopper's name.

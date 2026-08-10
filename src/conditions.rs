@@ -409,6 +409,10 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
         Condition::DuringTurn { who } => {
             !state.in_turn_roll && state.active == who_key(state, owner, *who)
         }
+        // The first turn of the game: `turn_no` is 0 at setup and 1 once the first turn
+        // begins, so `<= 1` covers both. (A "considered first turn" re-label is a separate
+        // unmodeled action; this reads the raw turn counter.)
+        Condition::FirstTurn => state.turn_no <= 1,
         Condition::CompetitorIs { name_contains } => {
             let name = &state.players[owner].competitor.name;
             any_substr_ci(name_contains, name)

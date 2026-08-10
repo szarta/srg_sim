@@ -1723,6 +1723,9 @@ fn gate_condition(text: &str) -> Option<Condition> {
         "you ended the last turn without playing a card" => {
             return Some(Condition::EndedTurnNoPlay)
         }
+        "this is the first turn of the game" | "this is the first turn of the match" => {
+            return Some(Condition::FirstTurn)
+        }
         "you and your opponent rolled the same skill for your turn roll"
         | "you rolled the same skill as your opponent for your turn roll"
         | "you rolled the same skill as your opponent" => return Some(Condition::SameRolledSkill),

@@ -218,6 +218,9 @@
               "$ref": "#/$defs/SameRolledSkill"
             },
             {
+              "$ref": "#/$defs/FirstTurn"
+            },
+            {
               "$ref": "#/$defs/DuringTurn"
             },
             {
@@ -349,6 +352,9 @@
               },
               {
                 "$ref": "#/$defs/SameRolledSkill"
+              },
+              {
+                "$ref": "#/$defs/FirstTurn"
               },
               {
                 "$ref": "#/$defs/DuringTurn"
@@ -1689,6 +1695,9 @@
               "$ref": "#/$defs/SameRolledSkill"
             },
             {
+              "$ref": "#/$defs/FirstTurn"
+            },
+            {
               "$ref": "#/$defs/DuringTurn"
             },
             {
@@ -2188,6 +2197,9 @@
               "$ref": "#/$defs/SameRolledSkill"
             },
             {
+              "$ref": "#/$defs/FirstTurn"
+            },
+            {
               "$ref": "#/$defs/DuringTurn"
             },
             {
@@ -2504,6 +2516,18 @@
         "per_divisor",
         "when_base_le",
         "when_base_ge"
+      ],
+      "type": "object"
+    },
+    "FirstTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FirstTurn"
+        }
+      },
+      "required": [
+        "@type"
       ],
       "type": "object"
     },
@@ -3319,6 +3343,9 @@
           "$ref": "#/$defs/SameRolledSkill"
         },
         {
+          "$ref": "#/$defs/FirstTurn"
+        },
+        {
           "$ref": "#/$defs/DuringTurn"
         },
         {
@@ -3733,6 +3760,9 @@
             },
             {
               "$ref": "#/$defs/SameRolledSkill"
+            },
+            {
+              "$ref": "#/$defs/FirstTurn"
             },
             {
               "$ref": "#/$defs/DuringTurn"
@@ -4257,6 +4287,9 @@
               },
               {
                 "$ref": "#/$defs/SameRolledSkill"
+              },
+              {
+                "$ref": "#/$defs/FirstTurn"
               },
               {
                 "$ref": "#/$defs/DuringTurn"
@@ -5329,6 +5362,9 @@
               "$ref": "#/$defs/SameRolledSkill"
             },
             {
+              "$ref": "#/$defs/FirstTurn"
+            },
+            {
               "$ref": "#/$defs/DuringTurn"
             },
             {
@@ -5863,5 +5899,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 118
+  "version": 119
 }
