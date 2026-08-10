@@ -6315,9 +6315,14 @@ pub fn split_clauses(text: &str) -> Vec<String> {
     out.into_iter().filter(|p| !p.is_empty()).collect()
 }
 
+/// A parsed frequency cap: the [`Frequency`] kind plus its `n` (the count for
+/// [`Frequency::NPerMatch`], `None` for the fixed kinds). Returned by the frequency
+/// header/phrase parsers and threaded onto an [`Effect`]'s guard.
+type FreqSpec = (Frequency, Option<i64>);
+
 /// A frequency-guard header ("Once per match:", "N times per match:") scoping the
 /// clauses that follow, or `None`.
-fn freq_header(clause: &str) -> Option<(Frequency, Option<i64>)> {
+fn freq_header(clause: &str) -> Option<FreqSpec> {
     static ONCE_MATCH: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^Once (?:per|a) match:?$").unwrap());
     // "Once per turn roll" == "Once per turn" as a guard: the turn-roll phase (with all its
@@ -6380,20 +6385,53 @@ fn inline_freq(clause: &str) -> Option<(Frequency, Option<i64>, &str)> {
     Some((freq, None, body))
 }
 
+/// Parse a bare frequency PHRASE (no trailing `:` anchor) into a [`Frequency`]. Unlike
+/// [`freq_header`] (which requires the phrase to be the whole clause), this reads just the
+/// prefix ahead of another header — e.g. the "Once" / "Once per match" that precedes a
+/// window header in "Once during your turn:". A bare "Once" (no "per match") is a
+/// per-TURN cap: "once during your turn" == "once per turn". `None` when the phrase is not
+/// a frequency (so the caller declines rather than swallowing arbitrary prefix text).
+fn freq_phrase(s: &str) -> Option<FreqSpec> {
+    static N_MATCH: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^(\d+) times per match$").unwrap());
+    static PER_MATCH: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^Once (?:per|a) match$").unwrap());
+    static ONCE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^Once$").unwrap());
+    let s = s.trim().trim_end_matches([',', ':']).trim();
+    if PER_MATCH.is_match(s) {
+        return Some((Frequency::OncePerMatch, None));
+    }
+    if let Some(m) = N_MATCH.captures(s) {
+        return Some((Frequency::NPerMatch, Some(m[1].parse().unwrap())));
+    }
+    if ONCE.is_match(s) {
+        return Some((Frequency::OncePerTurn, None));
+    }
+    None
+}
+
 /// A window header ("During your turn:", "During your opponent's turn:") scoping the
-/// clauses that follow to a turn phase. Returns the [`Condition::DuringTurn`] it opens,
-/// which persists (like a [`freq_header`]) until another header replaces it — the whole
-/// text after the header hangs off that turn window. `None` for any non-header clause.
-fn window_header(clause: &str) -> Option<Condition> {
+/// clauses that follow to a turn phase. Returns an optional leading frequency (the
+/// "Once" / "Once per match," in "Once during your turn:", parsed by [`freq_phrase`]) plus
+/// the [`Condition::DuringTurn`] it opens. Both persist (like a [`freq_header`]) until
+/// another header replaces them — the whole text after the header hangs off that turn
+/// window (and, when present, that frequency cap). `None` for any non-header clause, and
+/// for a clause whose leading text is not a frequency (so it stays its own clause).
+fn window_header(clause: &str) -> Option<(Option<FreqSpec>, Condition)> {
     static WINDOW: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"(?i)^During your (turn|(?:target's|opponent's) turn):?$").unwrap()
+        Regex::new(r"(?i)^(?:(.+?)\s+)?During your (turn|(?:target's|opponent's) turn):?$").unwrap()
     });
-    let who = if WINDOW.captures(clause.trim())?[1].eq_ignore_ascii_case("turn") {
+    let caps = WINDOW.captures(clause.trim())?;
+    let freq = match caps.get(1) {
+        Some(m) => Some(freq_phrase(m.as_str())?),
+        None => None,
+    };
+    let who = if caps[2].eq_ignore_ascii_case("turn") {
         Who::SelfSide
     } else {
         Who::Opp
     };
-    Some(Condition::DuringTurn { who })
+    Some((freq, Condition::DuringTurn { who }))
 }
 
 /// A STANDALONE roll-phase trigger header ("When you roll `<S>` for your turn roll:")
@@ -6635,8 +6673,15 @@ pub fn parse_text(
                 continue;
             }
         }
-        if let Some(cond) = window_header(clause) {
+        if let Some((freq_prefix, cond)) = window_header(clause) {
             window = cond;
+            // "Once during your turn:" / "Once per match, during your turn:" carry a
+            // frequency cap alongside the turn window; a bare "During your turn:" carries
+            // none (leave any frequency a prior header set in place).
+            if let Some((f, nn)) = freq_prefix {
+                freq = f;
+                n = nn;
+            }
             i += 1;
             continue;
         }

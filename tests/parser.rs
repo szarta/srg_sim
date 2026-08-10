@@ -3055,6 +3055,87 @@ fn turn_roll_header_scopes_the_body() {
     assert_eq!(a["per_crowd"], true);
 }
 
+/// Frequency-prefixed "During your turn:" window header (task #131): "Once during your
+/// turn:" / "Once per match, during your turn:" carry BOTH a frequency cap and the turn
+/// window, consuming the header line (no Unsupported node) and stamping freq + DuringTurn
+/// on the clauses that follow. A bare "During your turn:" still carries no frequency.
+#[test]
+fn freq_prefixed_during_turn_header() {
+    // "Once during your turn:" == once per turn + a during-your-turn window. The header
+    // is consumed; the body inherits both. (The body's own grammar may be Unsupported —
+    // that's a separate concern; here we assert the freq/window it now rides.)
+    let effs = parse_text(
+        "Once during your turn:\nYou may discard 1 Submission to draw 2 cards.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "header consumed, one body effect");
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["frequency"]["kind"], "ONCE_PER_TURN");
+    assert_eq!(v["condition"]["@type"], "DuringTurn");
+    assert_eq!(v["condition"]["who"], "SELF");
+
+    // "Once per match, during your turn:" -> OncePerMatch + the window.
+    let effs = parse_text(
+        "Once per match, during your turn:\nYou may discard 1 Stop from your hand to draw 1 card.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["frequency"]["kind"], "ONCE_PER_MATCH");
+    assert_eq!(v["condition"]["@type"], "DuringTurn");
+
+    // "N times per match, during your turn:" -> NPerMatch(N) + the window.
+    let effs = parse_text(
+        "3 times per match, during your turn:\nYour Strike is +2.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["frequency"]["kind"], "N_PER_MATCH");
+    assert_eq!(v["frequency"]["n"], 3);
+    assert_eq!(v["condition"]["@type"], "DuringTurn");
+
+    // A BARE "During your turn:" carries NO frequency (stays Unlimited) but still opens
+    // the window — the prefix is optional and its absence must not disturb frequency.
+    let effs = parse_text(
+        "During your turn:\nYour Strike is +2.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["frequency"]["kind"], "UNLIMITED");
+    assert_eq!(v["condition"]["@type"], "DuringTurn");
+
+    // "During your opponent's turn:" -> the OPP-side window (unchanged behavior).
+    let effs = parse_text(
+        "During your opponent's turn:\nYour Strike is +2.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(v["condition"]["@type"], "DuringTurn");
+    assert_eq!(v["condition"]["who"], "OPP");
+
+    // A NON-frequency prefix ahead of "during your turn:" is NOT a header — the composer
+    // declines (freq_phrase fails), so no window opens: a following buff stays Always
+    // rather than being silently swallowed under a DuringTurn window.
+    let effs = parse_text(
+        "You draw a card during your turn:\nYour Strike is +2.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let follow = serde_json::to_value(effs.last().unwrap()).unwrap();
+    assert_eq!(follow["actions"][0]["@type"], "BuffSkill");
+    assert_eq!(follow["condition"]["@type"], "Always");
+}
+
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
 /// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
 /// Order and attack-type gates parse; a name gate declines to Unsupported.
