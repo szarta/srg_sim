@@ -4690,6 +4690,15 @@ impl Engine {
             .unwrap()
             .discard
             .push(attack.clone());
+        // Stamp the turn on the STOPPING side so `Condition::StoppedCard` reads it this
+        // and next turn ("if you stopped a card last turn, …"), like `broke_out_turn`.
+        let turn = self.state.turn_no;
+        self.state
+            .players
+            .get_mut(defender)
+            .unwrap()
+            .flags
+            .insert("stopped_card_turn".to_owned(), json!(turn));
         self.land_stop_card(defender, &stop, &attack)?;
         // Extra stops a `RequireStops` attack forced: each lands as a committed stop.
         // The heavy attack-side resolution below (blank-text, OnStop) runs once, keyed

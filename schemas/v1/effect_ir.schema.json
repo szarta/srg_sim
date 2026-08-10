@@ -236,6 +236,9 @@
               "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
+              "$ref": "#/$defs/StoppedCard"
+            },
+            {
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
@@ -373,6 +376,9 @@
               },
               {
                 "$ref": "#/$defs/BrokeOutLastTurn"
+              },
+              {
+                "$ref": "#/$defs/StoppedCard"
               },
               {
                 "$ref": "#/$defs/RerolledTurnRoll"
@@ -1735,6 +1741,9 @@
               "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
+              "$ref": "#/$defs/StoppedCard"
+            },
+            {
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
@@ -2238,6 +2247,9 @@
             },
             {
               "$ref": "#/$defs/BrokeOutLastTurn"
+            },
+            {
+              "$ref": "#/$defs/StoppedCard"
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
@@ -3389,6 +3401,9 @@
           "$ref": "#/$defs/BrokeOutLastTurn"
         },
         {
+          "$ref": "#/$defs/StoppedCard"
+        },
+        {
           "$ref": "#/$defs/ReturnToHand"
         },
         {
@@ -3809,6 +3824,9 @@
             },
             {
               "$ref": "#/$defs/BrokeOutLastTurn"
+            },
+            {
+              "$ref": "#/$defs/StoppedCard"
             },
             {
               "$ref": "#/$defs/RerolledTurnRoll"
@@ -4339,6 +4357,9 @@
               },
               {
                 "$ref": "#/$defs/BrokeOutLastTurn"
+              },
+              {
+                "$ref": "#/$defs/StoppedCard"
               },
               {
                 "$ref": "#/$defs/RerolledTurnRoll"
@@ -5417,6 +5438,9 @@
               "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
+              "$ref": "#/$defs/StoppedCard"
+            },
+            {
               "$ref": "#/$defs/RerolledTurnRoll"
             },
             {
@@ -5725,6 +5749,26 @@
       ],
       "type": "object"
     },
+    "StoppedCard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "StoppedCard"
+        },
+        "last_turn": {
+          "type": "boolean"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "last_turn"
+      ],
+      "type": "object"
+    },
     "SuppressOpponentDraw": {
       "additionalProperties": false,
       "properties": {
@@ -5939,5 +5983,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 120
+  "version": 121
 }

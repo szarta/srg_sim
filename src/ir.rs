@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 120;
+pub const SCHEMA_VERSION: i64 = 121;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -881,6 +881,16 @@ pub enum Condition {
     /// card is also a Lead" ("either/any player" -> Or of both sides). schema v120
     BrokeOutLastTurn {
         who: Who,
+    },
+    /// `who` performed a stop (played a stop card that stopped an attack) on the PREVIOUS
+    /// turn (`last_turn = true`) or THIS turn (`last_turn = false`). Reads
+    /// `PlayerState.flags["stopped_card_turn"]` (the most-recent turn `who` stopped,
+    /// stamped by `apply_stop` for the stopping side); true iff it equals `turn_no - 1`
+    /// (last) or `turn_no` (this). Gates "if you stopped a card last turn, …"
+    /// ("either/any player" -> Or of both sides). schema v121
+    StoppedCard {
+        who: Who,
+        last_turn: bool,
     },
     /// The owner re-rolled their turn roll **this** turn — any of their turn dice was
     /// re-rolled at the roll-off (a granted "re-roll your next turn roll", a standing
@@ -2261,6 +2271,12 @@ pub enum IrNode {
     /// survived every Breakout roll). Reads `flags["broke_out_turn"]`. schema v120
     BrokeOutLastTurn {
         who: Who,
+    },
+    /// `who` performed a stop last turn (`last_turn = true`) or this turn. Reads
+    /// `flags["stopped_card_turn"]`, stamped by `apply_stop`. schema v121
+    StoppedCard {
+        who: Who,
+        last_turn: bool,
     },
     /// The owner re-rolled their turn roll this turn. Reads `flags["rerolled_turn"]`,
     /// stamped in `offer_rerolls`. Gates King Brian Cage's finish riders. schema v80

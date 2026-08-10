@@ -1754,6 +1754,38 @@ fn gate_condition(text: &str) -> Option<Condition> {
                 ],
             })
         }
+        "you stopped a card last turn" => {
+            return Some(Condition::StoppedCard {
+                who: Who::SelfSide,
+                last_turn: true,
+            })
+        }
+        "your opponent stopped a card last turn" | "your opponent stopped your card last turn" => {
+            return Some(Condition::StoppedCard {
+                who: Who::Opp,
+                last_turn: true,
+            })
+        }
+        "your opponent stopped a card this turn" => {
+            return Some(Condition::StoppedCard {
+                who: Who::Opp,
+                last_turn: false,
+            })
+        }
+        "either player stopped a card last turn" | "any player played a stop card last turn" => {
+            return Some(Condition::Or {
+                items: vec![
+                    Condition::StoppedCard {
+                        who: Who::SelfSide,
+                        last_turn: true,
+                    },
+                    Condition::StoppedCard {
+                        who: Who::Opp,
+                        last_turn: true,
+                    },
+                ],
+            })
+        }
         "you and your opponent rolled the same skill for your turn roll"
         | "you rolled the same skill as your opponent for your turn roll"
         | "you rolled the same skill as your opponent" => return Some(Condition::SameRolledSkill),

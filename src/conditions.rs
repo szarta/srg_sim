@@ -390,6 +390,19 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .and_then(serde_json::Value::as_i64)
                 == Some(state.turn_no - 1)
         }
+        Condition::StoppedCard { who, last_turn } => {
+            let subject = who_key(state, owner, *who);
+            let want = if *last_turn {
+                state.turn_no - 1
+            } else {
+                state.turn_no
+            };
+            state.players[&subject]
+                .flags
+                .get("stopped_card_turn")
+                .and_then(serde_json::Value::as_i64)
+                == Some(want)
+        }
         Condition::RerolledTurnRoll => {
             state.players[owner]
                 .flags

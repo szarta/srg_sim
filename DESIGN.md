@@ -184,6 +184,8 @@ FirstTurn                    # this is the first turn of the game (GameState.tur
                              # turn of the game, this card is also a <order> / cannot be stopped". schema v119
 BrokeOutLastTurn{who}        # `who` broke out on the PREVIOUS turn (flags["broke_out_turn"] == turn_no-1, stamped by
                              # `breakout` on success). Gates "if you broke out last turn, …"; "either/any player" -> Or. schema v120
+StoppedCard{who,last_turn}   # `who` performed a stop last turn (last_turn) or this turn (flags["stopped_card_turn"], stamped
+                             # by `apply_stop` for the stopping side). Gates "if you stopped a card last turn, …". schema v121
 OppWonLastRoll               # the opponent won the PREVIOUS turn's roll-off (GameState.last_roll_winner); false on turn 1 (Dunn re-roll). schema v3.
 EndedTurnNoPlay              # the owner ended the PREVIOUS turn without playing a card — roll-off winner on turn_no-1 who
                              # passed (PlayerState.flags["last_pass_turn"]); false on turn 1 / after a play or lost roll-off.

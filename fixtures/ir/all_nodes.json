@@ -913,6 +913,11 @@
     "who": "SELF"
   },
   {
+    "@type": "StoppedCard",
+    "who": "SELF",
+    "last_turn": true
+  },
+  {
     "@type": "DuringTurn",
     "who": "OPP"
   },
