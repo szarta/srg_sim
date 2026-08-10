@@ -3284,6 +3284,63 @@ fn during_turn_skill_buff_grammar() {
     assert_eq!(v["actions"][0]["@type"], "Unsupported");
 }
 
+/// "During your opponent's turn" self-buff (task #131): a standing SELF skill buff scoped
+/// to the OPPONENT's turn via DuringTurn{OPP} — parsed in either clause order and from
+/// both buff heads ("your <S> is +N" and "+N to <S>"), single- and multi-skill. There is
+/// no roll-off piece (you don't roll on the opponent's turn), so exactly one effect.
+#[test]
+fn during_opponent_turn_buff_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect (no roll-off) for {text:?}");
+        let v = serde_json::to_value(&effs[0]).unwrap();
+        assert_eq!(v["condition"]["@type"], "DuringTurn", "gated on the phase");
+        assert_eq!(v["condition"]["who"], "OPP", "the OPPONENT's turn");
+        v
+    }
+
+    // Prefix order, single skill, trailing period (the `\+(\d+)$` anchor must clear it).
+    let v = one("During your opponent's turn, your Technique is +2.");
+    assert_eq!(v["actions"][0]["@type"], "BuffSkill");
+    assert_eq!(v["actions"][0]["who"], "SELF");
+    assert_eq!(v["actions"][0]["skill"], "Technique");
+    assert_eq!(v["actions"][0]["delta"], 2);
+
+    // Suffix order, "+N to <S>" head (would be a FinishBonus bare; here it's a phase buff).
+    let v = one("+2 to Strike during your opponent's turn.");
+    assert_eq!(v["actions"][0]["@type"], "BuffSkill");
+    assert_eq!(v["actions"][0]["skill"], "Strike");
+    assert_eq!(v["actions"][0]["delta"], 2);
+
+    // Suffix order, multi-skill head fans out to one BuffSkill per skill in one effect.
+    let v = one("Your Power and Technique are +3 during your opponent's turn.");
+    let skills: Vec<&str> = v["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| a["skill"].as_str().unwrap())
+        .collect();
+    assert_eq!(skills, ["Power", "Technique"]);
+    assert!(v["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|a| a["delta"] == 3 && a["who"] == "SELF"));
+
+    // A non-buff body under the same wrapper declines (stays Unsupported, not mis-mapped).
+    let effs = parse_text(
+        "During your opponent's turn, draw 1 card.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let v = serde_json::to_value(effs.last().unwrap()).unwrap();
+    assert_ne!(
+        v["condition"]["who"], "OPP",
+        "a draw body is not a DuringTurn{{OPP}} buff"
+    );
+}
+
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
 /// play[,] your next turn roll is +N" -> OnHit ModifyRoll{NEXT} on HasInPlay count>=2.
 /// Order and attack-type gates parse; a name gate declines to Unsupported.

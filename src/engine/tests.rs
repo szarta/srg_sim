@@ -1437,6 +1437,52 @@ mod timed_buff_tests {
     /// turn roll-off, where `in_turn_roll` is set even though `active` still names the
     /// prior turn's winner. (The "and turn rolls" variant restores the roll via a
     /// separate TurnRollBonus, exercised by the roll-bonus tests above.)
+    /// "During your opponent's turn, your Power is +2" (task #131): a self-side BuffSkill
+    /// gated on DuringTurn{OPP}. Because the derived-stats gate resolves against the buffed
+    /// side (the closure is keyed to A), DuringTurn{OPP} reads as "active == A's opponent",
+    /// so the buff is live only on the opponent's turn — reaching the Finish A rolls then —
+    /// and is off on A's own turn and in the roll-off.
+    #[test]
+    fn during_opponent_turn_buff_is_live_only_on_the_opponents_turn() {
+        let mut engine = engine();
+        let card: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "dotb", "name": "dotb", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{"@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "DuringTurn", "who": "OPP"},
+                "actions": [{"@type": "BuffSkill", "skill": "Power", "delta": 2, "who": "SELF",
+                    "duration": "WHILE_IN_PLAY", "target_highest": false, "target_lowest": false,
+                    "per_crowd": false, "cap": null, "per": null, "per_zone": "IN_PLAY"}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "", "source": "card", "optional": false}]
+        }))
+        .unwrap();
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card];
+        let base = engine.state.players["A"].competitor.stats.get(Skill::Power);
+
+        // The opponent's turn (B active): the buff applies to A.
+        engine.state.active = "B".to_owned();
+        engine.state.in_turn_roll = false;
+        assert_eq!(
+            engine.stat("A", Skill::Power),
+            base + 2,
+            "live on the opponent's turn"
+        );
+
+        // A's own turn: off.
+        engine.state.active = "A".to_owned();
+        assert_eq!(engine.stat("A", Skill::Power), base, "off on your own turn");
+
+        // The roll-off: nobody's turn yet, so off regardless of the stale active seat.
+        engine.state.in_turn_roll = true;
+        assert_eq!(
+            engine.stat("A", Skill::Power),
+            base,
+            "excluded from the turn roll-off"
+        );
+    }
+
     #[test]
     fn during_turn_buff_gates_on_whose_turn_and_skips_the_roll_off() {
         let mut engine = engine();

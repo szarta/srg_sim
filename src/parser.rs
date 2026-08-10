@@ -6725,6 +6725,68 @@ fn during_turn_skill_buff(clause: &str, source: EffectSource) -> Option<Vec<Effe
     Some(out)
 }
 
+/// One self-side flat [`Action::BuffSkill`] per skill named in a bare buff head —
+/// "your `<skills>` is/are +N" or "+N to `<skills>`" — reused by the phase-scoped
+/// composers below. `None` when the head is not a flat positive skill buff (a
+/// Crowd-Meter/per-count/retargeted head, or non-skill text, declines).
+fn self_flat_skill_buffs(head: &str) -> Option<Vec<Action>> {
+    static YOUR: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^your (.+?) (?:is|are) \+(\d+)$").unwrap());
+    static TO: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^\+(\d+) to (.+)$").unwrap());
+    let (skills, delta) = if let Some(c) = YOUR.captures(head) {
+        (skill_list(&c[1]), c[2].parse().ok()?)
+    } else {
+        let c = TO.captures(head)?;
+        (skill_list(&c[2]), c[1].parse().ok()?)
+    };
+    if skills.is_empty() {
+        return None;
+    }
+    Some(
+        skills
+            .into_iter()
+            .map(|s| buff(s, delta, Who::SelfSide))
+            .collect(),
+    )
+}
+
+/// "During your opponent's turn, `<buff>`" / "`<buff>` during your opponent's turn" /
+/// "+N to `<S>` during your opponent's turn" — a standing SELF skill buff scoped to the
+/// OPPONENT's turn via a [`Condition::DuringTurn`]`{Opp}` gate. `effective_stats` folds a
+/// player's own buffs with the gate resolved against THAT player (the derived-stats
+/// closure is keyed to the buffed side), so `DuringTurn{Opp}` reads as "active == the
+/// opponent" — the buff is live only on the opponent's turn, reaching the stops and
+/// Finishes you make then, and never your own turn or the roll-off. There is no "and turn
+/// rolls" tail in this direction (you do not take a turn roll on the opponent's turn), so
+/// this composer emits a single `DuringTurn`-gated effect with one `BuffSkill` per named
+/// skill. `None` when the body is not a self-side flat skill buff (falls through to
+/// Unsupported).
+fn during_opponent_turn_buff(clause: &str) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^(?:during your opponent.?s turn,?\s*(.+)|(.+?) during your opponent.?s turn)\.?$",
+        )
+        .unwrap()
+    });
+    let caps = RE.captures(clause.trim())?;
+    // The prefix branch's greedy `(.+)` swallows a trailing "." ("your Technique is +2.");
+    // the suffix branch does not. Strip it so the head's `\+(\d+)$` anchor lands.
+    let head = caps
+        .get(1)
+        .or_else(|| caps.get(2))?
+        .as_str()
+        .trim()
+        .trim_end_matches('.')
+        .trim();
+    let actions = self_flat_skill_buffs(head)?;
+    Some(vec![eff(
+        Trigger::Static,
+        actions,
+        Condition::DuringTurn { who: Who::Opp },
+        Duration::WhileInPlay,
+    )])
+}
+
 /// Non-effect metadata (a deck-build "Skill Requirement:" line): recognized and
 /// skipped, neither an effect nor Unsupported.
 fn is_metadata(clause: &str) -> bool {
@@ -6985,6 +7047,23 @@ pub fn parse_text(
         // standing buff: one DuringTurn-gated buff effect, plus (for "and turn rolls") a
         // second Always-gated TurnRollBonus effect for the roll-off.
         if let Some(effs) = during_turn_skill_buff(clause, source) {
+            for mut e in effs {
+                e.raw_clause = clause.clone();
+                e.source = source;
+                e.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(e, &window));
+            }
+            i += 1;
+            continue;
+        }
+        // "During your opponent's turn, your <skill> is +N" (either order) — a self-side
+        // standing buff gated to the OPPONENT's turn (DuringTurn{Opp}, resolved against the
+        // buffed side by effective_stats). No roll-off piece (you don't roll on their turn).
+        if let Some(effs) = during_opponent_turn_buff(clause) {
             for mut e in effs {
                 e.raw_clause = clause.clone();
                 e.source = source;
