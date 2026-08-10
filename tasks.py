@@ -322,7 +322,8 @@ def deploy(c, frontend=None, rebuild_wasm=False):
             raise SystemExit(f"missing pkg artifact: {src} (run `invoke release-web`)")
         shutil.copy2(src, vendored / name)
     print(f"  copied {', '.join(PKG_FILES)} -> {vendored}")
-    c.run("npm run build", pty=True, cwd=str(fe))
+    with c.cd(str(fe)):
+        c.run("npm run build", pty=True)
 
     home = Path.home()
     print(
