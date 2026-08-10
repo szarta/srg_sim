@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 115;
+pub const SCHEMA_VERSION: i64 = 116;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1520,6 +1520,13 @@ pub enum Action {
     BlankText {
         selector: CardFilter,
         who: Who,
+        /// Restrict the blank to cards SITTING IN the target's discard pile — "cards in
+        /// your opponent's discard pile have blank text" (neutralises their WhileInDiscard
+        /// abilities). `false` = blank the matching card wherever it is (the in-play
+        /// Spotlight-blank form). Additive/skip-when-false, so pre-v116 fixtures round-trip
+        /// byte-identically. schema v116
+        #[serde(default, skip_serializing_if = "is_false")]
+        discard_only: bool,
     },
     /// "This card copies the text of …" — the Spotlight text-copy family (#2 "A Trip
     /// to the Upside Down", #9 "The D-Roll", #16 "Your Worst Nightmare!"). A passive
@@ -2825,6 +2832,13 @@ pub enum IrNode {
     BlankText {
         selector: CardFilter,
         who: Who,
+        /// Restrict the blank to cards SITTING IN the target's discard pile — "cards in
+        /// your opponent's discard pile have blank text" (neutralises their WhileInDiscard
+        /// abilities). `false` = blank the matching card wherever it is (the in-play
+        /// Spotlight-blank form). Additive/skip-when-false, so pre-v116 fixtures round-trip
+        /// byte-identically. schema v116
+        #[serde(default, skip_serializing_if = "is_false")]
+        discard_only: bool,
     },
     /// "This card copies the text of …" — the Spotlight text-copy family (#2 "A Trip
     /// to the Upside Down", #9 "The D-Roll", #16 "Your Worst Nightmare!"). A passive

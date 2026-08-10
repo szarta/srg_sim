@@ -173,6 +173,25 @@ fn cf_name(names: Vec<String>) -> CardFilter {
     }
 }
 
+/// Blank the matching card(s) wherever they sit (the in-play Spotlight/named-card form).
+fn blank_text(selector: CardFilter, who: Who) -> Action {
+    Action::BlankText {
+        selector,
+        who,
+        discard_only: false,
+    }
+}
+
+/// Blank every card in `who`'s discard pile — "cards in your opponent's discard pile
+/// have blank text" (neutralises their WhileInDiscard abilities).
+fn blank_discard(who: Who) -> Action {
+    Action::BlankText {
+        selector: CardFilter::default(),
+        who,
+        discard_only: true,
+    }
+}
+
 /// Quoted names from a `with "X" [or "Y"] in the name` phrase (case-insensitive
 /// OR-substring — same convention as the name-substring override family).
 fn quoted_names(text: &str) -> Vec<String> {
@@ -3241,19 +3260,42 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
             |_| {
                 Some(eff(
                     Trigger::Static,
-                    vec![Action::BlankText {
-                        selector: CardFilter {
+                    vec![blank_text(
+                        CardFilter {
                             play_order: Some(PlayOrder::Finish),
                             tag: Some("Spotlight".to_owned()),
                             ..Default::default()
                         },
-                        who: Who::Opp,
-                    }],
+                        Who::Opp,
+                    )],
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))
             },
         ),
+        // Discard-pile blank ("Cards in your opponent's discard pile have blank text"):
+        // every card in that pile is blank -> BlankText{any, discard_only}. "in the
+        // discard pile" (Liger's Den) is BOTH boards -> two actions. The "opponet's" typo
+        // is tolerated. Neutralises the opponent's WhileInDiscard abilities.
+        rule(
+            r"Cards in (?:your opponen?t'?s|your target'?s|their) discard pile have blank text",
+            |_| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![blank_discard(Who::Opp)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        rule(r"Cards in the discard pile have blank text", |_| {
+            Some(eff(
+                Trigger::Static,
+                vec![blank_discard(Who::SelfSide), blank_discard(Who::Opp)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
         // Named-card blank ("\"Apocalypse\" has blank text", "\"X\" or \"Y\" has blank
         // text"): the named card(s) are blank whoever holds them. The clause names no
         // owner (these target opponent counters — Apocalypse / Rejected / Derailed — but
@@ -3271,14 +3313,8 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     Trigger::Static,
                     vec![
-                        Action::BlankText {
-                            selector: sel.clone(),
-                            who: Who::SelfSide,
-                        },
-                        Action::BlankText {
-                            selector: sel,
-                            who: Who::Opp,
-                        },
+                        blank_text(sel.clone(), Who::SelfSide),
+                        blank_text(sel, Who::Opp),
                     ],
                     Condition::Always,
                     Duration::WhileInPlay,

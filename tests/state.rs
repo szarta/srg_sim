@@ -9,6 +9,7 @@
 //! projection for both viewers.
 
 use serde_json::{json, Value};
+use srg_core::cards::Card;
 use srg_core::state::GameState;
 use std::path::PathBuf;
 
@@ -190,6 +191,58 @@ fn static_blank_opp(source: &str, condition: Value) -> Value {
         "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
         "raw_clause": "test", "source": source, "optional": false
     })
+}
+
+/// A `discard_only` `BlankText` ("cards in your opponent's discard pile have blank
+/// text") blanks a matching card ONLY while it sits in the target's discard pile — the
+/// same card in play is untouched.
+#[test]
+fn discard_only_blank_only_blanks_cards_in_the_discard_pile() {
+    let mut base = positions()[0]["state"].clone();
+    for k in ["A", "B"] {
+        base["players"][k]["competitor"]["effects"] = json!([]);
+        base["players"][k]["entrance"]["effects"] = json!([]);
+        base["players"][k]["in_play"] = json!([]);
+        base["players"][k]["discard"] = json!([]);
+    }
+    // A's in-play card: "cards in your opponent's discard pile have blank text".
+    let blank = json!({
+        "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+        "actions": [{"@type": "BlankText",
+            "selector": {"@type": "CardFilter", "number": null, "atk_type": null,
+                         "play_order": null, "tag": null, "name": null, "raw": null,
+                         "name_contains": [], "text_contains": []},
+            "who": "OPP", "discard_only": true}],
+        "duration": "WHILE_IN_PLAY",
+        "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+        "raw_clause": "", "source": "card", "optional": false
+    });
+    let mut blanker = lead_card("blanker", 1);
+    blanker["effects"] = json!([blank]);
+    base["players"]["A"]["in_play"] = json!([blanker]);
+
+    let victim_json = lead_card("victim", 2);
+    let victim: Card = serde_json::from_value(victim_json.clone()).unwrap();
+
+    // In B's discard pile -> blanked.
+    let mut s = base.clone();
+    s["players"]["B"]["discard"] = json!([victim_json.clone()]);
+    assert!(
+        GameState::from_dict(s)
+            .unwrap()
+            .is_text_blanked(&victim, "B"),
+        "a card in the opponent's discard pile is blanked"
+    );
+
+    // The same card in play -> NOT blanked (the blank is discard-scoped).
+    let mut s = base.clone();
+    s["players"]["B"]["in_play"] = json!([victim_json]);
+    assert!(
+        !GameState::from_dict(s)
+            .unwrap()
+            .is_text_blanked(&victim, "B"),
+        "the same card in play is untouched by a discard-only blank"
+    );
 }
 
 /// A gimmick-sourced Static conditional `BlankGimmick` blanks the opponent (GM

@@ -2763,6 +2763,25 @@ fn pod_fidelity_grammar() {
     let e = a1("\"Rejected\" or \"Derailed\" has blank text.");
     let sel = &e["actions"][0]["selector"]["name_contains"];
     assert_eq!(*sel, serde_json::json!(["Rejected", "Derailed"]));
+
+    // Discard-pile blank: opponent's pile -> BlankText{discard_only, OPP, any selector}.
+    let a = a1("Cards in your opponent's discard pile have blank text.")["actions"][0].clone();
+    assert_eq!(a["@type"], "BlankText");
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(a["discard_only"], true);
+    assert_eq!(a["selector"]["name_contains"], serde_json::json!([]));
+    // The "opponet's" typo is tolerated.
+    let a = a1("Cards in your opponet's discard pile have blank text.")["actions"][0].clone();
+    assert_eq!(a["discard_only"], true);
+    // "in the discard pile" -> both boards.
+    let e = a1("Cards in the discard pile have blank text.");
+    let whos: Vec<&str> = e["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| a["who"].as_str().unwrap())
+        .collect();
+    assert!(whos.contains(&"SELF") && whos.contains(&"OPP"));
 }
 
 /// Type-counted per-count buff (task #131): "Your X [and Y] is/are +N for each <type>

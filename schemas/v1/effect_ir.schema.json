@@ -441,6 +441,9 @@
         "@type": {
           "const": "BlankText"
         },
+        "discard_only": {
+          "type": "boolean"
+        },
         "selector": {
           "$ref": "#/$defs/CardFilter"
         },
@@ -5817,5 +5820,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 115
+  "version": 116
 }

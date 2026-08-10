@@ -596,9 +596,25 @@ impl GameState {
                         continue; // effect not active from this zone
                     }
                     let hit = eff.actions.iter().any(|a| {
-                        matches!(a, Action::BlankText { selector, who }
-                            if self.who_key(decl_owner, *who) == owner
-                                && conditions::card_matches(card, selector))
+                        let Action::BlankText {
+                            selector,
+                            who,
+                            discard_only,
+                        } = a
+                        else {
+                            return false;
+                        };
+                        // A discard-scoped blank ("cards in your opponent's discard pile
+                        // have blank text") applies only while the target card sits in the
+                        // owner's discard pile — never to its in-play copies.
+                        let zone_ok = !*discard_only
+                            || self.players[owner]
+                                .discard
+                                .iter()
+                                .any(|c| c.db_uuid == card.db_uuid);
+                        self.who_key(decl_owner, *who) == owner
+                            && zone_ok
+                            && conditions::card_matches(card, selector)
                     });
                     if hit && conditions::holds(&eff.condition, self, decl_owner, None) {
                         return true;

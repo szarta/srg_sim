@@ -784,6 +784,11 @@ impl Engine {
     fn triggered_effects(&self, key: &str) -> Vec<Effect> {
         let mut out = self.standing_effects(key);
         for card in &self.state.players[key].discard {
+            // A discard-blanked card ("cards in your opponent's discard pile have blank
+            // text") contributes none of its WhileInDiscard effects.
+            if self.state.is_text_blanked(card, key) {
+                continue;
+            }
             out.extend(
                 card.effects
                     .iter()
@@ -803,6 +808,9 @@ impl Engine {
     fn discard_self_triggers(&self, key: &str) -> Vec<(String, Effect)> {
         let mut out = Vec::new();
         for card in &self.state.players[key].discard {
+            if self.state.is_text_blanked(card, key) {
+                continue; // a discard-blanked card fires no WhileInDiscard triggers
+            }
             for eff in &card.effects {
                 if eff.duration == Duration::WhileInDiscard {
                     out.push((card.db_uuid.clone(), eff.clone()));
