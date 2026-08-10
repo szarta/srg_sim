@@ -86,6 +86,28 @@ def _resolve_srg() -> str | None:
     return None
 
 
+def _service_binary(c) -> tuple[str | None, str]:
+    """The `srg` the systemd SERVICE actually shells — NOT this interactive shell's
+    `which srg`. Two ways they diverge on prod: the service may PIN `SRG_BIN`, and its
+    PATH excludes ``~/.cargo/bin`` (so a `cargo install` without the follow-up `sudo
+    install` leaves the service on the stale ``/usr/local/bin/srg``). So verify against
+    the service's pinned `SRG_BIN` if any, else the installed ``/usr/local/bin/srg``,
+    else a dev fallback. Returns ``(binary, how)``."""
+    res = c.run(
+        f"systemctl show {BACKEND_SERVICE} -p Environment",
+        hide=True,
+        warn=True,
+        pty=False,
+    )
+    if res.ok:  # only extract SRG_BIN — the drop-in also holds secrets; never echo it
+        m = re.search(r"(?:^|\s)SRG_BIN=(\S+)", res.stdout)
+        if m:
+            return m.group(1), f"{BACKEND_SERVICE} SRG_BIN pin"
+    if Path(INSTALL_BIN).exists():
+        return INSTALL_BIN, "service PATH (installed binary)"
+    return _resolve_srg(), "dev fallback (interactive PATH)"
+
+
 def _srg_info(binary: str) -> dict:
     """Parse `<binary> info` (commit + schema versions)."""
     out = subprocess.run(
@@ -337,10 +359,11 @@ def verify_deployment(c, frontend=None):
 
     results: list[tuple[bool, str]] = []
 
-    # 1. Backend binary — schema is the hard gate; commit is advisory.
-    binary = _resolve_srg()
+    # 1. Backend binary — the one the SERVICE shells (not the interactive `which srg`).
+    #    Schema is the hard gate; commit is advisory.
+    binary, how = _service_binary(c)
     if not binary:
-        results.append((False, "backend binary: `srg` not found on PATH/SRG_BIN/target"))
+        results.append((False, "backend binary: `srg` not found (service pin / install / target)"))
     else:
         try:
             info = _srg_info(binary)
@@ -350,15 +373,29 @@ def verify_deployment(c, frontend=None):
             results.append(
                 (
                     ok,
-                    f"backend binary ({binary}): effect_ir {got_schema} "
+                    f"backend binary [{how}] ({binary}): effect_ir {got_schema} "
                     f"{'==' if ok else '!='} {want_schema}, commit {got_commit}",
                 )
             )
             if ok and got_commit != want_commit:
                 print(
                     f"  note: binary commit {got_commit} != HEAD {want_commit} — "
-                    "reinstall the binary if this is not intentional.\n"
+                    "expected if HEAD moved for a non-engine change; else reinstall.\n"
                 )
+            # Divergence guard: an interactive `srg` newer than the service's binary is
+            # the classic "cargo install without the follow-up sudo install" trap.
+            interactive = shutil.which("srg")
+            if interactive and Path(interactive).resolve() != Path(binary).resolve():
+                try:
+                    icommit = _srg_info(interactive).get("commit")
+                    if icommit != got_commit:
+                        print(
+                            f"  warning: `srg` on your PATH is {interactive} (commit "
+                            f"{icommit}), but the service uses {binary} (commit "
+                            f"{got_commit}). Did the `sudo install` step run?\n"
+                        )
+                except (subprocess.CalledProcessError, json.JSONDecodeError):
+                    pass
         except (subprocess.CalledProcessError, json.JSONDecodeError) as e:
             results.append((False, f"backend binary ({binary}): `info` failed — {e}"))
 
