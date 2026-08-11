@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 123;
+pub const SCHEMA_VERSION: i64 = 124;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1165,6 +1165,15 @@ pub enum Action {
         /// ("shuffle 1 Follow Up you have in play into your deck"). schema v83
         #[serde(default)]
         source: ShuffleSource,
+        /// Shuffle EVERY matching card in the source zone (not just one chosen card).
+        /// "Take any number of Lead cards … and shuffle them into your deck" — the
+        /// "any number" is the whole matching set. schema v124
+        #[serde(default, skip_serializing_if = "is_false")]
+        all: bool,
+        /// After shuffling, draw as many cards as were shuffled ("… then draw the same
+        /// number of cards"). Coupled to the actual shuffled count. schema v124
+        #[serde(default, skip_serializing_if = "is_false")]
+        then_draw: bool,
     },
     AddFromDiscard {
         filter: CardFilter,
@@ -2535,6 +2544,15 @@ pub enum IrNode {
         /// ("shuffle 1 Follow Up you have in play into your deck"). schema v83
         #[serde(default)]
         source: ShuffleSource,
+        /// Shuffle EVERY matching card in the source zone (not just one chosen card).
+        /// "Take any number of Lead cards … and shuffle them into your deck" — the
+        /// "any number" is the whole matching set. schema v124
+        #[serde(default, skip_serializing_if = "is_false")]
+        all: bool,
+        /// After shuffling, draw as many cards as were shuffled ("… then draw the same
+        /// number of cards"). Coupled to the actual shuffled count. schema v124
+        #[serde(default, skip_serializing_if = "is_false")]
+        then_draw: bool,
     },
     AddFromDiscard {
         filter: CardFilter,

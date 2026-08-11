@@ -1256,9 +1256,12 @@ impl Engine {
                 source,
             } => self.act_search(filter, *dest, *count, *source, key)?,
             Action::ShuffleDeck { who } => self.act_shuffle_deck(*who, key)?,
-            Action::ShuffleIntoDeck { selector, source } => {
-                self.act_shuffle_into_deck(selector, *source, key)?
-            }
+            Action::ShuffleIntoDeck {
+                selector,
+                source,
+                all,
+                then_draw,
+            } => self.act_shuffle_into_deck(selector, *source, *all, *then_draw, key)?,
             Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
             Action::AddFlippedToHand {
                 count,
@@ -2348,6 +2351,8 @@ impl Engine {
         &mut self,
         selector: &CardFilter,
         source: ShuffleSource,
+        all: bool,
+        then_draw: bool,
         key: &str,
     ) -> Eng<()> {
         let from_discard = source == ShuffleSource::Discard;
@@ -2363,9 +2368,20 @@ impl Engine {
                 .cloned()
                 .collect()
         };
-        if !matches.is_empty() {
-            let card = self.pick_from(key, &matches, "target")?;
-            {
+        // `all` recycles every match ("take any number …", maxed); otherwise the owner
+        // picks one card.
+        let chosen: Vec<Card> = if all {
+            matches
+        } else if matches.is_empty() {
+            Vec::new()
+        } else {
+            vec![self.pick_from(key, &matches, "target")?]
+        };
+        let count = chosen.len();
+        if count > 0 {
+            let t = self.state.turn_no;
+            let mut uuids = Vec::with_capacity(count);
+            for card in &chosen {
                 let player = self.state.players.get_mut(key).unwrap();
                 let zone = if from_discard {
                     &mut player.discard
@@ -2376,12 +2392,12 @@ impl Engine {
                     zone.remove(pos);
                 }
                 player.deck.push(card.clone());
+                uuids.push(card.db_uuid.clone());
             }
-            let t = self.state.turn_no;
             self.log(Event::Bury(CardMovement {
                 t,
                 player: key.to_owned(),
-                cards: vec![card.db_uuid],
+                cards: uuids,
                 source: Some(if from_discard { "discard" } else { "play" }.to_owned()),
                 hidden: false,
             }));
@@ -2391,7 +2407,12 @@ impl Engine {
                 self.run_on_discard_move(key)?;
             }
         }
-        self.shuffle_deck(key)
+        self.shuffle_deck(key)?;
+        // "… then draw the same number of cards": couple the draw to the shuffled count.
+        if then_draw && count > 0 {
+            self.draw(key, count, DeckEnd::Top)?;
+        }
+        Ok(())
     }
 
     /// Recur a matching card from discard to hand ("add 1 <type> from your discard

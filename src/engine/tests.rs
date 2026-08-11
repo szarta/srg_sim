@@ -1264,7 +1264,7 @@ mod on_discard_move_tests {
             let mut engine = brumeister_engine();
             match exit {
                 "shuffle_into_deck" => engine
-                    .act_shuffle_into_deck(&any_card(), ShuffleSource::Discard, "B")
+                    .act_shuffle_into_deck(&any_card(), ShuffleSource::Discard, false, false, "B")
                     .unwrap(),
                 "recur_to_deck_top" => engine.act_recur_to_deck_top(&any_card(), 2, "B").unwrap(),
                 _ => engine.act_swap_hand_discard("B").unwrap(),
@@ -4700,6 +4700,8 @@ mod cardona_mechanism_tests {
                 ..Default::default()
             },
             source: ShuffleSource::InPlay,
+            all: false,
+            then_draw: false,
         };
         e.apply_action(&shuffle, "A", "").unwrap();
         assert_eq!(
@@ -4714,6 +4716,49 @@ mod cardona_mechanism_tests {
             "only the Lead remains in play"
         );
         assert_eq!(e.state.players["A"].in_play[0].db_uuid, "lead");
+    }
+
+    #[test]
+    fn shuffle_into_deck_all_recycles_matches_and_draws_the_same_number() {
+        // AJ Styles' Spiral Tap: "Take any number of Lead cards from your discard pile
+        // and shuffle them into your deck, then draw the same number of cards."
+        let mut e = engine();
+        {
+            let a = e.state.players.get_mut("A").unwrap();
+            // Discard has 2 Leads (recyclable) + 1 Follow Up (not matched).
+            a.discard = vec![
+                card("l1", "Lead"),
+                card("fu", "Followup"),
+                card("l2", "Lead"),
+            ];
+            a.deck = vec![card("d0", "Lead"), card("d1", "Lead"), card("d2", "Lead")];
+            a.hand.clear();
+        }
+        let shuffle = Action::ShuffleIntoDeck {
+            selector: CardFilter {
+                play_order: Some(PlayOrder::Lead),
+                ..Default::default()
+            },
+            source: ShuffleSource::Discard,
+            all: true,
+            then_draw: true,
+        };
+        e.apply_action(&shuffle, "A", "").unwrap();
+        let a = &e.state.players["A"];
+        // Both Leads left the discard; the Follow Up stayed.
+        assert_eq!(
+            a.discard.len(),
+            1,
+            "only the non-Lead remains in the discard"
+        );
+        assert_eq!(a.discard[0].db_uuid, "fu");
+        // Drew exactly the 2 that were shuffled (deck: 3 + 2 recycled − 2 drawn = 3).
+        assert_eq!(a.hand.len(), 2, "drew the same number that were recycled");
+        assert_eq!(
+            a.deck.len(),
+            3,
+            "deck size is net-neutral after the recycle+draw"
+        );
     }
 
     #[test]

@@ -975,6 +975,19 @@ fn recur_from_discard_grammar() {
         "ShuffleIntoDeck"
     );
 
+    // "Take any number of <X> ... shuffle ... then draw the same number" (AJ Styles'
+    // Spiral Tap) -> ShuffleIntoDeck{all, then_draw} recycling every matching card.
+    let e = a1("Take any number of Lead cards from your discard pile and shuffle them into your deck, then draw the same number of cards.");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
+    assert_eq!(e["actions"][0]["selector"]["play_order"], "Lead");
+    assert_eq!(e["actions"][0]["source"], "DISCARD");
+    assert_eq!(e["actions"][0]["all"], true);
+    assert_eq!(e["actions"][0]["then_draw"], true);
+    // The plain single-card recur leaves both flags off (skip-serialized).
+    let e = a1("Take 2 cards from your discard pile and shuffle them into your deck.");
+    assert_eq!(e["actions"][0].get("all"), None);
+    assert_eq!(e["actions"][0].get("then_draw"), None);
+
     // Filtered RecurToDeckTop.
     let e = a1("Put 1 Submission from your discard pile on top of your deck.");
     assert_eq!(e["actions"][0]["@type"], "RecurToDeckTop");

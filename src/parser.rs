@@ -588,6 +588,18 @@ fn modify_roll_on_skill(delta: i64, skill: Skill) -> Action {
     }
 }
 
+/// A plain single-card `ShuffleIntoDeck` recur (`all`/`then_draw` off) — the common
+/// case. The multi-card "take any number … then draw the same number" recur sets those
+/// two flags on the struct literal directly.
+fn shuffle_into(selector: CardFilter, source: ShuffleSource) -> Action {
+    Action::ShuffleIntoDeck {
+        selector,
+        source,
+        all: false,
+        then_draw: false,
+    }
+}
+
 // --------------------------------------------------------------------------
 // Flip actions
 // --------------------------------------------------------------------------
@@ -5200,10 +5212,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
             |_| {
                 Some(eff(
                     on_hit(),
-                    vec![Action::ShuffleIntoDeck {
-                        selector: CardFilter::default(),
-                        source: ShuffleSource::Discard,
-                    }],
+                    vec![shuffle_into(CardFilter::default(), ShuffleSource::Discard)],
                     Condition::Always,
                     Duration::Instant,
                 ))
@@ -5217,10 +5226,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
             |c| {
                 Some(eff(
                     on_hit(),
-                    vec![Action::ShuffleIntoDeck {
-                        selector: recur_filter(&c[1])?,
-                        source: ShuffleSource::InPlay,
-                    }],
+                    vec![shuffle_into(recur_filter(&c[1])?, ShuffleSource::InPlay)],
                     Condition::Always,
                     Duration::Instant,
                 ))
@@ -5233,9 +5239,27 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
             |_| {
                 Some(eff(
                     on_hit(),
+                    vec![shuffle_into(CardFilter::default(), ShuffleSource::Discard)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "Take any number of <X> cards from your discard pile and shuffle them into
+        // your deck, then draw the same number of cards" (AJ Styles' Spiral Tap) — a
+        // recycle-and-refill: shuffle EVERY matching discard card back (all=true, the
+        // "any number" heuristic maxed) and draw as many as were shuffled (then_draw
+        // couples the draw to the actual count).
+        rule(
+            r"Take any number of (.+?) from your discard pile and shuffle them into your deck, then draw the same number of cards",
+            |c| {
+                Some(eff(
+                    on_hit(),
                     vec![Action::ShuffleIntoDeck {
-                        selector: CardFilter::default(),
+                        selector: recur_filter(&c[1])?,
                         source: ShuffleSource::Discard,
+                        all: true,
+                        then_draw: true,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -5276,10 +5300,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
             |c| {
                 Some(eff(
                     Trigger::OnPlay,
-                    vec![Action::ShuffleIntoDeck {
-                        selector: recur_filter(&c[3])?,
-                        source: ShuffleSource::Discard,
-                    }],
+                    vec![shuffle_into(recur_filter(&c[3])?, ShuffleSource::Discard)],
                     has_in_play_desc(&c[1])?,
                     Duration::Instant,
                 ))

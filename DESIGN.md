@@ -211,7 +211,7 @@ Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF, cap?, per_excludes_trigger=Fal
 Bury(selector, count, per?, per_who=SELF, all=False)   Discard(selector, count, who, per?, per_who=SELF, all=False)
                               # Bury/Discard `all` (schema v90): shed EVERY hand card matching `selector`, ignoring
                               # count/per ("they bury/discard all Strike cards"); dispatch derives count from hand size
-Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1, source=DECK|DECK_OR_DISCARD)  ShuffleIntoDeck(selector, source=DISCARD|IN_PLAY)
+Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1, source=DECK|DECK_OR_DISCARD)  ShuffleIntoDeck(selector, source=DISCARD|IN_PLAY, all=False, then_draw=False)
                               # until (schema v68): flip-until — ignore n, mill one card at a time until a flipped card
                               # matches `until`; that card -> hand if until_to_hand, else discard ("Flip cards until you flip a Submission[, add it to your hand]")
                               # dest=DECK_TOP (schema v22): search, shuffle the deck, put the card on TOP (Heartache Kid)
