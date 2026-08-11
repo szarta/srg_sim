@@ -764,6 +764,25 @@ fn scry_keep(top: i64, to_hand: i64, bury: i64) -> Action {
     }
 }
 
+/// "Look at the bottom N cards of your deck, then randomly bury them" (Papa Nequaquam's
+/// Flying Holmgang) — peek the deck bottom and send all N back to the bottom. `bottom=N`
+/// pulls the window off the back and `bury=N` returns every card to the deck bottom, so
+/// the net effect is a re-sort of the bottom N (a near-inert deck manipulation, the
+/// weakest member of the look-at-bottom family). Simplifications, standard for the scry
+/// family: "any player's deck" -> your own (`SelfSide`), and "randomly" -> the value
+/// sort `Scry.bury` already applies.
+fn scry_bottom_bury(n: i64) -> Action {
+    Action::Scry {
+        deck: Who::SelfSide,
+        top: 0,
+        bottom: n,
+        reveal: false,
+        to_hand: 0,
+        bury: n,
+        rest: ScryRest::Return,
+    }
+}
+
 /// "Look at / Reveal the top card of `deck`'s deck, you may flip it" — a single-card
 /// peek with an *optional* flip ([`ScryRest::MayFlip`]): the actor sees the top card,
 /// then mills it only when worthwhile (deny an opponent their Finish/stop, or shed
@@ -4643,6 +4662,22 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Look at the deck BOTTOM and re-bury: "Look at the bottom N cards of [any
+        // player's|your] deck, then randomly bury them" (Flying Holmgang) -> Scry with a
+        // bottom window that buries every card back (near-inert; simplifications in
+        // `scry_bottom_bury`). Anchored to the "randomly bury them" (bury-all) tail so it
+        // never claims the family's "put 1 in hand, bury the others" variants.
+        rule(
+            r"Look at the bottom (\d+) cards? of (?:any player'?s|your) deck,? then randomly bury them",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![scry_bottom_bury(num(c, 1))],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Single-card peek with an optional flip: "Look at the top card of your
         // opponent's deck, you may flip it" -> Scry{top:1, rest:MayFlip}. "Look at"
         // keeps it private (reveal:false); "Reveal" is public. deck follows the
@@ -4987,6 +5022,23 @@ fn build_bury_discard_rules() -> Vec<(Regex, Builder)> {
                     Condition::Always,
                     Duration::Instant,
                 ))
+            },
+        ),
+        // "Your opponent chooses either player to randomly bury N card(s) in their
+        // discard pile" (Papa Nequaquam's Norseman's Slam) — the OPPONENT picks the
+        // target, so the adversarial choice falls on the actor's OWN discard (deny their
+        // recursion; `random` sheds a random card). Simplification: the opponent's
+        // "either player" choice -> SelfSide (worst case for the actor).
+        rule(
+            r"Your opponent chooses either player to (randomly )?bury (\d+) cards? in their discard pile",
+            |c| {
+                let mut a = bury(num(c, 2), Who::SelfSide);
+                if c.get(1).is_some() {
+                    if let Action::Bury { random, .. } = &mut a {
+                        *random = true;
+                    }
+                }
+                Some(eff(on_hit(), vec![a], Condition::Always, Duration::Instant))
             },
         ),
         rule(

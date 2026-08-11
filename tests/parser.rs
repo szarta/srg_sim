@@ -2402,6 +2402,45 @@ fn scott_riders_grammar() {
     assert_eq!(e["actions"][0]["per"]["atk_type"], "Strike");
 }
 
+/// Papa Nequaquam (task #130): the gimmick + two finish riders (deck/discard
+/// manipulation). All reuse existing nodes — no schema bump.
+#[test]
+fn papa_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Gimmick: OnFlip{any} -> draw the bottom card of your deck (the "your draw" typo is
+    // normalized at source in cards.yaml; the general "flip any number" rule + the
+    // singular bottom-draw body do the rest).
+    let e = one("After you flip any number of cards, draw the bottom card of your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["trigger"]["count"], serde_json::Value::Null);
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["source"], "BOTTOM");
+    assert_eq!(e["actions"][0]["n"], 1);
+
+    // #28 Flying Holmgang: look at the bottom 3 of a deck, re-bury all 3 (Scry
+    // bottom+bury; "any player's" -> self, "randomly" -> the value sort).
+    let e = one("Look at the bottom 3 cards of any player's deck, then randomly bury them.");
+    assert_eq!(e["actions"][0]["@type"], "Scry");
+    assert_eq!(e["actions"][0]["deck"], "SELF");
+    assert_eq!(e["actions"][0]["bottom"], 3);
+    assert_eq!(e["actions"][0]["bury"], 3);
+
+    // #30 Norseman's Slam: opponent's adversarial "either player" choice -> the actor's
+    // own discard buries 1 at random.
+    let e =
+        one("Your opponent chooses either player to randomly bury 1 card in their discard pile.");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+    assert_eq!(e["actions"][0]["source"], "DISCARD");
+    assert_eq!(e["actions"][0]["count"], 1);
+    assert_eq!(e["actions"][0]["random"], true);
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.
