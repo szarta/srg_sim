@@ -237,6 +237,13 @@ pub struct PlayerState {
     /// serialized (re-derives as the engine replays the turn).
     #[serde(skip)]
     pub hits_this_turn: i64,
+    /// A TIMED breakout-roll bonus granted imperatively this turn and swept at the next
+    /// turn start — "add +1 to your breakout rolls until the end of the turn" (The
+    /// Mailman Always Delivers, via [`Action::GrantBreakoutBonus`]). Added for the
+    /// defender by `breakout_bonus`. Transient turn state, never serialized (re-derives
+    /// on replay).
+    #[serde(skip)]
+    pub breakout_bonus_eot: i64,
     /// Cards this player FLIPPED this turn (each drained deck → discard by `Flip`,
     /// also recorded here). Read by a per-count over [`CountZone::FlippedThisTurn`]
     /// ("your Finish roll is +1 for each Strike card flipped"); reset at each turn

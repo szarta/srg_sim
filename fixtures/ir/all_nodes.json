@@ -41,6 +41,10 @@
     "order": "Lead"
   },
   {
+    "@type": "GrantBreakoutBonus",
+    "delta": 1
+  },
+  {
     "@type": "HandToDeckTop",
     "who": "OPP",
     "selector": {

@@ -503,6 +503,7 @@ impl Engine {
                         gimmick_blanked: false,
                         gimmick_flipped: false,
                         hits_this_turn: 0,
+                        breakout_bonus_eot: 0,
                         flipped_this_turn: Vec::new(),
                         hit_this_turn: Vec::new(),
                         hit_last_turn: Vec::new(),
@@ -817,6 +818,22 @@ impl Engine {
             }
             for eff in &card.effects {
                 if eff.duration == Duration::WhileInDiscard {
+                    out.push((card.db_uuid.clone(), eff.clone()));
+                }
+            }
+        }
+        out
+    }
+
+    /// `(uuid, effect)` for each card in `key`'s HAND carrying a `from_hand` OnHit
+    /// reactive ("reveal this card from your hand when your opponent hits <X>" — The
+    /// Mailman Always Delivers). Mirrors `discard_self_triggers`; the caller binds
+    /// `self_card` so the body can shuffle the very card away.
+    fn hand_self_triggers(&self, key: &str) -> Vec<(String, Effect)> {
+        let mut out = Vec::new();
+        for card in &self.state.players[key].hand {
+            for eff in &card.effects {
+                if is_from_hand_onhit(eff) {
                     out.push((card.db_uuid.clone(), eff.clone()));
                 }
             }
@@ -1433,6 +1450,7 @@ impl Engine {
             Action::BuryThisCard => self.act_bury_this_card(key),
             Action::AddSelfToHand => self.act_add_self_to_hand(key),
             Action::ShuffleSelfIntoDeck => self.act_shuffle_self_into_deck(key)?,
+            Action::GrantBreakoutBonus { delta } => self.act_grant_breakout_bonus(*delta, key),
             Action::PlaySelf => self.act_play_self(key)?,
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
@@ -3893,22 +3911,40 @@ impl Engine {
         self.log_effect(key, "AddSelfToHand", None, json!({"card": uuid}));
     }
 
-    /// Shuffle the triggering (flipped) card back into `key`'s deck — move it from their
+    /// Shuffle the triggering card back into `key`'s deck — move it from their HAND or
     /// discard pile to the deck, then shuffle (firing `OnShuffle`). The referent is
-    /// [`Engine::self_card`]. A no-op outside a flip context or if the card has
-    /// already left the discard. See [`Action::ShuffleSelfIntoDeck`].
+    /// [`Engine::self_card`]: a flip self-trigger binds a discard card, a from-hand
+    /// reactive ("reveal this card from your hand and shuffle it into your deck" — The
+    /// Mailman Always Delivers) binds a hand card. A no-op outside a self context or if
+    /// the card has already left both zones. See [`Action::ShuffleSelfIntoDeck`].
     fn act_shuffle_self_into_deck(&mut self, key: &str) -> Eng<()> {
         let Some(uuid) = self.self_card.clone() else {
             return Ok(());
         };
         let player = self.state.players.get_mut(key).unwrap();
-        let Some(pos) = player.discard.iter().position(|c| c.db_uuid == uuid) else {
+        let card = if let Some(pos) = player.hand.iter().position(|c| c.db_uuid == uuid) {
+            player.hand.remove(pos)
+        } else if let Some(pos) = player.discard.iter().position(|c| c.db_uuid == uuid) {
+            player.discard.remove(pos)
+        } else {
             return Ok(());
         };
-        let card = player.discard.remove(pos);
         player.deck.push(card);
         self.log_effect(key, "ShuffleSelfIntoDeck", None, json!({"card": uuid}));
         self.shuffle_deck(key)
+    }
+
+    /// Accumulate a TIMED "+`delta` to your breakout rolls until the end of the turn"
+    /// bonus on `key` ([`Action::GrantBreakoutBonus`]). Swept at the next turn start;
+    /// added for the defender by `breakout_bonus`. Survives the source card leaving play.
+    fn act_grant_breakout_bonus(&mut self, delta: i64, key: &str) {
+        self.state.players.get_mut(key).unwrap().breakout_bonus_eot += delta;
+        self.log_effect(
+            key,
+            "GrantBreakoutBonus",
+            Some(key),
+            json!({"delta": delta}),
+        );
     }
 
     /// Play the triggering (flipped) card immediately — pull it from `key`'s discard and
@@ -4115,6 +4151,7 @@ impl Engine {
         for player in self.state.players.values_mut() {
             player.flags.remove("extra_plays"); // "additional card this turn" is per-turn
             player.hits_this_turn = 0; // reset the per-turn hit count (HitThisTurn)
+            player.breakout_bonus_eot = 0; // "+N breakout until end of turn" expires
             player.hit_last_turn = std::mem::take(&mut player.hit_this_turn); // rotate hit history
             player.flipped_this_turn.clear(); // reset per-turn flips (FlippedThisTurn)
                                               // Drop revealed-hand entries for cards no longer in hand (played /
@@ -4555,8 +4592,25 @@ impl Engine {
     fn run_hit_gimmicks_inner(&mut self, card: &Card, key: &str, hitter: &str) -> Eng<()> {
         let effects = self.standing_effects(key);
         for eff in &effects {
+            // A `from_hand` OnHit fires ONLY from the hand scan below, never in play.
+            if is_from_hand_onhit(eff) {
+                continue;
+            }
             if self.on_hit_trigger_fires(eff, card, key, hitter) {
                 self.fire_if_ready(eff, key, None)?;
+            }
+        }
+        // From-HAND reactive OnHit (The Mailman Always Delivers): "when your opponent hits
+        // a Finish, you may reveal THIS card from your hand and shuffle it into your deck
+        // to …". `self_card` binds the hand card so a self-referential body
+        // (`ShuffleSelfIntoDeck`) shuffles the very card that fired it away. `optional`
+        // makes it a "you may". Mirrors the discard self-trigger scan below.
+        for (uuid, eff) in self.hand_self_triggers(key) {
+            if self.on_hit_trigger_fires(&eff, card, key, hitter) {
+                self.self_card = Some(uuid);
+                let r = self.fire_if_ready(&eff, key, None);
+                self.self_card = None;
+                r?;
             }
         }
         // WHILE_IN_DISCARD OnHit (task #115 slice 2): a card in `key`'s discard pile
@@ -4589,6 +4643,7 @@ impl Engine {
             on_any,
             order,
             who,
+            from_hand: _, // the zone is decided by the dispatch site, not this predicate
         } = &eff.trigger
         else {
             return false;
@@ -5332,7 +5387,10 @@ impl Engine {
         // the defender's breakout roll ("your breakout rolls are +1" from the defender;
         // "your opponent's breakout rolls are -1" from the other side).
         let opp = self.state.opponent_of(defender);
-        self.breakout_mods_from(defender, attempt_no, rolled, Who::SelfSide)
+        // Plus any TIMED "+N to your breakout rolls until end of turn" the defender was
+        // granted this turn (GrantBreakoutBonus / Mailman), which no in-play card carries.
+        self.state.players[defender].breakout_bonus_eot
+            + self.breakout_mods_from(defender, attempt_no, rolled, Who::SelfSide)
             + self.breakout_mods_from(&opp, attempt_no, rolled, Who::Opp)
     }
 
@@ -5534,7 +5592,7 @@ impl Engine {
             // OnBreakoutRoll effect on the finisher's side keys off this roll's value.
             // A no-op for decks without one (the frozen corpus has none), so byte-
             // identical there. A caused loss ends the match immediately.
-            self.run_on_breakout_roll(defender, skill, val)?;
+            self.run_on_breakout_roll(defender, skill, val, i as i64 + 1)?;
             if self.ended() {
                 break;
             }
@@ -5568,7 +5626,13 @@ impl Engine {
     /// the defender rolling against their finish); a `RollValue` / `RollWasSkill`
     /// condition reads the roll from the `RollContext`. Resolves any loss it causes
     /// straight away so `breakout` can bail. No-op when no such effect is in play.
-    fn run_on_breakout_roll(&mut self, roller: &str, skill: Skill, value: i64) -> Eng<()> {
+    fn run_on_breakout_roll(
+        &mut self,
+        roller: &str,
+        skill: Skill,
+        value: i64,
+        attempt_no: i64,
+    ) -> Eng<()> {
         let ctx = RollContext {
             skill: Some(skill),
             value: Some(value),
@@ -5578,10 +5642,15 @@ impl Engine {
         for owner in ["A", "B"] {
             let effects = self.triggered_effects(owner);
             for eff in &effects {
-                let Trigger::OnBreakoutRoll { who } = &eff.trigger else {
+                let Trigger::OnBreakoutRoll { who, attempts } = &eff.trigger else {
                     continue;
                 };
                 if self.target(*who, owner) != roller {
+                    continue;
+                }
+                // Ordinal gate: "your opponent's 1st or 2nd breakout roll" fires only on
+                // those attempts. Empty = every roll.
+                if !attempts.is_empty() && !attempts.contains(&attempt_no) {
                     continue;
                 }
                 self.fire_if_ready(eff, owner, Some(&ctx))?;
@@ -6843,6 +6912,18 @@ fn is_on_flip_self(eff: &Effect) -> bool {
     )
 }
 
+/// A `from_hand` OnHit reactive — fired only from the owner's hand (`hand_self_triggers`),
+/// never from the in-play standing scan. See [`Trigger::OnHit::from_hand`].
+fn is_from_hand_onhit(eff: &Effect) -> bool {
+    matches!(
+        eff.trigger,
+        Trigger::OnHit {
+            from_hand: true,
+            ..
+        }
+    )
+}
+
 /// A single-bit mask for `skill` (its index in [`Skill::ALL`]).
 fn skill_bit(skill: Skill) -> i64 {
     1 << Skill::ALL.iter().position(|&s| s == skill).unwrap()
@@ -7091,6 +7172,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BuryThisCard => "BuryThisCard",
         Action::AddSelfToHand => "AddSelfToHand",
         Action::ShuffleSelfIntoDeck => "ShuffleSelfIntoDeck",
+        Action::GrantBreakoutBonus { .. } => "GrantBreakoutBonus",
         Action::PlaySelf => "PlaySelf",
         Action::ChooseName { .. } => "ChooseName",
         Action::LoseBy { .. } => "LoseBy",

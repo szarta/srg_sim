@@ -5244,6 +5244,70 @@ mod cardona_mechanism_tests {
             "a standing 'when you flip' trigger does not fire from being milled"
         );
     }
+
+    #[test]
+    fn from_hand_reactive_boosts_breakout_on_an_opponent_finish_hit() {
+        // The Mailman Always Delivers, in B's HAND: when A hits a Finish, B reveals +
+        // shuffles it away for +1 to B's breakout rolls until end of turn.
+        let mut e = engine();
+        let mailman: Card = serde_json::from_value(json!({
+            "atk_type":"Strike","db_uuid":"mail","name":"Mailman","number":28,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect",
+                "trigger":{"@type":"OnHit","who":"OPP","order":"Finish","from_hand":true},
+                "condition":{"@type":"Always"},
+                "actions":[{"@type":"ShuffleSelfIntoDeck"},
+                           {"@type":"GrantBreakoutBonus","delta":1}],
+                "duration":"INSTANT","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]}))
+        .unwrap();
+        e.state.players.get_mut("B").unwrap().hand = vec![mailman];
+        // A (the opponent) hits a Finish.
+        e.run_hit_gimmicks(&card("kill", "Finish"), "A").unwrap();
+        let b = &e.state.players["B"];
+        assert!(b.hand.is_empty(), "Mailman revealed + shuffled out of hand");
+        assert!(b.deck.iter().any(|c| c.db_uuid == "mail"), "into B's deck");
+        assert_eq!(b.breakout_bonus_eot, 1, "banked +1 breakout bonus");
+        assert_eq!(
+            e.breakout_bonus("B", 1, Skill::Grapple),
+            1,
+            "the timed bonus lands on B's breakout roll"
+        );
+    }
+
+    #[test]
+    fn ordinal_breakout_roll_gate_fires_only_on_matched_attempts() {
+        // Return to Sender #30: "when your opponent rolls their 1st or 2nd breakout roll,
+        // …" — an OnBreakoutRoll{attempts:[1,2]} on B watching A's rolls.
+        let mut e = engine();
+        let watcher: Card = serde_json::from_value(json!({
+            "atk_type":"Submission","db_uuid":"ret","name":"Return","number":30,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect",
+                "trigger":{"@type":"OnBreakoutRoll","who":"OPP","attempts":[1,2]},
+                "condition":{"@type":"Always"},
+                "actions":[{"@type":"Draw","n":1,"source":"TOP","who":"SELF","per":null,
+                    "per_who":"SELF","cap":null,"per_excludes_trigger":false}],
+                "duration":"WHILE_IN_PLAY","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]}))
+        .unwrap();
+        e.state.players.get_mut("B").unwrap().in_play = vec![watcher];
+        e.state.players.get_mut("B").unwrap().deck =
+            (0..5).map(|i| card(&format!("d{i}"), "Lead")).collect();
+        let h0 = e.state.players["B"].hand.len();
+        // A's 3rd breakout roll — outside [1, 2], gate closed.
+        e.run_on_breakout_roll("A", Skill::Grapple, 5, 3).unwrap();
+        assert_eq!(e.state.players["B"].hand.len(), h0, "3rd roll → no fire");
+        // A's 1st breakout roll — fires, B draws 1.
+        e.run_on_breakout_roll("A", Skill::Grapple, 5, 1).unwrap();
+        assert_eq!(
+            e.state.players["B"].hand.len(),
+            h0 + 1,
+            "1st roll → B draws"
+        );
+    }
 }
 
 #[cfg(test)]

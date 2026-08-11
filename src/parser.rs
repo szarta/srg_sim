@@ -73,6 +73,7 @@ fn on_hit() -> Trigger {
         text_contains: Vec::new(),
         on_any: false,
         who: Who::SelfSide, // the parser only ever produces "when YOU hit"
+        from_hand: false,
     }
 }
 
@@ -85,6 +86,7 @@ fn on_hit_type(atk_type: AtkType) -> Trigger {
         text_contains: Vec::new(),
         on_any: false,
         who: Who::SelfSide,
+        from_hand: false,
     }
 }
 
@@ -104,6 +106,7 @@ fn on_hit_named(atk_type: Option<AtkType>, names: Vec<String>, in_text: bool) ->
         text_contains,
         on_any: false,
         who: Who::SelfSide,
+        from_hand: false,
     }
 }
 
@@ -3687,6 +3690,24 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Singular "add the top/bottom card of your deck to your hand" (Leader of the
+        // Postal Nation gimmick body) — a 1-card draw from the named end.
+        rule(
+            r"(?:Draw|Add) the (top|bottom) card of your deck(?: to your hand)?",
+            |c| {
+                let end = if &c[1] == "bottom" {
+                    DeckEnd::Bottom
+                } else {
+                    DeckEnd::Top
+                };
+                Some(eff(
+                    on_hit(),
+                    vec![draw(1, Who::SelfSide, end, None, Who::SelfSide)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"Shuffle your deck", |_| {
             Some(eff(
                 on_hit(),
@@ -4231,7 +4252,10 @@ fn build_dq_loss_rules() -> Vec<(Regex, Builder)> {
             r"(?i)If your opponent rolls (\d+) for their Breakout roll, you (?:immediately )?lose the match via disqualifications?",
             |c| {
                 Some(eff(
-                    Trigger::OnBreakoutRoll { who: Who::Opp },
+                    Trigger::OnBreakoutRoll {
+                        who: Who::Opp,
+                        attempts: Vec::new(),
+                    },
                     vec![Action::LoseBy {
                         kind: LoseKind::Disqualification,
                         who: Who::SelfSide,
@@ -6647,8 +6671,39 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                     text_contains: Vec::new(),
                     on_any: false,
                     who: Who::SelfSide,
+                    from_hand: false,
                 };
                 trigger_body(trigger, &c[3])
+            },
+        ),
+        // From-HAND reactive (The Mailman Always Delivers): "When your opponent hits a
+        // Finish: You may reveal this card from your hand and shuffle it into your deck to
+        // add +N to your breakout rolls until the end of the turn." OnHit{Opp, Finish,
+        // from_hand} dispatched by `hand_self_triggers`; the "you may" is `optional`; the
+        // body shuffles the source away (`ShuffleSelfIntoDeck`) and banks a timed breakout
+        // bonus (`GrantBreakoutBonus`). schema v128.
+        rule(
+            r"When your opponent hits a Finish: You may reveal this card from your hand and shuffle it into your deck to add \+(\d+) to your breakout rolls until the end of the turn",
+            |c| {
+                let mut e = eff(
+                    Trigger::OnHit {
+                        atk_type: None,
+                        order: Some(PlayOrder::Finish),
+                        name_contains: Vec::new(),
+                        text_contains: Vec::new(),
+                        on_any: false,
+                        who: Who::Opp,
+                        from_hand: true,
+                    },
+                    vec![
+                        Action::ShuffleSelfIntoDeck,
+                        Action::GrantBreakoutBonus { delta: num(c, 1) },
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                );
+                e.optional = true;
+                Some(e)
             },
         ),
         rule(r"[Ii]f your opponent breaks out[,:] (.+)", |c| {
@@ -6677,8 +6732,42 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
         ),
         rule(
             r"Each time your opponent rolls for a [Bb]reakout roll[,:] (.+)",
-            |c| trigger_body(Trigger::OnBreakoutRoll { who: Who::Opp }, &c[1]),
+            |c| {
+                trigger_body(
+                    Trigger::OnBreakoutRoll {
+                        who: Who::Opp,
+                        attempts: Vec::new(),
+                    },
+                    &c[1],
+                )
+            },
         ),
+        // Ordinal breakout-roll trigger (Return to Sender #30): "When your opponent rolls
+        // their 1st [or 2nd] breakout roll, <body>" -> OnBreakoutRoll{Opp, attempts:[..]}
+        // + body. The 1-based ordinals gate `run_on_breakout_roll`. schema v128.
+        rule(
+            r"When your opponent rolls their (\d+)(?:st|nd|rd|th)(?: or (\d+)(?:st|nd|rd|th))? breakout roll[,:] (.+)",
+            |c| {
+                let mut attempts = vec![num(c, 1)];
+                if let Some(m) = c.get(2) {
+                    attempts.push(m.as_str().parse().unwrap());
+                }
+                trigger_body(
+                    Trigger::OnBreakoutRoll {
+                        who: Who::Opp,
+                        attempts,
+                    },
+                    &c[3],
+                )
+            },
+        ),
+        // OnShuffle trigger split (Leader of the Postal Nation gimmick): "After you
+        // shuffle your deck, <body>". Pairs with the "add the top/bottom card of your
+        // deck to your hand" body rule below. schema-neutral (OnShuffle pre-existed,
+        // override-only).
+        rule(r"After you shuffle your deck[,:] (.+)", |c| {
+            trigger_body(Trigger::OnShuffle { who: Who::SelfSide }, &c[1])
+        }),
         rule(r"At the start of the match[,:] (.+)", |c| {
             trigger_body(Trigger::StartOfMatch, &c[1])
         }),

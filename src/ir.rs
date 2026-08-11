@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 127;
+pub const SCHEMA_VERSION: i64 = 128;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -657,6 +657,13 @@ pub enum Trigger {
         /// [`Trigger::OnBreakout`] / [`Trigger::OnBury`]. schema v43
         #[serde(default)]
         who: Who,
+        /// Dispatch this OnHit from the owner's HAND, not the board — a "reveal this
+        /// card from your hand when your opponent hits <X>" reactive (The Mailman
+        /// Always Delivers). `hand_self_triggers` scans hand cards carrying it and binds
+        /// `self_card` so a self-referential body (`ShuffleSelfIntoDeck`) works. `false`
+        /// (the default) = the ordinary in-play/gimmick standing OnHit. schema v128
+        #[serde(default, skip_serializing_if = "is_false")]
+        from_hand: bool,
     },
     OnBump,
     /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
@@ -696,6 +703,12 @@ pub enum Trigger {
     /// your opponent rolls 10 for their Breakout roll, you lose"). schema v72
     OnBreakoutRoll {
         who: Who,
+        /// Ordinal gate on WHICH of the defender's breakout rolls fire this — the 1-based
+        /// attempt numbers ("your opponent's 1st or 2nd breakout roll" -> `[1, 2]`; "their
+        /// 3rd breakout roll" -> `[3]`). Empty (the default, every pre-v128 node) = every
+        /// roll regardless of ordinal. schema v128
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        attempts: Vec<i64>,
     },
     /// Fires when the `who`-side re-rolls their TURN roll (at the roll-off, after the
     /// re-rolled die lands). `who` from the owner's POV: `SelfSide` = "when you re-roll
@@ -1862,6 +1875,16 @@ pub enum Action {
         #[serde(default, skip_serializing_if = "is_false")]
         per_excludes_self: bool,
     },
+    /// Grant the actor a TIMED, imperative breakout-roll bonus of `delta`, swept at the
+    /// end of the turn — "add +1 to your breakout rolls until the end of the turn" (The
+    /// Mailman Always Delivers). Unlike [`Action::BreakoutModifier`] (a Static bonus read
+    /// off an in-play card), this accumulates onto the actor's `breakout_bonus_eot` store
+    /// and so survives the SOURCE card leaving play — needed because Mailman shuffles
+    /// itself away as it grants the bonus. `breakout_bonus` adds the store for the
+    /// defender. schema v128
+    GrantBreakoutBonus {
+        delta: i64,
+    },
     /// Modifies the NUMBER of breakout attempts (rolls) the affected player gets this
     /// turn — the "reduced / extra breakout rolls" family, distinct from
     /// [`Action::BreakoutModifier`] (which shifts a roll's VALUE, not the count). `set`
@@ -2112,6 +2135,13 @@ pub enum IrNode {
         /// [`Trigger::OnBreakout`] / [`Trigger::OnBury`]. schema v43
         #[serde(default)]
         who: Who,
+        /// Dispatch this OnHit from the owner's HAND, not the board — a "reveal this
+        /// card from your hand when your opponent hits <X>" reactive (The Mailman
+        /// Always Delivers). `hand_self_triggers` scans hand cards carrying it and binds
+        /// `self_card` so a self-referential body (`ShuffleSelfIntoDeck`) works. `false`
+        /// (the default) = the ordinary in-play/gimmick standing OnHit. schema v128
+        #[serde(default, skip_serializing_if = "is_false")]
+        from_hand: bool,
     },
     OnBump,
     /// "When a card or Gimmick causes you to bury any number of cards" (The Cyclone
@@ -2151,6 +2181,12 @@ pub enum IrNode {
     /// your opponent rolls 10 for their Breakout roll, you lose"). schema v72
     OnBreakoutRoll {
         who: Who,
+        /// Ordinal gate on WHICH of the defender's breakout rolls fire this — the 1-based
+        /// attempt numbers ("your opponent's 1st or 2nd breakout roll" -> `[1, 2]`; "their
+        /// 3rd breakout roll" -> `[3]`). Empty (the default, every pre-v128 node) = every
+        /// roll regardless of ordinal. schema v128
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        attempts: Vec<i64>,
     },
     /// Fires when the `who`-side re-rolls their TURN roll (at the roll-off, after the
     /// re-rolled die lands). `who` from the owner's POV: `SelfSide` = "when you re-roll
@@ -3263,6 +3299,16 @@ pub enum IrNode {
         /// in play". schema v112
         #[serde(default, skip_serializing_if = "is_false")]
         per_excludes_self: bool,
+    },
+    /// Grant the actor a TIMED, imperative breakout-roll bonus of `delta`, swept at the
+    /// end of the turn — "add +1 to your breakout rolls until the end of the turn" (The
+    /// Mailman Always Delivers). Unlike [`Action::BreakoutModifier`] (a Static bonus read
+    /// off an in-play card), this accumulates onto the actor's `breakout_bonus_eot` store
+    /// and so survives the SOURCE card leaving play — needed because Mailman shuffles
+    /// itself away as it grants the bonus. `breakout_bonus` adds the store for the
+    /// defender. schema v128
+    GrantBreakoutBonus {
+        delta: i64,
     },
     /// Modifies the NUMBER of breakout attempts (rolls) the affected player gets this
     /// turn — the "reduced / extra breakout rolls" family, distinct from

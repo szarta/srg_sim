@@ -553,6 +553,23 @@
       ],
       "type": "object"
     },
+    "GrantBreakoutBonus": {
+      "additionalProperties": false,
+      "description": "Grant the actor a timed '+delta to your breakout rolls until the end of the turn' bonus (The Mailman Always Delivers), swept at the next turn start; survives the source card leaving play.",
+      "properties": {
+        "@type": {
+          "const": "GrantBreakoutBonus"
+        },
+        "delta": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "delta"
+      ],
+      "type": "object"
+    },
     "BreakoutModifier": {
       "additionalProperties": false,
       "properties": {
@@ -1168,6 +1185,9 @@
               },
               {
                 "$ref": "#/$defs/BreakoutAttempts"
+              },
+              {
+                "$ref": "#/$defs/GrantBreakoutBonus"
               },
               {
                 "$ref": "#/$defs/BreakoutModifier"
@@ -2071,6 +2091,9 @@
               },
               {
                 "$ref": "#/$defs/BreakoutAttempts"
+              },
+              {
+                "$ref": "#/$defs/GrantBreakoutBonus"
               },
               {
                 "$ref": "#/$defs/BreakoutModifier"
@@ -3095,6 +3118,9 @@
           "$ref": "#/$defs/BreakoutAttempts"
         },
         {
+          "$ref": "#/$defs/GrantBreakoutBonus"
+        },
+        {
           "$ref": "#/$defs/BreakoutModifier"
         },
         {
@@ -3916,6 +3942,13 @@
         },
         "who": {
           "$ref": "#/$defs/Who"
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "1-based breakout-roll ordinals this fires on ('their 1st or 2nd breakout roll' -> [1,2]). Empty = every roll."
         }
       },
       "required": [
@@ -4080,6 +4113,10 @@
         },
         "who": {
           "$ref": "#/$defs/Who"
+        },
+        "from_hand": {
+          "type": "boolean",
+          "description": "Dispatch this OnHit from the owner's HAND ('reveal this card from your hand when your opponent hits X' — The Mailman Always Delivers), not the board. Defaults false."
         }
       },
       "required": [
@@ -5040,6 +5077,9 @@
               },
               {
                 "$ref": "#/$defs/BreakoutAttempts"
+              },
+              {
+                "$ref": "#/$defs/GrantBreakoutBonus"
               },
               {
                 "$ref": "#/$defs/BreakoutModifier"
@@ -6074,5 +6114,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 127
+  "version": 128
 }

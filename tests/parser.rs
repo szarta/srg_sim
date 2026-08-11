@@ -2269,6 +2269,43 @@ fn dr_sleep_riders_grammar() {
     assert_eq!(e["actions"][0]["duration"], "WHILE_IN_PLAY");
 }
 
+/// Leader of the Postal Nation (task #130): the three shuffle/breakout riders.
+#[test]
+fn postal_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Gimmick: after you shuffle, add the bottom card of your deck to your hand.
+    let e = one("After you shuffle your deck, add the bottom card of your deck to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnShuffle");
+    assert_eq!(e["trigger"]["who"], "SELF");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["source"], "BOTTOM");
+    assert_eq!(e["actions"][0]["n"], 1);
+
+    // #28 Mailman: from-hand reactive on the opponent's Finish hit.
+    let e = one("When your opponent hits a Finish: You may reveal this card from your hand and shuffle it into your deck to add +1 to your breakout rolls until the end of the turn.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["trigger"]["order"], "Finish");
+    assert_eq!(e["trigger"]["from_hand"], true);
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+    assert_eq!(e["actions"][1]["@type"], "GrantBreakoutBonus");
+    assert_eq!(e["actions"][1]["delta"], 1);
+
+    // #30 Return: ordinal breakout-roll trigger (1st or 2nd).
+    let e = one("When your opponent rolls their 1st or 2nd breakout roll, shuffle 1 card from your discard pile into your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnBreakoutRoll");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["trigger"]["attempts"][0], 1);
+    assert_eq!(e["trigger"]["attempts"][1], 2);
+    assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.
