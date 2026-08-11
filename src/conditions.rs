@@ -442,6 +442,10 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             let subject = who_key(state, owner, *who);
             state.players[&subject].hits_this_turn >= 1
         }
+        Condition::DrewThisTurn { who, at_least } => {
+            let subject = who_key(state, owner, *who);
+            state.players[&subject].drew_this_turn >= *at_least
+        }
         Condition::HitCard {
             filter,
             who,

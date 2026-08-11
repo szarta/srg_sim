@@ -113,6 +113,7 @@ OnBreakout(who?)             # after a breakout: who=None any ("after a breakout
 OnBreakoutRoll(who, attempts?)  # fires on EACH of who's breakout rolls (run_on_breakout_roll, reads roll value/skill via RollContext) — "if your opponent rolls N for their breakout roll, you lose"; "each time your opponent rolls for a breakout roll, …". attempts = 1-based ordinal gate ("their 1st or 2nd breakout roll" -> [1,2]; "their 3rd" -> [3]); empty = every roll. schema v128 for attempts
 OnReroll(who)                # when who re-rolls their TURN roll (at the roll-off, after the die lands; run_on_reroll). who=SELF "when you re-roll"; OPP "when your opponent re-rolls". A roll-mod body ("their roll is -1") adjusts the re-rolled value; draw / shuffle-self resolve normally. schema v104
 OnShuffle(who)               # when who's deck is shuffled by a card/gimmick EFFECT (search/tutor/shuffle-into-deck/hand-into-deck or explicit "shuffle your deck") — NOT the setup shuffle. who=OPP "when your opponent shuffles their deck" (Memes Dealer V2). schema v32
+OnDraw(who)                  # right after who DRAWS 1+ cards (run_on_draw at the draw chokepoint). Used by a WhileInDiscard recur gated on DrewThisTurn — "when this card is in your discard pile, if you drew 1+ cards this turn, you may add it to your hand" (The Gobstopper); self_card bound so AddSelfToHand resurrects the source. schema v129
 OnFlip(who, count?)          # when who flips cards (Flip mills deck→discard). count = exact-size gate ("when you flip exactly 3 cards" — Evee); None = any flip. Fired by run_on_flip. schema v84
 OnDiscardMove(who)           # when one or more cards LEAVE who's discard pile via a card/gimmick EFFECT (recur-to-hand / shuffle-into-deck / recur-to-deck-top /
                              # hand-discard swap / effect-caused pile bury) — NOT the mechanical pass-and-recycle. Fires ONCE per action, not per card.
@@ -205,6 +206,9 @@ RerolledTurnRoll             # the owner re-rolled their turn roll THIS turn (an
 HitCard(filter, who?, last_turn?)  # who hit a card matching `filter` this turn (last_turn=False) or the previous turn
                              # (True) — "if you hit a Grapple last turn". Reads PlayerState.hit_this_turn/hit_last_turn
                              # (by-card, rotated at turn start); empty filter = any hit. Filtered sibling of HitThisTurn. schema v91
+DrewThisTurn(who?, at_least)  # who has DRAWN at least `at_least` cards this turn — "if you drew 1 or more cards this turn"
+                             # (Gobstopper recur; Brotherly Love "drew 3+ → also a Lead"). Reads PlayerState.drew_this_turn
+                             # (incremented at the draw chokepoint, reset at turn start). schema v129
 DuringTurn(who)              # it is currently who's turn (GameState.active == who-side) — gates a continuous
                              # effect to a turn phase ("during your opponent's turn: …" — La Fenix). schema v19
 FlippedForGimmick            # the flip now resolving was caused by a Gimmick-source effect ("flipped for your
@@ -220,7 +224,7 @@ Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF, cap?, per_excludes_trigger=Fal
 Bury(selector, count, per?, per_who=SELF, all=False)   Discard(selector, count, who, per?, per_who=SELF, all=False)
                               # Bury/Discard `all` (schema v90): shed EVERY hand card matching `selector`, ignoring
                               # count/per ("they bury/discard all Strike cards"); dispatch derives count from hand size
-Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1, source=DECK|DECK_OR_DISCARD)  ShuffleIntoDeck(selector, source=DISCARD|IN_PLAY, all=False, then_draw=False)
+Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1, source=DECK|DECK_OR_DISCARD)  ShuffleIntoDeck(selector, source=DISCARD|IN_PLAY|HAND, all=False, then_draw=False, then_bury=False)  # then_bury: bury `count` (the shuffled number) from hand ("… then bury the same number from your hand", Double Leg Death Lock); HAND source shuffles from hand ("… any number from your hand …, then draw the same number", The Dudebuster). schema v129
                               # until (schema v68): flip-until — ignore n, mill one card at a time until a flipped card
                               # matches `until`; that card -> hand if until_to_hand, else discard ("Flip cards until you flip a Submission[, add it to your hand]")
                               # dest=DECK_TOP (schema v22): search, shuffle the deck, put the card on TOP (Heartache Kid)

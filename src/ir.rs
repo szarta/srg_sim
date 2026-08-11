@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 128;
+pub const SCHEMA_VERSION: i64 = 129;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -240,6 +240,9 @@ pub enum ShuffleSource {
     #[default]
     Discard,
     InPlay,
+    /// From the actor's HAND — "shuffle any number of cards from your hand into your deck"
+    /// (The Dudebuster). schema v129
+    Hand,
 }
 
 /// What a play/land requirement counts on the actor's own board — the generic play-
@@ -728,6 +731,15 @@ pub enum Trigger {
     OnShuffle {
         who: Who,
     },
+    /// Fires right after the `who`-side DRAWS one or more cards (`run_on_draw` at the
+    /// `draw` chokepoint). `who = SelfSide` = "when you draw". Used by a WhileInDiscard
+    /// recur gated on how many cards were drawn this turn — "when this card is in your
+    /// discard pile, if you drew 1 or more cards this turn, you may add it to your hand"
+    /// (The Gobstopper); `self_card` is bound so `AddSelfToHand` resurrects the source.
+    /// schema v129
+    OnDraw {
+        who: Who,
+    },
     /// Fires when the `who`-side flips one or more cards (`Flip` mills deck→discard).
     /// `count` = a size gate: `None` fires on any flip; `Some(n)` with `at_least = false`
     /// only on exactly `n` ("flip exactly 3 cards" — Evee Laveaux), with `at_least = true`
@@ -961,6 +973,15 @@ pub enum Condition {
     /// start; the current (stopped) card is not yet counted. schema v72
     HitThisTurn {
         who: Who,
+    },
+    /// `who` has DRAWN at least `at_least` cards this turn — "if you drew 1 or more cards
+    /// this turn, …" (The Gobstopper recur; Brotherly Love's "drew 3 or more → also a
+    /// Lead"). Reads `PlayerState.drew_this_turn`, incremented at the `draw` chokepoint and
+    /// reset at turn start. schema v129
+    DrewThisTurn {
+        #[serde(default)]
+        who: Who,
+        at_least: i64,
     },
     /// `who` hit (landed) a card matching `filter` this turn (`last_turn = false`) or the
     /// PREVIOUS turn (`last_turn = true`) — "if you hit a Grapple last turn, …" / "if you
@@ -1206,6 +1227,11 @@ pub enum Action {
         /// number of cards"). Coupled to the actual shuffled count. schema v124
         #[serde(default, skip_serializing_if = "is_false")]
         then_draw: bool,
+        /// After shuffling, bury as many cards from HAND as were shuffled ("… then bury the
+        /// same number of cards from your hand" — Double Leg Death Lock). Coupled to the
+        /// actual shuffled count; mutually exclusive with `then_draw` in practice. schema v129
+        #[serde(default, skip_serializing_if = "is_false")]
+        then_bury: bool,
     },
     AddFromDiscard {
         filter: CardFilter,
@@ -2206,6 +2232,15 @@ pub enum IrNode {
     OnShuffle {
         who: Who,
     },
+    /// Fires right after the `who`-side DRAWS one or more cards (`run_on_draw` at the
+    /// `draw` chokepoint). `who = SelfSide` = "when you draw". Used by a WhileInDiscard
+    /// recur gated on how many cards were drawn this turn — "when this card is in your
+    /// discard pile, if you drew 1 or more cards this turn, you may add it to your hand"
+    /// (The Gobstopper); `self_card` is bound so `AddSelfToHand` resurrects the source.
+    /// schema v129
+    OnDraw {
+        who: Who,
+    },
     /// Fires when the `who`-side flips one or more cards (`Flip` mills deck→discard).
     /// `count` = a size gate: `None` fires on any flip; `Some(n)` with `at_least = false`
     /// only on exactly `n` ("flip exactly 3 cards" — Evee Laveaux), with `at_least = true`
@@ -2402,6 +2437,11 @@ pub enum IrNode {
     },
     HitThisTurn {
         who: Who,
+    },
+    DrewThisTurn {
+        #[serde(default)]
+        who: Who,
+        at_least: i64,
     },
     HitCard {
         filter: CardFilter,
@@ -2631,6 +2671,11 @@ pub enum IrNode {
         /// number of cards"). Coupled to the actual shuffled count. schema v124
         #[serde(default, skip_serializing_if = "is_false")]
         then_draw: bool,
+        /// After shuffling, bury as many cards from HAND as were shuffled ("… then bury the
+        /// same number of cards from your hand" — Double Leg Death Lock). Coupled to the
+        /// actual shuffled count; mutually exclusive with `then_draw` in practice. schema v129
+        #[serde(default, skip_serializing_if = "is_false")]
+        then_bury: bool,
     },
     AddFromDiscard {
         filter: CardFilter,

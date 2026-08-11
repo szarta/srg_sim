@@ -227,6 +227,9 @@
               "$ref": "#/$defs/CompetitorIs"
             },
             {
+              "$ref": "#/$defs/DrewThisTurn"
+            },
+            {
               "$ref": "#/$defs/HitThisTurn"
             },
             {
@@ -367,6 +370,9 @@
               },
               {
                 "$ref": "#/$defs/CompetitorIs"
+              },
+              {
+                "$ref": "#/$defs/DrewThisTurn"
               },
               {
                 "$ref": "#/$defs/HitThisTurn"
@@ -1758,6 +1764,9 @@
               "$ref": "#/$defs/CompetitorIs"
             },
             {
+              "$ref": "#/$defs/DrewThisTurn"
+            },
+            {
               "$ref": "#/$defs/HitThisTurn"
             },
             {
@@ -2276,6 +2285,9 @@
               "$ref": "#/$defs/CompetitorIs"
             },
             {
+              "$ref": "#/$defs/DrewThisTurn"
+            },
+            {
               "$ref": "#/$defs/HitThisTurn"
             },
             {
@@ -2374,6 +2386,9 @@
             },
             {
               "$ref": "#/$defs/OnBreakoutRoll"
+            },
+            {
+              "$ref": "#/$defs/OnDraw"
             },
             {
               "$ref": "#/$defs/OnShuffle"
@@ -3061,6 +3076,26 @@
       ],
       "type": "object"
     },
+    "DrewThisTurn": {
+      "additionalProperties": false,
+      "description": "who has drawn at least at_least cards this turn ('if you drew 1 or more cards this turn, …'). Reads PlayerState.drew_this_turn.",
+      "properties": {
+        "@type": {
+          "const": "DrewThisTurn"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "at_least": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "at_least"
+      ],
+      "type": "object"
+    },
     "IRNode": {
       "oneOf": [
         {
@@ -3259,6 +3294,9 @@
           "$ref": "#/$defs/OnReroll"
         },
         {
+          "$ref": "#/$defs/OnDraw"
+        },
+        {
           "$ref": "#/$defs/OnShuffle"
         },
         {
@@ -3437,6 +3475,9 @@
         },
         {
           "$ref": "#/$defs/CompetitorIs"
+        },
+        {
+          "$ref": "#/$defs/DrewThisTurn"
         },
         {
           "$ref": "#/$defs/HitThisTurn"
@@ -3870,6 +3911,9 @@
               "$ref": "#/$defs/CompetitorIs"
             },
             {
+              "$ref": "#/$defs/DrewThisTurn"
+            },
+            {
               "$ref": "#/$defs/HitThisTurn"
             },
             {
@@ -4278,6 +4322,23 @@
       ],
       "type": "object"
     },
+    "OnDraw": {
+      "additionalProperties": false,
+      "description": "Fires right after who draws one or more cards (run_on_draw at the draw chokepoint). Used by a WhileInDiscard recur gated on DrewThisTurn (The Gobstopper).",
+      "properties": {
+        "@type": {
+          "const": "OnDraw"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
     "OnStop": {
       "additionalProperties": false,
       "properties": {
@@ -4412,6 +4473,9 @@
               },
               {
                 "$ref": "#/$defs/CompetitorIs"
+              },
+              {
+                "$ref": "#/$defs/DrewThisTurn"
               },
               {
                 "$ref": "#/$defs/HitThisTurn"
@@ -5506,6 +5570,9 @@
               "$ref": "#/$defs/CompetitorIs"
             },
             {
+              "$ref": "#/$defs/DrewThisTurn"
+            },
+            {
               "$ref": "#/$defs/HitThisTurn"
             },
             {
@@ -5619,6 +5686,10 @@
         },
         "then_draw": {
           "type": "boolean"
+        },
+        "then_bury": {
+          "type": "boolean",
+          "description": "After shuffling, bury as many cards from HAND as were shuffled ('… then bury the same number of cards from your hand', Double Leg Death Lock). Defaults false."
         }
       },
       "required": [
@@ -5642,7 +5713,8 @@
     "ShuffleSource": {
       "enum": [
         "DISCARD",
-        "IN_PLAY"
+        "IN_PLAY",
+        "HAND"
       ],
       "type": "string"
     },
@@ -6114,5 +6186,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 128
+  "version": 129
 }

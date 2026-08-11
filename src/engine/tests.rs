@@ -1266,7 +1266,14 @@ mod on_discard_move_tests {
             let mut engine = brumeister_engine();
             match exit {
                 "shuffle_into_deck" => engine
-                    .act_shuffle_into_deck(&any_card(), ShuffleSource::Discard, false, false, "B")
+                    .act_shuffle_into_deck(
+                        &any_card(),
+                        ShuffleSource::Discard,
+                        false,
+                        false,
+                        false,
+                        "B",
+                    )
                     .unwrap(),
                 "recur_to_deck_top" => engine.act_recur_to_deck_top(&any_card(), 2, "B").unwrap(),
                 _ => engine.act_swap_hand_discard("B").unwrap(),
@@ -4755,6 +4762,7 @@ mod cardona_mechanism_tests {
             source: ShuffleSource::InPlay,
             all: false,
             then_draw: false,
+            then_bury: false,
         };
         e.apply_action(&shuffle, "A", "").unwrap();
         assert_eq!(
@@ -4795,6 +4803,7 @@ mod cardona_mechanism_tests {
             source: ShuffleSource::Discard,
             all: true,
             then_draw: true,
+            then_bury: false,
         };
         e.apply_action(&shuffle, "A", "").unwrap();
         let a = &e.state.players["A"];
@@ -5307,6 +5316,88 @@ mod cardona_mechanism_tests {
             h0 + 1,
             "1st roll → B draws"
         );
+    }
+
+    #[test]
+    fn ondraw_recur_pulls_the_card_from_discard_after_a_draw() {
+        // The Gobstopper, in B's discard: "if you drew 1+ cards this turn, add this card
+        // to your hand." Drawing bumps drew_this_turn and fires the OnDraw recur.
+        let mut e = engine();
+        let gob: Card = serde_json::from_value(json!({
+            "atk_type":"Strike","db_uuid":"gob","name":"Gobstopper","number":28,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect",
+                "trigger":{"@type":"OnDraw","who":"SELF"},
+                "condition":{"@type":"DrewThisTurn","who":"SELF","at_least":1},
+                "actions":[{"@type":"AddSelfToHand"}],
+                "duration":"WHILE_IN_DISCARD","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]}))
+        .unwrap();
+        e.state.players.get_mut("B").unwrap().discard = vec![gob];
+        e.state.players.get_mut("B").unwrap().deck =
+            (0..3).map(|i| card(&format!("d{i}"), "Lead")).collect();
+        e.draw("B", 1, DeckEnd::Top).unwrap();
+        assert_eq!(e.state.players["B"].drew_this_turn, 1, "draw counted");
+        assert!(
+            e.state.players["B"].hand.iter().any(|c| c.db_uuid == "gob"),
+            "Gobstopper recurred to hand"
+        );
+        assert!(
+            e.state.players["B"].discard.is_empty(),
+            "and left the discard"
+        );
+    }
+
+    #[test]
+    fn shuffle_hand_into_deck_then_draws_the_same_number() {
+        // The Dudebuster: shuffle the whole hand into the deck, then draw that many back.
+        let mut e = engine();
+        e.state.players.get_mut("B").unwrap().hand = vec![card("h1", "Lead"), card("h2", "Lead")];
+        e.state.players.get_mut("B").unwrap().deck = vec![];
+        e.act_shuffle_into_deck(
+            &CardFilter::default(),
+            ShuffleSource::Hand,
+            true,
+            true,
+            false,
+            "B",
+        )
+        .unwrap();
+        // The 2 hand cards were the only deck cards, so drawing 2 refills the hand.
+        assert_eq!(e.state.players["B"].hand.len(), 2, "hand refilled to 2");
+        assert!(e.state.players["B"].deck.is_empty(), "deck drawn down");
+    }
+
+    #[test]
+    fn shuffle_discard_then_buries_the_same_number_from_hand() {
+        // Double Leg Death Lock: shuffle all of discard into the deck, then bury that many
+        // from hand.
+        let mut e = engine();
+        e.state.players.get_mut("B").unwrap().discard =
+            vec![card("d1", "Lead"), card("d2", "Lead")];
+        e.state.players.get_mut("B").unwrap().hand =
+            vec![card("h1", "Lead"), card("h2", "Lead"), card("h3", "Lead")];
+        e.act_shuffle_into_deck(
+            &CardFilter::default(),
+            ShuffleSource::Discard,
+            true,
+            false,
+            true,
+            "B",
+        )
+        .unwrap();
+        let b = &e.state.players["B"];
+        assert_eq!(b.hand.len(), 1, "2 of 3 hand cards buried");
+        // Shuffle put the 2 discard cards into the deck; bury sent 2 hand cards to the
+        // deck bottom — deck holds all 4, discard is empty.
+        assert_eq!(b.deck.len(), 4, "2 shuffled + 2 buried into the deck");
+        assert!(b.discard.is_empty(), "discard emptied by the shuffle");
+        let buried = ["h1", "h2", "h3"]
+            .iter()
+            .filter(|u| b.deck.iter().any(|c| &c.db_uuid == *u))
+            .count();
+        assert_eq!(buried, 2, "2 hand cards were buried into the deck");
     }
 }
 

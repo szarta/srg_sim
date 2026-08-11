@@ -2306,6 +2306,50 @@ fn postal_riders_grammar() {
     assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
 }
 
+/// Trent? (task #130): the gimmick + three finish riders.
+#[test]
+fn trent_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Gimmick: "Once on your turn" -> OncePerTurn StartOfTurn optional draw, gated on the
+    // hand compare (the "Once on your turn" freq prefix is stripped inline).
+    let e =
+        one("Once on your turn, if you have fewer cards in your hand than your opponent you may draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "StartOfTurn");
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["condition"]["@type"], "HandSizeCompare");
+    assert_eq!(e["condition"]["cmp"], "<");
+
+    // #28 Gobstopper: WhileInDiscard OnDraw recur gated on DrewThisTurn.
+    let e = one("When this card is in your discard pile, if you drew 1 or more cards this turn, you may add this card to your hand.");
+    assert_eq!(e["trigger"]["@type"], "OnDraw");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["condition"]["@type"], "DrewThisTurn");
+    assert_eq!(e["condition"]["at_least"], 1);
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
+
+    // #29 Dudebuster: shuffle any number from HAND, draw the same number.
+    let e = one("Shuffle any number of cards from your hand into your deck, then draw the same number of cards.");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
+    assert_eq!(e["actions"][0]["source"], "HAND");
+    assert_eq!(e["actions"][0]["all"], true);
+    assert_eq!(e["actions"][0]["then_draw"], true);
+
+    // #30 Double Leg Death Lock: shuffle any number from discard, bury the same from hand.
+    let e = one("Shuffle any number of cards from your discard pile into your deck, then bury the same number of cards from your hand.");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
+    assert_eq!(e["actions"][0]["source"], "DISCARD");
+    assert_eq!(e["actions"][0]["all"], true);
+    assert_eq!(e["actions"][0]["then_bury"], true);
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.

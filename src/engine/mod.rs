@@ -503,6 +503,7 @@ impl Engine {
                         gimmick_blanked: false,
                         gimmick_flipped: false,
                         hits_this_turn: 0,
+                        drew_this_turn: 0,
                         breakout_bonus_eot: 0,
                         flipped_this_turn: Vec::new(),
                         hit_this_turn: Vec::new(),
@@ -875,6 +876,7 @@ impl Engine {
             self.state.players.get_mut(key).unwrap().deck.reverse();
         }
         if !drawn.is_empty() {
+            let n_drawn = drawn.len() as i64;
             let cards = drawn.iter().map(|c| c.db_uuid.clone()).collect();
             let t = self.state.turn_no;
             self.log(Event::Draw(CardMovement {
@@ -884,7 +886,12 @@ impl Engine {
                 source: Some(deck_end_str(source).to_owned()),
                 hidden: true,
             }));
+            self.state.players.get_mut(key).unwrap().drew_this_turn += n_drawn;
             self.hand_cap(key)?;
+            // OnDraw recur ("if you drew 1+ cards this turn, you may add this card from
+            // your discard pile to your hand" — Gobstopper). No-op for the frozen corpus
+            // (no card carries OnDraw), so byte-identical there.
+            self.run_on_draw(key)?;
         }
         Ok(())
     }
@@ -1279,7 +1286,10 @@ impl Engine {
                 source,
                 all,
                 then_draw,
-            } => self.act_shuffle_into_deck(selector, *source, *all, *then_draw, key)?,
+                then_bury,
+            } => self.act_shuffle_into_deck(
+                selector, *source, *all, *then_draw, *then_bury, key,
+            )?,
             Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
             Action::AddFlippedToHand {
                 count,
@@ -2382,17 +2392,13 @@ impl Engine {
         source: ShuffleSource,
         all: bool,
         then_draw: bool,
+        then_bury: bool,
         key: &str,
     ) -> Eng<()> {
-        let from_discard = source == ShuffleSource::Discard;
         let matches: Vec<Card> = {
             let player = &self.state.players[key];
-            let zone = if from_discard {
-                &player.discard
-            } else {
-                &player.in_play
-            };
-            zone.iter()
+            shuffle_zone(player, source)
+                .iter()
                 .filter(|c| conditions::card_matches(c, selector))
                 .cloned()
                 .collect()
@@ -2412,11 +2418,7 @@ impl Engine {
             let mut uuids = Vec::with_capacity(count);
             for card in &chosen {
                 let player = self.state.players.get_mut(key).unwrap();
-                let zone = if from_discard {
-                    &mut player.discard
-                } else {
-                    &mut player.in_play
-                };
+                let zone = shuffle_zone_mut(player, source);
                 if let Some(pos) = zone.iter().position(|c| c.db_uuid == card.db_uuid) {
                     zone.remove(pos);
                 }
@@ -2427,12 +2429,12 @@ impl Engine {
                 t,
                 player: key.to_owned(),
                 cards: uuids,
-                source: Some(if from_discard { "discard" } else { "play" }.to_owned()),
+                source: Some(shuffle_source_str(source).to_owned()),
                 hidden: false,
             }));
             // A discard recur fires the discard-move hook ahead of the shuffle's own
-            // OnShuffle; an in-play return has no such hook.
-            if from_discard {
+            // OnShuffle; a hand / in-play return has no such hook.
+            if source == ShuffleSource::Discard {
                 self.run_on_discard_move(key)?;
             }
         }
@@ -2440,6 +2442,11 @@ impl Engine {
         // "… then draw the same number of cards": couple the draw to the shuffled count.
         if then_draw && count > 0 {
             self.draw(key, count, DeckEnd::Top)?;
+        }
+        // "… then bury the same number of cards from your hand" (Double Leg Death Lock):
+        // couple a hand bury to the shuffled count; the owner chooses which.
+        if then_bury && count > 0 {
+            self.bury_from_hand(key, key, count, false, &CardFilter::default())?;
         }
         Ok(())
     }
@@ -4151,6 +4158,7 @@ impl Engine {
         for player in self.state.players.values_mut() {
             player.flags.remove("extra_plays"); // "additional card this turn" is per-turn
             player.hits_this_turn = 0; // reset the per-turn hit count (HitThisTurn)
+            player.drew_this_turn = 0; // reset the per-turn draw count (DrewThisTurn)
             player.breakout_bonus_eot = 0; // "+N breakout until end of turn" expires
             player.hit_last_turn = std::mem::take(&mut player.hit_this_turn); // rotate hit history
             player.flipped_this_turn.clear(); // reset per-turn flips (FlippedThisTurn)
@@ -5754,6 +5762,27 @@ impl Engine {
         Ok(())
     }
 
+    /// Fire `key`'s `OnDraw` effects right after they drew (from the `draw` chokepoint).
+    /// A WhileInDiscard recur ("if you drew 1+ cards this turn, you may add this card to
+    /// your hand" — Gobstopper) fires from the discard pile with `self_card` bound so the
+    /// self-referential body resurrects the source. Only discard-pile self-triggers carry
+    /// `OnDraw` today; the DrewThisTurn gate on the effect enforces the "N or more" count.
+    fn run_on_draw(&mut self, key: &str) -> Eng<()> {
+        for (uuid, eff) in self.discard_self_triggers(key) {
+            let Trigger::OnDraw { who } = &eff.trigger else {
+                continue;
+            };
+            if self.target(*who, key) != key {
+                continue;
+            }
+            self.self_card = Some(uuid);
+            let r = self.fire_if_ready(&eff, key, None);
+            self.self_card = None;
+            r?;
+        }
+        Ok(())
+    }
+
     /// Fire `key`'s `OnRoll` effects for the deciding roll: matched by the roller's
     /// skill (`None` = any) and gated by the roller's roll context.
     fn run_on_roll(&mut self, key: &str) -> Eng<()> {
@@ -6924,6 +6953,32 @@ fn is_from_hand_onhit(eff: &Effect) -> bool {
     )
 }
 
+/// The source zone a [`Action::ShuffleIntoDeck`] recycles from.
+fn shuffle_zone(player: &PlayerState, source: ShuffleSource) -> &Vec<Card> {
+    match source {
+        ShuffleSource::Discard => &player.discard,
+        ShuffleSource::InPlay => &player.in_play,
+        ShuffleSource::Hand => &player.hand,
+    }
+}
+
+fn shuffle_zone_mut(player: &mut PlayerState, source: ShuffleSource) -> &mut Vec<Card> {
+    match source {
+        ShuffleSource::Discard => &mut player.discard,
+        ShuffleSource::InPlay => &mut player.in_play,
+        ShuffleSource::Hand => &mut player.hand,
+    }
+}
+
+/// The `Event::Bury` source label for a shuffle-into-deck zone.
+fn shuffle_source_str(source: ShuffleSource) -> &'static str {
+    match source {
+        ShuffleSource::Discard => "discard",
+        ShuffleSource::InPlay => "play",
+        ShuffleSource::Hand => "hand",
+    }
+}
+
 /// A single-bit mask for `skill` (its index in [`Skill::ALL`]).
 fn skill_bit(skill: Skill) -> i64 {
     1 << Skill::ALL.iter().position(|&s| s == skill).unwrap()
@@ -6961,6 +7016,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnBreakoutRoll { .. } => "OnBreakoutRoll",
         Trigger::OnReroll { .. } => "OnReroll",
         Trigger::OnShuffle { .. } => "OnShuffle",
+        Trigger::OnDraw { .. } => "OnDraw",
         Trigger::OnFlip { .. } => "OnFlip",
         Trigger::OnDiscardMove { .. } => "OnDiscardMove",
         Trigger::Static => "Static",

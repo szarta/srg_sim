@@ -237,6 +237,12 @@ pub struct PlayerState {
     /// serialized (re-derives as the engine replays the turn).
     #[serde(skip)]
     pub hits_this_turn: i64,
+    /// Cards this player has DRAWN so far this turn (incremented at the `draw` chokepoint,
+    /// reset at each turn start). Read by [`Condition::DrewThisTurn`] ("if you drew 1 or
+    /// more cards this turn, …") and fires the [`Trigger::OnDraw`] recur. Transient turn
+    /// state, never serialized (re-derives on replay).
+    #[serde(skip)]
+    pub drew_this_turn: i64,
     /// A TIMED breakout-roll bonus granted imperatively this turn and swept at the next
     /// turn start — "add +1 to your breakout rolls until the end of the turn" (The
     /// Mailman Always Delivers, via [`Action::GrantBreakoutBonus`]). Added for the

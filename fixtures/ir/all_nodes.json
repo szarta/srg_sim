@@ -41,6 +41,11 @@
     "order": "Lead"
   },
   {
+    "@type": "DrewThisTurn",
+    "who": "SELF",
+    "at_least": 1
+  },
+  {
     "@type": "GrantBreakoutBonus",
     "delta": 1
   },
@@ -60,6 +65,10 @@
       "tag": null,
       "text_contains": []
     }
+  },
+  {
+    "@type": "OnDraw",
+    "who": "SELF"
   },
   {
     "@type": "StopCountsOrderAs",

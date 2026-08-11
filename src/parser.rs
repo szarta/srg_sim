@@ -600,6 +600,7 @@ fn shuffle_into(selector: CardFilter, source: ShuffleSource) -> Action {
         source,
         all: false,
         then_draw: false,
+        then_bury: false,
     }
 }
 
@@ -1727,13 +1728,18 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
     let r = remainder.trim();
     let inner = if let Some(rest) = r.strip_prefix("and ") {
         format!("When {rest}")
-    } else if ["When ", "After ", "If ", "Each ", "At "]
-        .iter()
-        .any(|p| r.starts_with(p))
-    {
-        r.to_owned()
     } else {
-        return None; // passive body -> deferred to the family-A slice
+        // Sentence-case the remainder so a lowercase mid-clause "if"/"when" ("…, if you
+        // drew 1 or more cards this turn, …") still matches the capital-anchored triggers.
+        let cap = uppercase_first(r);
+        if ["When ", "After ", "If ", "Each ", "At "]
+            .iter()
+            .any(|p| cap.starts_with(p))
+        {
+            cap
+        } else {
+            return None; // passive body -> deferred to the family-A slice
+        }
     };
     let mut effect = match_grammar(&inner)
         .or_else(|| compound_body(&inner))
@@ -1751,6 +1757,7 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
             | Trigger::OnStop { .. }
             | Trigger::OnBreakout { .. }
             | Trigger::OnReroll { .. }
+            | Trigger::OnDraw { .. }
     ) {
         return None;
     }
@@ -4656,6 +4663,27 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // The Gobstopper recur: "If you drew N or more cards this turn, you may add this
+        // card to your hand" -> OnDraw{SELF} (offered right after a draw) gated on
+        // DrewThisTurn{N} + optional AddSelfToHand. Reached via while_in_discard_effect
+        // (its allow-list admits OnDraw); the OnDraw trigger, not the generic gate rule
+        // (which would emit an inert Static), is what makes the WhileInDiscard recur fire.
+        rule(
+            r"If you drew (\d+) or more cards this turn, you may add this card to your hand",
+            |c| {
+                let mut e = eff(
+                    Trigger::OnDraw { who: Who::SelfSide },
+                    vec![Action::AddSelfToHand],
+                    Condition::DrewThisTurn {
+                        who: Who::SelfSide,
+                        at_least: num(c, 1),
+                    },
+                    Duration::Instant,
+                );
+                e.optional = true;
+                Some(e)
+            },
+        ),
         rule(
             r"[Ss]huffle ?(?:it|this card)(?: from your discard pile)?(?: back)? into your deck",
             |_| {
@@ -5413,6 +5441,47 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                         source: ShuffleSource::Discard,
                         all: true,
                         then_draw: true,
+                        then_bury: false,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // The Dudebuster: "Shuffle any number of cards from your hand into your deck, then
+        // draw the same number of cards" — a hand cycle. source=Hand + all (any number,
+        // maxed = whole hand) + then_draw (redraw the shuffled count).
+        rule(
+            r"Shuffle any number of cards from your hand into your deck, then draw the same number of cards",
+            |_| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::ShuffleIntoDeck {
+                        selector: CardFilter::default(),
+                        source: ShuffleSource::Hand,
+                        all: true,
+                        then_draw: true,
+                        then_bury: false,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Double Leg Death Lock: "Shuffle any number of cards from your discard pile into
+        // your deck, then bury the same number of cards from your hand" — recycle the
+        // whole discard (all) then bury that many from hand (then_bury).
+        rule(
+            r"Shuffle any number of cards from your discard pile into your deck, then bury the same number of cards from your hand",
+            |_| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::ShuffleIntoDeck {
+                        selector: CardFilter::default(),
+                        source: ShuffleSource::Discard,
+                        all: true,
+                        then_draw: false,
+                        then_bury: true,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -5715,6 +5784,29 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
                     },
                     Duration::Instant,
                 ))
+            },
+        ),
+        // Trent's gimmick body, after "Once on your turn," is stripped as an inline
+        // frequency (OncePerTurn): "if you have fewer cards in your hand than your
+        // opponent you may draw N" -> a StartOfTurn OPTIONAL draw gated on the hand
+        // compare. The comma before "you may" is optional in the DB text.
+        rule(
+            r"[Ii]f you have fewer cards in your hand than your opponent,? you may draw (\d+) cards?",
+            |c| {
+                let mut e = eff(
+                    Trigger::StartOfTurn,
+                    vec![draw(
+                        num(c, 1),
+                        Who::SelfSide,
+                        DeckEnd::Top,
+                        None,
+                        Who::SelfSide,
+                    )],
+                    hand_size_vs_opp(Comparator::Lt, Who::SelfSide),
+                    Duration::Instant,
+                );
+                e.optional = true;
+                Some(e)
             },
         ),
         // OnRoll draws: a standing "when you / your opponent roll <S> for the turn
@@ -6908,7 +7000,7 @@ fn freq_header(clause: &str) -> Option<FreqSpec> {
     static ONCE_TURN_ROLL: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^Once (?:per|a) turn roll:?$").unwrap());
     static ONCE_TURN: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(?i)^Once (?:per|a) turn:?$").unwrap());
+        LazyLock::new(|| Regex::new(r"(?i)^Once (?:per|a|on your) turn:?$").unwrap());
     static N_MATCH: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^(\d+) times per match:?$").unwrap());
     let stripped = clause.trim();
@@ -6944,7 +7036,7 @@ fn inline_freq(clause: &str) -> Option<(Frequency, Option<i64>, &str)> {
     // "Once per turn" matches and the following `[:,]` fails on the " roll" that remains).
     static INLINE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
-            r"(?i)^(Once (?:per|a) match|Once (?:per|a) turn roll|Once (?:per|a) turn|(\d+) times per match)[:,]\s+(.+)$",
+            r"(?i)^(Once (?:per|a) match|Once (?:per|a) turn roll|Once (?:per|a|on your) turn|(\d+) times per match)[:,]\s+(.+)$",
         )
         .unwrap()
     });
