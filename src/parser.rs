@@ -1556,6 +1556,38 @@ fn choice_from_following(clauses: &[String]) -> Option<(Effect, usize)> {
     Some((effect, consumed))
 }
 
+/// "Each player flips N card(s) or [<gate>,] stop any <X>" — a VERSATILE card: play it
+/// as a Lead/Follow Up (each player flips) OR use it defensively as a Stop. The two
+/// capabilities never both fire — the flip is `OnHit` (attacking, when the card leads and
+/// hits), the Stop is a capability consulted only by the engine's `card_can_stop`
+/// (defending, when the card is played as a stop) — so they model as two independent
+/// effects, NOT a `Choice`. The stop-body reuses the existing stop grammar ("Stop any
+/// <X>", "If your <S> skill is greater …, stop any <X>", "If your opponent has another
+/// <X> in play, stop any <X>"), whose condition the engine already honors at stop time.
+/// Declines (falls to Unsupported) unless the "or" branch really parses to a `Stop`.
+fn each_flip_or_stop(clause: &str) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^Each player flips (\d+) cards? or (.+)$").expect("flip-or-stop regex")
+    });
+    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    let n: i64 = c[1].parse().ok()?;
+    let stop_effect = match_grammar(&capitalize_first(c[2].trim()))?;
+    if !stop_effect
+        .actions
+        .iter()
+        .any(|a| matches!(a, Action::Stop { .. }))
+    {
+        return None; // the "or" branch is not a stop capability — not this shape
+    }
+    let flip_effect = eff(
+        on_hit(),
+        vec![flip(n, Who::SelfSide), flip(n, Who::Opp)],
+        Condition::Always,
+        Duration::Instant,
+    );
+    Some(vec![flip_effect, stop_effect])
+}
+
 /// "The player with the fewest/most cards in hand draws/discards N" — the actor is
 /// the hand-size extreme, decided at resolution. Composed as TWO conditional effects
 /// (one per seat) using a NON-STRICT compare (`<=` for fewest, `>=` for most) so a
@@ -7341,6 +7373,22 @@ pub fn parse_text(
         // "The player with the fewest/most cards in hand draws/discards N" — one
         // clause, TWO conditional effects (per-seat, tie resolves for both).
         if let Some(effs) = hand_extreme_effects(clause) {
+            for mut e in effs {
+                e.raw_clause = clause.clone();
+                e.source = source;
+                e.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(e, &window));
+            }
+            i += 1;
+            continue;
+        }
+        // "Each player flips N card(s) or [<gate>,] stop any <X>" — a versatile card:
+        // TWO effects (the each-player flip on hit + the gated Stop capability).
+        if let Some(effs) = each_flip_or_stop(clause) {
             for mut e in effs {
                 e.raw_clause = clause.clone();
                 e.source = source;

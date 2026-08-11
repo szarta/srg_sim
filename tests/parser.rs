@@ -1041,6 +1041,57 @@ fn flip_grammar() {
     assert_eq!(a[0]["n"], 2);
 }
 
+/// Versatile "Each player flips N card(s) or [<gate>,] stop any <X>" (task #119): TWO
+/// effects — the each-player flip (OnHit) and the gated Stop capability (OnPlay, honored
+/// by the engine's `card_can_stop`). Never a Choice: the modes fire in disjoint contexts.
+#[test]
+fn each_flip_or_stop_grammar() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+
+    // Plain: flip effect + unconditional Stop capability.
+    let e = effs("Each player flips 1 card or stop any Grapple.");
+    assert_eq!(e.len(), 2, "flip effect + stop effect");
+    assert_eq!(e[0]["trigger"]["@type"], "OnHit");
+    assert_eq!(e[0]["actions"][0]["@type"], "Flip");
+    assert_eq!(e[0]["actions"][0]["who"], "SELF");
+    assert_eq!(e[0]["actions"][1]["who"], "OPP");
+    assert_eq!(e[1]["trigger"]["@type"], "OnPlay");
+    assert_eq!(e[1]["condition"]["@type"], "Always");
+    assert_eq!(e[1]["actions"][0]["@type"], "Stop");
+    assert_eq!(e[1]["actions"][0]["atk_type"], "Grapple");
+
+    // Order-qualified stop target ("Lead Strike"), and the capital "Stop" DB variant.
+    let e = effs("Each player flips 1 card or Stop any Lead Submission.");
+    assert_eq!(e[1]["actions"][0]["order"], "Lead");
+    assert_eq!(e[1]["actions"][0]["atk_type"], "Submission");
+
+    // Skill-compare gate rides on the STOP effect's condition, not the flip.
+    let e = effs("Each player flips 1 card or if your Strike skill is greater than your opponent's Strike skill, stop any Grapple.");
+    assert_eq!(
+        e[0]["condition"]["@type"], "Always",
+        "flip is unconditional"
+    );
+    assert_eq!(e[1]["condition"]["@type"], "SkillCompare");
+    assert_eq!(e[1]["actions"][0]["@type"], "Stop");
+
+    // "your opponent has another <X> in play" gate -> HasInPlay on the stop effect.
+    let e = effs("Each player flips 1 card or if your opponent has another Submission in play, stop any Submission.");
+    assert_eq!(e[1]["condition"]["@type"], "HasInPlay");
+    assert_eq!(e[1]["actions"][0]["atk_type"], "Submission");
+
+    // A non-stop "or" branch is NOT the versatile shape: the composer declines, so the
+    // clause falls through to the generic `choice_body` fallback (a single Choice), never
+    // the flip + Stop two-effect split.
+    let e = effs("Each player flips 1 card or draw 2 cards.");
+    assert_eq!(e.len(), 1);
+    assert_eq!(e[0]["actions"][0]["@type"], "Choice");
+}
+
 /// Flip-until grammar (task #119): "Flip cards until you flip a <X>[, add it to
 /// your hand]" reuses `Flip` with the `until` filter + `until_to_hand`.
 #[test]
