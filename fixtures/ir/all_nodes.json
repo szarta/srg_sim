@@ -366,6 +366,11 @@
     "per_excludes_self": true
   },
   {
+    "@type": "FinishRequires",
+    "count": 3,
+    "kind": "CARDS"
+  },
+  {
     "@type": "Flip",
     "n": 0,
     "per": null,

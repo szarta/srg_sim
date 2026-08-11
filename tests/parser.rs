@@ -2168,6 +2168,32 @@ fn gimmick_blank_grammar() {
     assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
 }
 
+/// Finish-play-requirement grammar (task #130, D3 V1): "Your opponent needs N <kind> in
+/// play to hit you with a Finish" -> a Static FinishRequires{kind, count} defender marker.
+#[test]
+fn finish_requires_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // D3's gimmick: 3 cards.
+    let e = one("Your opponent needs 3 cards in play to hit you with a Finish.");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["duration"], "WHILE_IN_PLAY");
+    assert_eq!(e["actions"][0]["@type"], "FinishRequires");
+    assert_eq!(e["actions"][0]["kind"], "CARDS");
+    assert_eq!(e["actions"][0]["count"], 3);
+
+    // The generic vocabulary: Leads / Follow Ups variants.
+    let e = one("Your opponent needs 2 Leads in play to hit you with a Finish.");
+    assert_eq!(e["actions"][0]["kind"], "LEADS");
+    assert_eq!(e["actions"][0]["count"], 2);
+    let e = one("Your opponent needs 1 Follow Up in play to hit you with a Finish.");
+    assert_eq!(e["actions"][0]["kind"], "FOLLOW_UPS");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.

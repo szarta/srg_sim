@@ -19,9 +19,9 @@ use crate::conditions::{self, RollContext};
 use crate::gamelog::{BreakoutRoll, CardMovement, Event, GameLog, Header, PlayerInfo, RollMod};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, CountZone, DeckEnd, Dest,
-    Direction, Duration, Effect, EffectSource, LoseKind, PlayOrder, RerollCost, RerollCostKind,
-    RevealDest, RevealFrom, RevealMatch, RevealSource, RollWhen, ScryRest, SearchSource,
-    ShuffleSource, Skill, Trigger, Who,
+    Direction, Duration, Effect, EffectSource, LoseKind, PlayOrder, RequireKind, RerollCost,
+    RerollCostKind, RevealDest, RevealFrom, RevealMatch, RevealSource, RollWhen, ScryRest,
+    SearchSource, ShuffleSource, Skill, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -1413,6 +1413,9 @@ impl Engine {
             | Action::MirrorOpponentIncrease
             | Action::StopCountsOrderAs { .. }
             | Action::SuppressStop { .. }
+            // A defender's "opponent needs N in play to hit you with a Finish" is read
+            // in `playable_options`, never executed as a mutation — a no-op here.
+            | Action::FinishRequires { .. }
             | Action::BumpDrawReplace
             // Pretty Paul's bump-replacement is read structurally in `roll_off`
             // (`try_bump_replacement`), never executed here — a no-op, not Unsupported.
@@ -4314,15 +4317,66 @@ impl Engine {
     }
 
     /// Playable cards: those advancing the owner's own chain, plus any self-declaring
-    /// an `AlsoLead` whose condition currently holds.
+    /// an `AlsoLead` whose condition currently holds — minus any Finish the DEFENDER's
+    /// `FinishRequires` gimmick keeps unplayable (D3 V1: "your opponent needs 3 cards in
+    /// play to hit you with a Finish"). Stops bypass this (they resolve via `offer_stop`,
+    /// not here), so a Finish-Stop still stops regardless of the requirement.
     fn playable_options(&self, key: &str) -> Vec<Value> {
         let chain = &self.state.players[key].in_play;
+        let defender = self.state.opponent_of(key);
         self.state.players[key]
             .hand
             .iter()
-            .filter(|&c| playable(chain, c) || self.also_lead_now(key, c))
+            .filter(|&c| {
+                (playable(chain, c) || self.also_lead_now(key, c))
+                    && self.meets_finish_requirement(key, &defender, c)
+            })
             .map(card_option)
             .collect()
+    }
+
+    /// Whether `attacker` may LAND `card` given the `defender`'s `FinishRequires`
+    /// declarations. Only Finishes are gated; a defender may require the attacker to
+    /// hold `count` cards of a `RequireKind` in their own play (D3's "needs 3 cards in
+    /// play"). All declared requirements must hold. Non-Finishes are always allowed.
+    fn meets_finish_requirement(&self, attacker: &str, defender: &str, card: &Card) -> bool {
+        if card.play_order != PlayOrder::Finish {
+            return true;
+        }
+        let chain = &self.state.players[attacker].in_play;
+        let have = |kind: RequireKind| -> i64 {
+            match kind {
+                RequireKind::Cards => chain.len() as i64,
+                RequireKind::Leads => chain
+                    .iter()
+                    .filter(|c| c.play_order == PlayOrder::Lead)
+                    .count() as i64,
+                RequireKind::FollowUps => chain
+                    .iter()
+                    .filter(|c| c.play_order == PlayOrder::Followup)
+                    .count() as i64,
+            }
+        };
+        for (effects, active) in self.state.declaration_sources(defender) {
+            if !active {
+                continue;
+            }
+            for eff in effects {
+                if !matches!(eff.trigger, Trigger::Static)
+                    || !conditions::holds(&eff.condition, &self.state, defender, None)
+                {
+                    continue;
+                }
+                for a in &eff.actions {
+                    if let Action::FinishRequires { kind, count } = a {
+                        if have(*kind) < *count {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        true
     }
 
     /// Whether `card` may be played this instant via an `AlsoLead` self-declaration
@@ -6995,6 +7049,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::DoubleFinishIf { .. } => "DoubleFinishIf",
         Action::RequireStops { .. } => "RequireStops",
         Action::AlsoAtkType { .. } => "AlsoAtkType",
+        Action::FinishRequires { .. } => "FinishRequires",
         Action::Choice { .. } => "Choice",
         Action::Unsupported { .. } => "Unsupported",
     }

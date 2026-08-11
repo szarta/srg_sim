@@ -18,9 +18,9 @@ use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
     CountZone, DeckEnd, Dest, Direction, DqScope, Duration, Effect, EffectSource, EffectTag,
-    Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RerollCost,
-    RerollCostKind, RerollCostTag, RevealSource, RollWhen, ScryRest, SearchSource, ShuffleSource,
-    Skill, Trigger, Vs, Who,
+    Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RequireKind,
+    RerollCost, RerollCostKind, RerollCostTag, RevealSource, RollWhen, ScryRest, SearchSource,
+    ShuffleSource, Skill, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -597,6 +597,21 @@ fn shuffle_into(selector: CardFilter, source: ShuffleSource) -> Action {
         source,
         all: false,
         then_draw: false,
+    }
+}
+
+/// Map a play-requirement noun ("cards" / "Leads" / "Follow Ups") to its [`RequireKind`]
+/// — the counted quantity in a `FinishRequires` gimmick.
+fn require_kind(word: &str) -> Option<RequireKind> {
+    let w = word.trim().to_ascii_lowercase();
+    if w.starts_with("card") {
+        Some(RequireKind::Cards)
+    } else if w.starts_with("lead") {
+        Some(RequireKind::Leads)
+    } else if w.starts_with("follow") {
+        Some(RequireKind::FollowUps)
+    } else {
+        None
     }
 }
 
@@ -4433,6 +4448,24 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // Defender play-restriction: "Your opponent needs N <cards|Leads|Follow Ups> in
+        // play to hit you with a Finish" (D3 V1) -> a Static FinishRequires marker read
+        // in `playable_options`. On top of SRG's built-in FollowUps-1 default to land a
+        // Finish; Stops bypass it (they resolve outside the play path).
+        rule(
+            r"Your opponent needs (\d+) (cards?|[Ll]eads?|[Ff]ollow ?[Uu]ps?) in play to hit you with a Finish",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::FinishRequires {
+                        kind: require_kind(&c[2])?,
+                        count: num(c, 1),
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         rule(
             r"Flip cards? until you(?:r)? flip a (.+?), add (?:that .+?|it) to your hand",
             |c| flip_until(&c[1], true),

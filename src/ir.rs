@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 124;
+pub const SCHEMA_VERSION: i64 = 125;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -240,6 +240,19 @@ pub enum ShuffleSource {
     #[default]
     Discard,
     InPlay,
+}
+
+/// What a play/land requirement counts on the actor's own board — the generic play-
+/// restriction vocabulary. `Cards` = any card in play; `Leads`/`FollowUps` = by play
+/// order. SRG's built-in defaults are `Leads`×1 to play a Follow Up and `FollowUps`×1
+/// to land a Finish (encoded structurally in `playable_as`); a [`Action::FinishRequires`]
+/// declaration is a DEFENDER-imposed override on top of that default. schema v125
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RequireKind {
+    Cards,
+    Leads,
+    FollowUps,
 }
 
 /// Which zone(s) a [`Action::Search`] tutors from — `Deck` (the default, historical
@@ -1938,6 +1951,15 @@ pub enum Action {
     AlsoAtkType {
         atk_type: AtkType,
     },
+    /// A DEFENDER declaration that the OPPONENT must have at least `count` cards of
+    /// `kind` in their OWN play to LAND a Finish against you — D3 (V1)'s "your opponent
+    /// needs 3 cards in play to hit you with a Finish" (`Cards`, 3). A Static effect
+    /// read in `playable_options` (so Stops, which bypass play restrictions, stay
+    /// exempt); never executed. On top of the built-in `FollowUps`×1 default. schema v125
+    FinishRequires {
+        kind: RequireKind,
+        count: i64,
+    },
     Choice {
         options: Vec<ChoiceOption>,
     },
@@ -3312,6 +3334,12 @@ pub enum IrNode {
     /// Finish Grapple"). Read via `Card::counts_as_atk_type`; never executed. schema v81
     AlsoAtkType {
         atk_type: AtkType,
+    },
+    /// Defender declaration: the opponent needs `count` cards of `kind` in play to land
+    /// a Finish against you (D3 V1). Read in `playable_options`; never executed. schema v125
+    FinishRequires {
+        kind: RequireKind,
+        count: i64,
     },
     Choice {
         options: Vec<ChoiceOption>,

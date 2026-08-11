@@ -349,6 +349,10 @@ RequireStops(count)           # this card can only be stopped by `count` Stops a
 AlsoAtkType(atk_type)         # this card ALSO counts as attack type `atk_type` beyond its printed type ("also a
                               # Finish Grapple", King Brian Cage). Read via Card::counts_as_atk_type at every
                               # atk-type test (stop-matching, CardFilter, hit gimmicks). schema v81
+FinishRequires(kind, count)   # DEFENDER declaration: the opponent needs `count` cards of `kind`
+                              # (CARDS|LEADS|FOLLOW_UPS) in play to LAND a Finish against you (D3 V1's "needs 3
+                              # cards in play"). Read in playable_options; Stops bypass it. On top of the built-in
+                              # FOLLOW_UPS×1 default to land a Finish. schema v125
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
 `Bury(selector, count, who, random, source, per?, per_who=SELF)` moves `count` cards to the

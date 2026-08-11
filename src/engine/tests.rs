@@ -4762,6 +4762,63 @@ mod cardona_mechanism_tests {
     }
 
     #[test]
+    fn finish_requires_gates_the_opponents_finish_by_in_play_count() {
+        // D3 (V1): "Your opponent needs 3 cards in play to hit you with a Finish."
+        let mut e = engine();
+        let gimmick: Effect = serde_json::from_value(json!({
+            "@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+            "actions":[{"@type":"FinishRequires","kind":"CARDS","count":3}],
+            "duration":"WHILE_IN_PLAY","optional":false,
+            "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+            "raw_clause":"","source":"gimmick"
+        }))
+        .unwrap();
+        e.state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .competitor
+            .effects
+            .push(gimmick);
+        // A holds a single Finish. A Finish needs a Follow Up in play (the built-in
+        // default), so give A a Lead+Follow Up chain: 2 cards — the default is met but
+        // D3's Cards>=3 is not.
+        e.state.players.get_mut("A").unwrap().hand = vec![card("fin", "Finish")];
+        e.state.players.get_mut("A").unwrap().in_play =
+            vec![card("lead", "Lead"), card("fu", "Followup")];
+        assert!(
+            e.playable_options("A").is_empty(),
+            "Finish blocked at 2 cards in play (< 3)"
+        );
+        // A third card in play meets the requirement.
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(card("fu2", "Followup"));
+        assert_eq!(
+            e.playable_options("A").len(),
+            1,
+            "Finish playable once 3 cards are in play"
+        );
+        // Sanity: without the gimmick the 2-card chain already suffices (default rule).
+        e.state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .competitor
+            .effects
+            .clear();
+        e.state.players.get_mut("A").unwrap().in_play.pop();
+        assert_eq!(
+            e.playable_options("A").len(),
+            1,
+            "no gimmick → default FollowUps-1 rule allows the Finish at 2 cards"
+        );
+    }
+
+    #[test]
     fn on_flip_gimmick_fires_only_on_the_exact_count() {
         // Evee Laveaux: "when you flip exactly 3 cards, draw 2." OnFlip{who:SELF,count:3}.
         let mut e = engine();

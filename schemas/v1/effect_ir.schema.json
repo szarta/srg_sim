@@ -1258,6 +1258,9 @@
               },
               {
                 "$ref": "#/$defs/RevealThen"
+              },
+              {
+                "$ref": "#/$defs/FinishRequires"
               }
             ]
           },
@@ -2157,6 +2160,9 @@
               },
               {
                 "$ref": "#/$defs/RevealThen"
+              },
+              {
+                "$ref": "#/$defs/FinishRequires"
               }
             ]
           },
@@ -3476,6 +3482,9 @@
         },
         {
           "$ref": "#/$defs/RevealThen"
+        },
+        {
+          "$ref": "#/$defs/FinishRequires"
         }
       ]
     },
@@ -5104,6 +5113,9 @@
               },
               {
                 "$ref": "#/$defs/AlsoAtkType"
+              },
+              {
+                "$ref": "#/$defs/FinishRequires"
               }
             ]
           },
@@ -5991,11 +6003,39 @@
         "who"
       ],
       "type": "object"
+    },
+    "RequireKind": {
+      "enum": [
+        "CARDS",
+        "LEADS",
+        "FOLLOW_UPS"
+      ],
+      "type": "string"
+    },
+    "FinishRequires": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FinishRequires"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/RequireKind"
+        }
+      },
+      "required": [
+        "@type",
+        "count",
+        "kind"
+      ],
+      "type": "object"
     }
   },
   "$id": "https://srg-sim/schemas/v1/effect_ir",
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 124
+  "version": 125
 }
