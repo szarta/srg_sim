@@ -1782,14 +1782,16 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
     // discard pile (with the self_card referent bound) may be emitted; the rest decline
     // and stay Unsupported rather than become silently-inert IR. Wired so far (task #115):
     // OnRoll (slice 1, run_on_roll), OnHit (slice 2a, run_hit_gimmicks_inner), OnStop
-    // (slice 2b, run_on_stop_gimmicks), OnBreakout (slice 2b, on_broken_out). Passive
-    // bodies and OnBreakoutRoll/OnFlip remain gated out until their readers land.
+    // (slice 2b, run_on_stop_gimmicks), OnBreakout (slice 2b, on_broken_out),
+    // OnBreakoutRoll (run_on_breakout_roll — the reactive breakout re-roll, My Most
+    // Powerful Spell). Passive bodies and OnFlip remain gated out until their readers land.
     if !matches!(
         effect.trigger,
         Trigger::OnRoll { .. }
             | Trigger::OnHit { .. }
             | Trigger::OnStop { .. }
             | Trigger::OnBreakout { .. }
+            | Trigger::OnBreakoutRoll { .. }
             | Trigger::OnReroll { .. }
             | Trigger::OnDraw { .. }
     ) {
@@ -2441,6 +2443,9 @@ fn stop_condition(text: &str) -> Option<Condition> {
     static ROLL_SK: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(&format!(r"^you rolled {SK} for your turn roll$")).unwrap());
 
+    static IN_DISCARD_NAME: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"^"([^"]+)" is in your discard pile$"#).unwrap());
+
     let t = text.trim();
     if let Some(c) = CROWD.captures(t) {
         let cmp = if &c[2] == "greater" {
@@ -2451,6 +2456,16 @@ fn stop_condition(text: &str) -> Option<Condition> {
         return Some(Condition::CrowdMeterCompare {
             cmp,
             value: c[1].parse().ok()?,
+        });
+    }
+    // "\"X\" is in your discard pile" — a name-in-discard gate (a 4-card family: School
+    // Boy Legend, Salt the Wound, Walk the Line, Spell 656). Combines under the compound
+    // splitter for Spell 656's "the Crowd Meter is 2 or greater and \"School Boy\" is in
+    // your discard pile".
+    if let Some(c) = IN_DISCARD_NAME.captures(t) {
+        return Some(Condition::HasInDiscard {
+            who: Who::SelfSide,
+            filter: cf_name(vec![c[1].to_owned()]),
         });
     }
     if let Some(c) = SKILL_GT.captures(t) {
@@ -4477,6 +4492,25 @@ fn build_flip_crowd_reroll_rules() -> Vec<(Regex, Builder)> {
             e.optional = c.get(1).is_some();
             Some(e)
         }),
+        // "[You may] bury this card to re-roll your Breakout roll" (My Most Powerful
+        // Spell, via WHILE_IN_DISCARD). The "bury this card" cost (a self-recycle out of
+        // the discard) is a documented simplification — DROPPED — so the effect can
+        // re-offer while the card sits in the discard; the optional breakout re-roll is
+        // the faithful core. Placed before the plain re-roll rule (anchored, so no
+        // ordering hazard) and the costed-re-roll rule (which rejects "bury this card").
+        rule(
+            r"(?:(You may) )?[Bb]ury this card to re-?roll your [Bb]reakout [Rr]oll",
+            |c| {
+                let mut e = eff(
+                    Trigger::OnPlay,
+                    vec![reroll_breakout(Who::SelfSide)],
+                    Condition::Always,
+                    Duration::Instant,
+                );
+                e.optional = c.get(1).is_some();
+                Some(e)
+            },
+        ),
         // Breakout-roll re-roll (schema v102). Self ("re-roll your Breakout roll") and
         // force-opponent ("force/make your opponent re-roll their Breakout roll") both
         // re-roll the defender's die; who distinguishes which side owns the "you may".
@@ -6997,6 +7031,35 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                         attempts,
                     },
                     &c[3],
+                )
+            },
+        ),
+        // Self-side ordinal breakout-roll trigger with a VALUE gate (My Most Powerful
+        // Spell, via WHILE_IN_DISCARD): "When your Nth Breakout roll is X [or Y], <body>"
+        // -> OnBreakoutRoll{SELF, attempts:[N]} gated on the roll VALUE (an `Or` of
+        // `RollValue`s read from the breakout RollContext). Pairs with the "bury this card
+        // to re-roll your Breakout roll" body.
+        rule(
+            r"When your (\d+)(?:st|nd|rd|th) [Bb]reakout roll is (\d+)(?: or (\d+))?, (.+)",
+            |c| {
+                let val = |v: i64| Condition::RollValue {
+                    cmp: Comparator::Eq,
+                    value: v,
+                    who: Who::SelfSide,
+                };
+                let cond = match c.get(3) {
+                    Some(m) => Condition::Or {
+                        items: vec![val(num(c, 2)), val(m.as_str().parse().unwrap())],
+                    },
+                    None => val(num(c, 2)),
+                };
+                trigger_body_cond(
+                    Trigger::OnBreakoutRoll {
+                        who: Who::SelfSide,
+                        attempts: vec![num(c, 1)],
+                    },
+                    cond,
+                    &c[4],
                 )
             },
         ),

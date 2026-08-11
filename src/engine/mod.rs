@@ -445,6 +445,13 @@ pub struct Engine {
     /// call (El Super Hombre V3's "or your roll is +1" choice branch). Reset before each
     /// effect's actions run and read back into the roll value. Transient, never serialized.
     pending_roll_boost: i64,
+    /// Set when a `Reroll{breakout, when:This}` action is applied — the POST-roll reactive
+    /// breakout re-roll ("When your Nth Breakout roll is 5 or 6, you may re-roll", My Most
+    /// Powerful Spell). The `breakout` loop clears it before firing `OnBreakoutRoll`
+    /// effects and re-rolls the current attempt if it comes back set. Distinct from the
+    /// PRE-roll `offer_breakout_reroll` (standing, unconditional). Transient, never
+    /// serialized.
+    pending_breakout_reroll: bool,
     decider: Box<dyn Decider>,
     /// Monotonic counter of decisions offered, for `request_id`/`seq`.
     decision_index: u64,
@@ -528,6 +535,7 @@ impl Engine {
             firing_source: EffectSource::Card,
             firing_card_name: None,
             pending_roll_boost: 0,
+            pending_breakout_reroll: false,
             decider,
             decision_index: 0,
             frames: Vec::new(),
@@ -1494,9 +1502,12 @@ impl Engine {
                 *who,
                 key,
             ),
-            // A `Next` re-roll grants a one-shot for the owner's next turn roll; a
-            // `This` re-roll is structural (read in the roll-off), a no-op here.
-            Action::Reroll { when, .. } => {
+            // A `Next` re-roll grants a one-shot for the owner's next turn roll. A `This`
+            // turn/finish re-roll is structural (read in the roll-off / finish sequence),
+            // a no-op here. A `This` BREAKOUT re-roll IS applied here — the post-roll
+            // reactive path (`run_on_breakout_roll` fires the effect, whose `Reroll`
+            // action lands here): flag the breakout loop to re-roll the current attempt.
+            Action::Reroll { when, breakout, .. } => {
                 if *when == RollWhen::Next {
                     self.state
                         .players
@@ -1504,6 +1515,8 @@ impl Engine {
                         .unwrap()
                         .reroll_grants
                         .next_turn += 1;
+                } else if *breakout {
+                    self.pending_breakout_reroll = true;
                 }
             }
             // The parser's sentinel for a clause it could not map: log its actual
@@ -5587,24 +5600,42 @@ impl Engine {
                 rr += 1;
                 skill = self.state.rng.roll();
             }
-            let val = self.stat(defender, skill);
+            let mut val = self.stat(defender, skill);
             // A `BreakoutModifier{delta}` raises the roll by `delta`; passing it as a
             // NEGATIVE `penalty` keeps the raw-10-always-breaks rule on the unboosted
             // value (a boosted 8->10 is not a "raw 10"). No modifier -> penalty 0 ->
             // byte-identical to before (the frozen corpus has none).
-            let penalty = -self.breakout_bonus(defender, i as i64 + 1, skill);
-            let success = crate::finish::stat_breaks_out(val, finish_value, penalty, cm);
+            let mut penalty = -self.breakout_bonus(defender, i as i64 + 1, skill);
+            let mut success = crate::finish::stat_breaks_out(val, finish_value, penalty, cm);
+            // Fire this roll's `OnBreakoutRoll` effects — "if your opponent rolls X, you
+            // lose" (keys off the value, may end the match) AND the POST-roll reactive
+            // re-roll "when your Nth Breakout roll is 5 or 6, you may re-roll" (My Most
+            // Powerful Spell): the fired effect's `Reroll{breakout}` sets
+            // `pending_breakout_reroll`, so on a failure we re-roll this attempt and
+            // re-evaluate (shared re-roll budget). No-op for the frozen corpus (no such
+            // card sets the flag), so it runs once and stays byte-identical.
+            loop {
+                self.pending_breakout_reroll = false;
+                self.run_on_breakout_roll(defender, skill, val, i as i64 + 1)?;
+                if self.ended() {
+                    break;
+                }
+                if self.pending_breakout_reroll && !success && rr < BREAKOUT_REROLL_CAP {
+                    rr += 1;
+                    skill = self.state.rng.roll();
+                    val = self.stat(defender, skill);
+                    penalty = -self.breakout_bonus(defender, i as i64 + 1, skill);
+                    success = crate::finish::stat_breaks_out(val, finish_value, penalty, cm);
+                    continue;
+                }
+                break;
+            }
             rolls.push(BreakoutRoll {
                 skill: skill.name().to_owned(),
                 value: val,
                 penalty,
                 success,
             });
-            // "If your opponent rolls X for their Breakout roll, you lose" — an
-            // OnBreakoutRoll effect on the finisher's side keys off this roll's value.
-            // A no-op for decks without one (the frozen corpus has none), so byte-
-            // identical there. A caused loss ends the match immediately.
-            self.run_on_breakout_roll(defender, skill, val, i as i64 + 1)?;
             if self.ended() {
                 break;
             }

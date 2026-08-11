@@ -609,6 +609,51 @@ mod breakout_modifier_tests {
     }
 
     #[test]
+    fn reactive_breakout_reroll_rerolls_the_current_attempt() {
+        // My Most Powerful Spell: "When your Nth Breakout roll is 5 or 6, you may re-roll
+        // your Breakout roll." A POST-roll reactive re-roll — distinct from the standing
+        // pre-roll `offer_breakout_reroll`. Setup makes it deterministic: A's stats are
+        // all 5, so EVERY breakout roll has value 5 (fails vs finish 8) and the
+        // `RollValue{5}` gate always holds post-roll. The gate is `None`-false so the
+        // pre-roll offer skips it; only `run_on_breakout_roll` fires it. A paired
+        // CrowdMeter+1 counts fires: 3 attempts × (1 initial + 3 re-rolls) = 12.
+        let mut engine = engine();
+        let stats = &mut engine.state.players.get_mut("A").unwrap().competitor.stats;
+        *stats = Skills {
+            power: 5,
+            agility: 5,
+            technique: 5,
+            submission: 5,
+            grapple: 5,
+            strike: 5,
+        };
+        push_gimmick(
+            &mut engine,
+            "A",
+            json!({
+                "@type": "Effect",
+                "trigger": {"@type": "OnBreakoutRoll", "who": "SELF"},
+                "condition": {"@type": "RollValue", "cmp": "=", "value": 5},
+                "actions": [
+                    {"@type": "CrowdMeter", "delta": 1},
+                    {"@type": "Reroll", "who": "SELF", "once": false, "breakout": true}
+                ],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "reactive breakout reroll", "source": "gimmick", "optional": false
+            }),
+        );
+        assert!(
+            !engine.breakout("A", 8).unwrap(),
+            "value 5 < 8 never breaks out even with re-rolls"
+        );
+        assert_eq!(
+            engine.state.crowd_meter, 12,
+            "3 attempts × (1 initial + 3 re-rolls) = 12 fires of the reactive re-roll"
+        );
+    }
+
+    #[test]
     fn bury_this_card_moves_the_stopped_card_to_deck_bottom() {
         // "bury this card" (task #94): the stopped card leaves the discard for the
         // bottom of its owner's deck.

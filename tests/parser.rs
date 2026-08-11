@@ -2441,6 +2441,51 @@ fn papa_riders_grammar() {
     assert_eq!(e["actions"][0]["random"], true);
 }
 
+/// The Witch's Apprentice (task #130): the compound-gated Unstoppable and the
+/// WhileInDiscard reactive breakout re-roll. No schema bump (existing nodes).
+#[test]
+fn witch_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // #28 Spell 656: Unstoppable gated on a compound "CM >= 2 AND 'School Boy' in
+    // discard" (the name-in-discard gate is a new HasInDiscard branch; the compound
+    // splitter combines it under And).
+    let e = one("When the Crowd Meter is 2 or greater and \"School Boy\" is in your discard pile, this card cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["condition"]["@type"], "And");
+    let items = e["condition"]["items"].as_array().unwrap();
+    let kinds: Vec<&str> = items.iter().map(|i| i["@type"].as_str().unwrap()).collect();
+    assert!(kinds.contains(&"CrowdMeterCompare"));
+    assert!(kinds.contains(&"HasInDiscard"));
+    let disc = items.iter().find(|i| i["@type"] == "HasInDiscard").unwrap();
+    assert_eq!(disc["filter"]["name_contains"][0], "School Boy");
+
+    // The name-in-discard gate also stands alone (Salt the Wound / Walk the Line route
+    // it through the "double these bonuses" rule).
+    let e = one("If \"Strip the Flesh\" is in your discard pile, double these bonuses.");
+    assert_eq!(e["actions"][0]["@type"], "DoubleFinishIf");
+    assert_eq!(e["actions"][0]["condition"]["@type"], "HasInDiscard");
+
+    // #29 My Most Powerful Spell: WhileInDiscard OnBreakoutRoll(3rd) gated on the roll
+    // VALUE (5 or 6) -> optional breakout re-roll (the "bury this card" cost is dropped).
+    let e = one("When this card is in your discard pile and your 3rd Breakout roll is 5 or 6, you may bury this card to re-roll your Breakout roll.");
+    assert_eq!(e["trigger"]["@type"], "OnBreakoutRoll");
+    assert_eq!(e["trigger"]["who"], "SELF");
+    assert_eq!(e["trigger"]["attempts"][0], 3);
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["condition"]["@type"], "Or");
+    assert_eq!(e["condition"]["items"][0]["value"], 5);
+    assert_eq!(e["condition"]["items"][1]["value"], 6);
+    assert_eq!(e["actions"][0]["@type"], "Reroll");
+    assert_eq!(e["actions"][0]["breakout"], true);
+    assert_eq!(e["actions"][0]["who"], "SELF");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.
