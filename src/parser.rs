@@ -129,6 +129,20 @@ fn on_flip_standing(count: Option<i64>, at_least: bool) -> Trigger {
     }
 }
 
+/// "When/If this card is flipped, <body>" — the per-card flip self-trigger
+/// (`on_self: true`), dispatched by `run_self_flips` for each just-flipped card. The
+/// self-action family ([`flip_self`]) carries a bespoke action; this bare trigger pairs
+/// with an arbitrary grammar body (draw / opponent bury / discard-pile shuffle) via
+/// [`trigger_body`].
+fn on_flip_self() -> Trigger {
+    Trigger::OnFlip {
+        who: Who::SelfSide,
+        count: None,
+        at_least: false,
+        on_self: true,
+    }
+}
+
 /// The DQ-CAUSE trigger: "if [this card is] stopped" (the stopped card's own
 /// side), shared by the whole family (task #94).
 fn on_your_stop() -> Trigger {
@@ -4479,7 +4493,7 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
         // referent. "you may" -> Effect::optional. (Comma optional; "flipped you may"
         // appears both with and without it.)
         rule(
-            r"If this card is flipped,?(?: (you may))? add it to your hand",
+            r"(?:If|When) this card is flipped,?(?: (you may))? add it to your hand",
             |c| {
                 Some(flip_self(
                     Action::AddSelfToHand,
@@ -4491,7 +4505,7 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
         // "shuffle it [back] into your deck" / "shuffle it from your discard pile back
         // into your deck" (mandatory) / the "shuffleit" typo. -> ShuffleSelfIntoDeck.
         rule(
-            r"If this card is flipped,?(?: (you may))? shuffle ?it(?: from your discard pile)?(?: back)? into your deck",
+            r"(?:If|When) this card is flipped,?(?: (you may))? shuffle ?it(?: from your discard pile)?(?: back)? into your deck",
             |c| {
                 Some(flip_self(
                     Action::ShuffleSelfIntoDeck,
@@ -4503,7 +4517,7 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
         // "you may play it[ as an additional card this turn]" -> PlaySelf (the play is
         // itself the bonus action, so "as an additional card" folds in).
         rule(
-            r"If this card is flipped,?(?: (you may))? play it(?: as an additional card this turn)?",
+            r"(?:If|When) this card is flipped,?(?: (you may))? play it(?: as an additional card this turn)?",
             |c| {
                 Some(flip_self(
                     Action::PlaySelf,
@@ -4794,6 +4808,17 @@ fn build_bury_discard_rules() -> Vec<(Regex, Builder)> {
                 Condition::Always,
                 Duration::Instant,
             ))
+        }),
+        // Generic per-card flip self-trigger with an arbitrary body: "When/If this card
+        // is flipped, <body>" -> the body re-parsed through the whole grammar (draw /
+        // opponent bury / discard-pile shuffle / …) with a per-card `OnFlip{on_self}`
+        // attached, dispatched by `run_self_flips` with the flipped card as referent.
+        // Placed LAST — after the specific self-action rules ([`flip_self`] add / shuffle
+        // / play, in `flip_trigger`) and the provenance rules ("flipped by \"X\"" /
+        // "flipped for your Gimmick", above), so those claim their clauses first; this
+        // catches the rest. A body with no grammar declines -> Unsupported.
+        rule(r"(?:When|If) this card is flipped,? (.+)", |c| {
+            trigger_body(on_flip_self(), &c[1])
         }),
     ]
 }

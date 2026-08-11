@@ -1259,6 +1259,49 @@ fn flip_provenance_grammar() {
     assert_eq!(e["actions"][0]["when"], "NEXT");
 }
 
+/// General per-card flip self-trigger with an arbitrary body (task #119): "When/If
+/// this card is flipped, <body>" -> the body re-parsed through the whole grammar with
+/// a per-card OnFlip{SELF, on_self} attached. The self-action rules (add/shuffle/play)
+/// still win first; this catches draw / opponent-bury / removal bodies.
+#[test]
+fn flip_self_body_split_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // "When" phrasing, plain draw body.
+    let e = one("When this card is flipped, draw 1 card.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["trigger"]["who"], "SELF");
+    assert_eq!(e["trigger"]["on_self"], true);
+    assert_eq!(e["trigger"]["count"], Value::Null);
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["n"], 1);
+
+    // Opponent-directed body: the trigger fires on YOUR flip, the body hits the OPP.
+    let e = one("When this card is flipped, your opponent buries 1 card in their hand.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["trigger"]["on_self"], true);
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+
+    // "If" phrasing routes here too (removal body), after the self-action rules decline.
+    let e = one("If this card is flipped, choose 1 card your opponent has in play and discard it.");
+    assert_eq!(e["trigger"]["@type"], "OnFlip");
+    assert_eq!(e["actions"][0]["@type"], "RemoveFromPlay");
+
+    // The specific self-action rules still claim their bodies (not the generic split):
+    // "add it to your hand" is AddSelfToHand, not a grammar Draw/Bury.
+    let e = one("When this card is flipped, add it to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
+
+    // A body with no grammar declines -> Unsupported (no silent drop).
+    let e = one("When this card is flipped, do a somersault.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Gated reveal+flip grammar (task #119): "If you have another <order> in play, look
 /// at the top N cards of your deck; put M in your hand, and flip the others" -> the
 /// scry_flip Scry gated on HasInPlay{<order>}.

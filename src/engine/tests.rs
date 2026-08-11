@@ -4852,6 +4852,33 @@ mod cardona_mechanism_tests {
         );
     }
 
+    #[test]
+    fn self_flip_runs_an_arbitrary_body_when_flipped() {
+        // "When this card is flipped, draw 1 card." — the self-trigger carries a plain
+        // grammar body (not a self-action); run_self_flips fires it like any effect.
+        let mut e = engine();
+        let draw = json!({"@type":"Draw","n":1,"source":"TOP","who":"SELF","per":null,
+            "per_who":"SELF","cap":null,"per_excludes_trigger":false});
+        e.state.players.get_mut("A").unwrap().deck = vec![
+            flip_self_card_with("body", draw),
+            card("d0", "Lead"),
+            card("d1", "Lead"),
+        ];
+        let h0 = e.state.players["A"].hand.len();
+        // Flip 1: mills the carrier to the discard, then its OnFlip draws the next card.
+        e.act_flip(1, Who::SelfSide, "A").unwrap();
+        let p = &e.state.players["A"];
+        assert_eq!(p.hand.len(), h0 + 1, "the flip body drew a card");
+        assert!(
+            p.hand.iter().any(|c| c.db_uuid == "d0"),
+            "the drawn card is the one below the milled carrier"
+        );
+        assert!(
+            p.discard.iter().any(|c| c.db_uuid == "body"),
+            "the carrier itself stayed milled (the body draws, it doesn't self-recur)"
+        );
+    }
+
     /// A flip self-trigger carrying a condition (e.g. `FlippedForGimmick`).
     fn flip_self_card_gated(uuid: &str, condition: Value) -> Card {
         serde_json::from_value(json!({"atk_type":"Strike","db_uuid":uuid,"name":uuid,
