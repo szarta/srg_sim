@@ -843,6 +843,7 @@ fn bury(count: i64, who: Who) -> Action {
         source: BuryFrom::Discard,
         per: None,
         per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
         all: false,
     }
 }
@@ -860,14 +861,24 @@ fn bury_choose(count: i64, selector: CardFilter) -> Action {
         source: BuryFrom::Discard,
         per: None,
         per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
         all: false,
     }
 }
 
-/// "Bury `count` per `per`-matching card you have in play" (schema v83). `random` is
-/// forced on for a HAND source (the hand owner sheds without choosing). The per-count
-/// always ranges over the SELF board ("… for each `<X>` you have in play").
-fn bury_per(count: i64, who: Who, source: BuryFrom, per: CardFilter, random: bool) -> Action {
+/// "Bury `count` per `per`-matching card in `per_zone`" (schema v83; `per_zone` v130).
+/// `random` is forced on for a HAND source (the hand owner sheds without choosing). The
+/// per-count ranges over the SELF side — cards in play ("… for each `<X>` you have in
+/// play", Cardona) or flipped this turn ("… for each Strike flipped", Five Star Heart
+/// Punch).
+fn bury_per(
+    count: i64,
+    who: Who,
+    source: BuryFrom,
+    per: CardFilter,
+    per_zone: CountZone,
+    random: bool,
+) -> Action {
     Action::Bury {
         choose: false,
         selector: CardFilter::default(),
@@ -877,6 +888,7 @@ fn bury_per(count: i64, who: Who, source: BuryFrom, per: CardFilter, random: boo
         source,
         per: Some(per),
         per_who: Who::SelfSide,
+        per_zone,
         all: false,
     }
 }
@@ -894,7 +906,7 @@ fn per_bury(
     let per = in_play_filter(pre, names)?;
     Some(eff(
         Trigger::OnPlay,
-        vec![bury_per(count, who, source, per, random)],
+        vec![bury_per(count, who, source, per, CountZone::InPlay, random)],
         Condition::Always,
         Duration::Instant,
     ))
@@ -913,6 +925,7 @@ fn bury_hand(count: i64, who: Who, random: bool, choose: bool) -> Action {
         source: BuryFrom::Hand,
         per: None,
         per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
         all: false,
     }
 }
@@ -930,6 +943,7 @@ fn bury_all_hand(selector: CardFilter, who: Who) -> Action {
         source: BuryFrom::Hand,
         per: None,
         per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
         all: true,
     }
 }
@@ -963,6 +977,7 @@ fn bury_whole_discard(who: Who) -> Action {
         source: BuryFrom::Discard,
         per: None,
         per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
         all: false,
     }
 }
@@ -1765,6 +1780,38 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
     Some(effect)
 }
 
+/// Parse a turn-roll-VALUE gate — "your turn roll is N" / "your opponent's turn roll is
+/// N", with an optional "or greater" (`Ge`), "or less" (`Le`), or a second value "or M"
+/// (an `Or` of two `Eq`s — Shade's "9 or 10"). The opponent form ("your opponent's turn
+/// roll is N") is the head of a 12-clause family keyed by Scott Prime's The Loaded Glove;
+/// the opp's value is derived from the actor's roll context (`value + gap`) at evaluation
+/// time. Returns `None` for any other shape. schema v130.
+fn turn_roll_value_gate(t: &str) -> Option<Condition> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^your (opponent's )?turn roll is (\d+)(?: or (greater|less|(\d+)))?$")
+            .unwrap()
+    });
+    let c = RE.captures(t)?;
+    let who = if c.get(1).is_some() {
+        Who::Opp
+    } else {
+        Who::SelfSide
+    };
+    let n: i64 = c[2].parse().ok()?;
+    let val = |cmp, value| Condition::RollValue { cmp, value, who };
+    match c.get(3).map(|m| m.as_str()) {
+        None => Some(val(Comparator::Eq, n)),
+        Some("greater") => Some(val(Comparator::Ge, n)),
+        Some("less") => Some(val(Comparator::Le, n)),
+        Some(_) => {
+            let m: i64 = c[4].parse().ok()?;
+            Some(Condition::Or {
+                items: vec![val(Comparator::Eq, n), val(Comparator::Eq, m)],
+            })
+        }
+    }
+}
+
 /// Parse a common conditional-gate phrase — the "`<gate>`" in "If `<gate>`, double these
 /// bonuses" and kin — into a [`Condition`] the engine already evaluates. Covers turn-roll
 /// (skill / value / same-as-opponent), the re-roll / bump / ended-turn flags, the no-DQ
@@ -1870,6 +1917,7 @@ fn gate_condition(text: &str) -> Option<Condition> {
         return Some(Condition::RollValue {
             cmp: Comparator::Eq,
             value: c[1].parse().ok()?,
+            who: Who::SelfSide,
         });
     }
     match t.to_lowercase().as_str() {
@@ -2508,6 +2556,7 @@ fn stop_condition(text: &str) -> Option<Condition> {
         return Some(Condition::RollValue {
             cmp: Comparator::Eq,
             value: c[1].parse().ok()?,
+            who: Who::SelfSide,
         });
     }
     if let Some(c) = ROLL_SK.captures(t) {
@@ -4270,6 +4319,7 @@ fn build_dq_loss_rules() -> Vec<(Regex, Builder)> {
                     Condition::RollValue {
                         cmp: Comparator::Eq,
                         value: num(c, 1),
+                        who: Who::SelfSide,
                     },
                     Duration::Instant,
                 ))
@@ -5619,16 +5669,21 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
             },
         ),
         // "[If/When <cond>,] this card cannot be stopped [by <order>]": an optionally
-        // condition-gated Unstoppable. The guard is parsed by `gate_condition` (the
-        // superset gate parser — Crowd Meter, skill/hand compare, opp-roll, in-play,
-        // hit-history, …); a bare clause (no gate) is unconditional. The engine evaluates
+        // condition-gated Unstoppable. The guard is parsed by `turn_roll_value_gate`
+        // ("[your opponent's] turn roll is N" — Scott Prime's The Loaded Glove; kept out
+        // of the general `gate_condition` so its body-triggered generic-gate rule can't
+        // mis-model the "When you roll <S>, <body>" event family) falling back to the
+        // superset `gate_condition` (Crowd Meter, skill/hand compare, opp-roll, in-play,
+        // hit-history, …). A bare clause (no gate) is unconditional; the engine evaluates
         // the guard from the card owner's side at stop time.
         rule(
             r"(?:(?:If|When) (.+?),? )?[Tt]his card cannot be stopped(?: by (Follow[ -]?Ups?|Leads?|Finish(?:es)?))?",
             |c| {
                 let by_order = c.get(2).map(|m| stopper_order(m.as_str()));
                 let condition = match c.get(1) {
-                    Some(m) => gate_condition(m.as_str())?,
+                    Some(m) => {
+                        turn_roll_value_gate(m.as_str()).or_else(|| gate_condition(m.as_str()))?
+                    }
                     None => Condition::Always,
                 };
                 Some(eff(
@@ -6489,6 +6544,46 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // Opponent hand bury scaled by the turn's flips: "Your opponent buries N cards in
+        // their hand for each Strike flipped" (Scott Prime's Five Star Heart Punch). The
+        // per-count ranges over the finisher's own `flipped_this_turn`, which its "Flip N
+        // cards" clause populates in the OnHit phase — so this fires OnHit too (later in
+        // the card's effect list than the Flip, hence after it) and reads a full pool
+        // rather than the empty pre-flip OnPlay one.
+        rule(
+            r"Your opponent buries (\d+) cards? in their hand for each (.+?) flipped",
+            |c| {
+                let per = flipped_filter(&c[2])?;
+                Some(eff(
+                    on_hit(),
+                    vec![bury_per(
+                        num(c, 1),
+                        Who::Opp,
+                        BuryFrom::Hand,
+                        per,
+                        CountZone::FlippedThisTurn,
+                        true,
+                    )],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "Your opponent [randomly] buries their hand" — bury the OPPONENT's WHOLE hand
+        // (Scott Prime's The Loaded Glove, gated "If you roll Power, …" by the generic
+        // gate rule; a 6-clause family). `all` buries every card, so the "randomly"
+        // variant is identical (count == hand size either way).
+        rule(
+            r"Your opponent (?:randomly )?buries their (?:entire )?hand",
+            |_| {
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![bury_all_hand(CardFilter::default(), Who::Opp)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Base-roll-gated Finish bonus: "If your Finish roll is N or less/greater,
         // it is +M". The N-or-less/greater reads the BASE roll (skill stat pre-bonus);
         // +M is a SIGNED additive bonus (a bare "M" is a SET, left Unsupported).
@@ -6912,6 +7007,25 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                 )
             },
         ),
+        // Present-tense "If you roll <S>[ or <S>], <body>" — a finish-rider roll gate
+        // (Scott Prime's The Loaded Glove: "If you roll Power, your opponent buries their
+        // hand"; Malleus Maleficarum: "If you roll Power or Strike, …"). Scoped to the
+        // literal "If you roll" prefix so it never shadows the "When you roll <S>, …"
+        // OnRoll event family; resolved against the play-time turn-roll context. A
+        // two-skill list becomes an `Or`.
+        rule(&format!(r"If you roll {SK}(?: or {SK})?, (.+)"), |c| {
+            let was = |s: &str| Condition::RollWasSkill {
+                skill: skill(s),
+                who: Who::SelfSide,
+            };
+            let gate = match c.get(2) {
+                Some(m) => Condition::Or {
+                    items: vec![was(&c[1]), was(m.as_str())],
+                },
+                None => was(&c[1]),
+            };
+            gate_body(gate, &c[3])
+        }),
         // "If you have a card with 'X' in the name in play, <body>" -> HasInPlay{SELF}
         // name-substring gate.
         rule(

@@ -184,7 +184,7 @@ RollWasSkill(skill, who?) / RollGapExactly(k) / RollGapAtLeast(k)   # gap = opp 
                              # RollWasSkill who: SELF (default) reads the owner's rolled skill, OPP the other side's
                              # (roll ctx opp_skill); under And/Or = "both/either players rolled X for turn roll". schema v75
 RollLeadAtLeast(k)           # self rolled >= k HIGHER than opp (gap <= -k) — mirror of RollGapAtLeast (YamatoHama). schema v2.
-RollValue(cmp, value)        # the actual number rolled this turn, read via the trigger's `who` (Mrs. Apocalypse, Numer01)
+RollValue(cmp, value, who=SELF)  # the turn-roll VALUE (die+stat+mods) `who` rolled: SELF (the trigger's roller) or OPP — "your opponent's turn roll is N" (Scott Prime's The Loaded Glove); the opp value is derived from the actor's roll ctx as value+gap. schema v130
 PrintedRollValue(who, value) # the rolled skill's PRINTED (base, unbuffed) stat on the who-side's competitor == value
                              # ("rolls their printed 8 skill" — Collin); needs a roll ctx, who follows the trigger. schema v17
 SameRolledSkill              # you and your target rolled the SAME skill this turn-roll (Hex, Nic Nemeth):
@@ -221,9 +221,11 @@ Always
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
 Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF, cap?, per_excludes_trigger=False, from_crowd=False)  # from_crowd -> count = Crowd Meter + n (n is the signed offset), clamped to cap, floored at 0 — "draw cards equal to the Crowd Meter +1 (Max +5)"; mutually exclusive with per (schema v108)
-Bury(selector, count, per?, per_who=SELF, all=False)   Discard(selector, count, who, per?, per_who=SELF, all=False)
+Bury(selector, count, per?, per_who=SELF, per_zone=IN_PLAY, all=False)   Discard(selector, count, who, per?, per_who=SELF, all=False)
                               # Bury/Discard `all` (schema v90): shed EVERY hand card matching `selector`, ignoring
-                              # count/per ("they bury/discard all Strike cards"); dispatch derives count from hand size
+                              # count/per ("they bury/discard all Strike cards"); dispatch derives count from hand size.
+                              # Bury per_zone (schema v130): the zone `per` counts — IN_PLAY (Cardona) or FLIPPED_THIS_TURN
+                              # ("opp buries 1 per Strike flipped", Scott's Five Star Heart Punch; fires OnHit, after the Flip)
 Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filter, dest=HAND|DISCARD|DECK_TOP, count=1, source=DECK|DECK_OR_DISCARD)  ShuffleIntoDeck(selector, source=DISCARD|IN_PLAY|HAND, all=False, then_draw=False, then_bury=False)  # then_bury: bury `count` (the shuffled number) from hand ("… then bury the same number from your hand", Double Leg Death Lock); HAND source shuffles from hand ("… any number from your hand …, then draw the same number", The Dudebuster). schema v129
                               # until (schema v68): flip-until — ignore n, mill one card at a time until a flipped card
                               # matches `until`; that card -> hand if until_to_hand, else discard ("Flip cards until you flip a Submission[, add it to your hand]")

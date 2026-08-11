@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 129;
+pub const SCHEMA_VERSION: i64 = 130;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -887,6 +887,13 @@ pub enum Condition {
     RollValue {
         cmp: Comparator,
         value: i64,
+        /// Whose turn-roll VALUE (die + stat + mods) to compare. `SelfSide` (the
+        /// default) = "you rolled N for your turn roll"; `Opp` = "your opponent's turn
+        /// roll is N" (Scott Prime's The Loaded Glove — a 12-clause family of
+        /// opp-turn-roll-value gates). The opponent's value is read from the actor's
+        /// [`RollContext`] as `value + gap` (`gap` = opp − self). schema v130
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
     },
     /// The rolled skill's **printed** (base, unbuffed) stat on the `who`-side's
     /// competitor equals `value` — "when your opponent rolls their printed 8 skill"
@@ -1056,6 +1063,13 @@ pub enum Action {
         per: Option<CardFilter>,
         #[serde(default)]
         per_who: Who,
+        /// Which zone the `per` filter counts (like [`Action::FinishRollBonus::per_zone`]).
+        /// `InPlay` (default) = "for each `<X>` you have in play" (Cardona); `FlippedThisTurn`
+        /// = "your opponent buries 1 card in their hand for each Strike flipped" (Scott
+        /// Prime's Five Star Heart Punch — count the finisher's flips, not the board).
+        /// schema v130
+        #[serde(default, skip_serializing_if = "is_in_play_zone")]
+        per_zone: CountZone,
         /// Bury EVERY card matching `selector` in the target's hand, ignoring `count`
         /// (and `per`) — "Look at your opponent's hand, they bury all Strike cards"
         /// (a 12-clause family). `BuryFrom::Hand` only; the dispatch sets the effective
@@ -2380,6 +2394,13 @@ pub enum IrNode {
     RollValue {
         cmp: Comparator,
         value: i64,
+        /// Whose turn-roll VALUE (die + stat + mods) to compare. `SelfSide` (the
+        /// default) = "you rolled N for your turn roll"; `Opp` = "your opponent's turn
+        /// roll is N" (Scott Prime's The Loaded Glove — a 12-clause family of
+        /// opp-turn-roll-value gates). The opponent's value is read from the actor's
+        /// [`RollContext`] as `value + gap` (`gap` = opp − self). schema v130
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
     },
     /// The rolled skill's **printed** (base, unbuffed) stat on the `who`-side's
     /// competitor equals `value` — "when your opponent rolls their printed 8 skill"
@@ -2500,6 +2521,13 @@ pub enum IrNode {
         per: Option<CardFilter>,
         #[serde(default)]
         per_who: Who,
+        /// Which zone the `per` filter counts (like [`Action::FinishRollBonus::per_zone`]).
+        /// `InPlay` (default) = "for each `<X>` you have in play" (Cardona); `FlippedThisTurn`
+        /// = "your opponent buries 1 card in their hand for each Strike flipped" (Scott
+        /// Prime's Five Star Heart Punch — count the finisher's flips, not the board).
+        /// schema v130
+        #[serde(default, skip_serializing_if = "is_in_play_zone")]
+        per_zone: CountZone,
         /// Bury EVERY card matching `selector` in the target's hand, ignoring `count`
         /// (and `per`) — "Look at your opponent's hand, they bury all Strike cards"
         /// (a 12-clause family). `BuryFrom::Hand` only; the dispatch sets the effective

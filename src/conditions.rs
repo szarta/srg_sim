@@ -359,9 +359,19 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
         Condition::RollGapAtLeast { k } => roll.is_some_and(|r| r.gap.is_some_and(|g| g >= *k)),
         // A lead of k = the owner rolled k higher = gap (opp - owner) <= -k.
         Condition::RollLeadAtLeast { k } => roll.is_some_and(|r| r.gap.is_some_and(|g| g <= -*k)),
-        Condition::RollValue { cmp, value } => {
-            roll.is_some_and(|r| r.value.is_some_and(|v| cmp_apply(*cmp, v, *value)))
-        }
+        Condition::RollValue { cmp, value, who } => roll.is_some_and(|r| {
+            // The opponent's turn-roll value isn't stored on the actor's context, but
+            // `gap` = opp − self, so opp_value = value + gap ("your opponent's turn roll
+            // is N", evaluated from the actor's side at stop time).
+            let v = match who {
+                Who::SelfSide => r.value,
+                Who::Opp => match (r.value, r.gap) {
+                    (Some(val), Some(gap)) => Some(val + gap),
+                    _ => None,
+                },
+            };
+            v.is_some_and(|v| cmp_apply(*cmp, v, *value))
+        }),
         Condition::PrintedRollValue { who, value } => roll.is_some_and(|r| {
             r.skill.is_some_and(|sk| {
                 let subject = who_key(state, owner, *who);

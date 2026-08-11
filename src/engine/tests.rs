@@ -2823,6 +2823,7 @@ mod suppress_hand_loss_tests {
             choose: false,
             per: None,
             per_who: Who::SelfSide,
+            per_zone: CountZone::InPlay,
             all: false,
         };
         let before = hand_len(&engine, "A");
@@ -3653,6 +3654,56 @@ mod even_unstoppable_stop_tests {
         assert!(!engine.card_can_stop("A", &stopper("Finish", false), &crowd_gated_attack()));
         // …but an even_unstoppable stop still catches it even when unstoppable.
         assert!(engine.card_can_stop("A", &stopper("Finish", true), &crowd_gated_attack()));
+    }
+
+    /// A Finish attack declaring "When your opponent's turn roll is 5 this card cannot
+    /// be stopped" — an opp-turn-roll-VALUE-gated `Unstoppable` (Scott's Loaded Glove).
+    fn opp_roll_gated_attack() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "RollValue", "cmp": "=", "value": 5, "who": "OPP"},
+                "actions": [{"@type": "Unstoppable", "by_order": null}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }]
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn opp_turn_roll_value_gates_unstoppable() {
+        use crate::conditions::RollContext;
+        // Defender A tries to stop B's finish → the ATTACKER is B, whose "opponent's turn
+        // roll" is the defender A's value, derived from B's context as `value + gap`
+        // (gap = opp − self). B rolled 3, gap 2 → A (the opponent) rolled 5, so the gate
+        // holds and A's plain stop can't catch the finish.
+        let mut engine = engine();
+        engine.roll_ctx.insert(
+            "B".into(),
+            RollContext {
+                skill: Some(Skill::Strike),
+                gap: Some(2),
+                value: Some(3),
+                opp_skill: Some(Skill::Strike),
+            },
+        );
+        assert!(!engine.card_can_stop("A", &stopper("Finish", false), &opp_roll_gated_attack()));
+
+        // A rolled 4 (B value 3, gap 1) → gate false → the plain stop catches it.
+        engine.roll_ctx.insert(
+            "B".into(),
+            RollContext {
+                skill: Some(Skill::Strike),
+                gap: Some(1),
+                value: Some(3),
+                opp_skill: Some(Skill::Strike),
+            },
+        );
+        assert!(engine.card_can_stop("A", &stopper("Finish", false), &opp_roll_gated_attack()));
     }
 
     /// A stop card carrying the synthetic SkillRequirement tag.
@@ -4671,6 +4722,7 @@ mod cardona_mechanism_tests {
                 ..Default::default()
             }),
             per_who: Who::SelfSide,
+            per_zone: CountZone::InPlay,
             all: false,
         };
         e.apply_action(&bury, "A", "").unwrap();
@@ -4678,6 +4730,88 @@ mod cardona_mechanism_tests {
             e.state.players["B"].hand.len(),
             1,
             "2 Leads in play → bury 2 from the opponent's hand (3 → 1)"
+        );
+    }
+
+    #[test]
+    fn bury_per_scales_by_strikes_flipped_this_turn() {
+        // Scott's Five Star Heart Punch: "opponent buries 1 card in their hand for each
+        // Strike flipped." A flipped 3 Strikes (+ a Grapple) this turn → bury 3 from B's
+        // 5-card hand. `per_zone = FlippedThisTurn` reads the finisher's flips, not the
+        // board.
+        let atk = |uuid: &str, atk_type: &str| -> Card {
+            serde_json::from_value(json!({"atk_type": atk_type, "db_uuid": uuid, "name": uuid,
+                "number": 1, "play_order": "Lead", "raw_text": "", "tags": [],
+                "finish_bonuses": {}, "effects": []}))
+            .unwrap()
+        };
+        let mut e = engine();
+        e.state.players.get_mut("A").unwrap().flipped_this_turn = vec![
+            atk("s1", "Strike"),
+            atk("s2", "Strike"),
+            atk("g1", "Grapple"),
+            atk("s3", "Strike"),
+        ];
+        e.state.players.get_mut("B").unwrap().hand =
+            (0..5).map(|i| card(&format!("h{i}"), "Lead")).collect();
+        let bury = Action::Bury {
+            selector: CardFilter::default(),
+            count: 1,
+            who: Who::Opp,
+            random: true,
+            source: BuryFrom::Hand,
+            choose: false,
+            per: Some(CardFilter {
+                atk_type: Some(AtkType::Strike),
+                ..Default::default()
+            }),
+            per_who: Who::SelfSide,
+            per_zone: CountZone::FlippedThisTurn,
+            all: false,
+        };
+        e.apply_action(&bury, "A", "").unwrap();
+        assert_eq!(
+            e.state.players["B"].hand.len(),
+            2,
+            "3 Strikes flipped → bury 3 from the opponent's 5-card hand (5 → 2)"
+        );
+    }
+
+    #[test]
+    fn flip_then_per_flipped_bury_fire_in_order_within_onhit() {
+        // Five Star Heart Punch's real shape: a "Flip N" and the "opp buries per Strike
+        // flipped" bury both fire in the OnHit phase, the Flip listed first. `run_effects`
+        // preserves list order, so the flip populates `flipped_this_turn` BEFORE the bury
+        // reads it — the guard against regressing the trigger to OnPlay (which fires
+        // before OnHit, so it would read an empty pool and bury nothing).
+        let mut e = engine();
+        // A's deck holds 3 Strikes to flip; B holds 4 cards to lose from.
+        e.state.players.get_mut("A").unwrap().deck =
+            vec![card("d1", "Lead"), card("d2", "Lead"), card("d3", "Lead")];
+        e.state.players.get_mut("B").unwrap().hand =
+            (0..4).map(|i| card(&format!("h{i}"), "Lead")).collect();
+        // `card()` gives atk_type Strike, so all 3 flipped cards are Strikes → bury 3.
+        let effects: Vec<crate::ir::Effect> = serde_json::from_value(json!([
+            {"@type": "Effect", "trigger": {"@type": "OnHit"}, "condition": {"@type": "Always"},
+             "actions": [{"@type": "Flip", "n": 3, "who": "SELF"}],
+             "duration": "INSTANT",
+             "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+             "raw_clause": "flip", "source": "card", "optional": false},
+            {"@type": "Effect", "trigger": {"@type": "OnHit"}, "condition": {"@type": "Always"},
+             "actions": [{"@type": "Bury", "selector": {"@type": "CardFilter"}, "count": 1,
+                 "who": "OPP", "random": true, "source": "HAND", "choose": false,
+                 "per": {"@type": "CardFilter", "atk_type": "Strike"}, "per_who": "SELF",
+                 "per_zone": "FLIPPED_THIS_TURN", "all": false}],
+             "duration": "INSTANT",
+             "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+             "raw_clause": "bury", "source": "card", "optional": false},
+        ]))
+        .unwrap();
+        e.run_effects(&effects, "OnHit", "A", None).unwrap();
+        assert_eq!(
+            e.state.players["B"].hand.len(),
+            1,
+            "flip fires first → 3 Strikes flipped → bury 3 (B hand 4 → 1)"
         );
     }
 
@@ -4703,6 +4837,7 @@ mod cardona_mechanism_tests {
             choose: false,
             per: None,
             per_who: Who::SelfSide,
+            per_zone: CountZone::InPlay,
             all: true,
         };
         e.apply_action(&bury, "A", "").unwrap();

@@ -840,6 +840,9 @@
         "per_who": {
           "$ref": "#/$defs/Who"
         },
+        "per_zone": {
+          "$ref": "#/$defs/CountZone"
+        },
         "random": {
           "type": "boolean"
         },
@@ -5332,6 +5335,9 @@
         },
         "value": {
           "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
         }
       },
       "required": [
@@ -6186,5 +6192,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 129
+  "version": 130
 }

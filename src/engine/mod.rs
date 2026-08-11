@@ -1203,18 +1203,22 @@ impl Engine {
                 choose,
                 per,
                 per_who,
+                per_zone,
                 all,
             } => {
                 // `all` buries every matching card in the target's hand: set the count to
                 // the hand size (an upper bound — the per-card loop stops when no matching
-                // card remains) and skip `per`. Otherwise "bury 1 … for each <X> you have
-                // in play" scales the count by the per-filter match count (Cardona).
+                // card remains) and skip `per`. Otherwise "bury 1 … for each <X> in
+                // `per_zone`" scales the count by the per-filter match count — in play
+                // (Cardona) or flipped this turn (Scott's Five Star Heart Punch).
                 let count = if *all {
                     let target = self.target(*who, key);
                     self.state.players[&target].hand.len() as i64
                 } else {
-                    per.as_ref()
-                        .map_or(*count, |p| *count * self.per_multiplier(p, *per_who, key, None))
+                    per.as_ref().map_or(*count, |p| {
+                        let counter = self.target(*per_who, key);
+                        *count * self.state.count_in_zone(p, *per_zone, &counter)
+                    })
                 };
                 self.act_bury(
                     BurySpec {

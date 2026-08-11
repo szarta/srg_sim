@@ -2350,6 +2350,58 @@ fn trent_riders_grammar() {
     assert_eq!(e["actions"][0]["then_bury"], true);
 }
 
+/// Scott Prime (V1) (task #130): the three finish riders — opp-turn-roll unstoppable,
+/// roll-Power → opp buries hand, and opp buries per Strike flipped.
+#[test]
+fn scott_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // #28 The Loaded Glove: opp turn-roll VALUE gate on an Unstoppable (a 12-clause
+    // opp-turn-roll family; the value is derived from the actor's roll context at stop
+    // time). The comma before "this card" is optional in the source.
+    let e = one("When your opponent's turn roll is 5 this card cannot be stopped.");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["condition"]["@type"], "RollValue");
+    assert_eq!(e["condition"]["cmp"], "=");
+    assert_eq!(e["condition"]["value"], 5);
+    assert_eq!(e["condition"]["who"], "OPP");
+
+    // "or greater" / "or less" map to >= / <=; "N or M" -> Or of two Eq (routed
+    // through the same Unstoppable rule).
+    let g = one("When your opponent's turn roll is 10 or greater this card cannot be stopped.");
+    assert_eq!(g["condition"]["@type"], "RollValue");
+    assert_eq!(g["condition"]["cmp"], ">=");
+    assert_eq!(g["condition"]["who"], "OPP");
+    let two = one("When your opponent's turn roll is 9 or 10 this card cannot be stopped.");
+    assert_eq!(two["condition"]["@type"], "Or");
+    assert_eq!(two["condition"]["items"][0]["value"], 9);
+    assert_eq!(two["condition"]["items"][1]["value"], 10);
+
+    // #28 The Loaded Glove: "If you roll Power, your opponent buries their hand"
+    // (RollWasSkill{SELF} gate via the generic gate rule + whole-hand bury).
+    let e = one("If you roll Power, your opponent buries their hand.");
+    assert_eq!(e["condition"]["@type"], "RollWasSkill");
+    assert_eq!(e["condition"]["skill"], "Power");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["source"], "HAND");
+    assert_eq!(e["actions"][0]["all"], true);
+
+    // #29 Five Star Heart Punch: opp buries 1 per Strike FLIPPED (per_zone).
+    let e = one("Your opponent buries 1 card in their hand for each Strike flipped.");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["source"], "HAND");
+    assert_eq!(e["actions"][0]["count"], 1);
+    assert_eq!(e["actions"][0]["per_zone"], "FLIPPED_THIS_TURN");
+    assert_eq!(e["actions"][0]["per"]["atk_type"], "Strike");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.
