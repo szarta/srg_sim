@@ -941,7 +941,9 @@ mod breakout_modifier_tests {
         .unwrap();
         engine.state.players.get_mut("A").unwrap().hand.push(card);
 
-        engine.act_reveal(Who::SelfSide, 1, "A").expect("reveal");
+        engine
+            .act_reveal(Who::SelfSide, 1, false, "A")
+            .expect("reveal");
         assert!(engine.state.players["A"].revealed_hand.contains("rv"));
 
         // The reveal exposes it to B's observable projection.
@@ -2528,6 +2530,13 @@ mod timed_blank_tests {
         )
     }
 
+    fn lead_card(uuid: &str) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": uuid, "effects": [],
+            "finish_bonuses": {}, "name": uuid, "number": 1, "play_order": "Lead",
+            "raw_text": "", "tags": []}))
+        .expect("card deserializes")
+    }
+
     /// A plays Stiff Right Hand on turn 3: B's gimmick is blanked until B's next turn.
     fn blanked_on_turn_3() -> Engine {
         let mut engine = engine();
@@ -2582,6 +2591,50 @@ mod timed_blank_tests {
             engine.state.is_gimmick_blanked("B"),
             "permanent blank persists"
         );
+    }
+
+    #[test]
+    fn blank_until_hit_survives_turns_then_lifts_on_a_hit() {
+        // Sleep Paralysis: "your opponent's Gimmick is blank until they hit a card."
+        let mut engine = engine();
+        engine.act_blank_gimmick(Who::Opp, Duration::UntilTargetHitsCard, "A");
+        assert!(
+            engine.state.players["B"].blank_until_hit,
+            "poison latched on B"
+        );
+        assert!(engine.state.is_gimmick_blanked("B"), "B is blanked");
+        // It is NOT a next-turn blank: the turn-boundary sweep leaves it alone.
+        engine.state.turn_no = 5;
+        engine.sweep_next_turn_buffs("B");
+        assert!(
+            engine.state.is_gimmick_blanked("B"),
+            "still blanked — only a hit lifts it"
+        );
+        // B lands a hit -> the blank lifts immediately.
+        engine.record_landed_hit("B", &lead_card("hit"));
+        assert!(!engine.state.players["B"].blank_until_hit, "poison cleared");
+        assert!(
+            !engine.state.is_gimmick_blanked("B"),
+            "gimmick restored once B hits"
+        );
+    }
+
+    #[test]
+    fn reveal_whole_hand_exposes_every_card() {
+        // Bermuda Triangle: "Reveal your hand to your opponent."
+        let mut engine = engine();
+        let hand: Vec<Card> = ["r1", "r2", "r3"].iter().map(|u| lead_card(u)).collect();
+        engine.state.players.get_mut("A").unwrap().hand = hand;
+        engine
+            .act_reveal(Who::SelfSide, 0, true, "A")
+            .expect("reveal");
+        let a = &engine.state.players["A"];
+        for u in ["r1", "r2", "r3"] {
+            assert!(
+                a.revealed_hand.contains(u),
+                "{u} is now known to the opponent"
+            );
+        }
     }
 }
 

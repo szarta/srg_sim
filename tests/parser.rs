@@ -2223,6 +2223,52 @@ fn d3_finish_riders_grammar() {
     assert_eq!(e["actions"][0]["rest"], "RETURN");
 }
 
+/// Dr. Sleep (task #130): the three finish/gimmick riders.
+#[test]
+fn dr_sleep_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Gimmick: hit a NAMED Finish -> Crowd Meter +1 (quoted titles BEFORE the order).
+    let e = one(
+        "When you hit a \"Anthony Gangone, The One Above All\" or \"The Rogue Anthony Gangone\" Finish, the Crowd Meter is +1.",
+    );
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["order"], "Finish");
+    assert_eq!(
+        e["trigger"]["name_contains"][0],
+        "Anthony Gangone, The One Above All"
+    );
+    assert_eq!(
+        e["trigger"]["name_contains"][1],
+        "The Rogue Anthony Gangone"
+    );
+    assert_eq!(e["actions"][0]["@type"], "CrowdMeter");
+    assert_eq!(e["actions"][0]["delta"], 1);
+
+    // Bermuda Triangle: reveal your whole hand.
+    let e = one("Reveal your hand to your opponent.");
+    assert_eq!(e["actions"][0]["@type"], "Reveal");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+    assert_eq!(e["actions"][0]["whole_hand"], true);
+
+    // Sleep Paralysis: opp gimmick blank until they hit a card -> OnHit-latched,
+    // event-swept duration (NOT the continuous Static blank).
+    let e = one("Your opponent's Gimmick is blank until they hit a card.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["actions"][0]["@type"], "BlankGimmick");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["duration"], "UNTIL_TARGET_HITS_CARD");
+
+    // The bare "…is blank" form stays a continuous Static blank (unchanged).
+    let e = one("Your opponent's Gimmick is blank.");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["actions"][0]["duration"], "WHILE_IN_PLAY");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.

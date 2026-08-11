@@ -497,6 +497,7 @@ impl Engine {
                         chosen_name: None,
                         pending_text: Vec::new(),
                         blank_until_next_turn: None,
+                        blank_until_hit: false,
                         text_unblank: Vec::new(),
                         freq_counters: BTreeMap::new(),
                         gimmick_blanked: false,
@@ -1300,7 +1301,11 @@ impl Engine {
                 match_on,
             } => self.act_reveal_for_draw(*who, *count, *draw, *match_on, key)?,
             Action::Peek { who } => self.act_peek(*who, key),
-            Action::Reveal { who, count } => self.act_reveal(*who, *count, key)?,
+            Action::Reveal {
+                who,
+                count,
+                whole_hand,
+            } => self.act_reveal(*who, *count, *whole_hand, key)?,
             Action::ForceRevealPlay { who } => self.act_force_reveal_play(*who, key),
             Action::CopyEntrance { who } => self.act_copy_entrance(*who, key),
             Action::Scry {
@@ -3033,6 +3038,11 @@ impl Engine {
         if duration == Duration::UntilStartOfYourNextTurn {
             player.blank_until_next_turn = Some(turn);
         }
+        // "…until they hit a card" (Sleep Paralysis): event-swept — lifted the instant
+        // the target next lands a hit (`resolve_play`), so it can span turns.
+        if duration == Duration::UntilTargetHitsCard {
+            player.blank_until_hit = true;
+        }
         let detail = json!({"duration": serde_json::to_value(duration).unwrap()});
         self.log_effect(key, "BlankGimmick", Some(&target), detail);
     }
@@ -3110,8 +3120,22 @@ impl Engine {
     /// hand minus any already picked THIS reveal); the chosen cards join their
     /// `revealed_hand` so the opponent sees them (in `observable`) while they stay in
     /// hand. Idempotent per card — re-picking an already-revealed card leaks nothing.
-    fn act_reveal(&mut self, who: Who, count: i64, key: &str) -> Eng<()> {
+    fn act_reveal(&mut self, who: Who, count: i64, whole_hand: bool, key: &str) -> Eng<()> {
         let target = self.target(who, key);
+        // "Reveal your hand" — expose every card at once, no per-card choice.
+        if whole_hand {
+            let uuids: Vec<String> = self.state.players[&target]
+                .hand
+                .iter()
+                .map(|c| c.db_uuid.clone())
+                .collect();
+            let player = self.state.players.get_mut(&target).unwrap();
+            for uuid in &uuids {
+                player.revealed_hand.insert(uuid.clone());
+            }
+            self.log_effect(key, "Reveal", Some(&target), json!({"cards": uuids}));
+            return Ok(());
+        }
         let mut chosen: Vec<String> = Vec::new();
         for _ in 0..count {
             let pool: Vec<Card> = self.state.players[&target]
@@ -4487,16 +4511,25 @@ impl Engine {
         // rides along into the discard pile, where a "this match has Disqualifications"
         // re-enable is resolved against a standing no-DQ by last-played order.
         card.played_seq = Some(self.state.bump_play_seq());
-        {
-            let p = self.state.players.get_mut(active).unwrap();
-            p.in_play.push(card.clone());
-            p.hits_this_turn += 1; // a landed card is a hit this turn (Condition::HitThisTurn)
-            p.hit_this_turn.push(card.clone()); // by-card, for a filtered HitCard query
-        }
+        self.record_landed_hit(active, &card);
         self.run_effects(&effects, "OnHit", active, roll.as_ref())?; // the card's own "when this hits"
         self.run_hit_gimmicks(&card, active)?; // owner gimmick "when you hit a <type>" (D1)
         self.enforce_hand_caps()?; // a new Static max-handsize mod may force a discard
         Ok(!self.ended())
+    }
+
+    /// Bookkeeping for a card that just landed on `active`'s board: push it, bump the
+    /// per-turn hit count / history, and lift a "blank until they hit a card" poison
+    /// (Sleep Paralysis) — the poison ends the instant its target lands ANY hit.
+    fn record_landed_hit(&mut self, active: &str, card: &Card) {
+        let p = self.state.players.get_mut(active).unwrap();
+        p.in_play.push(card.clone());
+        p.hits_this_turn += 1; // a landed card is a hit this turn (Condition::HitThisTurn)
+        p.hit_this_turn.push(card.clone()); // by-card, for a filtered HitCard query
+        if p.blank_until_hit {
+            p.blank_until_hit = false;
+            p.gimmick_blanked = false;
+        }
     }
 
     /// Fire the standing type-gated `OnHit` gimmicks for a card of `card`'s attack

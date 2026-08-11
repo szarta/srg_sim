@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 126;
+pub const SCHEMA_VERSION: i64 = 127;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -434,6 +434,12 @@ pub enum Duration {
     /// survives every turn on which the owner is not the active player. Hand-
     /// adjudicated 2026-07-20; see DESIGN.md §3.
     UntilStartOfYourNextTurn,
+    /// TIMED, event-swept: active until the TARGET player next LANDS A HIT — "your
+    /// opponent's Gimmick is blank until they hit a card" (Sleep Paralysis). Granted
+    /// imperatively (`blank_until_hit` on the target's `PlayerState`) and lifted the
+    /// instant that player pushes a card to the board, so it can span several turns.
+    /// schema v127
+    UntilTargetHitsCard,
 }
 
 /// Where an effect originates.
@@ -1259,6 +1265,12 @@ pub enum Action {
     Reveal {
         who: Who,
         count: i64,
+        /// "Reveal your (whole) hand to your opponent" (Bermuda Triangle): expose
+        /// EVERY card in `who`'s hand, ignoring `count` and the per-card choice.
+        /// `false` (the default, every pre-v127 node) = the fog-of-war "reveal N of
+        /// your choosing" form. schema v127
+        #[serde(default, skip_serializing_if = "is_false")]
+        whole_hand: bool,
     },
     /// Arm a deferred, mandatory "forced reveal-and-play" on `who` for their next
     /// turn (Father Light: "during your opponent's next turn, they randomly reveal
@@ -2655,6 +2667,12 @@ pub enum IrNode {
     Reveal {
         who: Who,
         count: i64,
+        /// "Reveal your (whole) hand to your opponent" (Bermuda Triangle): expose
+        /// EVERY card in `who`'s hand, ignoring `count` and the per-card choice.
+        /// `false` (the default, every pre-v127 node) = the fog-of-war "reveal N of
+        /// your choosing" form. schema v127
+        #[serde(default, skip_serializing_if = "is_false")]
+        whole_hand: bool,
     },
     /// Arm a deferred, mandatory "forced reveal-and-play" on `who` for their next
     /// turn (Father Light: "during your opponent's next turn, they randomly reveal

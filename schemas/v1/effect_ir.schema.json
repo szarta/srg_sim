@@ -1859,7 +1859,8 @@
         "INSTANT",
         "WHILE_IN_DISCARD",
         "UNTIL_END_OF_TURN",
-        "UNTIL_START_OF_YOUR_NEXT_TURN"
+        "UNTIL_START_OF_YOUR_NEXT_TURN",
+        "UNTIL_TARGET_HITS_CARD"
       ],
       "type": "string"
     },
@@ -4447,6 +4448,10 @@
         },
         "count": {
           "type": "integer"
+        },
+        "whole_hand": {
+          "type": "boolean",
+          "description": "Reveal EVERY card in who's hand at once, ignoring count and the per-card choice ('Reveal your hand to your opponent'). Defaults false."
         }
       },
       "required": [
@@ -6069,5 +6074,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 126
+  "version": 127
 }

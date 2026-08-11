@@ -3485,6 +3485,24 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "Reveal your hand to your opponent" (Bermuda Triangle) — fog-of-war: expose
+        // EVERY card in your own hand at once (`whole_hand`, no per-card choice). The
+        // optional "to your opponent" / "entire|whole" wording is informational.
+        rule(
+            r"Reveal your (?:entire |whole )?hand(?: to your opponent)?",
+            |_c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::Reveal {
+                        who: Who::SelfSide,
+                        count: 0,
+                        whole_hand: true,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // "Each player reveals N card(s) in their hand" — fog-of-war: each player
         // reveals N of their own hand cards to the opponent (their own choice, resolved
         // by the engine's `reveal` decision). Two Reveal actions (SELF + OPP).
@@ -3495,10 +3513,12 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                     Action::Reveal {
                         who: Who::SelfSide,
                         count: num(c, 1),
+                        whole_hand: false,
                     },
                     Action::Reveal {
                         who: Who::Opp,
                         count: num(c, 1),
+                        whole_hand: false,
                     },
                 ],
                 Condition::Always,
@@ -4445,6 +4465,31 @@ fn build_flip_crowd_reroll_rules() -> Vec<(Regex, Builder)> {
 
 fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
     vec![
+        // "[Your opponent's] Gimmick is blank until they hit a card" (Sleep Paralysis)
+        // -> an event-swept BlankGimmick lifted the instant the TARGET next lands a hit
+        // (`UntilTargetHitsCard`). Unlike the bare "…is blank" form below (a continuous
+        // Static blank read by `blank_scan`), a timed blank must be LATCHED by the
+        // executor, so it is dispatched on_hit (the finish's connect), not Static.
+        // Placed before the bare rule; both are anchored, so no ordering hazard.
+        rule(
+            r"Your ([Oo]pponent's )?[Gg]immick is blank until they hit a card",
+            |c| {
+                let who = if c.get(1).is_some() {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
+                Some(eff(
+                    on_hit(),
+                    vec![Action::BlankGimmick {
+                        who,
+                        duration: Duration::UntilTargetHitsCard,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // "[Your opponent's] Gimmick is blank" -> a Static `BlankGimmick` marker (the
         // action pre-existed but was override-only). Self ("Your Gimmick is blank") vs
         // opponent; WhileInPlay. Gated variants ("If the Crowd Meter is N or greater, …")
@@ -6579,6 +6624,31 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                 let names = quoted_names(&c[2]);
                 let in_text = c.get(3).is_some_and(|m| m.as_str() == "text");
                 trigger_body(on_hit_named(atk_type, names, in_text), &c[4])
+            },
+        ),
+        // Name-gated OnHit where the quoted title(s) come BEFORE the play-order word:
+        // "When you hit a "X" [or "Y"] <Lead|Follow Up|Finish>, <body>" (Dr. Sleep's
+        // "hit a Gangone Finish -> the Crowd Meter is +1" gimmick). The sibling rule
+        // above handles the "with 'X' in the name" phrasing. Group 1 = quoted list,
+        // 2 = play order, 3 = body.
+        rule(
+            r#"When you hit (?:an? )?("[^"]+"(?: or "[^"]+")*) (Lead|Follow ?-?Up|Finish)s?[,:] (.+)"#,
+            |c| {
+                let names = quoted_names(&c[1]);
+                let po = match &c[2] {
+                    m if m.starts_with("Lead") => PlayOrder::Lead,
+                    m if m.starts_with("Finish") => PlayOrder::Finish,
+                    _ => PlayOrder::Followup,
+                };
+                let trigger = Trigger::OnHit {
+                    atk_type: None,
+                    order: Some(po),
+                    name_contains: names,
+                    text_contains: Vec::new(),
+                    on_any: false,
+                    who: Who::SelfSide,
+                };
+                trigger_body(trigger, &c[3])
             },
         ),
         rule(r"[Ii]f your opponent breaks out[,:] (.+)", |c| {

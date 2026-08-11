@@ -152,6 +152,11 @@ UNTIL_START_OF_YOUR_NEXT_TURN
                      #   roll that makes the turn yours, then dies. It therefore survives
                      #   every turn on which its owner is not the active player.
                      #   Hand-adjudicated 2026-07-20 (stacking + expiry + roll timing).
+UNTIL_TARGET_HITS_CARD
+                     # "until they hit a card" (Sleep Paralysis): an EVENT-swept blank
+                     #   poison, latched on the target (PlayerState.blank_until_hit) and
+                     #   lifted the instant that player next LANDS A HIT (record_landed_
+                     #   hit), so it can span several turns. schema v127
 ```
 **Gimmick blanking** is itself `WHILE_IN_PLAY`: a blanker card sets `gimmick_blanked` on the
 target while the blanker is in play; when the blanker leaves play the Gimmick un-blanks and
@@ -236,6 +241,7 @@ ShuffleSelfIntoDeck           # "If this card is flipped, [you may] shuffle it [
 PlaySelf                      # "If this card is flipped, [you may] play it[ as an additional card this turn]": flipped
                              # referent discard -> resolve_play by its owner (stop window, OnPlay/OnHit), a bonus play. schema v86
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)
+Reveal(who, count, whole_hand=False)  # fog-of-war: `who` reveals `count` hand card(s) of their choice to the opponent (join revealed_hand, no zone change). whole_hand=True -> expose the ENTIRE hand at once, ignoring count ("Reveal your hand to your opponent", Bermuda Triangle). schema v127
 RevealAndDiscard(count, who=OPP)   # reveal `count` random cards, discard the Stops among them (0..count)
 RevealForDraw(who=OPP, count=1, draw=2, match_on=STOP|ROLLED_SKILL)  # reveal `count` random from hand; actor draws `draw` per revealed card matched by `match_on` — a Stop (Bartholomew) or one whose move type == the actor's just-rolled skill (The Winning Ticket, reads roll ctx). schema v24
 Scry(deck, top=0, bottom=0, reveal=False, to_hand=0, bury=0, rest=RETURN|CHOOSE|FLIP|MAY_FLIP)  # schema v11: look

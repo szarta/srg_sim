@@ -210,6 +210,13 @@ pub struct PlayerState {
     /// blank and a stored permanent blank do not compose: last writer wins.
     #[serde(default)]
     pub blank_until_next_turn: Option<i64>,
+    /// Set when THIS player's gimmick was blanked "until they hit a card" (Sleep
+    /// Paralysis) — an event-swept poison lifted the instant this player next lands a
+    /// hit (`resolve_play`), so unlike `blank_until_next_turn` it can span turns.
+    /// Stored state; last-writer-wins with the other blank flags. Skips when false,
+    /// so pre-v127 snapshots round-trip byte-identically.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub blank_until_hit: bool,
     /// Selectors this player has UN-blanked for the rest of the match — "Un-blank your
     /// Finishes." ([`Action::Unblank`]). A card of this player matching any filter here
     /// is never text-blanked ([`GameState::is_text_blanked`] checks this first), so the
