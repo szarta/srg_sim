@@ -1261,6 +1261,9 @@
               },
               {
                 "$ref": "#/$defs/FinishRequires"
+              },
+              {
+                "$ref": "#/$defs/HandToDeckTop"
               }
             ]
           },
@@ -2163,6 +2166,9 @@
               },
               {
                 "$ref": "#/$defs/FinishRequires"
+              },
+              {
+                "$ref": "#/$defs/HandToDeckTop"
               }
             ]
           },
@@ -3485,6 +3491,9 @@
         },
         {
           "$ref": "#/$defs/FinishRequires"
+        },
+        {
+          "$ref": "#/$defs/HandToDeckTop"
         }
       ]
     },
@@ -5116,6 +5125,9 @@
               },
               {
                 "$ref": "#/$defs/FinishRequires"
+              },
+              {
+                "$ref": "#/$defs/HandToDeckTop"
               }
             ]
           },
@@ -6031,11 +6043,31 @@
         "kind"
       ],
       "type": "object"
+    },
+    "HandToDeckTop": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "HandToDeckTop"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "who"
+      ],
+      "type": "object"
     }
   },
   "$id": "https://srg-sim/schemas/v1/effect_ir",
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 125
+  "version": 126
 }

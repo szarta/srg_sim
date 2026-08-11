@@ -4819,6 +4819,31 @@ mod cardona_mechanism_tests {
     }
 
     #[test]
+    fn hand_to_deck_top_denies_an_opponent_hand_card() {
+        // D3 (V1) Claw: "Look at your opponent's hand, choose 1 card and put it on top
+        // of their deck." A (actor) sends one of B's hand cards to the top of B's deck.
+        let mut e = engine();
+        e.state.players.get_mut("B").unwrap().hand = vec![card("h1", "Lead"), card("h2", "Lead")];
+        e.state.players.get_mut("B").unwrap().deck = vec![card("d1", "Lead")];
+        let act = Action::HandToDeckTop {
+            who: Who::Opp,
+            selector: CardFilter::default(),
+        };
+        e.apply_action(&act, "A", "").unwrap();
+        let b = &e.state.players["B"];
+        assert_eq!(b.hand.len(), 1, "one card left B's hand");
+        assert_eq!(b.deck.len(), 2, "and joined B's deck");
+        assert_eq!(
+            b.deck[0].db_uuid, "h1",
+            "the chosen card sits on top of B's deck (redraw next turn)"
+        );
+        assert!(
+            b.hand.iter().all(|c| c.db_uuid != "h1"),
+            "it is gone from the hand"
+        );
+    }
+
+    #[test]
     fn on_flip_gimmick_fires_only_on_the_exact_count() {
         // Evee Laveaux: "when you flip exactly 3 cards, draw 2." OnFlip{who:SELF,count:3}.
         let mut e = engine();

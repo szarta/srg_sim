@@ -353,6 +353,8 @@ FinishRequires(kind, count)   # DEFENDER declaration: the opponent needs `count`
                               # (CARDS|LEADS|FOLLOW_UPS) in play to LAND a Finish against you (D3 V1's "needs 3
                               # cards in play"). Read in playable_options; Stops bypass it. On top of the built-in
                               # FOLLOW_UPS×1 default to land a Finish. schema v125
+HandToDeckTop(who, selector)  # look at `who`'s hand, move one chosen `selector` card to the top of `who`'s
+                              # deck (D3 V1's Claw, who=Opp) — tempo/info denial, the target redraws it. schema v126
 LowestRollWins                # Static marker (Fae): the roll-off is won by the lowest roll
 ```
 `Bury(selector, count, who, random, source, per?, per_who=SELF)` moves `count` cards to the

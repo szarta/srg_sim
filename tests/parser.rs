@@ -2194,6 +2194,35 @@ fn finish_requires_grammar() {
     assert_eq!(e["actions"][0]["kind"], "FOLLOW_UPS");
 }
 
+/// D3 (V1) finish riders (task #130): Claw's opp-hand→opp-deck-top (HandToDeckTop) and
+/// Contact Juggling's peek-and-sort scry (scry_keep -> Scry rest=Return).
+#[test]
+fn d3_finish_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Claw: look at opp hand, choose 1 card, put on top of their deck.
+    let e = one("Look at your opponent's hand, choose 1 card and put it on top of their deck.");
+    assert_eq!(e["actions"][0]["@type"], "HandToDeckTop");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    // Typed selector + no "look at" prefix (the DB has both forms).
+    let e = one("Choose 1 Submission and put it on top of their deck.");
+    assert_eq!(e["actions"][0]["@type"], "HandToDeckTop");
+    assert_eq!(e["actions"][0]["selector"]["atk_type"], "Submission");
+
+    // Contact Juggling: top 3 / add 1 to hand / put 1 in discard / other on top
+    // -> Scry{top:3, to_hand:1, bury:1, rest:RETURN} ("our deck" DB typo tolerated).
+    let e = one("Look at the top 3 cards of our deck, randomly add 1 to your hand, put 1 in your discard pile, and put the other on top of your deck.");
+    assert_eq!(e["actions"][0]["@type"], "Scry");
+    assert_eq!(e["actions"][0]["top"], 3);
+    assert_eq!(e["actions"][0]["to_hand"], 1);
+    assert_eq!(e["actions"][0]["bury"], 1);
+    assert_eq!(e["actions"][0]["rest"], "RETURN");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.

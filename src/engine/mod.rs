@@ -1273,6 +1273,9 @@ impl Engine {
             Action::RecurToDeckTop { selector, count } => {
                 self.act_recur_to_deck_top(selector, *count, key)?
             }
+            Action::HandToDeckTop { who, selector } => {
+                self.act_hand_to_deck_top(*who, selector, key)?
+            }
             Action::RemoveFromPlay {
                 selector,
                 who,
@@ -2648,6 +2651,37 @@ impl Engine {
         if moved > 0 {
             self.run_on_discard_move(key)?; // once per action, not per card
         }
+        Ok(())
+    }
+
+    /// Look at `who`'s hand and move one chosen `selector`-matching card to the TOP of
+    /// `who`'s deck (D3 V1's Claw, `who: Opp`). The ACTOR (`key`) picks — they've seen
+    /// the hand — so the target must redraw the denied card next turn.
+    fn act_hand_to_deck_top(&mut self, who: Who, selector: &CardFilter, key: &str) -> Eng<()> {
+        let target = self.target(who, key);
+        let matches: Vec<Card> = self.state.players[&target]
+            .hand
+            .iter()
+            .filter(|c| conditions::card_matches(c, selector))
+            .cloned()
+            .collect();
+        if matches.is_empty() {
+            return Ok(());
+        }
+        let card = self.pick_from(key, &matches, "target")?;
+        let player = self.state.players.get_mut(&target).unwrap();
+        if let Some(pos) = player.hand.iter().position(|c| c.db_uuid == card.db_uuid) {
+            player.hand.remove(pos);
+        }
+        player.deck.insert(0, card.clone()); // top of deck (redraw next turn)
+        let t = self.state.turn_no;
+        self.log(Event::Bury(CardMovement {
+            t,
+            player: target.clone(),
+            cards: vec![card.db_uuid],
+            source: Some("hand".to_owned()),
+            hidden: false,
+        }));
         Ok(())
     }
 
@@ -7050,6 +7084,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::RequireStops { .. } => "RequireStops",
         Action::AlsoAtkType { .. } => "AlsoAtkType",
         Action::FinishRequires { .. } => "FinishRequires",
+        Action::HandToDeckTop { .. } => "HandToDeckTop",
         Action::Choice { .. } => "Choice",
         Action::Unsupported { .. } => "Unsupported",
     }

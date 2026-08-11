@@ -743,6 +743,23 @@ fn scry_flip(reveal: bool, top: i64, to_hand: i64) -> Action {
     }
 }
 
+/// "Look at the top N of your deck, add `to_hand` to hand, put `bury` away, keep the
+/// rest on top" — the peek-and-sort scry (D3 V1's Contact Juggling: top 3 / add 1 /
+/// "discard" 1 / other on top). Two documented simplifications, standard for the scry
+/// family: the kept card is the BEST (scry_value), not random; and `bury` sends to the
+/// deck BOTTOM (`Scry.bury`), a near-equivalent of "put in your discard pile".
+fn scry_keep(top: i64, to_hand: i64, bury: i64) -> Action {
+    Action::Scry {
+        deck: Who::SelfSide,
+        top,
+        bottom: 0,
+        reveal: false,
+        to_hand,
+        bury,
+        rest: ScryRest::Return,
+    }
+}
+
 /// "Look at / Reveal the top card of `deck`'s deck, you may flip it" — a single-card
 /// peek with an *optional* flip ([`ScryRest::MayFlip`]): the actor sees the top card,
 /// then mills it only when worthwhile (deny an opponent their Finish/stop, or shed
@@ -4484,6 +4501,22 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Peek-and-sort scry: "Look at the top N cards of your deck, [randomly] add M to
+        // your hand, put K in your discard pile, and put the other(s) on top" (D3 V1's
+        // Contact Juggling, top 3 / add 1 / away 1 / other on top). -> `scry_keep`
+        // (Scry rest=Return). "our deck" is a real DB typo. The "If stopped," prefix is
+        // handled upstream by the OnStop trigger split.
+        rule(
+            r"[Ll]ook at the top (\d+) cards? of (?:your|our) deck, (?:randomly )?add (\d+)(?: cards?)? to your hand, put (\d+)(?: cards?)? in your discard pile,?(?: and)? put the others? (?:back )?on top(?: of your deck)?",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![scry_keep(num(c, 1), num(c, 2), num(c, 3))],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Single-card peek with an optional flip: "Look at the top card of your
         // opponent's deck, you may flip it" -> Scry{top:1, rest:MayFlip}. "Look at"
         // keeps it private (reveal:false); "Reveal" is public. deck follows the
@@ -4915,6 +4948,24 @@ fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
         rule(r"[Dd]iscard (\d+) (.+?) your opponent has in play", |c| {
             remove_opp_play(num(c, 1), count_filter(&c[2])?)
         }),
+        // "[Look at your opponent's hand,] choose 1 <selector> and put it on top of
+        // their deck" (D3 V1's Claw) -> HandToDeckTop{who:Opp}: the actor sees the hand
+        // and picks; the target redraws the denied card. `recur_filter` handles
+        // "card" (any) / typed selectors. The "look at" prefix is informational.
+        rule(
+            r"(?:Look at your opponent'?s hand,? )?[Cc]hoose 1 (.+?),? and put it on top of their deck",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::HandToDeckTop {
+                        who: Who::Opp,
+                        selector: recur_filter(&c[1])?,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Conditional / OnRoll in-play removal.
         rule(
             &format!(

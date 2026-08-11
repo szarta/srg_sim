@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 125;
+pub const SCHEMA_VERSION: i64 = 126;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1960,6 +1960,14 @@ pub enum Action {
         kind: RequireKind,
         count: i64,
     },
+    /// Look at `who`'s hand and move one chosen `selector`-matching card to the TOP of
+    /// `who`'s deck — D3 (V1)'s Claw: "Look at your opponent's hand, choose 1 card and
+    /// put it on top of their deck" (`who: Opp`). The actor picks (they've seen the
+    /// hand); tempo/info denial (the target must redraw it). schema v126
+    HandToDeckTop {
+        who: Who,
+        selector: CardFilter,
+    },
     Choice {
         options: Vec<ChoiceOption>,
     },
@@ -3340,6 +3348,12 @@ pub enum IrNode {
     FinishRequires {
         kind: RequireKind,
         count: i64,
+    },
+    /// Look at `who`'s hand, move one chosen `selector` card to the top of `who`'s deck
+    /// (D3 V1's Claw, `who: Opp`). schema v126
+    HandToDeckTop {
+        who: Who,
+        selector: CardFilter,
     },
     Choice {
         options: Vec<ChoiceOption>,

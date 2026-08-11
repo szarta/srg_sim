@@ -41,6 +41,23 @@
     "order": "Lead"
   },
   {
+    "@type": "HandToDeckTop",
+    "who": "OPP",
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "is_stop": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "play_orders": [],
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    }
+  },
+  {
     "@type": "StopCountsOrderAs",
     "as_order": "Followup",
     "attack_order": "Finish"
