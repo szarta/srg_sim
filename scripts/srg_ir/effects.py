@@ -1681,6 +1681,19 @@ class BlankText(IRNode):
 
 
 @dataclass(frozen=True)
+class BlankTextPermanent(IRNode):
+    """A REST-OF-MATCH ("poison") text blank — "Blank all Spotlights for the rest of
+    the match" (ee0defe5). Unlike :class:`BlankText` (standing, re-derived from the
+    source card's presence), this is EXECUTED once when its effect fires: it resolves
+    ``who`` to the absolute target and stamps a persistent ``(selector, owner)`` blank
+    that survives the source leaving play and catches cards played later. "All" (both
+    boards) is two clauses, ``who=SELF`` + ``who=OPP``."""
+
+    selector: CardFilter = CardFilter()
+    who: Who = Who.OPP
+
+
+@dataclass(frozen=True)
 class CopyText(IRNode):
     """"This card copies the text of …" — the Spotlight text-copy family (#2 "A Trip
     to the Upside Down", #9 "The D-Roll", #16 "Your Worst Nightmare!"). A passive
@@ -2191,6 +2204,7 @@ Action = (
     | BlankGimmick
     | FlipGimmick
     | BlankText
+    | BlankTextPermanent
     | BlankStoppedText
     | BuryThisCard
     | AddSelfToHand

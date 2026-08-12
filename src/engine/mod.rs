@@ -1497,6 +1497,10 @@ impl Engine {
             | Action::BumpReplacement { .. }
             | Action::ScaleEntranceNumbers { .. } => {}
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
+            Action::BlankTextPermanent { selector, who } => {
+                let target = self.target(*who, key);
+                self.act_blank_text_permanent(selector, target);
+            }
             Action::BuryThisCard => self.act_bury_this_card(key),
             Action::AddSelfToHand => self.act_add_self_to_hand(key),
             Action::ShuffleSelfIntoDeck => self.act_shuffle_self_into_deck(key)?,
@@ -4092,6 +4096,27 @@ impl Engine {
         };
         self.state.blanked_text.insert(uuid.clone());
         self.log_effect(key, "BlankStoppedText", None, json!({"card": uuid}));
+    }
+
+    /// Stamp a rest-of-match ("poison") text blank: every card `target` owns matching
+    /// `selector` is text-blanked for the rest of the match, surviving the source card
+    /// leaving play and catching cards `target` plays later. Idempotent — a repeat of an
+    /// identical (selector, owner) entry is dropped. See [`Action::BlankTextPermanent`].
+    fn act_blank_text_permanent(&mut self, selector: &CardFilter, target: String) {
+        let entry = crate::state::PermanentBlank {
+            selector: selector.clone(),
+            owner: target.clone(),
+        };
+        if self.state.permanent_blanks.contains(&entry) {
+            return;
+        }
+        self.state.permanent_blanks.push(entry);
+        self.log_effect(
+            &target,
+            "BlankTextPermanent",
+            Some(&target),
+            json!({"selector": selector}),
+        );
     }
 
     /// Bury the triggering (stopped) card — move it from `key`'s discard pile to the
@@ -7504,6 +7529,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BlankGimmick { .. } => "BlankGimmick",
         Action::FlipGimmick { .. } => "FlipGimmick",
         Action::BlankText { .. } => "BlankText",
+        Action::BlankTextPermanent { .. } => "BlankTextPermanent",
         Action::Unblank { .. } => "Unblank",
         Action::CopyText { .. } => "CopyText",
         Action::BlankStoppedText => "BlankStoppedText",

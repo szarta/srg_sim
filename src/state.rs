@@ -286,6 +286,16 @@ impl PlayerState {
     }
 }
 
+/// A rest-of-match ("poison") text blank: every card OWNED by `owner` that matches
+/// `selector` is text-blanked for the remainder of the match, wherever it sits and
+/// whenever it enters play. Stamped by [`Action::BlankTextPermanent`]; held in
+/// [`GameState::permanent_blanks`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PermanentBlank {
+    pub selector: CardFilter,
+    pub owner: String,
+}
+
 /// Both players plus the shared match state (DESIGN.md §5).
 ///
 /// `active` is the player key whose turn it is; `rng` is the single seeded
@@ -317,6 +327,15 @@ pub struct GameState {
     /// blank would never end. Consulted by [`GameState::is_text_blanked`].
     #[serde(default)]
     pub blanked_text: std::collections::BTreeSet<String>,
+    /// REST-OF-MATCH ("poison") text blanks — a selector-scoped blank that persists for
+    /// the whole match, surviving the source card leaving play (a board-clearing
+    /// breakout, discard, etc.) and catching matching cards that enter play LATER.
+    /// Stamped imperatively by [`Action::BlankTextPermanent`] when its effect fires
+    /// ("Blank all Spotlights for the rest of the match", ee0defe5), resolved to the
+    /// absolute target owner at that moment. Consulted by [`GameState::is_text_blanked`].
+    /// Distinct from `blanked_text` (turn-scoped, identity-scoped, cleared each turn).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub permanent_blanks: Vec<PermanentBlank>,
     /// Monotonic play-sequence counter: bumped each time a card is played onto the
     /// board and stamped onto that card's `played_seq`. Gives a GLOBAL, cross-player
     /// order over played cards — the infrastructure the last-played match-rule
@@ -421,6 +440,7 @@ impl GameState {
             last_roll_winner: None,
             last_turn_bumped: false,
             blanked_text: Default::default(),
+            permanent_blanks: Vec::new(),
             play_seq: 0,
             blank_guard: RefCell::new(HashSet::new()),
             copy_guard: RefCell::new(HashSet::new()),
@@ -727,6 +747,15 @@ impl GameState {
         }
         // A card blanked by a stop this turn stays blanked regardless of zone.
         if self.blanked_text.contains(&card.db_uuid) {
+            return true;
+        }
+        // A rest-of-match ("poison") blank: persists after its source card left play,
+        // and applies to matching cards this owner plays LATER (selector-scoped).
+        if self
+            .permanent_blanks
+            .iter()
+            .any(|pb| pb.owner == owner && conditions::card_matches(card, &pb.selector))
+        {
             return true;
         }
         // A skill-requirement card is blank whenever the owner's EFFECTIVE skill is

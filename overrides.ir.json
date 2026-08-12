@@ -17409,7 +17409,7 @@
       "@type": "Effect",
       "actions": [
         {
-          "@type": "BlankText",
+          "@type": "BlankTextPermanent",
           "selector": {
             "@type": "CardFilter",
             "any_of": [],
@@ -17430,24 +17430,30 @@
       "condition": {
         "@type": "Always"
       },
-      "duration": "WHILE_IN_PLAY",
+      "duration": "INSTANT",
       "frequency": {
         "@type": "FrequencyGuard",
         "kind": "UNLIMITED",
         "n": null
       },
       "optional": false,
-      "raw_clause": "Blank all Spotlights for the rest of the match (your own; while in play).",
+      "raw_clause": "Blank all Spotlights for the rest of the match (your own).",
       "source": "card",
       "trigger": {
-        "@type": "Static"
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {
       "@type": "Effect",
       "actions": [
         {
-          "@type": "BlankText",
+          "@type": "BlankTextPermanent",
           "selector": {
             "@type": "CardFilter",
             "any_of": [],
@@ -17468,17 +17474,23 @@
       "condition": {
         "@type": "Always"
       },
-      "duration": "WHILE_IN_PLAY",
+      "duration": "INSTANT",
       "frequency": {
         "@type": "FrequencyGuard",
         "kind": "UNLIMITED",
         "n": null
       },
       "optional": false,
-      "raw_clause": "Blank all Spotlights for the rest of the match (opponent's; while in play).",
+      "raw_clause": "Blank all Spotlights for the rest of the match (opponent's).",
       "source": "card",
       "trigger": {
-        "@type": "Static"
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
       }
     },
     {

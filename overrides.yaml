@@ -5979,19 +5979,16 @@ feeaf7eaf73f47618bd94f8549cff5ae:
   source: card
   optional: false
 
-# Blank-all Spotlights + P/T/A debuff + DQ-if-stopped (ee0defe5): "Your opponent's
-# Power, Technique, and Agility are -1. Blank all Spotlights for the rest of the
-# match. If stopped, you lose the match via disqualification."
+# Blank-all Spotlights + P/T/A debuff + DQ-if-stopped (ee0defe5, schema v139): "Your
+# opponent's Power, Technique, and Agility are -1. Blank all Spotlights for the rest
+# of the match. If stopped, you lose the match via disqualification."
 #   - P/T/A -1 -> 3x BuffSkill(-1, OPP) standing.
-#   - "Blank ALL Spotlights" (BOTH boards) -> a who=SELF blank (the caster's own
-#     Spotlights) AND a who=OPP blank (the opponent's), selector tag=Spotlight.
-#   - SIMPLIFICATION: "for the rest of the match" is modeled as WHILE_IN_PLAY (the
-#     blank holds while this Finish sits in play — the common case). A true
-#     rest-of-match persistence (surviving a board-clearing breakout, and catching
-#     Spotlights that enter play later) would need a persistent selector-blank
-#     mechanism the engine does not yet have; it is a single-card gap, tracked
-#     separately. ee0defe5 is not itself a Spotlight (tag Logoless), so the SELF
-#     blank does not self-cancel.
+#   - "Blank ALL Spotlights for the REST OF THE MATCH" (a persistent "poison" effect
+#     that outlives this card) -> BlankTextPermanent, fired OnHit: a who=SELF clause
+#     (the caster's own Spotlights) AND a who=OPP clause (the opponent's), selector
+#     tag=Spotlight. Each stamps a (selector, owner) entry into permanent_blanks that
+#     survives a board-clearing breakout and catches Spotlights played later. ee0defe5
+#     is not itself a Spotlight (tag Logoless), so the SELF blank does not self-cancel.
 #   - "If stopped, lose via DQ" -> OnStop{YOURS} -> LoseBy(DQ) (parses natively).
 ee0defe517514f26860c5b695dbdd159:
 - '@type': Effect
@@ -6053,11 +6050,11 @@ ee0defe517514f26860c5b695dbdd159:
   optional: false
 - '@type': Effect
   trigger:
-    '@type': Static
+    '@type': OnHit
   condition:
     '@type': Always
   actions:
-  - '@type': BlankText
+  - '@type': BlankTextPermanent
     who: SELF
     selector:
       '@type': CardFilter
@@ -6069,21 +6066,21 @@ ee0defe517514f26860c5b695dbdd159:
       raw: null
       name_contains: []
       text_contains: []
-  duration: WHILE_IN_PLAY
+  duration: INSTANT
   frequency:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
-  raw_clause: Blank all Spotlights for the rest of the match (your own; while in play).
+  raw_clause: Blank all Spotlights for the rest of the match (your own).
   source: card
   optional: false
 - '@type': Effect
   trigger:
-    '@type': Static
+    '@type': OnHit
   condition:
     '@type': Always
   actions:
-  - '@type': BlankText
+  - '@type': BlankTextPermanent
     who: OPP
     selector:
       '@type': CardFilter
@@ -6095,12 +6092,12 @@ ee0defe517514f26860c5b695dbdd159:
       raw: null
       name_contains: []
       text_contains: []
-  duration: WHILE_IN_PLAY
+  duration: INSTANT
   frequency:
     '@type': FrequencyGuard
     kind: UNLIMITED
     n: null
-  raw_clause: Blank all Spotlights for the rest of the match (opponent's; while in play).
+  raw_clause: Blank all Spotlights for the rest of the match (opponent's).
   source: card
   optional: false
 - '@type': Effect

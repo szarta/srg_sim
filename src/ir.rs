@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 138;
+pub const SCHEMA_VERSION: i64 = 139;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1716,6 +1716,17 @@ pub enum Action {
         #[serde(default, skip_serializing_if = "is_false")]
         discard_only: bool,
     },
+    /// REST-OF-MATCH ("poison") text blank — "Blank all Spotlights for the rest of the
+    /// match" (ee0defe5). Unlike the standing [`Action::BlankText`] (re-derived each read
+    /// from the source card's presence), this is EXECUTED once when its effect fires: it
+    /// resolves `who` to the absolute target and stamps a `(selector, owner)` entry into
+    /// `GameState.permanent_blanks`, which persists for the rest of the match — surviving
+    /// the source leaving play and catching matching cards played later. "All" (both
+    /// boards) is two clauses, `who: SELF` + `who: OPP`. schema v139
+    BlankTextPermanent {
+        selector: CardFilter,
+        who: Who,
+    },
     /// "Un-blank your Finishes." — the inverse of [`Action::BlankText`]: a one-shot that
     /// RESTORES the text of `who`'s cards matching `selector`, overriding any blank on
     /// them for the rest of the match (the 6 Splash / "your opponent buries … un-blank
@@ -3255,6 +3266,17 @@ pub enum IrNode {
         /// byte-identically. schema v116
         #[serde(default, skip_serializing_if = "is_false")]
         discard_only: bool,
+    },
+    /// REST-OF-MATCH ("poison") text blank — "Blank all Spotlights for the rest of the
+    /// match" (ee0defe5). Unlike the standing [`Action::BlankText`] (re-derived each read
+    /// from the source card's presence), this is EXECUTED once when its effect fires: it
+    /// resolves `who` to the absolute target and stamps a `(selector, owner)` entry into
+    /// `GameState.permanent_blanks`, which persists for the rest of the match — surviving
+    /// the source leaving play and catching matching cards played later. "All" (both
+    /// boards) is two clauses, `who: SELF` + `who: OPP`. schema v139
+    BlankTextPermanent {
+        selector: CardFilter,
+        who: Who,
     },
     /// "Un-blank your Finishes." — the inverse of [`Action::BlankText`]: a one-shot that
     /// RESTORES the text of `who`'s cards matching `selector`, overriding any blank on

@@ -4584,6 +4584,94 @@ mod stop_requires_tag_or_unstoppable_tests {
     }
 }
 
+/// `BlankTextPermanent` (schema v139): the rest-of-match "poison" blank — ee0defe5's
+/// "Blank all Spotlights for the rest of the match." Once stamped it persists with NO
+/// source card in play and applies to matching cards regardless of when they enter,
+/// scoped to the owner it was stamped against.
+#[cfg(test)]
+mod permanent_blank_tests {
+    use super::*;
+    use crate::ir::CardFilter;
+    use serde_json::{json, Value};
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(&mut self, _: &str, _: &str, l: &[Value], _: &mut GameState) -> Option<Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    /// A minimal card carrying the given tags — never put on any board, to prove the
+    /// blank is selector-scoped (not a snapshot of cards in play).
+    fn card(uuid: &str, tags: &[&str]) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": tags, "finish_bonuses": {},
+            "effects": []
+        }))
+        .expect("card")
+    }
+
+    fn spotlight_filter() -> CardFilter {
+        CardFilter {
+            tag: Some("Spotlight".to_owned()),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn poison_blank_is_selector_scoped_persistent_and_owner_bound() {
+        let mut e = engine();
+        // ee0defe5 (owner A) blanks ALL Spotlights: a SELF clause + an OPP clause.
+        e.act_blank_text_permanent(&spotlight_filter(), "A".to_owned());
+        e.act_blank_text_permanent(&spotlight_filter(), "B".to_owned());
+
+        // Any Spotlight either player owns is blanked — even cards never yet in play
+        // (selector-scoped, not a snapshot), with NO source card on any board.
+        assert!(e.state.is_text_blanked(&card("s1", &["Spotlight"]), "A"));
+        assert!(e.state.is_text_blanked(&card("s2", &["Spotlight"]), "B"));
+        // A non-Spotlight card is untouched.
+        assert!(!e.state.is_text_blanked(&card("plain", &[]), "A"));
+
+        // Idempotent: re-stamping an identical (selector, owner) does not duplicate.
+        e.act_blank_text_permanent(&spotlight_filter(), "A".to_owned());
+        assert_eq!(e.state.permanent_blanks.len(), 2);
+    }
+
+    #[test]
+    fn a_side_scoped_blank_does_not_leak_to_the_other_side() {
+        let mut e = engine();
+        // Only A's own Spotlights (the SELF clause alone).
+        e.act_blank_text_permanent(&spotlight_filter(), "A".to_owned());
+        assert!(e.state.is_text_blanked(&card("s", &["Spotlight"]), "A"));
+        assert!(!e.state.is_text_blanked(&card("s", &["Spotlight"]), "B"));
+    }
+}
+
 #[cfg(test)]
 mod man_from_it_tests {
     use super::*;

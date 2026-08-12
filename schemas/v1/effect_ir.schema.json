@@ -488,6 +488,26 @@
       ],
       "type": "object"
     },
+    "BlankTextPermanent": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BlankTextPermanent"
+        },
+        "selector": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "selector",
+        "who"
+      ],
+      "type": "object"
+    },
     "BreakoutAttempts": {
       "additionalProperties": false,
       "properties": {
@@ -1167,6 +1187,9 @@
               },
               {
                 "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/BlankTextPermanent"
               },
               {
                 "$ref": "#/$defs/Unblank"
@@ -2091,6 +2114,9 @@
               },
               {
                 "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/BlankTextPermanent"
               },
               {
                 "$ref": "#/$defs/Unblank"
@@ -3214,6 +3240,9 @@
         },
         {
           "$ref": "#/$defs/BlankText"
+        },
+        {
+          "$ref": "#/$defs/BlankTextPermanent"
         },
         {
           "$ref": "#/$defs/Unblank"
@@ -4962,6 +4991,9 @@
                 "$ref": "#/$defs/BlankText"
               },
               {
+                "$ref": "#/$defs/BlankTextPermanent"
+              },
+              {
                 "$ref": "#/$defs/Unblank"
               },
               {
@@ -5573,6 +5605,9 @@
               },
               {
                 "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/BlankTextPermanent"
               },
               {
                 "$ref": "#/$defs/Unblank"
@@ -6691,5 +6726,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 138
+  "version": 139
 }

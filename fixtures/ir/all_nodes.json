@@ -115,6 +115,23 @@
     "who": "OPP"
   },
   {
+    "@type": "BlankTextPermanent",
+    "selector": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "is_stop": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "play_orders": [],
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    },
+    "who": "OPP"
+  },
+  {
     "@type": "Unblank",
     "selector": {
       "@type": "CardFilter",
