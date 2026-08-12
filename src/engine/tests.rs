@@ -2569,6 +2569,122 @@ mod redirect_board_effect_tests {
     }
 }
 
+/// Fortress's gimmick (task #136, schema v136): a `Scry.to_hand_filter` takes only a
+/// matching card ("add 1 STOP to your hand and bury the others").
+#[cfg(test)]
+mod scry_filter_tests {
+    use super::*;
+
+    fn stop_card(uuid: &str) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+               "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+               "effects": [{"@type": "Effect", "trigger": {"@type": "OnPlay"},
+                   "condition": {"@type": "Always"},
+                   "actions": [{"@type": "Stop", "order": null, "atk_type": "Strike",
+                       "source_is_skillreq": false, "even_unstoppable": false, "target": null}],
+                   "duration": "INSTANT",
+                   "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                   "raw_clause": "", "source": "card", "optional": false}]})
+    }
+
+    fn plain_card(uuid: &str) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+               "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+               "effects": []})
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Intergalactic", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new())),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn to_hand_filter_takes_only_the_stop_and_buries_the_rest() {
+        let mut engine = engine();
+        // Top 3 of A's deck: plain, STOP, plain (order as drained from the front).
+        let a = engine.state.players.get_mut("A").unwrap();
+        a.hand.clear();
+        a.deck = vec![
+            serde_json::from_value(plain_card("p1")).unwrap(),
+            serde_json::from_value(stop_card("stop")).unwrap(),
+            serde_json::from_value(plain_card("p2")).unwrap(),
+        ];
+        let filter: CardFilter = serde_json::from_value(json!({
+            "@type": "CardFilter", "is_stop": true
+        }))
+        .unwrap();
+        // top 3 / take 1 stop / bury the rest to the deck bottom.
+        engine
+            .act_scry(
+                Who::SelfSide,
+                3,
+                0,
+                false,
+                1,
+                3,
+                ScryRest::Return,
+                Some(&filter),
+                "A",
+            )
+            .unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(a.hand.len(), 1, "exactly one card taken");
+        assert_eq!(a.hand[0].db_uuid, "stop", "the STOP went to hand");
+        // The two non-stops were buried to the deck bottom.
+        let bottom: Vec<&str> = a.deck.iter().map(|c| c.db_uuid.as_str()).collect();
+        assert!(
+            bottom.contains(&"p1") && bottom.contains(&"p2"),
+            "non-stops buried: {bottom:?}"
+        );
+        assert!(!bottom.contains(&"stop"), "the stop is not in the deck");
+    }
+
+    #[test]
+    fn no_match_takes_nothing_and_buries_all() {
+        let mut engine = engine();
+        let a = engine.state.players.get_mut("A").unwrap();
+        a.hand.clear();
+        a.deck = vec![
+            serde_json::from_value(plain_card("p1")).unwrap(),
+            serde_json::from_value(plain_card("p2")).unwrap(),
+            serde_json::from_value(plain_card("p3")).unwrap(),
+        ];
+        let filter: CardFilter =
+            serde_json::from_value(json!({"@type": "CardFilter", "is_stop": true})).unwrap();
+        engine
+            .act_scry(
+                Who::SelfSide,
+                3,
+                0,
+                false,
+                1,
+                3,
+                ScryRest::Return,
+                Some(&filter),
+                "A",
+            )
+            .unwrap();
+        let a = &engine.state.players["A"];
+        assert_eq!(a.hand.len(), 0, "no stop -> nothing taken");
+        assert_eq!(a.deck.len(), 3, "all three buried back to the deck");
+    }
+}
+
 #[cfg(test)]
 mod roll_order_tests {
     use super::*;
@@ -3780,6 +3896,58 @@ mod min_hand_size_tests {
             json!([hand_mod("MaxHandSize", -6, "OPP")]),
         );
         assert_eq!(cap(&engine, "A", 10), 7);
+    }
+
+    /// A card with a WHILE_IN_DISCARD MaxHandSize body (Fortress's Tower of Strength
+    /// sibling, "when this card is in your discard pile, your max handsize is +2").
+    fn discard_hand_card(delta: i64) -> Value {
+        json!({
+            "atk_type": "Grapple", "db_uuid": "disc-cap", "name": "disc-cap", "number": 29,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "MaxHandSize", "delta": delta, "who": "SELF", "duration": "WHILE_IN_PLAY"}],
+                "duration": "WHILE_IN_DISCARD",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "when in discard, max handsize +N", "source": "card", "optional": false
+            }]
+        })
+    }
+
+    #[test]
+    fn while_in_discard_maxhandsize_raises_the_cap_from_the_pile() {
+        let mut engine = engine_with(json!([]), json!([]));
+        // Inert while the card sits in play (WhileInDiscard body only fires from the pile).
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(serde_json::from_value(discard_hand_card(2)).unwrap());
+        assert_eq!(cap(&engine, "A", 10), 10, "no effect while in play");
+        // Move it to the discard pile: the +2 now applies.
+        let card = engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .pop()
+            .unwrap();
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .discard
+            .push(card);
+        assert_eq!(
+            cap(&engine, "A", 10),
+            12,
+            "+2 applies from the discard pile"
+        );
     }
 }
 

@@ -721,6 +721,7 @@
           "rest": "FLIP",
           "reveal": true,
           "to_hand": 3,
+          "to_hand_filter": null,
           "top": 7
         }
       ],
@@ -2683,6 +2684,7 @@
                   "rest": "FLIP",
                   "reveal": false,
                   "to_hand": 2,
+                  "to_hand_filter": null,
                   "top": 3
                 }
               ],
@@ -2856,6 +2858,53 @@
         "on_any": false,
         "order": null,
         "text_contains": [],
+        "who": "SELF"
+      }
+    }
+  ],
+  "30db51ec9a66447eb781f3663d2b70a5": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Scry",
+          "bottom": 0,
+          "bury": 3,
+          "deck": "SELF",
+          "rest": "RETURN",
+          "reveal": false,
+          "to_hand": 1,
+          "to_hand_filter": {
+            "@type": "CardFilter",
+            "atk_type": null,
+            "is_stop": true,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "top": 3
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Choose you or your opponent: When that player rolls Agility for their turn roll, look at the top 3 cards of your deck. Add 1 Stop to your hand and bury the others.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": "Agility",
         "who": "SELF"
       }
     }
@@ -3395,6 +3444,7 @@
           "rest": "RETURN",
           "reveal": false,
           "to_hand": 1,
+          "to_hand_filter": null,
           "top": 1
         }
       ],
@@ -4543,6 +4593,7 @@
           "rest": "FLIP",
           "reveal": true,
           "to_hand": 1,
+          "to_hand_filter": null,
           "top": 2
         }
       ],
@@ -5029,6 +5080,7 @@
           "rest": "RETURN",
           "reveal": true,
           "to_hand": 1,
+          "to_hand_filter": null,
           "top": 2
         }
       ],
@@ -5364,6 +5416,7 @@
           "rest": "CHOOSE",
           "reveal": false,
           "to_hand": 1,
+          "to_hand_filter": null,
           "top": 2
         }
       ],
@@ -13841,6 +13894,7 @@
           "rest": "RETURN",
           "reveal": false,
           "to_hand": 0,
+          "to_hand_filter": null,
           "top": 3
         }
       ],
@@ -13873,6 +13927,7 @@
           "rest": "RETURN",
           "reveal": false,
           "to_hand": 0,
+          "to_hand_filter": null,
           "top": 3
         }
       ],
@@ -14735,6 +14790,7 @@
           "rest": "FLIP",
           "reveal": true,
           "to_hand": 0,
+          "to_hand_filter": null,
           "top": 1
         }
       ],
@@ -16519,6 +16575,7 @@
           "rest": "FLIP",
           "reveal": false,
           "to_hand": 0,
+          "to_hand_filter": null,
           "top": 6
         }
       ],

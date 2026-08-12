@@ -744,6 +744,7 @@ fn scry_flip(reveal: bool, top: i64, to_hand: i64) -> Action {
         to_hand,
         bury: 0,
         rest: ScryRest::Flip,
+        to_hand_filter: None,
     }
 }
 
@@ -761,6 +762,7 @@ fn scry_keep(top: i64, to_hand: i64, bury: i64) -> Action {
         to_hand,
         bury,
         rest: ScryRest::Return,
+        to_hand_filter: None,
     }
 }
 
@@ -780,6 +782,7 @@ fn scry_bottom_bury(n: i64) -> Action {
         to_hand: 0,
         bury: n,
         rest: ScryRest::Return,
+        to_hand_filter: None,
     }
 }
 
@@ -797,6 +800,7 @@ fn scry_bottom_keep(n: i64, to_hand: i64) -> Action {
         to_hand,
         bury: (n - to_hand).max(0),
         rest: ScryRest::Return,
+        to_hand_filter: None,
     }
 }
 
@@ -813,6 +817,7 @@ fn scry_may_flip(reveal: bool, deck: Who) -> Action {
         to_hand: 0,
         bury: 0,
         rest: ScryRest::MayFlip,
+        to_hand_filter: None,
     }
 }
 
@@ -1799,7 +1804,11 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
         {
             cap
         } else {
-            return None; // passive body -> deferred to the family-A slice
+            // Passive body (family A): only bodies whose consumer scans the discard zone
+            // may be emitted. Hand-size mods now have that reader (owner_hand_mods scans
+            // discard), so a WhileInDiscard MaxHandSize/MinHandSize is landed; the rest stay
+            // Unsupported rather than become silently-inert IR.
+            return passive_discard_effect(&cap);
         }
     };
     let mut effect = match_grammar(&inner)
@@ -1823,6 +1832,26 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
             | Trigger::OnDraw { .. }
             | Trigger::OnLoseTurn { .. }
     ) {
+        return None;
+    }
+    effect.duration = Duration::WhileInDiscard;
+    Some(effect)
+}
+
+/// A passive family-A discard body — a bare Static effect (no trigger word) that the
+/// engine reads directly from the discard pile. Only hand-size mods have a discard
+/// reader (`owner_hand_mods` scans the pile), so an effect whose actions are all
+/// `MaxHandSize`/`MinHandSize` is emitted with `WhileInDiscard`; anything else declines
+/// and stays Unsupported. schema v136
+fn passive_discard_effect(body: &str) -> Option<Effect> {
+    let mut effect = match_grammar(body)?;
+    let readable = matches!(effect.trigger, Trigger::Static)
+        && !effect.actions.is_empty()
+        && effect
+            .actions
+            .iter()
+            .all(|a| matches!(a, Action::MaxHandSize { .. } | Action::MinHandSize { .. }));
+    if !readable {
         return None;
     }
     effect.duration = Duration::WhileInDiscard;
@@ -2494,6 +2523,7 @@ fn stop_condition(text: &str) -> Option<Condition> {
         return Some(Condition::HasInDiscard {
             who: Who::SelfSide,
             filter: cf_name(vec![c[1].to_owned()]),
+            count: 1,
         });
     }
     if let Some(c) = SKILL_GT.captures(t) {
@@ -4311,7 +4341,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
         // Placed before the delta rules (which require a [+-] sign, so an unsigned digit
         // never reaches them).
         rule(
-            r"(?:Your opponent's|Your target's|Their) maximum hand ?size is (\d+)",
+            r"(?:Your opponent's|Your target's|Their) max(?:imum)? hand ?size is (\d+)",
             |c| {
                 Some(eff(
                     Trigger::Static,
@@ -4321,7 +4351,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        rule(r"Your maximum hand ?size is (\d+)", |c| {
+        rule(r"Your max(?:imum)? hand ?size is (\d+)", |c| {
             Some(eff(
                 Trigger::Static,
                 vec![max_hand_set(
@@ -4333,7 +4363,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
-        rule(r"Each player's maximum hand ?size is ([+-]\d+)", |c| {
+        rule(r"Each player's max(?:imum)? hand ?size is ([+-]\d+)", |c| {
             let d = num(c, 1);
             Some(eff(
                 Trigger::Static,
@@ -4343,7 +4373,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
             ))
         }),
         rule(
-            r"(?:Your opponent's|Your target's|Their) maximum hand ?size is ([+-]\d+)",
+            r"(?:Your opponent's|Your target's|Their) max(?:imum)? hand ?size is ([+-]\d+)",
             |c| {
                 Some(eff(
                     Trigger::Static,
@@ -4353,7 +4383,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        rule(r"Your maximum hand ?size is ([+-]\d+)", |c| {
+        rule(r"Your max(?:imum)? hand ?size is ([+-]\d+)", |c| {
             Some(eff(
                 Trigger::Static,
                 vec![max_hand(num(c, 1), Who::SelfSide)],
@@ -4364,7 +4394,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
         // MinHandSize mirror (previously override-only). Same three shapes / Static
         // WhileInPlay convention as the maximum. The per-count "… +N for each Lead you
         // have in play" form has no MinHandSize.per and stays Unsupported.
-        rule(r"Each player's minimum hand ?size is ([+-]\d+)", |c| {
+        rule(r"Each player's min(?:imum)? hand ?size is ([+-]\d+)", |c| {
             let d = num(c, 1);
             Some(eff(
                 Trigger::Static,
@@ -4374,7 +4404,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
             ))
         }),
         rule(
-            r"(?:Your opponent's|Your target's|Their) minimum hand ?size is ([+-]\d+)",
+            r"(?:Your opponent's|Your target's|Their) min(?:imum)? hand ?size is ([+-]\d+)",
             |c| {
                 Some(eff(
                     Trigger::Static,
@@ -4384,7 +4414,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        rule(r"Your minimum hand ?size is ([+-]\d+)", |c| {
+        rule(r"Your min(?:imum)? hand ?size is ([+-]\d+)", |c| {
             Some(eff(
                 Trigger::Static,
                 vec![min_hand(num(c, 1), Who::SelfSide)],
@@ -7048,6 +7078,23 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                         vs: Vs::OppSame,
                         value: Some(num(c, 2)),
                         vs_skill: (s1 != s2).then_some(s2),
+                    },
+                )
+            },
+        ),
+        // "If you have N <Competitor> Finishes in your discard pile, stop any <X>"
+        // (Fortress's Tower of Strength). In a legal deck every Finish you own is your
+        // competitor's, so "<Competitor> Finishes" = Finish-play-order cards; the
+        // competitor word is captured and ignored. schema v136
+        rule(
+            r"If you have (\d+) (?:[A-Za-z]+ )?Finishes? in your discard pile, stop any (.+)",
+            |c| {
+                stop_eff(
+                    &c[2],
+                    Condition::HasInDiscard {
+                        who: Who::SelfSide,
+                        filter: cf_order(PlayOrder::Finish),
+                        count: num(c, 1),
                     },
                 )
             },

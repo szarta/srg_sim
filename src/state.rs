@@ -1174,10 +1174,17 @@ impl GameState {
             target,
             owner,
             holds,
+            false,
         ));
-        add(self.fold_hand_mods(&player.entrance.effects, true, target, owner, holds));
+        add(self.fold_hand_mods(&player.entrance.effects, true, target, owner, holds, false));
         for card in &player.in_play {
-            add(self.fold_hand_mods(&card.effects, true, target, owner, holds));
+            add(self.fold_hand_mods(&card.effects, true, target, owner, holds, false));
+        }
+        // Passive discard readers (task #115 family A): a card in the discard pile whose
+        // Static WhileInDiscard body sets a hand-size mod ("when this card is in your discard
+        // pile, your max handsize is +N" — Fortress's Tower of Strength sibling).
+        for card in &player.discard {
+            add(self.fold_hand_mods(&card.effects, true, target, owner, holds, true));
         }
         total
     }
@@ -1191,13 +1198,20 @@ impl GameState {
         target: &str,
         owner: &str,
         holds: Option<&ConditionHolds>,
+        is_discard: bool,
     ) -> HandMods {
         let mut out = HandMods::default();
         if !active {
             return out;
         }
         for eff in effects {
-            if !matches!(eff.trigger, Trigger::Static) {
+            // Zone gate (mirrors `any_active_static`): a WhileInDiscard effect applies only
+            // from the discard pile, every other Static only from play/gimmick/entrance —
+            // so a card carrying "when in your discard pile, your max handsize is +N" does
+            // NOT also apply that mod while it sits in play.
+            if !matches!(eff.trigger, Trigger::Static)
+                || (eff.duration == Duration::WhileInDiscard) != is_discard
+            {
                 continue;
             }
             for action in &eff.actions {

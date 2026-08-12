@@ -1145,6 +1145,44 @@ c7c67bea6ff64c3b81cc812363c23ac4:
   source: gimmick
   optional: false
 
+# Fortress: "Choose you or your opponent: When that player rolls Agility for their turn
+# roll, look at the top 3 cards of your deck. Add 1 Stop to your hand and bury the others."
+# One override (not grammar) because the peek and the "add 1 Stop / bury the others" are
+# two sentences of ONE effect (grammar parses sentences independently). Scry top 3, take 1
+# STOP (`to_hand_filter: is_stop`), bury=3 sends every non-taken card to the deck bottom
+# ("bury the others" — all of them when no Stop is found). DOCUMENTED SIMPLIFICATION: the
+# one-time "choose you or your opponent" is resolved to the owner (who=SELF) — a peek that
+# keys off your own Agility turn rolls — rather than a persistent per-match player pick,
+# which no engine construct expresses; the opponent branch is not separately modeled.
+30db51ec9a66447eb781f3663d2b70a5:
+- '@type': Effect
+  trigger:
+    '@type': OnRoll
+    skill: Agility
+    who: SELF
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Scry
+    deck: SELF
+    top: 3
+    bottom: 0
+    reveal: false
+    to_hand: 1
+    bury: 3
+    rest: RETURN
+    to_hand_filter:
+      '@type': CardFilter
+      is_stop: true
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: 'Choose you or your opponent: When that player rolls Agility for their turn roll, look at the top 3 cards of your deck. Add 1 Stop to your hand and bury the others.'
+  source: gimmick
+  optional: false
+
 # Little Guido: roll Power -> (opponent's next turn roll -2) OR (draw 1 card).
 # An "A or B" gimmick -> Choice; the acting player picks a branch. Debuff ordered
 # first so the heuristic default leans into tempo.

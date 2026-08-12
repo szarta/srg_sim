@@ -1368,7 +1368,18 @@ impl Engine {
                 to_hand,
                 bury,
                 rest,
-            } => self.act_scry(*deck, *top, *bottom, *reveal, *to_hand, *bury, *rest, key)?,
+                to_hand_filter,
+            } => self.act_scry(
+                *deck,
+                *top,
+                *bottom,
+                *reveal,
+                *to_hand,
+                *bury,
+                *rest,
+                to_hand_filter.as_ref(),
+                key,
+            )?,
             Action::RevealRoute {
                 deck,
                 match_atk,
@@ -3478,6 +3489,7 @@ impl Engine {
     /// sabotage), and disposes of the rest per `rest`. `reveal` makes the seen
     /// cards public (logged); a private "look at" logs only the count.
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     fn act_scry(
         &mut self,
         deck: Who,
@@ -3487,6 +3499,7 @@ impl Engine {
         to_hand: i64,
         bury: i64,
         rest: ScryRest,
+        to_hand_filter: Option<&CardFilter>,
         key: &str,
     ) -> Eng<()> {
         let owner = self.target(deck, key);
@@ -3527,10 +3540,26 @@ impl Engine {
         // Rank by value (Finish > stop > other), best first.
         revealed.sort_by_key(|c| Reverse(scry_value(c)));
 
-        // Take the `to_hand` best cards to the deck owner's hand.
-        let take = (to_hand.max(0) as usize).min(revealed.len());
-        if take > 0 {
-            let taken: Vec<Card> = revealed.drain(..take).collect();
+        // Take up to `to_hand` cards to the deck owner's hand: best-first, but when a
+        // filter is set only matching cards qualify ("add 1 STOP to your hand"; the rest
+        // fall through to bury/rest).
+        let take_n = to_hand.max(0) as usize;
+        let taken: Vec<Card> = match to_hand_filter {
+            Some(f) => {
+                let mut taken = Vec::new();
+                let mut i = 0;
+                while i < revealed.len() && taken.len() < take_n {
+                    if conditions::card_matches(&revealed[i], f) {
+                        taken.push(revealed.remove(i));
+                    } else {
+                        i += 1;
+                    }
+                }
+                taken
+            }
+            None => revealed.drain(..take_n.min(revealed.len())).collect(),
+        };
+        if !taken.is_empty() {
             let uuids: Vec<String> = taken.iter().map(|c| c.db_uuid.clone()).collect();
             self.state
                 .players

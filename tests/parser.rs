@@ -2697,6 +2697,36 @@ fn emo_mam_gimmick_redirect_grammar() {
     }
 }
 
+/// Fortress (task #136, favorite comps, schema v136): #29's WhileInDiscard MaxHandSize
+/// (the passive-discard family-A reader) and #30's finishes-in-discard-gated stop. The
+/// gimmick (a two-sentence scry) is an override, exercised via the golden.
+#[test]
+fn fortress_riders_grammar() {
+    fn one_effect(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // #29 Tower of Strength sibling: passive hand-size mod that fires from the discard pile.
+    let e = one_effect("When this card is in your discard pile, your max handsize is +2.");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["actions"][0]["@type"], "MaxHandSize");
+    assert_eq!(e["actions"][0]["delta"], 2);
+
+    // #30 Tower of Strength: a Finish-Strike stop gated on 2 Finishes in your discard.
+    let e =
+        one_effect("If you have 2 Fortress Finishes in your discard pile, stop any Finish Strike.");
+    assert_eq!(e["trigger"]["@type"], "OnPlay");
+    assert_eq!(e["condition"]["@type"], "HasInDiscard");
+    assert_eq!(e["condition"]["count"], 2);
+    assert_eq!(e["condition"]["filter"]["play_order"], "Finish");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+    assert_eq!(e["actions"][0]["order"], "Finish");
+    assert_eq!(e["actions"][0]["atk_type"], "Strike");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.
@@ -5031,10 +5061,22 @@ fn while_in_discard_onroll_self_recursion() {
             ["actions"][0]["@type"],
         "Unsupported"
     );
-    // A passive body (family A) also declines for now.
+    // A passive hand-size body (family A) now lands: it has a discard reader
+    // (owner_hand_mods scans the pile), so it is emitted as a WHILE_IN_DISCARD Static
+    // MaxHandSize. The "max" abbreviation parses like "maximum".
+    let e = eff0("When this card is in your discard pile, your maximum handsize is +1.");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["actions"][0]["@type"], "MaxHandSize");
+    assert_eq!(e["actions"][0]["delta"], 1);
+    let e = eff0("When this card is in your discard pile, your max handsize is +2.");
+    assert_eq!(e["actions"][0]["@type"], "MaxHandSize");
+    assert_eq!(e["actions"][0]["delta"], 2);
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+
+    // A passive body with NO discard reader (a skill buff) still declines -> Unsupported.
     assert_eq!(
-        eff0("When this card is in your discard pile, your maximum handsize is +1.")["actions"][0]
-            ["@type"],
+        eff0("When this card is in your discard pile, +2 to Strike.")["actions"][0]["@type"],
         "Unsupported"
     );
 }

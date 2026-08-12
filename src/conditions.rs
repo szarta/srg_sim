@@ -325,12 +325,14 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .count() as i64;
             n >= *count
         }
-        Condition::HasInDiscard { who, filter } => {
+        Condition::HasInDiscard { who, filter, count } => {
             let subject = who_key(state, owner, *who);
-            state.players[&subject]
+            let n = state.players[&subject]
                 .discard
                 .iter()
-                .any(|c| card_matches(c, filter))
+                .filter(|c| card_matches(c, filter))
+                .count() as i64;
+            n >= *count
         }
         Condition::ChosenNameIs { name, who } => {
             let k = who_key(state, owner, *who);

@@ -25,13 +25,22 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 135;
+pub const SCHEMA_VERSION: i64 = 136;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
 /// byte-identical, the same low-churn tactic as `Option` fields with `Option::is_none`.
 fn is_false(b: &bool) -> bool {
     !*b
+}
+
+/// Default `1` for a count that omits to "at least one" (e.g. [`Condition::HasInDiscard`]).
+fn one_i64() -> i64 {
+    1
+}
+
+fn is_one_i64(n: &i64) -> bool {
+    *n == 1
 }
 
 fn is_default_search_source(s: &SearchSource) -> bool {
@@ -849,6 +858,11 @@ pub enum Condition {
     HasInDiscard {
         who: Who,
         filter: CardFilter,
+        /// How many matching cards the discard pile must hold — "if you have `count`
+        /// Finishes in your discard pile" (Fortress's Tower of Strength: count 2). Defaults
+        /// to 1 ("has ≥1"), so the boolean forms neither carry nor churn it. schema v136
+        #[serde(default = "one_i64", skip_serializing_if = "is_one_i64")]
+        count: i64,
     },
     /// Cross-board in-play count compare: `who`'s count of cards in play matching
     /// `filter` compared (`cmp`) against `vs_who`'s count of the same filter. "When
@@ -1411,6 +1425,12 @@ pub enum Action {
         bury: i64,
         #[serde(default)]
         rest: ScryRest,
+        /// Restrict which revealed cards `to_hand` may take — "add 1 STOP to your hand and
+        /// bury the others" (Fortress): only a matching card goes to hand (best-first among
+        /// matches), the rest fall through to `bury`/`rest`. `None` (the default) = take the
+        /// `to_hand` best regardless of kind. schema v136
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        to_hand_filter: Option<CardFilter>,
     },
     /// Reveal the top card of `deck`'s deck and route it by a runtime predicate: if
     /// the card's `atk_type` equals `match_atk` it goes to `on_match`, otherwise to
@@ -2420,6 +2440,11 @@ pub enum IrNode {
     HasInDiscard {
         who: Who,
         filter: CardFilter,
+        /// How many matching cards the discard pile must hold — "if you have `count`
+        /// Finishes in your discard pile" (Fortress's Tower of Strength: count 2). Defaults
+        /// to 1 ("has ≥1"), so the boolean forms neither carry nor churn it. schema v136
+        #[serde(default = "one_i64", skip_serializing_if = "is_one_i64")]
+        count: i64,
     },
     /// Cross-board in-play count compare: `who`'s count of cards in play matching
     /// `filter` compared (`cmp`) against `vs_who`'s count of the same filter. "When
@@ -2933,6 +2958,12 @@ pub enum IrNode {
         bury: i64,
         #[serde(default)]
         rest: ScryRest,
+        /// Restrict which revealed cards `to_hand` may take — "add 1 STOP to your hand and
+        /// bury the others" (Fortress): only a matching card goes to hand (best-first among
+        /// matches), the rest fall through to `bury`/`rest`. `None` (the default) = take the
+        /// `to_hand` best regardless of kind. schema v136
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        to_hand_filter: Option<CardFilter>,
     },
     /// Reveal the top card of `deck`'s deck and route it by a runtime predicate: if
     /// the card's `atk_type` equals `match_atk` it goes to `on_match`, otherwise to

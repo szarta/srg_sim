@@ -3032,6 +3032,9 @@
         "@type": {
           "const": "HasInDiscard"
         },
+        "count": {
+          "type": "integer"
+        },
         "filter": {
           "$ref": "#/$defs/CardFilter"
         },
@@ -5909,6 +5912,16 @@
         },
         "top": {
           "type": "integer"
+        },
+        "to_hand_filter": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CardFilter"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -6669,5 +6682,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 135
+  "version": 136
 }

@@ -1,0 +1,45 @@
+# Fortress — BASELINE deck (favorite-comps modeling sweep, task #136).
+#
+# Real competitor + real finishes; generic cassandra-shell support (slots 1-27).
+# Fidelity: stat/gimmick/finish is real; the 1-27 support shell is a neutral placeholder.
+# NOTE: Fortress's gimmick — "Choose you or your opponent: when that player rolls Agility
+# for their turn roll, look at the top 3, add 1 Stop to your hand and bury the others" — is
+# modeled (schema v136) as an override: OnRoll(Agility) -> Scry(top 3, take 1 STOP via
+# to_hand_filter, bury the rest). The one-time "choose you or your opponent" is resolved to
+# the owner (who=SELF), a documented simplification (see overrides.yaml + task #136).
+# #29 Bastion's Hold's WhileInDiscard "max handsize +2" and #30 Tower of Strength's
+# finishes-in-discard-gated Finish-Strike stop are grammar.
+# stats: St8 Ag6 Pow9 Tec7 Sub5 Grp10
+competitor: {name: "Fortress", db_uuid: 30db51ec9a66447eb781f3663d2b70a5}
+entrance: "App Battle on Supershow Go"
+cards:
+  - {number: 1, name: "Double Cross"}
+  - {number: 2, name: "Arm & Collar Tie Up"}
+  - {number: 3, name: "Snap Headlock"}
+  - {number: 4, name: "Double Chin Music"}
+  - {number: 5, name: "Super Hip Toss"}
+  - {number: 6, name: "Elevated Arm Bar"}
+  - {number: 7, name: "Drawin' Dimes"}
+  - {number: 8, name: "Sweet & Salty Impact Drop (Grapple)"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Headbutt"}
+  - {number: 11, name: "Matte Finish"}
+  - {number: 12, name: "Ready to Rumble"}
+  - {number: 13, name: "Soaring Dropkick"}
+  - {number: 14, name: "Al13n Boot Drop"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Big Boot"}
+  - {number: 17, name: "Snap DDT (Grapple)"}
+  - {number: 18, name: "You're Not Ready"}
+  - {number: 19, name: "Blockbuster Deal"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Destiny's Call (V2)"}
+  - {number: 25, name: "Simple Dropkick"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Abombanational Weaponry", db_uuid: 8463f5cf2fe24f7385c512ca6efc912b}  # St finish
+  - {number: 29, name: "Bastion's Hold", db_uuid: 119f3f319c414c86a9b02f794f089cf0}  # Gr finish
+  - {number: 30, name: "Tower of Strength", db_uuid: cfc5879347f5488d886521c4ffc9668d}  # Sub finish

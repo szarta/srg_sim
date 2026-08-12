@@ -21,7 +21,7 @@ import json
 import types
 from dataclasses import dataclass, fields, replace
 from enum import Enum
-from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import Any, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from srg_ir.cards import AtkType, PlayOrder, Skill
 
@@ -1237,6 +1237,9 @@ class Scry(IRNode):
     to_hand: int = 0
     bury: int = 0
     rest: ScryRest = ScryRest.RETURN
+    # Restrict which revealed cards ``to_hand`` may take — "add 1 STOP to your hand and
+    # bury the others" (Fortress). None = take the best regardless of kind. schema v136
+    to_hand_filter: Optional["CardFilter"] = None
 
 
 @dataclass(frozen=True)
