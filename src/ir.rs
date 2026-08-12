@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 136;
+pub const SCHEMA_VERSION: i64 = 137;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1683,6 +1683,13 @@ pub enum Action {
     },
     StopRequiresTag {
         tag: String,
+        /// The gate is ALSO satisfied when the stopped attack is itself unstoppable —
+        /// "Stop any Finish Submission that has a Spotlight OR that cannot be stopped":
+        /// the tag requirement is OR-ed with unstoppability rather than being a hard
+        /// AND. Pair with `Stop.even_unstoppable` so the stop can actually catch the
+        /// unstoppable case. Read in `card_can_stop`. schema v137
+        #[serde(default, skip_serializing_if = "is_false")]
+        or_unstoppable: bool,
     },
     BlankGimmick {
         who: Who,
@@ -3216,6 +3223,13 @@ pub enum IrNode {
     },
     StopRequiresTag {
         tag: String,
+        /// The gate is ALSO satisfied when the stopped attack is itself unstoppable —
+        /// "Stop any Finish Submission that has a Spotlight OR that cannot be stopped":
+        /// the tag requirement is OR-ed with unstoppability rather than being a hard
+        /// AND. Pair with `Stop.even_unstoppable` so the stop can actually catch the
+        /// unstoppable case. Read in `card_can_stop`. schema v137
+        #[serde(default, skip_serializing_if = "is_false")]
+        or_unstoppable: bool,
     },
     BlankGimmick {
         who: Who,

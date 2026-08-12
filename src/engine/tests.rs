@@ -4477,6 +4477,113 @@ mod even_unstoppable_stop_tests {
     }
 }
 
+/// `StopRequiresTag { or_unstoppable }` (schema v137): the tag gate is OR-ed with the
+/// attack being unstoppable — 4115e53f, "Stop any Finish Submission that has a Spotlight
+/// OR that cannot be stopped." The paired `Stop { even_unstoppable }` pierces the
+/// unstoppable case; without a Spotlight AND without unstoppability the stop is illegal.
+#[cfg(test)]
+mod stop_requires_tag_or_unstoppable_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    /// The 4115e53f stopper: Stop{Finish Submission, even_unstoppable} +
+    /// StopRequiresTag{Spotlight, or_unstoppable}.
+    fn stopper() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "stop", "name": "stop", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "OnPlay"}, "condition": {"@type": "Always"},
+                "actions": [
+                    {"@type": "Stop", "order": "Finish", "atk_type": "Submission",
+                     "source_is_skillreq": false, "even_unstoppable": true},
+                    {"@type": "StopRequiresTag", "tag": "Spotlight", "or_unstoppable": true}
+                ],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stopper")
+    }
+
+    /// A Finish Submission attack: `spotlight` grafts the Spotlight tag; `unstoppable`
+    /// declares "this card cannot be stopped".
+    fn sub_attack(spotlight: bool, unstoppable: bool) -> Card {
+        let effects: Value = if unstoppable {
+            json!([{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Unstoppable", "by_order": null}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }])
+        } else {
+            json!([])
+        };
+        let tags: Value = if spotlight {
+            json!(["Spotlight"])
+        } else {
+            json!([])
+        };
+        serde_json::from_value(json!({
+            "atk_type": "Submission", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": tags, "finish_bonuses": {},
+            "effects": effects
+        }))
+        .expect("attack")
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(&mut self, _: &str, _: &str, l: &[Value], _: &mut GameState) -> Option<Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    #[test]
+    fn stops_a_spotlight_finish_submission() {
+        // Tag branch satisfied; not unstoppable.
+        assert!(engine().card_can_stop("A", &stopper(), &sub_attack(true, false)));
+    }
+
+    #[test]
+    fn stops_an_unstoppable_finish_submission_without_a_spotlight() {
+        // or_unstoppable branch satisfied; even_unstoppable pierces the shield.
+        assert!(engine().card_can_stop("A", &stopper(), &sub_attack(false, true)));
+    }
+
+    #[test]
+    fn cannot_stop_a_plain_finish_submission() {
+        // Neither a Spotlight nor unstoppable -> the gate is not met.
+        assert!(!engine().card_can_stop("A", &stopper(), &sub_attack(false, false)));
+    }
+}
+
 #[cfg(test)]
 mod man_from_it_tests {
     use super::*;

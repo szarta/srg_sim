@@ -3802,6 +3802,66 @@
       }
     }
   ],
+  "4115e53ff9f04c6f8e48897028f554f8": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Submission",
+          "even_unstoppable": true,
+          "order": "Finish",
+          "source_is_skillreq": false,
+          "target": null
+        },
+        {
+          "@type": "StopRequiresTag",
+          "or_unstoppable": true,
+          "tag": "Spotlight"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Stop any Finish Submission that has a Spotlight or that cannot be stopped.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
   "4171d7464914421e9c36a381ed559aa1": [
     {
       "@type": "Effect",
@@ -6306,6 +6366,7 @@
         },
         {
           "@type": "StopRequiresTag",
+          "or_unstoppable": false,
           "tag": "Spotlight"
         }
       ],
@@ -6465,6 +6526,7 @@
         },
         {
           "@type": "StopRequiresTag",
+          "or_unstoppable": false,
           "tag": "Spotlight"
         }
       ],
@@ -8122,6 +8184,7 @@
         },
         {
           "@type": "StopRequiresTag",
+          "or_unstoppable": false,
           "tag": "Spotlight"
         }
       ],
@@ -9352,6 +9415,7 @@
         },
         {
           "@type": "StopRequiresTag",
+          "or_unstoppable": false,
           "tag": "Spotlight"
         }
       ],
@@ -17597,6 +17661,7 @@
         },
         {
           "@type": "StopRequiresTag",
+          "or_unstoppable": false,
           "tag": "Spotlight"
         }
       ],

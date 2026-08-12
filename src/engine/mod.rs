@@ -4992,7 +4992,7 @@ impl Engine {
         let unstoppable = self.attack_is_unstoppable_by(&attacker, attack, stopper);
         stopper.effects.iter().any(|eff| {
             conditions::holds(&eff.condition, &self.state, defender, None)
-                && attacker_meets_tag_gates(eff, attack)
+                && attacker_meets_tag_gates(eff, attack, unstoppable)
                 && eff.actions.iter().any(|action| match action {
                     Action::Stop {
                         even_unstoppable, ..
@@ -7333,9 +7333,12 @@ fn reveal_option(card: &Card) -> Value {
 /// Whether `attack` satisfies every `StopRequiresTag` gate in a stop `eff` — a
 /// passive marker paired with a sibling `Stop`, requiring the attacked card carry
 /// the named tag ("Stop any Grapple **with a Spotlight**"). No gate ⇒ always true.
-fn attacker_meets_tag_gates(eff: &Effect, attack: &Card) -> bool {
+fn attacker_meets_tag_gates(eff: &Effect, attack: &Card, unstoppable: bool) -> bool {
     eff.actions.iter().all(|a| match a {
-        Action::StopRequiresTag { tag } => attack.tags.contains(tag),
+        Action::StopRequiresTag {
+            tag,
+            or_unstoppable,
+        } => attack.tags.contains(tag) || (*or_unstoppable && unstoppable),
         _ => true,
     })
 }

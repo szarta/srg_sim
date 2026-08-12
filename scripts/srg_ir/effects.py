@@ -1520,9 +1520,12 @@ class StopRequiresTag(IRNode):
     """A passive marker paired with a sibling :class:`Stop` in the same effect: the
     stop is only legal when the attacked card carries ``tag`` — "Stop any Grapple
     with a Spotlight" (Stop(atk_type=Grapple) + StopRequiresTag("Spotlight")). Read
-    by ``_card_can_stop``; never executed as a mutation."""
+    by ``_card_can_stop``; never executed as a mutation. ``or_unstoppable`` OR-s the
+    tag requirement with the attack being unstoppable ("… has a Spotlight OR that
+    cannot be stopped"); pair with ``Stop(even_unstoppable=True)``."""
 
     tag: str = ""
+    or_unstoppable: bool = False
 
 
 @dataclass(frozen=True)
