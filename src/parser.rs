@@ -2338,6 +2338,13 @@ fn count_filter(text: &str) -> Option<CardFilter> {
             ..Default::default()
         });
     }
+    // "Spotlight": the synthetic Spotlight tag (folded from the DB `spotlight`
+    // flag at load). A first-class selector everywhere count_filter is read —
+    // Spotlight searches/recurs/per-counts ("a Spotlight card", "for each
+    // Spotlight you have in play"). `t` is already lowercased + de-pluralized.
+    if t == "spotlight" {
+        return Some(cf_tag("Spotlight"));
+    }
     let play_order = match t {
         "lead" => PlayOrder::Lead,
         "follow up" => PlayOrder::Followup,
@@ -5075,6 +5082,20 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Standalone self-recycle body: "shuffle it / this card into your deck" ->
+        // ShuffleSelfIntoDeck on the trigger's bound referent. Reached as the BODY of a
+        // triggered clause (the trigger + "you may" optionality come from trigger_body);
+        // e.g. the WHILE_IN_DISCARD "if your opponent hits a Grapple, shuffle it into
+        // your deck" family. Distinct from the flip-anchored rule above, which carries
+        // its own OnFlip trigger. The placeholder OnPlay trigger is overwritten upstream.
+        rule(r"[Ss]huffle (?:it|this card) into your deck", |_| {
+            Some(eff(
+                Trigger::OnPlay,
+                vec![Action::ShuffleSelfIntoDeck],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
         // "you may play it[ as an additional card this turn]" -> PlaySelf (the play is
         // itself the bonus action, so "as an additional card" folds in).
         rule(
@@ -7235,6 +7256,16 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
         // Strike from your discard pile on top of your deck") -> OnHit{Opp, atk} + body.
         rule(
             &format!(r"When your opponent hits (?:an? )?{ATK}[,:] (.+)"),
+            |c| trigger_body(on_hit_type_who(atk(&c[1]), Who::Opp), &c[2]),
+        ),
+        // "If your opponent hits a <ATK>[,] <body>" — the "If"-phrased opponent OnHit
+        // twin of the rule above, with an OPTIONAL separator: the in-discard self-recycle
+        // family writes "hits a Grapple you may shuffle it …" (no comma) as well as "hits
+        // a Submission, shuffle this card …". Reached via while_in_discard_effect for the
+        // WHILE_IN_DISCARD forms (15b5b7e6, 93d7272d). The whole-clause "When …" rules win
+        // first; this lands the leftover "If" gate-phrased trigger shape.
+        rule(
+            &format!(r"If your opponent hits (?:an? )?{ATK},? (.+)"),
             |c| trigger_body(on_hit_type_who(atk(&c[1]), Who::Opp), &c[2]),
         ),
         // Name/text-gated OnHit: "When you hit a [<type>] card with 'X' [or 'Y'] in the

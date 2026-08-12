@@ -5538,36 +5538,12 @@ c6cea4fe18774ca5a4f879c8a243821a:
 # these match via the ordinary CardFilter{tag: Spotlight} predicate — no IR change.
 # ---------------------------------------------------------------------------
 
-# I Was Made for the Spotlight (Lead Strike): "Search your deck for a Spotlight
-# card and add it to your hand." OnPlay -> Search(tag=Spotlight) to hand.
-e21a54a0092849c8bc7fc633214b73b8:
-- '@type': Effect
-  trigger:
-    '@type': OnPlay
-  condition:
-    '@type': Always
-  actions:
-  - '@type': Search
-    filter:
-      '@type': CardFilter
-      number: null
-      atk_type: null
-      play_order: null
-      tag: Spotlight
-      name: null
-      raw: null
-      name_contains: []
-      text_contains: []
-    dest: HAND
-    count: 1
-  duration: INSTANT
-  frequency:
-    '@type': FrequencyGuard
-    kind: UNLIMITED
-    n: null
-  raw_clause: Search your deck for a Spotlight card and add it to your hand.
-  source: card
-  optional: false
+# "I Was Made for the Spotlight" (Lead Strike/Grapple/Submission reprints):
+# "Search your deck for a Spotlight card and add it to your hand." Now covered by
+# grammar — count_filter maps "Spotlight" to the synthetic tag, and the generic
+# deck-tutor rule builds OnHit -> Search(tag=Spotlight) to hand. (Was an OnPlay
+# override for the Strike copy only; grammar unifies all three reprints, and OnHit
+# is the correct semantics — a stopped Lead's text does not resolve.)
 
 # ---------------------------------------------------------------------------
 # Stop-any-X-with-a-Spotlight (schema v26): the StopRequiresTag marker pairs with

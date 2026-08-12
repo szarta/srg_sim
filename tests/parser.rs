@@ -2337,6 +2337,23 @@ fn trent_riders_grammar() {
     assert_eq!(e["optional"], true);
     assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
 
+    // WhileInDiscard self-recycle on the OPPONENT's hit: "if your opponent hits a
+    // <ATK>[,] shuffle it/this card into your deck" -> OnHit{Opp, atk} +
+    // ShuffleSelfIntoDeck, fired from the pile by discard_self_triggers. "you may" ->
+    // optional (15b5b7e6, a Spotlight card); the comma-less mandatory twin is 93d7272d.
+    let e = one("When this card is in your discard pile, if your opponent hits a Grapple you may shuffle it into your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["trigger"]["atk_type"], "Grapple");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+
+    let e = one("When this card is in your discard pile: If your opponent hits a Submission, shuffle this card into your deck.");
+    assert_eq!(e["trigger"]["atk_type"], "Submission");
+    assert_eq!(e["optional"], false);
+    assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
+
     // #29 Dudebuster: shuffle any number from HAND, draw the same number.
     let e = one("Shuffle any number of cards from your hand into your deck, then draw the same number of cards.");
     assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
@@ -4817,9 +4834,12 @@ fn search_deck_tutor() {
     let e = a1("Search your deck for 1 card with \"Ladder\" in the name and add it to your hand.");
     assert_eq!(e["actions"][0]["filter"]["name_contains"][0], "Ladder");
 
-    // A selector with no CardFilter (Spotlight) declines cleanly -> Unsupported.
+    // The Spotlight selector maps to the synthetic Spotlight tag (folded from the DB
+    // `spotlight` flag), so the tutor resolves to a Search over tag=Spotlight, count 1.
     let e = a1("Search your deck for a Spotlight card and add it to your hand.");
-    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+    assert_eq!(e["actions"][0]["@type"], "Search");
+    assert_eq!(e["actions"][0]["filter"]["tag"], "Spotlight");
+    assert_eq!(e["actions"][0]["count"], 1);
 
     // A bare quoted card name (no count) -> that one named card, count 1.
     let e = a1("Search your deck for \"Clothesline\" and add it to your hand.");
