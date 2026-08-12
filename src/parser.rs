@@ -7082,23 +7082,12 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                 )
             },
         ),
-        // "If you have N <Competitor> Finishes in your discard pile, stop any <X>"
-        // (Fortress's Tower of Strength). In a legal deck every Finish you own is your
-        // competitor's, so "<Competitor> Finishes" = Finish-play-order cards; the
-        // competitor word is captured and ignored. schema v136
-        rule(
-            r"If you have (\d+) (?:[A-Za-z]+ )?Finishes? in your discard pile, stop any (.+)",
-            |c| {
-                stop_eff(
-                    &c[2],
-                    Condition::HasInDiscard {
-                        who: Who::SelfSide,
-                        filter: cf_order(PlayOrder::Finish),
-                        count: num(c, 1),
-                    },
-                )
-            },
-        ),
+        // NOTE: "If you have N <Competitor> Finishes in your discard pile, stop any <X>"
+        // (Fortress's Tower of Strength, Void's front/back) is NOT grammar: "<Competitor>
+        // Finishes" means that competitor's SIGNATURE finishes, not any Finish — a deck may
+        // run Logoless/other finishes that must not count — and the Card model carries no
+        // competitor linkage to filter on. Such clauses are bespoke overrides that name the
+        // finishes (a `name_contains` filter). See overrides.yaml (Tower of Strength).
         rule(
             &format!(r"If your opponent has another {ATK} in play, stop any (.+)"),
             |c| stop_eff(&c[2], has_in_play(Who::Opp, cf_atk(atk(&c[1])), 1)),

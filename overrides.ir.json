@@ -14937,6 +14937,105 @@
       }
     }
   ],
+  "cfc5879347f5488d886521c4ffc9668d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Power",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Agility"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Agility",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Stop",
+          "atk_type": "Strike",
+          "even_unstoppable": false,
+          "order": "Finish",
+          "source_is_skillreq": false,
+          "target": null
+        }
+      ],
+      "condition": {
+        "@type": "HasInDiscard",
+        "count": 2,
+        "filter": {
+          "@type": "CardFilter",
+          "atk_type": null,
+          "is_stop": null,
+          "name": null,
+          "name_contains": [
+            "Abombanational Weaponry",
+            "Bastion's Hold",
+            "Tower of Strength"
+          ],
+          "number": null,
+          "play_order": null,
+          "play_orders": [],
+          "raw": null,
+          "tag": null,
+          "text_contains": []
+        },
+        "who": "SELF"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "If you have 2 Fortress Finishes in your discard pile, stop any Finish Strike.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnPlay"
+      }
+    }
+  ],
   "d06fa40b158946f4b74de295052654b9": [
     {
       "@type": "Effect",

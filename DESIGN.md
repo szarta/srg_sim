@@ -177,7 +177,7 @@ CrowdMeterCompare(cmp, value)
 DeckSizeCompare(cmp, value, who=SELF)  # who's remaining deck size vs value — "if you have 0 cards in your deck" (Foxworthy V3). schema v82
 MatchHasNoDisqualifications  # the match currently has no disqualifications (neither player can be DQ'd; GameState.match_has_no_dq) — Cardona's Pizza Cutter. schema v83
 IsMatchType(types)  # the match stipulation is one of `types` ("if this is a Steel Cage or Liger's Den Match, …"); disjunction over GameState.match_type. 156-clause gate family. schema v92
-HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(...)
+HasInPlay(who, filter, count=1, cmp=>=) / HasInDiscard(who, filter, count=1)  # HasInDiscard count: "if you have N <X> in your discard pile" (Fortress's Tower of Strength, count 2). Default 1 = "has >=1". schema v136
 ChosenNameIs(name, who)      # who's ChooseName binding == name; the gate that resolves "that" name into one concrete effect per
                              # option (Raven). False until a choice is bound. schema v37
 InPlayCompare(filter, cmp, who, vs_who)  # cross-board: who's count of filter in play `cmp` vs_who's count ("target has more
@@ -273,6 +273,9 @@ Scry(deck, top=0, bottom=0, reveal=False, to_hand=0, bury=0, rest=RETURN|CHOOSE|
                               # FLIP (mill leftovers to discard — "add M to your hand and flip the others"; schema v69)
                               # or MAY_FLIP (optional single-card flip — mill only what's worth denying/shedding, leave
                               # the rest on top; "look at the top card of your opponent's deck, you may flip it"; v96).
+                              # to_hand_filter (opt): restrict which revealed cards `to_hand` may take — "add 1 STOP to
+                              # your hand and bury the others" (Fortress); only a match qualifies, the rest fall through
+                              # to bury/rest. None = take the `to_hand` best regardless of kind. schema v136
                               # reveal=public (logged) vs private "look at". Perfect Assistant/Split/Ricky Riot/Oracle
 RevealRoute(deck, match_atk, on_match, on_fail, fail_optional=False, reveal=False, reveal_from=TOP, match_parity=None)
                               # schema v12/v13: reveal 1 from `reveal_from` (TOP|BOTTOM|CHOOSE, blind->top); if the

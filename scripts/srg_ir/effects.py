@@ -756,6 +756,9 @@ class HasInHand(IRNode):
 class HasInDiscard(IRNode):
     who: Who
     filter: CardFilter = CardFilter()
+    # How many matching cards the pile must hold ("2 Fortress Finishes"). Defaults to 1
+    # ("has >=1"), so the boolean forms neither carry nor churn it. schema v136
+    count: int = 1
 
 
 @dataclass(frozen=True)

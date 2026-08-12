@@ -2697,9 +2697,9 @@ fn emo_mam_gimmick_redirect_grammar() {
     }
 }
 
-/// Fortress (task #136, favorite comps, schema v136): #29's WhileInDiscard MaxHandSize
-/// (the passive-discard family-A reader) and #30's finishes-in-discard-gated stop. The
-/// gimmick (a two-sentence scry) is an override, exercised via the golden.
+/// Fortress (task #136, favorite comps, schema v136): #29's WhileInDiscard MaxHandSize —
+/// the passive-discard family-A reader. #30's finishes-in-discard stop and the gimmick's
+/// two-sentence scry are overrides (competitor-specific), exercised via the golden.
 #[test]
 fn fortress_riders_grammar() {
     fn one_effect(text: &str) -> Value {
@@ -2715,16 +2715,38 @@ fn fortress_riders_grammar() {
     assert_eq!(e["actions"][0]["@type"], "MaxHandSize");
     assert_eq!(e["actions"][0]["delta"], 2);
 
-    // #30 Tower of Strength: a Finish-Strike stop gated on 2 Finishes in your discard.
+    // "N <Competitor> Finishes in your discard pile" is NOT grammar: "<Competitor> Finishes"
+    // means that competitor's signature finishes, not any Finish (a Logoless finish must not
+    // count), and the Card model has no competitor linkage — so it stays Unsupported and is
+    // handled by a name-listing override (see fortress_finishes_stop below).
     let e =
         one_effect("If you have 2 Fortress Finishes in your discard pile, stop any Finish Strike.");
-    assert_eq!(e["trigger"]["@type"], "OnPlay");
-    assert_eq!(e["condition"]["@type"], "HasInDiscard");
-    assert_eq!(e["condition"]["count"], 2);
-    assert_eq!(e["condition"]["filter"]["play_order"], "Finish");
-    assert_eq!(e["actions"][0]["@type"], "Stop");
-    assert_eq!(e["actions"][0]["order"], "Finish");
-    assert_eq!(e["actions"][0]["atk_type"], "Strike");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
+/// #30 Tower of Strength's override models "2 Fortress Finishes in your discard" as a
+/// name-list `HasInDiscard` (count 2) so Logoless/other finishes never count.
+#[test]
+fn fortress_finishes_stop() {
+    let overrides = overrides();
+    let effs = parse_text(
+        "+1 to Power\n+2 to Agility\nIf you have 2 Fortress Finishes in your discard pile, stop any Finish Strike.",
+        EffectSource::Card,
+        Some("cfc5879347f5488d886521c4ffc9668d"),
+        Some(&overrides),
+    );
+    let stop = effs
+        .iter()
+        .map(|e| serde_json::to_value(e).unwrap())
+        .find(|e| e["actions"][0]["@type"] == "Stop")
+        .expect("a gated stop effect");
+    assert_eq!(stop["condition"]["@type"], "HasInDiscard");
+    assert_eq!(stop["condition"]["count"], 2);
+    let names = &stop["condition"]["filter"]["name_contains"];
+    assert_eq!(names[0], "Abombanational Weaponry");
+    assert_eq!(names[2], "Tower of Strength");
+    assert_eq!(stop["actions"][0]["order"], "Finish");
+    assert_eq!(stop["actions"][0]["atk_type"], "Strike");
 }
 
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.

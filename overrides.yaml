@@ -1183,6 +1183,77 @@ c7c67bea6ff64c3b81cc812363c23ac4:
   source: gimmick
   optional: false
 
+# Tower of Strength (Fortress #30): "+1 to Power / +2 to Agility / If you have 2 Fortress
+# Finishes in your discard pile, stop any Finish Strike." "Fortress Finishes" = Fortress's
+# THREE signature finishes (Abombanational Weaponry, Bastion's Hold, Tower of Strength) —
+# NOT any Finish: a deck may run Logoless/other-competitor finishes that must NOT count,
+# and the Card model has no competitor linkage to filter on, so we name them (name_contains,
+# case-insensitive substring — the titles are distinctive). An override (grammar can't
+# derive the three names from "Fortress Finishes"). The finish bonuses carry over verbatim.
+cfc5879347f5488d886521c4ffc9668d:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Power
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Agility
+    delta: 2
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +2 to Agility
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnPlay
+  condition:
+    '@type': HasInDiscard
+    who: SELF
+    count: 2
+    filter:
+      '@type': CardFilter
+      name_contains:
+      - Abombanational Weaponry
+      - Bastion's Hold
+      - Tower of Strength
+  actions:
+  - '@type': Stop
+    order: Finish
+    atk_type: Strike
+    source_is_skillreq: false
+    even_unstoppable: false
+    target: null
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If you have 2 Fortress Finishes in your discard pile, stop any Finish Strike.
+  source: card
+  optional: false
+
 # Little Guido: roll Power -> (opponent's next turn roll -2) OR (draw 1 card).
 # An "A or B" gimmick -> Choice; the acting player picks a branch. Debuff ordered
 # first so the heuristic default leans into tempo.

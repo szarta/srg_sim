@@ -2685,6 +2685,78 @@ mod scry_filter_tests {
     }
 }
 
+/// Fortress's Tower of Strength (task #136): "2 Fortress Finishes in your discard" is a
+/// name-list `HasInDiscard(count=2)` — a Logoless (or other-competitor) finish must NOT
+/// count toward the two, even though it is a Finish.
+#[cfg(test)]
+mod has_in_discard_count_tests {
+    use super::*;
+
+    fn finish(name: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": name, "name": name, "number": 30,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []
+        }))
+        .unwrap()
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Intergalactic", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new())),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn two_fortress_finishes() -> Condition {
+        serde_json::from_value(json!({
+            "@type": "HasInDiscard", "who": "SELF", "count": 2,
+            "filter": {"@type": "CardFilter",
+                "name_contains": ["Abombanational Weaponry", "Bastion's Hold", "Tower of Strength"]}
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn two_fortress_finishes_in_discard_satisfy_the_gate() {
+        let mut engine = engine();
+        let d = &mut engine.state.players.get_mut("A").unwrap().discard;
+        d.push(finish("Abombanational Weaponry"));
+        d.push(finish("Bastion's Hold"));
+        assert!(crate::conditions::holds(
+            &two_fortress_finishes(),
+            &engine.state,
+            "A",
+            None
+        ));
+    }
+
+    #[test]
+    fn a_logoless_finish_does_not_count_toward_the_two() {
+        let mut engine = engine();
+        let d = &mut engine.state.players.get_mut("A").unwrap().discard;
+        // One real Fortress finish + one Logoless finish = only ONE match, gate fails.
+        d.push(finish("Bastion's Hold"));
+        d.push(finish("Logoless Superkick"));
+        assert!(
+            !crate::conditions::holds(&two_fortress_finishes(), &engine.state, "A", None),
+            "a Logoless finish must not count as a Fortress Finish"
+        );
+    }
+}
+
 #[cfg(test)]
 mod roll_order_tests {
     use super::*;
