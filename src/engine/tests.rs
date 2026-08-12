@@ -3014,6 +3014,76 @@ mod dq_immunity_tests {
     }
 
     #[test]
+    fn crowd_meter_increase_fires_the_gimmick() {
+        // Khloe Mai's engine: "When the Crowd Meter increases, draw 1." A's
+        // OnCrowdMeterIncrease gimmick fires on any positive swing (here an explicit
+        // act_crowd(+1)); a DECREASE never fires it; B has no such gimmick.
+        let on_cm_draw = json!([{
+            "@type": "Effect",
+            "trigger": {"@type": "OnCrowdMeterIncrease"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "Draw", "n": 1, "source": "TOP", "who": "SELF",
+                         "per": null, "per_who": "SELF", "cap": null,
+                         "per_excludes_trigger": false, "from_crowd": false}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "when the Crowd Meter increases, draw 1", "source": "gimmick",
+            "optional": false
+        }]);
+        let mut e = engine_with(on_cm_draw, json!([]));
+        let before = e.state.players["A"].hand.len();
+        e.act_crowd(1, "A").unwrap();
+        assert_eq!(
+            e.state.players["A"].hand.len(),
+            before + 1,
+            "a CM increase fires A's OnCrowdMeterIncrease gimmick (draw 1)"
+        );
+        let mid = e.state.players["A"].hand.len();
+        e.act_crowd(-1, "A").unwrap();
+        assert_eq!(
+            e.state.players["A"].hand.len(),
+            mid,
+            "a CM decrease never fires the increase trigger"
+        );
+    }
+
+    #[test]
+    fn bleeding_out_poison_forces_random_discard_moves_for_the_opponent() {
+        // #30 Bleeding Out sits in B's discard declaring a Static WHILE_IN_DISCARD
+        // ForceRandomDiscardMove{OPP}: A (B's opponent) must resolve discard moves
+        // randomly; B, the declaring owner, is unaffected.
+        let mut e = engine_with(json!([]), json!([]));
+        let poison: Card = serde_json::from_value(json!({
+            "atk_type": "Submission", "db_uuid": "bleeding-out", "name": "Bleeding Out",
+            "number": 30, "play_order": "Finish", "raw_text": "", "tags": [],
+            "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect",
+                "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "ForceRandomDiscardMove", "who": "OPP"}],
+                "duration": "WHILE_IN_DISCARD",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "force random", "source": "card", "optional": false
+            }]
+        }))
+        .unwrap();
+        assert!(
+            !e.state.force_random_discard_move("A"),
+            "no poison in play yet"
+        );
+        e.state.players.get_mut("B").unwrap().discard.push(poison);
+        assert!(
+            e.state.force_random_discard_move("A"),
+            "B's in-discard poison forces A's discard moves random"
+        );
+        assert!(
+            !e.state.force_random_discard_move("B"),
+            "the declaring owner (B) is not poisoned"
+        );
+    }
+
+    #[test]
     fn a_blanked_gimmick_declares_no_immunity() {
         // The 2026-07-20 call: blanking a gimmick makes its text inert, so Cardona's
         // "you cannot be disqualified" dies with it — matching the suppression flags.

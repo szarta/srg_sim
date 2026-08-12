@@ -1588,6 +1588,16 @@ fn choice_body(body: &str) -> Option<Effect> {
     ))
 }
 
+/// A bare "When the Crowd Meter increases:" trigger header on its own clause — Khloe
+/// Mai's gimmick splits the body onto the next line. Consumed by the parse loop, which
+/// re-parses the following clause under [`Trigger::OnCrowdMeterIncrease`]. The inline
+/// "When the Crowd Meter increases, <body>" form is handled by a single-clause rule.
+fn cm_increase_header(clause: &str) -> bool {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^When the Crowd Meter increases:?$").unwrap());
+    RE.is_match(clause.trim())
+}
+
 /// A standalone "Choose one[ of the following]:" header. Unlike the inline "X or Y"
 /// that [`choice_body`] splits, its options arrive as the FOLLOWING clauses — composed
 /// by [`choice_from_following`] in the parse loop.
@@ -4444,6 +4454,31 @@ fn build_flip_crowd_reroll_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // "Increase/Raise the Crowd Meter by N" — a positive CM swing body (Imaginary
+        // Dragon DDT's "If stopped, increase the Crowd Meter by 1" reaches it via the
+        // "If stopped, <body>" split; a bare clause fires on play). Companion to the
+        // "The Crowd Meter is +N" swing above, for the imperative phrasing.
+        rule(r"(?:[Ii]ncrease|[Rr]aise) the Crowd Meter by (\d+)", |c| {
+            Some(eff(
+                Trigger::OnPlay,
+                vec![Action::CrowdMeter { delta: num(c, 1) }],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // Standalone "bury this card" body -> `BuryThisCard` (self-recycle to the deck
+        // bottom). Reaches its gated form via the generic gate split (Imaginary Dragon
+        // DDT: "If the Crowd Meter is 5 or greater, bury this card"). Full-anchored, so
+        // the compound "discard N and bury this card or lose …" cost clauses (longer
+        // text) never match it.
+        rule(r"[Bb]ury this card", |_| {
+            Some(eff(
+                Trigger::OnPlay,
+                vec![Action::BuryThisCard],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
         // Re-roll grammar (the `Reroll` action pre-existed but was override-only). A
         // leading "You may" -> `Effect::optional`; "next" -> the one-shot NEXT turn-roll
         // grant, bare "your turn roll" -> the current roll (`This`, structural). Trigger/
@@ -5524,12 +5559,57 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "Shuffle N cards from your discard pile into your deck and then draw M card(s)"
+        // (Dragon Flare Kick) — the recur followed by a FIXED redraw (not `then_draw`,
+        // which couples the draw to the shuffled count). The shuffle count is simplified
+        // as the whole discard-recur family does; the draw is a plain Instant draw. Placed
+        // before the bare recur rule (whose `$` anchor can't reach the "and then draw" tail).
+        rule(
+            r"Shuffle (?:up to )?(\d+) cards? from your discard pile into your deck,? and then draw (\d+) cards?",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        shuffle_into(CardFilter::default(), ShuffleSource::Discard),
+                        draw(num(c, 2), Who::SelfSide, DeckEnd::Top, None, Who::SelfSide),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(
             r"Shuffle (?:up to )?(\d+) cards? from your discard pile into your deck",
             |_| {
                 Some(eff(
                     on_hit(),
                     vec![shuffle_into(CardFilter::default(), ShuffleSource::Discard)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "Choose N cards from your discard pile and randomly bury them" (a branch of
+        // Khloe Mai's "when the Crowd Meter increases" gimmick) — pick N of your OWN
+        // discard and recycle them to the deck. `random` honours the "randomly" wording;
+        // the count is the whole-family simplification (top-N recycle).
+        rule(
+            r"Choose (\d+) cards? from your discard pile and randomly bury them",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::Bury {
+                        choose: false,
+                        selector: CardFilter::default(),
+                        count: num(c, 1),
+                        who: Who::SelfSide,
+                        random: true,
+                        source: BuryFrom::Discard,
+                        per: None,
+                        per_who: Who::SelfSide,
+                        per_zone: CountZone::InPlay,
+                        all: false,
+                    }],
                     Condition::Always,
                     Duration::Instant,
                 ))
@@ -7073,6 +7153,12 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
         rule(r"At the start of the match[,:] (.+)", |c| {
             trigger_body(Trigger::StartOfMatch, &c[1])
         }),
+        // Inline "When the Crowd Meter increases[,:] <body>" (3 DB cards; Khloe Mai's
+        // gimmick instead splits the body onto the next line and is joined by the
+        // `cm_increase_header` consumer in the parse loop). Both feed the same trigger.
+        rule(r"When the Crowd Meter increases[,:] (.+)", |c| {
+            trigger_body(Trigger::OnCrowdMeterIncrease, &c[1])
+        }),
         rule(r"At the start of your turn[,:] (.+)", |c| {
             trigger_body(Trigger::StartOfTurn, &c[1])
         }),
@@ -7884,6 +7970,26 @@ pub fn parse_text(
                 effects.push(base);
                 effects.push(scope(instead, &window));
                 i += 1;
+                continue;
+            }
+        }
+        // Bare "When the Crowd Meter increases:" header (a standalone line): re-parse
+        // the following clause as the body under `OnCrowdMeterIncrease`. If it doesn't
+        // parse, fall through so the header compiles to Unsupported (never a silent drop).
+        if cm_increase_header(clause) {
+            if let Some(mut eff) = clauses
+                .get(i + 1)
+                .and_then(|nxt| trigger_body(Trigger::OnCrowdMeterIncrease, nxt))
+            {
+                eff.raw_clause = format!("{clause} {}", clauses[i + 1]);
+                eff.source = source;
+                eff.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: freq,
+                    n,
+                };
+                effects.push(scope(eff, &window));
+                i += 2;
                 continue;
             }
         }

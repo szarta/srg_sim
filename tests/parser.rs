@@ -734,9 +734,11 @@ fn draw_rider_grammar() {
     assert_eq!(e["trigger"]["@type"], "OnStop");
     assert_eq!(e["actions"][0]["from_crowd"], true);
     assert_eq!(e["actions"][0]["cap"], 3);
-    // A compound "… or …" isn't a single Draw -> the whole clause stays Unsupported.
+    // A compound "… or …" is no longer a single Draw: with the discard-bury branch now
+    // modelled (Khloe Mai's gimmick body), the clause composes into a `Choice` via
+    // `choice_body` — the draw rule still doesn't greedily swallow the longer clause.
     let e = parse1("Draw cards equal to the Crowd Meter +1 or choose 2 cards from your discard pile and randomly bury them.");
-    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+    assert_eq!(e["actions"][0]["@type"], "Choice");
 }
 
 /// Multiline "Choose one:" header (Booty Drop Chop): the header sits on its own line
@@ -2484,6 +2486,68 @@ fn witch_riders_grammar() {
     assert_eq!(e["actions"][0]["@type"], "Reroll");
     assert_eq!(e["actions"][0]["breakout"], true);
     assert_eq!(e["actions"][0]["who"], "SELF");
+}
+
+/// Khloe Mai (task #130, schema v131): the `OnCrowdMeterIncrease` gimmick engine and its
+/// finish riders. #30 Bleeding Out's discard-random poison is an override (tested in the
+/// engine), so it is not covered here.
+#[test]
+fn khloe_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Gimmick: the bare "When the Crowd Meter increases:" header joins the following body
+    // clause (the parse-loop consumer), re-parsed under OnCrowdMeterIncrease. The body is
+    // an "X or Y" Choice: draw CM+1 (from_crowd) OR recur 2 from discard at random.
+    let e = one(
+        "When the Crowd Meter increases:\n\nDraw cards equal to the Crowd Meter +1 or choose 2 cards from your discard pile and randomly bury them.",
+    );
+    assert_eq!(e["trigger"]["@type"], "OnCrowdMeterIncrease");
+    assert_eq!(e["actions"][0]["@type"], "Choice");
+    let opts = e["actions"][0]["options"].as_array().unwrap();
+    assert_eq!(opts.len(), 2);
+    assert_eq!(opts[0]["actions"][0]["@type"], "Draw");
+    assert_eq!(opts[0]["actions"][0]["from_crowd"], true);
+    assert_eq!(opts[0]["actions"][0]["n"], 1);
+    assert_eq!(opts[1]["actions"][0]["@type"], "Bury");
+    assert_eq!(opts[1]["actions"][0]["source"], "DISCARD");
+    assert_eq!(opts[1]["actions"][0]["who"], "SELF");
+    assert_eq!(opts[1]["actions"][0]["count"], 2);
+    assert_eq!(opts[1]["actions"][0]["random"], true);
+
+    // Inline sibling of the family: "When the Crowd Meter increases, <body>" on one clause.
+    let e = one("When the Crowd Meter increases, draw 2 cards.");
+    assert_eq!(e["trigger"]["@type"], "OnCrowdMeterIncrease");
+    assert_eq!(e["actions"][0]["@type"], "Draw");
+    assert_eq!(e["actions"][0]["n"], 2);
+
+    // #28 Dragon Flare Kick: recur 3 from discard, then a FIXED draw of 1 (two actions;
+    // NOT `then_draw`, which would couple the draw to the shuffled count).
+    let e = one("Shuffle 3 cards from your discard pile into your deck and then draw 1 card.");
+    assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
+    assert_eq!(e["actions"][0]["source"], "DISCARD");
+    // `then_draw` is skip-serialized when false — the fixed draw is a SEPARATE Draw action.
+    assert!(e["actions"][0]["then_draw"].as_bool() != Some(true));
+    assert_eq!(e["actions"][1]["@type"], "Draw");
+    assert_eq!(e["actions"][1]["n"], 1);
+
+    // #29 Imaginary Dragon DDT: "If stopped, increase the Crowd Meter by 1" -> OnStop
+    // CrowdMeter{+1} (the imperative CM-swing body composes with the If-stopped split).
+    let e = one("If stopped, increase the Crowd Meter by 1.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["actions"][0]["@type"], "CrowdMeter");
+    assert_eq!(e["actions"][0]["delta"], 1);
+
+    // #29: "If the Crowd Meter is 5 or greater, bury this card" -> the generic gate over a
+    // standalone `BuryThisCard` body (self-recycle), gated on CrowdMeterCompare(>=5).
+    let e = one("If the Crowd Meter is 5 or greater, bury this card.");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["condition"]["cmp"], ">=");
+    assert_eq!(e["condition"]["value"], 5);
+    assert_eq!(e["actions"][0]["@type"], "BuryThisCard");
 }
 
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.

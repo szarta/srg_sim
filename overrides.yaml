@@ -12139,3 +12139,49 @@ f42eb6454c7e41b089ba563fdd333ab5:
   frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
   raw_clause: add 1 card from your discard pile to your hand or look at the top 3, keep 2, bury the other
   source: card
+
+# --- Khloe Mai (decks/khloe-mai.yaml) — #30 Bleeding Out (task #130, schema v131) ---
+# "+2 Power, +2 Submission, When this card is in your discard pile: Choose an opponent.
+# When their card or Gimmick would move a card from their discard pile, they must do it
+# randomly." The two FinishBonus restate the grammar verbatim; the poison is a Static
+# WHILE_IN_DISCARD ForceRandomDiscardMove{OPP} (the owner's opponent), read at the
+# discard-move choice sites by `GameState::force_random_discard_move`. Overridden (not
+# grammar) because the "When in discard: / Choose an opponent. / When their card…" body
+# splits across three clauses. The "choose an opponent" preamble is absorbed into who=OPP
+# (two players → determined).
+50b2bd725a5a40e8b77d8cd2e0d24a9a:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': FinishBonus
+    skill: Power
+    delta: 2
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': FinishBonus
+    skill: Submission
+    delta: 2
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': ForceRandomDiscardMove
+    who: OPP
+  duration: WHILE_IN_DISCARD
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: 'When this card is in your discard pile: Choose an opponent. When their card or Gimmick would move a card from their discard pile, they must do it randomly.'
+  source: card
+  optional: false

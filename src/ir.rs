@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 130;
+pub const SCHEMA_VERSION: i64 = 131;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -772,6 +772,12 @@ pub enum Trigger {
     OnDiscardMove {
         who: Who,
     },
+    /// Fires whenever the (shared) Crowd Meter goes UP — "when the Crowd Meter
+    /// increases, <body>" (Khloe Mai's gimmick, plus a small DB family). The meter is
+    /// global, so both players' standing effects carrying it fire on any positive swing,
+    /// however caused: the per-turn +1 after a breakout, or an effect-driven `CrowdMeter`
+    /// swing. A decrease never fires it. Dispatched by `run_on_cm_increase`. schema v131
+    OnCrowdMeterIncrease,
     Static,
 }
 
@@ -1709,6 +1715,15 @@ pub enum Action {
         enabled: bool,
         scope: DqScope,
     },
+    /// A Static poison: while the declaring card sits in play/discard, the `who`-side
+    /// (Bleeding Out: `Opp` = "an opponent") must resolve every card-/Gimmick-driven
+    /// move of a card OUT of their OWN discard pile RANDOMLY, losing the normal free
+    /// choice of which card to recur. Read at the discard-move choice sites
+    /// (`bury_from_discard`, `act_add_from_discard`) via `GameState::
+    /// force_random_discard_move`, never executed as a mutation. schema v131
+    ForceRandomDiscardMove {
+        who: Who,
+    },
     /// Install a Crowd Meter match-type's standing rules (GM Calace V1: "replace all
     /// Crowd Meter cards with … Steel Cage / Psycho Circus / Lumberjack / No DQ /
     /// Submission"). Appends `effects` to the owner's **Entrance** effects so they are
@@ -2287,6 +2302,8 @@ pub enum IrNode {
     OnDiscardMove {
         who: Who,
     },
+    /// Mirror of [`Trigger::OnCrowdMeterIncrease`]. schema v131
+    OnCrowdMeterIncrease,
     Static,
 
     // Conditions
@@ -3166,6 +3183,15 @@ pub enum IrNode {
     CountOutRule {
         enabled: bool,
         scope: DqScope,
+    },
+    /// A Static poison: while the declaring card sits in play/discard, the `who`-side
+    /// (Bleeding Out: `Opp` = "an opponent") must resolve every card-/Gimmick-driven
+    /// move of a card OUT of their OWN discard pile RANDOMLY, losing the normal free
+    /// choice of which card to recur. Read at the discard-move choice sites
+    /// (`bury_from_discard`, `act_add_from_discard`) via `GameState::
+    /// force_random_discard_move`, never executed as a mutation. schema v131
+    ForceRandomDiscardMove {
+        who: Who,
     },
     /// Install a Crowd Meter match-type's standing rules (GM Calace V1: "replace all
     /// Crowd Meter cards with … Steel Cage / Psycho Circus / Lumberjack / No DQ /

@@ -1235,6 +1235,9 @@
                 "$ref": "#/$defs/CountOutRule"
               },
               {
+                "$ref": "#/$defs/ForceRandomDiscardMove"
+              },
+              {
                 "$ref": "#/$defs/SwapCrowdMeter"
               },
               {
@@ -2147,6 +2150,9 @@
                 "$ref": "#/$defs/CountOutRule"
               },
               {
+                "$ref": "#/$defs/ForceRandomDiscardMove"
+              },
+              {
                 "$ref": "#/$defs/SwapCrowdMeter"
               },
               {
@@ -2395,6 +2401,9 @@
             },
             {
               "$ref": "#/$defs/OnShuffle"
+            },
+            {
+              "$ref": "#/$defs/OnCrowdMeterIncrease"
             },
             {
               "$ref": "#/$defs/OnDiscardMove"
@@ -2846,6 +2855,22 @@
       },
       "required": [
         "@type"
+      ],
+      "type": "object"
+    },
+    "ForceRandomDiscardMove": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "ForceRandomDiscardMove"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
       ],
       "type": "object"
     },
@@ -3303,6 +3328,9 @@
           "$ref": "#/$defs/OnShuffle"
         },
         {
+          "$ref": "#/$defs/OnCrowdMeterIncrease"
+        },
+        {
           "$ref": "#/$defs/OnDiscardMove"
         },
         {
@@ -3448,6 +3476,9 @@
         },
         {
           "$ref": "#/$defs/CountOutRule"
+        },
+        {
+          "$ref": "#/$defs/ForceRandomDiscardMove"
         },
         {
           "$ref": "#/$defs/SwapCrowdMeter"
@@ -4037,6 +4068,18 @@
         "who",
         "from_hand_only",
         "also_discard"
+      ],
+      "type": "object"
+    },
+    "OnCrowdMeterIncrease": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnCrowdMeterIncrease"
+        }
+      },
+      "required": [
+        "@type"
       ],
       "type": "object"
     },
@@ -5185,6 +5228,9 @@
                 "$ref": "#/$defs/CountOutRule"
               },
               {
+                "$ref": "#/$defs/ForceRandomDiscardMove"
+              },
+              {
                 "$ref": "#/$defs/SwapCrowdMeter"
               },
               {
@@ -6192,5 +6238,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 130
+  "version": 131
 }

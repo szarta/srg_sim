@@ -118,6 +118,8 @@ OnFlip(who, count?)          # when who flips cards (Flip mills deck→discard).
 OnDiscardMove(who)           # when one or more cards LEAVE who's discard pile via a card/gimmick EFFECT (recur-to-hand / shuffle-into-deck / recur-to-deck-top /
                              # hand-discard swap / effect-caused pile bury) — NOT the mechanical pass-and-recycle. Fires ONCE per action, not per card.
                              # who = owner of the PILE (OPP = "when your opponent moves any number of cards from their discard pile" — Brumeister V2). schema v34
+OnCrowdMeterIncrease         # whenever the (shared) Crowd Meter goes UP — the per-turn +1 after a breakout OR an effect-driven CrowdMeter swing (a decrease never fires it).
+                             # Both players' standing effects carrying it fire (global meter). "When the Crowd Meter increases, <body>" (Khloe Mai). schema v131
 Static                       # always-on passive (e.g. "+1 to Power"); duration-scoped, see below
 ```
 **"Hit" = a card resolving into play.** A card is hit either (a) when you play it and it is
@@ -345,6 +347,9 @@ DisqualificationRule(enabled, scope=SELF|MATCH)  # Static match-rule toggle (sch
                                                  # "no disqualifications"; a DQ LoseBy is VOIDED when the loser
                                                  # is immune (self-scope owner, or any match-scope rule). In-play-
                                                  # scoped + condition-gated; last-played-order tie-break is task #93
+ForceRandomDiscardMove(who)  # Static poison (schema v131): while the declaring card is in play/discard, the who-side (Bleeding Out:
+                             # OPP = "an opponent") must resolve every card-/Gimmick-driven move out of their OWN discard RANDOMLY
+                             # (no free choice of which to recur). Read at the discard-move choice sites via force_random_discard_move.
 ConsideredCompare(domain=SKILL|HAND, order=GREATER|LESS)  # Static meta-override (schema v16): the
                              # declaring player's vs-opponent SkillCompare (domain=SKILL) / HandSizeCompare
                              # (HAND) always resolves as `order` "for card effects", ignoring real values —

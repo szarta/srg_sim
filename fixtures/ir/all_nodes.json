@@ -327,6 +327,10 @@
     "scope": "MATCH"
   },
   {
+    "@type": "ForceRandomDiscardMove",
+    "who": "OPP"
+  },
+  {
     "@type": "SwapCrowdMeter",
     "effects": [],
     "name": "Steel Cage Match"
@@ -609,6 +613,9 @@
   {
     "@type": "OnDiscardMove",
     "who": "OPP"
+  },
+  {
+    "@type": "OnCrowdMeterIncrease"
   },
   {
     "@type": "OnBump"

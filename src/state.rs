@@ -534,6 +534,53 @@ impl GameState {
         self.players.keys().all(|k| self.is_dq_immune(k))
     }
 
+    /// Whether `mover` must resolve every card-/Gimmick-driven move of a card OUT of
+    /// their OWN discard pile RANDOMLY — some OPPONENT has an active Static
+    /// [`Action::ForceRandomDiscardMove`] poison (Bleeding Out, declared from play or
+    /// their own discard pile) whose `who` targets `mover`. Read at the discard-move
+    /// choice sites so the poisoned player loses the free choice of which card to recur.
+    /// Mirrors [`rule_immune`](Self::rule_immune)'s zone-aware source scan. schema v131
+    pub fn force_random_discard_move(&self, mover: &str) -> bool {
+        for (owner, player) in &self.players {
+            if owner == mover {
+                continue; // the poison targets the declaring owner's OPPONENT
+            }
+            let gimmick: &[Effect] = if self.is_gimmick_blanked(owner) {
+                &[]
+            } else {
+                &player.competitor.effects
+            };
+            let sources = std::iter::once((gimmick, false))
+                .chain(std::iter::once((player.entrance.effects.as_slice(), false)))
+                .chain(player.in_play.iter().map(|c| (c.effects.as_slice(), false)))
+                .chain(player.discard.iter().map(|c| (c.effects.as_slice(), true)));
+            for (effects, is_discard) in sources {
+                for eff in effects {
+                    if !matches!(eff.trigger, Trigger::Static) {
+                        continue;
+                    }
+                    if (eff.duration == Duration::WhileInDiscard) != is_discard {
+                        continue; // a discard-scoped poison fires only from the discard
+                    }
+                    for action in &eff.actions {
+                        let Action::ForceRandomDiscardMove { who } = action else {
+                            continue;
+                        };
+                        // `who` from the owner's POV: Opp = the owner's opponent.
+                        let target = match who {
+                            Who::SelfSide => owner.clone(),
+                            Who::Opp => self.opponent_of(owner),
+                        };
+                        if target == mover && conditions::holds(&eff.condition, self, owner, None) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
     /// Resolve a standing match-rule toggle for `loser` by LAST-PLAYED order (task #93);
     /// `extract` pulls `(enabled, scope)` from the toggle of interest. The loss is
     /// DISABLED iff the most-recently-played applicable toggle sets `enabled=false`.

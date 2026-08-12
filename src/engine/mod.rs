@@ -452,6 +452,10 @@ pub struct Engine {
     /// PRE-roll `offer_breakout_reroll` (standing, unconditional). Transient, never
     /// serialized.
     pending_breakout_reroll: bool,
+    /// Reentrancy guard for `run_on_cm_increase`: set while an `OnCrowdMeterIncrease`
+    /// handler runs so a `CrowdMeter` swing inside it can't re-fire the trigger and loop.
+    /// Transient, never serialized.
+    firing_cm_increase: bool,
     decider: Box<dyn Decider>,
     /// Monotonic counter of decisions offered, for `request_id`/`seq`.
     decision_index: u64,
@@ -536,6 +540,7 @@ impl Engine {
             firing_card_name: None,
             pending_roll_boost: 0,
             pending_breakout_reroll: false,
+            firing_cm_increase: false,
             decider,
             decision_index: 0,
             frames: Vec::new(),
@@ -1416,7 +1421,7 @@ impl Engine {
                 *on_skill,
                 key,
             ),
-            Action::CrowdMeter { delta } => self.act_crowd(*delta, key),
+            Action::CrowdMeter { delta } => self.act_crowd(*delta, key)?,
             Action::RollBoost { delta } => self.pending_roll_boost += *delta,
             Action::WinTie { who } => self.act_win_tie(*who, key),
             Action::BlankGimmick { who, duration } => self.act_blank_gimmick(*who, *duration, key),
@@ -1445,6 +1450,9 @@ impl Engine {
             | Action::DoubleFinishIf { .. }
             | Action::DisqualificationRule { .. }
             | Action::CountOutRule { .. }
+            // A Static discard-random poison, read at the discard-move choice sites via
+            // `force_random_discard_move`, not executed here — a no-op.
+            | Action::ForceRandomDiscardMove { .. }
             | Action::ConsideredCompare { .. }
             | Action::SuppressOpponentDraw
             | Action::SuppressSelfHandLoss
@@ -1690,6 +1698,36 @@ impl Engine {
         Ok(())
     }
 
+    /// Fire standing `OnCrowdMeterIncrease` gimmicks after the (shared) Crowd Meter went
+    /// UP. The meter is global, so BOTH players' standing effects carrying the trigger
+    /// fire (Khloe Mai draws / recurs on every increase). A reentrancy guard blocks a
+    /// `CrowdMeter` swing inside a handler from re-firing; skipped once the match ends so
+    /// no post-end effects run. Safe for the frozen corpus: no corpus card carries the
+    /// trigger, so this never fires there (byte-identical).
+    fn run_on_cm_increase(&mut self) -> Eng<()> {
+        if self.firing_cm_increase || self.ended() {
+            return Ok(());
+        }
+        self.firing_cm_increase = true;
+        let r = (|| {
+            for owner in ["A", "B"] {
+                let effects = self.standing_effects(owner);
+                for eff in &effects {
+                    if !matches!(eff.trigger, Trigger::OnCrowdMeterIncrease) {
+                        continue;
+                    }
+                    self.fire_if_ready(eff, owner, None)?;
+                    if self.ended() {
+                        return Ok(());
+                    }
+                }
+            }
+            Ok(())
+        })();
+        self.firing_cm_increase = false;
+        r
+    }
+
     /// Fire standing `OnDiscardMove` gimmicks after an effect moved one or more cards
     /// OUT of `pile`'s discard pile. Scans BOTH players so a `who=OPP` variant ("when
     /// your opponent moves any number of cards from their discard pile" — Brumeister
@@ -1839,7 +1877,10 @@ impl Engine {
             if legal.is_empty() {
                 break;
             }
-            let chosen = if random {
+            // A `ForceRandomDiscardMove` poison (Bleeding Out) strips `key`'s free choice
+            // of which of their own discard cards to recur.
+            let forced = self.state.force_random_discard_move(key);
+            let chosen = if random || forced {
                 self.state.rng.reveal(&legal).cloned().unwrap()
             } else {
                 self.decide("bury", key, legal)?
@@ -2480,7 +2521,14 @@ impl Engine {
         if matches.is_empty() {
             return Ok(());
         }
-        let card = self.pick_from(key, &matches, "target")?;
+        // A `ForceRandomDiscardMove` poison (Bleeding Out) forces a random recur target.
+        let card = if self.state.force_random_discard_move(key) {
+            let opts: Vec<Value> = matches.iter().map(discard_option).collect();
+            let chosen = self.state.rng.reveal(&opts).cloned().unwrap();
+            find_by_uuid(&matches, &chosen)
+        } else {
+            self.pick_from(key, &matches, "target")?
+        };
         {
             let player = self.state.players.get_mut(key).unwrap();
             if let Some(pos) = player
@@ -2998,12 +3046,16 @@ impl Engine {
         Ok(())
     }
 
-    fn act_crowd(&mut self, delta: i64, key: &str) {
+    fn act_crowd(&mut self, delta: i64, key: &str) -> Eng<()> {
         let _ = key;
         self.state.crowd_meter += delta;
         let t = self.state.turn_no;
         let value = self.state.crowd_meter;
         self.log(Event::CrowdMeter { t, delta, value });
+        if delta > 0 {
+            self.run_on_cm_increase()?;
+        }
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -5749,6 +5801,9 @@ impl Engine {
         let t = self.state.turn_no;
         let value = self.state.crowd_meter;
         self.log(Event::CrowdMeter { t, delta: 1, value });
+        // The per-turn +1 is the main driver of a "when the Crowd Meter increases"
+        // gimmick (Khloe Mai); fire it here too, not just at effect-driven swings.
+        self.run_on_cm_increase()?;
         Ok(())
     }
 
@@ -7054,6 +7109,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnDraw { .. } => "OnDraw",
         Trigger::OnFlip { .. } => "OnFlip",
         Trigger::OnDiscardMove { .. } => "OnDiscardMove",
+        Trigger::OnCrowdMeterIncrease => "OnCrowdMeterIncrease",
         Trigger::Static => "Static",
     }
 }
@@ -7269,6 +7325,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::LoseBy { .. } => "LoseBy",
         Action::DisqualificationRule { .. } => "DisqualificationRule",
         Action::CountOutRule { .. } => "CountOutRule",
+        Action::ForceRandomDiscardMove { .. } => "ForceRandomDiscardMove",
         Action::SwapCrowdMeter { .. } => "SwapCrowdMeter",
         Action::ConsideredCompare { .. } => "ConsideredCompare",
         Action::SuppressOpponentDraw => "SuppressOpponentDraw",

@@ -647,6 +647,14 @@ class OnDiscardMove(IRNode):
 
 
 @dataclass(frozen=True)
+class OnCrowdMeterIncrease(IRNode):
+    """Fires whenever the (shared) Crowd Meter goes UP — the per-turn +1 after a
+    breakout or an effect-driven ``CrowdMeter`` swing (a decrease never fires it). The
+    meter is global, so both players' standing effects carrying it fire. "When the
+    Crowd Meter increases, <body>" (Khloe Mai's gimmick). schema v131"""
+
+
+@dataclass(frozen=True)
 class Static(IRNode):
     """Always-on passive; scoped by the effect's ``duration``."""
 
@@ -1752,6 +1760,16 @@ class CountOutRule(IRNode):
 
     enabled: bool = False
     scope: DqScope = DqScope.SELF
+
+
+@dataclass(frozen=True)
+class ForceRandomDiscardMove(IRNode):
+    """A Static poison: while the declaring card sits in play/discard, the ``who``-side
+    (Bleeding Out: OPP = "an opponent") must resolve every card-/Gimmick-driven move of
+    a card OUT of their OWN discard pile RANDOMLY, losing the free choice of which card
+    to recur. Read at the discard-move choice sites, never executed. schema v131"""
+
+    who: Who = Who.OPP
 
 
 @dataclass(frozen=True)
