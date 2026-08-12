@@ -242,6 +242,9 @@
               "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
+              "$ref": "#/$defs/BuriedSpotlightLastTurn"
+            },
+            {
               "$ref": "#/$defs/StoppedCard"
             },
             {
@@ -388,6 +391,9 @@
               },
               {
                 "$ref": "#/$defs/BrokeOutLastTurn"
+              },
+              {
+                "$ref": "#/$defs/BuriedSpotlightLastTurn"
               },
               {
                 "$ref": "#/$defs/StoppedCard"
@@ -837,6 +843,22 @@
       },
       "required": [
         "@type"
+      ],
+      "type": "object"
+    },
+    "BuriedSpotlightLastTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BuriedSpotlightLastTurn"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
       ],
       "type": "object"
     },
@@ -1832,6 +1854,9 @@
               "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
+              "$ref": "#/$defs/BuriedSpotlightLastTurn"
+            },
+            {
               "$ref": "#/$defs/StoppedCard"
             },
             {
@@ -2371,6 +2396,9 @@
               "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
+              "$ref": "#/$defs/BuriedSpotlightLastTurn"
+            },
+            {
               "$ref": "#/$defs/StoppedCard"
             },
             {
@@ -2471,6 +2499,9 @@
               "$ref": "#/$defs/OnCrowdMeterIncrease"
             },
             {
+              "$ref": "#/$defs/OnTurnStart"
+            },
+            {
               "$ref": "#/$defs/OnDiscardMove"
             },
             {
@@ -2527,6 +2558,9 @@
       "properties": {
         "@type": {
           "const": "EndedTurnNoPlay"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
         }
       },
       "required": [
@@ -3422,6 +3456,9 @@
           "$ref": "#/$defs/OnCrowdMeterIncrease"
         },
         {
+          "$ref": "#/$defs/OnTurnStart"
+        },
+        {
           "$ref": "#/$defs/OnDiscardMove"
         },
         {
@@ -3624,6 +3661,9 @@
         },
         {
           "$ref": "#/$defs/BrokeOutLastTurn"
+        },
+        {
+          "$ref": "#/$defs/BuriedSpotlightLastTurn"
         },
         {
           "$ref": "#/$defs/StoppedCard"
@@ -4077,6 +4117,9 @@
             },
             {
               "$ref": "#/$defs/BrokeOutLastTurn"
+            },
+            {
+              "$ref": "#/$defs/BuriedSpotlightLastTurn"
             },
             {
               "$ref": "#/$defs/StoppedCard"
@@ -4534,6 +4577,18 @@
       ],
       "type": "object"
     },
+    "OnTurnStart": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnTurnStart"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "OnWinTurn": {
       "additionalProperties": false,
       "properties": {
@@ -4656,6 +4711,9 @@
               },
               {
                 "$ref": "#/$defs/BrokeOutLastTurn"
+              },
+              {
+                "$ref": "#/$defs/BuriedSpotlightLastTurn"
               },
               {
                 "$ref": "#/$defs/StoppedCard"
@@ -6119,6 +6177,9 @@
               "$ref": "#/$defs/BrokeOutLastTurn"
             },
             {
+              "$ref": "#/$defs/BuriedSpotlightLastTurn"
+            },
+            {
               "$ref": "#/$defs/StoppedCard"
             },
             {
@@ -6726,5 +6787,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 139
+  "version": 140
 }

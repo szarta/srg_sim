@@ -4672,6 +4672,146 @@ mod permanent_blank_tests {
     }
 }
 
+/// Impact is Family V1's clause-2 rider (schema v140): OnTurnStart + And[EndedTurnNoPlay
+/// {Opp}, BuriedSpotlightLastTurn{Opp}] -> MultiTurnRollBonus{Self,+1}, once per match.
+/// Verifies the bury-flag stamp, the two-gate arming, and the once-per-match cap.
+#[cfg(test)]
+mod impact_is_family_v1_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(&mut self, _: &str, _: &str, l: &[Value], _: &mut GameState) -> Option<Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    /// A card in play carrying the V1 rider on A's board (its `OnTurnStart` fires from
+    /// `standing_effects`).
+    fn rider_card() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "rider", "name": "rider", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "OnTurnStart"},
+                "condition": {"@type": "And", "items": [
+                    {"@type": "EndedTurnNoPlay", "who": "OPP"},
+                    {"@type": "BuriedSpotlightLastTurn", "who": "OPP"}
+                ]},
+                "actions": [{"@type": "MultiTurnRollBonus", "who": "SELF", "rolls": 1, "delta": 1}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "ONCE_PER_MATCH", "n": null},
+                "raw_clause": "", "source": "entrance", "optional": false
+            }]
+        }))
+        .expect("rider")
+    }
+
+    /// Stamp B's flags as if they passed AND buried a Spotlight on turn `t`.
+    fn set_opp_stalled(e: &mut Engine, t: i64) {
+        let b = e.state.players.get_mut("B").unwrap();
+        b.flags.insert("last_pass_turn".to_owned(), json!(t));
+        b.flags.insert("buried_spotlight_turn".to_owned(), json!(t));
+    }
+
+    #[test]
+    fn arms_plus_one_when_opponent_stalled_and_buried_a_spotlight() {
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(rider_card());
+        e.state.turn_no = 3;
+        set_opp_stalled(&mut e, 2); // opponent stalled+buried on the PREVIOUS turn (2 == 3-1)
+
+        e.run_start_of_turn_triggers().unwrap();
+        assert_eq!(e.multi_turn_roll_bonus("A"), 1, "A's next turn roll is +1");
+
+        // Once per match: a second dispatch (still turn 3) must not re-arm.
+        e.run_start_of_turn_triggers().unwrap();
+        assert_eq!(
+            e.multi_turn_roll_bonus("A"),
+            1,
+            "not re-armed within the match"
+        );
+    }
+
+    #[test]
+    fn does_not_arm_without_both_gates() {
+        // Stalled but did NOT bury a Spotlight -> no bonus.
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(rider_card());
+        e.state.turn_no = 3;
+        e.state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .flags
+            .insert("last_pass_turn".to_owned(), json!(2));
+        e.run_start_of_turn_triggers().unwrap();
+        assert_eq!(e.multi_turn_roll_bonus("A"), 0);
+    }
+
+    #[test]
+    fn note_spotlight_bury_stamps_only_for_spotlight_cards() {
+        let mut e = engine();
+        e.state.turn_no = 5;
+        let spot: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "s", "name": "s", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": ["Spotlight"], "finish_bonuses": {},
+            "effects": []
+        }))
+        .unwrap();
+        let plain: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "p", "name": "p", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []
+        }))
+        .unwrap();
+        e.note_spotlight_bury("B", &plain);
+        assert!(!e.state.players["B"]
+            .flags
+            .contains_key("buried_spotlight_turn"));
+        e.note_spotlight_bury("B", &spot);
+        assert_eq!(
+            e.state.players["B"].flags["buried_spotlight_turn"],
+            json!(5)
+        );
+    }
+}
+
 #[cfg(test)]
 mod man_from_it_tests {
     use super::*;

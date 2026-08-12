@@ -693,6 +693,9 @@
     "order": null
   },
   {
+    "@type": "OnTurnStart"
+  },
+  {
     "@type": "OnWinTurn"
   },
   {
@@ -987,6 +990,10 @@
   {
     "@type": "BrokeOutLastTurn",
     "who": "SELF"
+  },
+  {
+    "@type": "BuriedSpotlightLastTurn",
+    "who": "OPP"
   },
   {
     "@type": "StoppedCard",

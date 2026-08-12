@@ -660,6 +660,14 @@ class OnCrowdMeterIncrease(IRNode):
 
 
 @dataclass(frozen=True)
+class OnTurnStart(IRNode):
+    """Fires once at the START of every turn, before the roll-off — so a
+    ``MultiTurnRollBonus`` armed here lands on this turn's roll and last-turn gates read
+    the just-ended turn. Both players' entrance + in-play effects (Impact is Family V1's
+    stall-punish rider). schema v140"""
+
+
+@dataclass(frozen=True)
 class Static(IRNode):
     """Always-on passive; scoped by the effect's ``duration``."""
 
@@ -847,8 +855,19 @@ class EndedTurnNoPlay(IRNode):
     """True iff the owner ended the PREVIOUS turn without playing a card — roll-off
     winner on ``turn_no - 1`` who passed (``flags["last_pass_turn"]``). False before
     turn 1 and whenever they instead played or lost the previous roll-off. Gates The
-    SRG Boss's finish riders ("if you ended the last turn without playing a card, …").
-    schema v78"""
+    SRG Boss's finish riders. The Rust `who` field (v140, OPP for Impact is Family V1)
+    is grammar-only — not mirrored here, as no override uses the OPP form (cf.
+    ``BrokeOutLastTurn``, also grammar-only). schema v78"""
+
+
+@dataclass(frozen=True)
+class BuriedSpotlightLastTurn(IRNode):
+    """True iff ``who`` buried a Spotlight card on the PREVIOUS turn
+    (``flags["buried_spotlight_turn"] == turn_no - 1``, stamped when a Bury moves a
+    Spotlight-tagged card). Gates Impact is Family V1's "and they buried a Spotlight
+    card" rider. schema v140"""
+
+    who: Who = Who.OPP
 
 
 @dataclass(frozen=True)
@@ -2126,6 +2145,7 @@ Trigger = (
     | OnShuffle
     | OnFlip
     | OnDiscardMove
+    | OnTurnStart
     | Static
 )
 
@@ -2155,6 +2175,7 @@ Condition = (
     | OppWonLastRoll
     | BumpedLastTurnRoll
     | EndedTurnNoPlay
+    | BuriedSpotlightLastTurn
     | RerolledTurnRoll
     | FlippedForGimmick
     | FlippedByName

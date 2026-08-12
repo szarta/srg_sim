@@ -1777,6 +1777,22 @@ impl Engine {
         Ok(())
     }
 
+    /// Stamp `actor`'s `flags["buried_spotlight_turn"]` = the current turn when the card
+    /// they just buried carries the Spotlight tag — the per-turn memory read by
+    /// `Condition::BuriedSpotlightLastTurn` (Impact is Family V1). Mirrors the
+    /// `last_pass_turn` / `broke_out_turn` flag-stamp recipe.
+    fn note_spotlight_bury(&mut self, actor: &str, card: &Card) {
+        if card.tags.iter().any(|t| t == "Spotlight") {
+            let turn = self.state.turn_no;
+            self.state
+                .players
+                .get_mut(actor)
+                .unwrap()
+                .flags
+                .insert("buried_spotlight_turn".to_owned(), json!(turn));
+        }
+    }
+
     fn act_bury(&mut self, spec: BurySpec, key: &str) -> Eng<()> {
         let BurySpec {
             count,
@@ -1939,6 +1955,7 @@ impl Engine {
             else {
                 break;
             };
+            self.note_spotlight_bury(key, &card);
             self.bury_cards(&owner, &[card]);
             self.run_on_bury(&owner, false, false)?;
             self.run_on_discard_move(&owner)?;
@@ -1989,6 +2006,11 @@ impl Engine {
             buried.push(card);
         }
         let n = buried.len();
+        // `chooser` directs the bury (the effect owner when picking the opponent's hand,
+        // else the hand owner shedding their own) — the actor for BuriedSpotlightLastTurn.
+        for card in &buried {
+            self.note_spotlight_bury(chooser, card);
+        }
         if !buried.is_empty() {
             let uuids = buried.iter().map(|c| c.db_uuid.clone()).collect();
             let player = self.state.players.get_mut(key).unwrap();
@@ -4411,6 +4433,10 @@ impl Engine {
             self.promote_swap_grant(key); // a "swap next turn" grant becomes usable (Mr. Rey)
         }
         self.sweep_end_of_turn();
+        self.run_start_of_turn_triggers()?; // OnTurnStart, before the roll-off
+        if self.ended() {
+            return Ok(());
+        }
         let winner = self.turn_roll()?;
         self.sweep_next_turn_buffs(&winner);
         if self.ended() || !self.draw_for_turn(&winner)? {
@@ -4438,6 +4464,20 @@ impl Engine {
     fn run_start_of_turn(&mut self, key: &str) -> Eng<()> {
         let effects = self.standing_effects(key);
         self.run_effects(&effects, "StartOfTurn", key, None)
+    }
+
+    /// Fire BOTH players' `OnTurnStart` effects at the top of a turn, before the
+    /// roll-off — so a `MultiTurnRollBonus` armed here lands on this turn's roll and the
+    /// last-turn gates read the just-ended turn (Impact is Family V1: "when your opponent
+    /// ended their turn without playing a card and buried a Spotlight, your next turn
+    /// roll is +1"). Each player's effects fire from their own POV; frequency + condition
+    /// are enforced by `fire_if_ready`.
+    fn run_start_of_turn_triggers(&mut self) -> Eng<()> {
+        for key in ["A", "B"] {
+            let effects = self.standing_effects(key);
+            self.run_effects(&effects, "OnTurnStart", key, None)?;
+        }
+        Ok(())
     }
 
     /// Fire the NON-active player's `DuringOpponentTurn` gimmicks — "once during your
@@ -7308,6 +7348,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnFlip { .. } => "OnFlip",
         Trigger::OnDiscardMove { .. } => "OnDiscardMove",
         Trigger::OnCrowdMeterIncrease => "OnCrowdMeterIncrease",
+        Trigger::OnTurnStart => "OnTurnStart",
         Trigger::Static => "Static",
     }
 }

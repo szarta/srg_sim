@@ -120,6 +120,8 @@ OnDiscardMove(who)           # when one or more cards LEAVE who's discard pile v
                              # who = owner of the PILE (OPP = "when your opponent moves any number of cards from their discard pile" — Brumeister V2). schema v34
 OnCrowdMeterIncrease         # whenever the (shared) Crowd Meter goes UP — the per-turn +1 after a breakout OR an effect-driven CrowdMeter swing (a decrease never fires it).
                              # Both players' standing effects carrying it fire (global meter). "When the Crowd Meter increases, <body>" (Khloe Mai). schema v131
+OnTurnStart                  # once at the START of every turn, BEFORE the roll-off (both players' entrance + in-play effects), so a MultiTurnRollBonus armed here lands on this
+                             # turn's roll and last-turn gates read the just-ended turn (Impact is Family V1's stall-punish rider). Distinct from StartOfTurn (post-roll, winner only). schema v140
 Static                       # always-on passive (e.g. "+1 to Power"); duration-scoped, see below
 ```
 **"Hit" = a card resolving into play.** A card is hit either (a) when you play it and it is
@@ -199,9 +201,11 @@ BrokeOutLastTurn{who}        # `who` broke out on the PREVIOUS turn (flags["brok
 StoppedCard{who,last_turn}   # `who` performed a stop last turn (last_turn) or this turn (flags["stopped_card_turn"], stamped
                              # by `apply_stop` for the stopping side). Gates "if you stopped a card last turn, …". schema v121
 OppWonLastRoll               # the opponent won the PREVIOUS turn's roll-off (GameState.last_roll_winner); false on turn 1 (Dunn re-roll). schema v3.
-EndedTurnNoPlay              # the owner ended the PREVIOUS turn without playing a card — roll-off winner on turn_no-1 who
-                             # passed (PlayerState.flags["last_pass_turn"]); false on turn 1 / after a play or lost roll-off.
-                             # Gates The SRG Boss's finish riders. schema v78
+EndedTurnNoPlay{who}         # `who` ended the PREVIOUS turn without playing a card — roll-off winner on turn_no-1 who
+                             # passed (flags["last_pass_turn"]); false on turn 1 / after a play or lost roll-off. `who` defaults
+                             # SELF (skip-when-self; The SRG Boss); OPP gates Impact is Family V1. schema v78; who added v140
+BuriedSpotlightLastTurn{who} # `who` buried a Spotlight card on the PREVIOUS turn (flags["buried_spotlight_turn"] == turn_no-1,
+                             # stamped when a Bury moves a Spotlight-tagged card). Gates Impact is Family V1's stall-punish rider. schema v140
 RerolledTurnRoll             # the owner re-rolled their turn roll THIS turn (any turn die re-rolled at the roll-off;
                              # PlayerState.flags["rerolled_turn"]). Gates King Brian Cage's finish riders, OR'd with
                              # RollWasSkill{Power}. schema v80

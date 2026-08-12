@@ -2012,7 +2012,7 @@ fn gate_condition(text: &str) -> Option<Condition> {
             return Some(Condition::BumpedLastTurnRoll)
         }
         "you ended the last turn without playing a card" => {
-            return Some(Condition::EndedTurnNoPlay)
+            return Some(Condition::EndedTurnNoPlay { who: Who::SelfSide })
         }
         "this is the first turn of the game" | "this is the first turn of the match" => {
             return Some(Condition::FirstTurn)
@@ -3823,16 +3823,20 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
             r"Randomly reveal (\d+) cards? in your hand[:;,] [Ii]f (.+?), (.+)",
             |c| reveal_then_effect(RevealSource::HandRandom, num(c, 1), &c[2], &c[3]),
         ),
-        // (continuous selector scan; mirrors A Trip to the Upside Down's Spotlight
-        // blank). V1's broader "Spotlight cards" variant stays its own clause.
+        // Impact is Family entrances: blank the opponent's Spotlights (continuous
+        // selector scan; mirrors A Trip to the Upside Down's Spotlight blank). V2
+        // (9ee10069) scopes to "Spotlight Finishes" (play_order Finish); V1 (37a75d37)
+        // is the broader "Spotlight cards" (any order) — one rule, the noun picks the
+        // play-order constraint.
         rule(
-            r"Your opponent'?s Spotlight Finishes have blank text",
-            |_| {
+            r"Your opponent'?s Spotlight (Finishes|cards) have blank text",
+            |c| {
+                let play_order = (&c[1] == "Finishes").then_some(PlayOrder::Finish);
                 Some(eff(
                     Trigger::Static,
                     vec![blank_text(
                         CardFilter {
-                            play_order: Some(PlayOrder::Finish),
+                            play_order,
                             tag: Some("Spotlight".to_owned()),
                             ..Default::default()
                         },
@@ -3841,6 +3845,36 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))
+            },
+        ),
+        // Impact is Family (V1) once-per-match rider: when the opponent STALLED (ended
+        // their turn without playing) AND buried a Spotlight, arm +1 to your next turn
+        // roll. Modeled as an OnTurnStart effect (fires before the roll-off, so the armed
+        // MultiTurnRollBonus lands on this turn's roll) gated on the two just-ended-turn
+        // conditions. The "and this card is blanked" self-consumption is subsumed by the
+        // once-per-match frequency (both cap it to a single use). Bespoke — a single card.
+        rule(
+            r"(?:Once per match:\s+)?When your opponent ended their turn without playing a card and they buried a Spotlight card, your next turn roll is \+1 and this card is blanked",
+            |_| {
+                let mut e = eff(
+                    Trigger::OnTurnStart,
+                    vec![Action::MultiTurnRollBonus {
+                        who: Who::SelfSide,
+                        rolls: 1,
+                        delta: 1,
+                    }],
+                    and_conds(
+                        Condition::EndedTurnNoPlay { who: Who::Opp },
+                        Condition::BuriedSpotlightLastTurn { who: Who::Opp },
+                    ),
+                    Duration::Instant,
+                );
+                e.frequency = FrequencyGuard {
+                    node_type: FrequencyGuardTag,
+                    kind: Frequency::OncePerMatch,
+                    n: None,
+                };
+                Some(e)
             },
         ),
         // Discard-pile blank ("Cards in your opponent's discard pile have blank text"):

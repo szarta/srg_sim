@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 139;
+pub const SCHEMA_VERSION: i64 = 140;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -794,6 +794,12 @@ pub enum Trigger {
     /// however caused: the per-turn +1 after a breakout, or an effect-driven `CrowdMeter`
     /// swing. A decrease never fires it. Dispatched by `run_on_cm_increase`. schema v131
     OnCrowdMeterIncrease,
+    /// Fires once at the START of every turn, AFTER the per-turn state rotation but
+    /// BEFORE the roll-off — so a `MultiTurnRollBonus` armed here still lands on this
+    /// turn's roll, and last-turn gates (`EndedTurnNoPlay`, `BuriedSpotlightLastTurn`)
+    /// read the just-ended turn. Scans both players' entrance + in-play effects.
+    /// Dispatched by `run_start_of_turn_triggers`. schema v140
+    OnTurnStart,
     Static,
 }
 
@@ -945,13 +951,25 @@ pub enum Condition {
     /// The PREVIOUS turn's roll-off bumped (`GameState.last_turn_bumped`); false before
     /// turn 1. Gates Mack-a-Tack's "if you bumped on the last turn roll" re-roll.
     BumpedLastTurnRoll,
-    /// The owner ended the **previous** turn without playing a card — they were the
+    /// `who` ended the **previous** turn without playing a card — they were the
     /// roll-off winner on turn `turn_no - 1` and passed (chose not to play, or had
-    /// nothing playable). Reads `PlayerState.flags["last_pass_turn"]`, stamped by
-    /// `do_pass`; false before turn 1 and whenever the owner instead played a card or
-    /// lost the previous roll-off. Gates The SRG Boss's finish riders ("if you ended
-    /// the last turn without playing a card, …"). schema v78
-    EndedTurnNoPlay,
+    /// nothing playable). Reads `who`'s `PlayerState.flags["last_pass_turn"]`, stamped
+    /// by `do_pass`; false before turn 1 and whenever they instead played a card or
+    /// lost the previous roll-off. `who` defaults to SELF (skip-when-self, so The SRG
+    /// Boss's pre-v139 SELF nodes round-trip byte-identically); the OPP form gates
+    /// "when your opponent ended their turn without playing a card" (Impact is Family
+    /// V1). schema v78; `who` added v140
+    EndedTurnNoPlay {
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+    },
+    /// `who` buried a Spotlight card on the **previous** turn. Reads `who`'s
+    /// `PlayerState.flags["buried_spotlight_turn"]` (== `turn_no - 1`), stamped when a
+    /// `Bury` moves a Spotlight-tagged card; false otherwise. Gates Impact is Family
+    /// V1's "and they buried a Spotlight card" rider. schema v140
+    BuriedSpotlightLastTurn {
+        who: Who,
+    },
     /// `who` broke out on the PREVIOUS turn — they were the defender of a Finish on turn
     /// `turn_no - 1` and survived every Breakout roll. Reads `PlayerState.flags`
     /// `["broke_out_turn"]`, stamped by `breakout` on success; false before turn 1 and
@@ -2402,6 +2420,9 @@ pub enum IrNode {
     },
     /// Mirror of [`Trigger::OnCrowdMeterIncrease`]. schema v131
     OnCrowdMeterIncrease,
+    /// Fires once at the START of every turn, before the roll-off (see the `Trigger`
+    /// copy). Dispatched by `run_start_of_turn_triggers`. schema v140
+    OnTurnStart,
     Static,
 
     // Conditions
@@ -2543,9 +2564,18 @@ pub enum IrNode {
     /// The PREVIOUS turn's roll-off bumped (`GameState.last_turn_bumped`); false before
     /// turn 1. Gates Mack-a-Tack's "if you bumped on the last turn roll" re-roll.
     BumpedLastTurnRoll,
-    /// The owner ended the previous turn without playing a card (roll-off winner on
-    /// `turn_no - 1` who passed). Reads `flags["last_pass_turn"]`. schema v78
-    EndedTurnNoPlay,
+    /// `who` ended the previous turn without playing a card (roll-off winner on
+    /// `turn_no - 1` who passed). Reads `flags["last_pass_turn"]`. `who` defaults SELF
+    /// (skip-when-self). schema v78; `who` added v140
+    EndedTurnNoPlay {
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+    },
+    /// `who` buried a Spotlight card on the previous turn. Reads
+    /// `flags["buried_spotlight_turn"]`. schema v140
+    BuriedSpotlightLastTurn {
+        who: Who,
+    },
     /// `who` broke out on the previous turn (defender of a Finish on `turn_no - 1` who
     /// survived every Breakout roll). Reads `flags["broke_out_turn"]`. schema v120
     BrokeOutLastTurn {
