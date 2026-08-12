@@ -1504,6 +1504,7 @@ impl Engine {
             Action::BuryThisCard => self.act_bury_this_card(key),
             Action::AddSelfToHand => self.act_add_self_to_hand(key),
             Action::ShuffleSelfIntoDeck => self.act_shuffle_self_into_deck(key)?,
+            Action::PutSelfOnDeckTop => self.act_put_self_on_deck_top(key),
             Action::GrantBreakoutBonus { delta, who } => {
                 let target = self.target(*who, key);
                 self.act_grant_breakout_bonus(*delta, &target)
@@ -4196,6 +4197,27 @@ impl Engine {
         player.deck.push(card);
         self.log_effect(key, "ShuffleSelfIntoDeck", None, json!({"card": uuid}));
         self.shuffle_deck(key)
+    }
+
+    /// Put the self/triggering card on TOP of `key`'s deck (drawn next), unshuffled.
+    /// Referent is `self_card` (a discard-resident WHILE_IN_DISCARD trigger) or, failing
+    /// that, `stopped_card` (the "If stopped, put this card on top of your deck" family);
+    /// the card is pulled from wherever it sits (discard/hand). A no-op if unbound or
+    /// already gone. See [`Action::PutSelfOnDeckTop`].
+    fn act_put_self_on_deck_top(&mut self, key: &str) {
+        let Some(uuid) = self.self_card.clone().or_else(|| self.stopped_card.clone()) else {
+            return;
+        };
+        let player = self.state.players.get_mut(key).unwrap();
+        let card = if let Some(pos) = player.hand.iter().position(|c| c.db_uuid == uuid) {
+            player.hand.remove(pos)
+        } else if let Some(pos) = player.discard.iter().position(|c| c.db_uuid == uuid) {
+            player.discard.remove(pos)
+        } else {
+            return;
+        };
+        player.deck.insert(0, card); // top of deck (drawn next turn)
+        self.log_effect(key, "PutSelfOnDeckTop", None, json!({"card": uuid}));
     }
 
     /// Accumulate a TIMED "+`delta` to your breakout rolls until the end of the turn"
@@ -7577,6 +7599,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BuryThisCard => "BuryThisCard",
         Action::AddSelfToHand => "AddSelfToHand",
         Action::ShuffleSelfIntoDeck => "ShuffleSelfIntoDeck",
+        Action::PutSelfOnDeckTop => "PutSelfOnDeckTop",
         Action::GrantBreakoutBonus { .. } => "GrantBreakoutBonus",
         Action::PlaySelf => "PlaySelf",
         Action::ChooseName { .. } => "ChooseName",

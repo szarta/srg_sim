@@ -4812,6 +4812,100 @@ mod impact_is_family_v1_tests {
     }
 }
 
+/// `PutSelfOnDeckTop` (schema v141): "put this card on top of your deck" resolves its
+/// referent as self_card (a WHILE_IN_DISCARD trigger) falling back to stopped_card (the
+/// "If stopped, …" family), pulling the card from discard/hand to the deck FRONT.
+#[cfg(test)]
+mod put_self_on_deck_top_tests {
+    use super::*;
+    use serde_json::{json, Value};
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(&mut self, _: &str, _: &str, l: &[Value], _: &mut GameState) -> Option<Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    fn card(uuid: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []
+        }))
+        .expect("card")
+    }
+
+    #[test]
+    fn self_card_referent_moves_from_discard_to_deck_front() {
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .discard
+            .push(card("x"));
+        e.self_card = Some("x".to_owned());
+        e.act_put_self_on_deck_top("A");
+        assert!(e.state.players["A"].discard.is_empty());
+        assert_eq!(e.state.players["A"].deck.first().unwrap().db_uuid, "x");
+    }
+
+    #[test]
+    fn falls_back_to_stopped_card_for_the_if_stopped_family() {
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .discard
+            .push(card("s"));
+        e.self_card = None;
+        e.stopped_card = Some("s".to_owned());
+        e.act_put_self_on_deck_top("A");
+        assert_eq!(e.state.players["A"].deck.first().unwrap().db_uuid, "s");
+    }
+
+    #[test]
+    fn no_op_when_no_referent_is_bound() {
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .discard
+            .push(card("x"));
+        e.self_card = None;
+        e.stopped_card = None;
+        e.act_put_self_on_deck_top("A");
+        assert_eq!(e.state.players["A"].discard.len(), 1, "unbound -> no move");
+    }
+}
+
 #[cfg(test)]
 mod man_from_it_tests {
     use super::*;

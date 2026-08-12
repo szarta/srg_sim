@@ -5130,6 +5130,20 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // Standalone self-recycle body: "put this card / it on top of your deck" ->
+        // PutSelfOnDeckTop on the trigger's bound referent (self_card, or stopped_card
+        // for the "If stopped, …" family). Reached as a triggered/gated body — the
+        // WHILE_IN_DISCARD "when you roll <S>, put this card on top" clause and the
+        // "If stopped, put this card on top of your deck" clause. Trigger + "you may"
+        // come from trigger_body/gate_body; the placeholder OnPlay is overwritten.
+        rule(r"[Pp]ut (?:this card|it) on top of your deck", |_| {
+            Some(eff(
+                Trigger::OnPlay,
+                vec![Action::PutSelfOnDeckTop],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
         // "you may play it[ as an additional card this turn]" -> PlaySelf (the play is
         // itself the bonus action, so "as an additional card" folds in).
         rule(

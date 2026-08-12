@@ -1768,6 +1768,15 @@ class ShuffleSelfIntoDeck(IRNode):
 
 
 @dataclass(frozen=True)
+class PutSelfOnDeckTop(IRNode):
+    """Put the self/triggering card on TOP of its owner's deck (drawn next) — "[you may]
+    put this card on top of your deck." Referent is ``Engine.self_card`` (a discard-
+    resident WHILE_IN_DISCARD trigger) or ``Engine.stopped_card`` (the "If stopped, put
+    this card on top of your deck" family); the card moves from discard/hand to the deck
+    front, unshuffled. The "you may" lives on ``Effect.optional``. schema v141"""
+
+
+@dataclass(frozen=True)
 class PlaySelf(IRNode):
     """Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
     may] play it[ as an additional card this turn]." The referent (``Engine.flipped_card``)
@@ -2230,6 +2239,7 @@ Action = (
     | BuryThisCard
     | AddSelfToHand
     | ShuffleSelfIntoDeck
+    | PutSelfOnDeckTop
     | PlaySelf
     | ChooseName
     | LoseBy

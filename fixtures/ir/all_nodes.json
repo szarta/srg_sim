@@ -180,6 +180,9 @@
     "@type": "ShuffleSelfIntoDeck"
   },
   {
+    "@type": "PutSelfOnDeckTop"
+  },
+  {
     "@type": "PlaySelf"
   },
   {

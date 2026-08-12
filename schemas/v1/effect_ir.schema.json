@@ -1232,6 +1232,9 @@
                 "$ref": "#/$defs/ShuffleSelfIntoDeck"
               },
               {
+                "$ref": "#/$defs/PutSelfOnDeckTop"
+              },
+              {
                 "$ref": "#/$defs/PlaySelf"
               },
               {
@@ -2160,6 +2163,9 @@
               },
               {
                 "$ref": "#/$defs/ShuffleSelfIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/PutSelfOnDeckTop"
               },
               {
                 "$ref": "#/$defs/PlaySelf"
@@ -3295,6 +3301,9 @@
         },
         {
           "$ref": "#/$defs/ShuffleSelfIntoDeck"
+        },
+        {
+          "$ref": "#/$defs/PutSelfOnDeckTop"
         },
         {
           "$ref": "#/$defs/PlaySelf"
@@ -4855,6 +4864,18 @@
       ],
       "type": "object"
     },
+    "PutSelfOnDeckTop": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "PutSelfOnDeckTop"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "RecurToDeckTop": {
       "additionalProperties": false,
       "properties": {
@@ -5068,6 +5089,9 @@
               },
               {
                 "$ref": "#/$defs/ShuffleSelfIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/PutSelfOnDeckTop"
               },
               {
                 "$ref": "#/$defs/PlaySelf"
@@ -5684,6 +5708,9 @@
               },
               {
                 "$ref": "#/$defs/ShuffleSelfIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/PutSelfOnDeckTop"
               },
               {
                 "$ref": "#/$defs/PlaySelf"
@@ -6787,5 +6814,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 140
+  "version": 141
 }

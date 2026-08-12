@@ -2354,6 +2354,19 @@ fn trent_riders_grammar() {
     assert_eq!(e["optional"], false);
     assert_eq!(e["actions"][0]["@type"], "ShuffleSelfIntoDeck");
 
+    // "put this card on top of your deck" -> PutSelfOnDeckTop, in both the WHILE_IN_DISCARD
+    // roll family and the "If stopped, …" family (referent = self_card / stopped_card).
+    let e = one("When this card is in your discard pile: When you roll Power for your turn roll, you may put this card on top of your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "PutSelfOnDeckTop");
+
+    let e = one("If stopped, put this card on top of your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["trigger"]["dir"], "YOURS");
+    assert_eq!(e["actions"][0]["@type"], "PutSelfOnDeckTop");
+
     // #29 Dudebuster: shuffle any number from HAND, draw the same number.
     let e = one("Shuffle any number of cards from your hand into your deck, then draw the same number of cards.");
     assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");
