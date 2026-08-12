@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 137;
+pub const SCHEMA_VERSION: i64 = 138;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -550,6 +550,13 @@ pub struct CardFilter {
     /// `Some(false)` = must NOT be a stop, `None` = unconstrained. schema v62
     #[serde(default)]
     pub is_stop: Option<bool>,
+    /// Cross-field OR: the card must match AT LEAST ONE of these sub-filters, in
+    /// addition to any base-field constraints on THIS filter. Empty = no disjunctive
+    /// constraint. The one primitive for a selector that spans DIFFERENT fields — "a
+    /// card with 'Light' in the name OR a Spotlight card" ({name_contains} vs {tag}) —
+    /// which the ANDed base fields cannot express. schema v138
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub any_of: Vec<CardFilter>,
 }
 
 /// How a costed [`Action::Reroll`] is paid. `ShuffleInPlay` shuffles one card the

@@ -5855,6 +5855,99 @@ feeaf7eaf73f47618bd94f8549cff5ae:
   source: card
   optional: false
 
+# Cross-field OR add-from-discard (schema v138): "+1 Power +3 Strike. Flip 4 cards.
+# Add 1 card with 'Light' in the name OR a Spotlight card from your discard pile to
+# your hand." The recur selector spans two DIFFERENT fields (name substring vs the
+# Spotlight tag), which the ANDed CardFilter base cannot express — so the filter
+# takes `any_of` = [{name_contains:[Light]}, {tag:Spotlight}] (card_matches passes a
+# card matching either). The flat bonuses + Flip parse natively; this override just
+# fixes the AddFromDiscard clause, which grammar would otherwise silently narrow to
+# the Light half.
+6dc509f70d104b0cb32f53be04defacd:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Power
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +1 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': FinishBonus
+    skill: Strike
+    delta: 3
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: +3 to Strike
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+  condition:
+    '@type': Always
+  actions:
+  - '@type': Flip
+    n: 4
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Flip 4 cards.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnHit
+  condition:
+    '@type': Always
+  actions:
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+      any_of:
+      - '@type': CardFilter
+        name_contains:
+        - Light
+      - '@type': CardFilter
+        tag: Spotlight
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Add 1 card with "Light" in the name or a Spotlight card from your discard
+    pile to your hand.
+  source: card
+  optional: false
+
 # Your opponent's Spotlights are blank (main-deck, while in play): Static BlankText
 # (who=OPP, selector tag=Spotlight) -> the opponent's Spotlight cards fire no text
 # and cannot stop while this card is in play (is_text_blanked). schema v27.

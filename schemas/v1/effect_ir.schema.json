@@ -901,6 +901,12 @@
         "@type": {
           "const": "CardFilter"
         },
+        "any_of": {
+          "items": {
+            "$ref": "#/$defs/CardFilter"
+          },
+          "type": "array"
+        },
         "atk_type": {
           "anyOf": [
             {
@@ -6685,5 +6691,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 137
+  "version": 138
 }

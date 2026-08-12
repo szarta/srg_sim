@@ -135,7 +135,12 @@ pub fn card_matches(card: &Card, filt: &CardFilter) -> bool {
             return false;
         }
     }
-    !(!filt.text_contains.is_empty() && !any_substr_ci(&filt.text_contains, &card.raw_text))
+    if !filt.text_contains.is_empty() && !any_substr_ci(&filt.text_contains, &card.raw_text) {
+        return false;
+    }
+    // Cross-field OR: the card must also match at least one sub-filter (the base
+    // fields above still AND). Empty `any_of` imposes no disjunctive constraint.
+    filt.any_of.is_empty() || filt.any_of.iter().any(|f| card_matches(card, f))
 }
 
 /// A "stop card": one whose compiled effects declare a [`Action::Stop`] (mirrors
@@ -531,5 +536,68 @@ mod is_stop_tests {
         let any = CardFilter::default();
         assert!(card_matches(&stop, &any));
         assert!(card_matches(&plain, &any));
+    }
+}
+
+#[cfg(test)]
+mod any_of_tests {
+    use super::card_matches;
+    use crate::cards::Card;
+    use crate::ir::CardFilter;
+    use serde_json::json;
+
+    /// A minimal card with the given title and tags.
+    fn card(name: &str, tags: &[&str]) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "c", "name": name, "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": tags, "finish_bonuses": {},
+            "effects": []
+        }))
+        .expect("card")
+    }
+
+    /// 6dc509f7's selector: match "Light" in the name OR the Spotlight tag.
+    fn light_or_spotlight() -> CardFilter {
+        CardFilter {
+            any_of: vec![
+                CardFilter {
+                    name_contains: vec!["Light".to_owned()],
+                    ..Default::default()
+                },
+                CardFilter {
+                    tag: Some("Spotlight".to_owned()),
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn cross_field_or_matches_either_branch() {
+        let filt = light_or_spotlight();
+        // Name branch (no Spotlight tag).
+        assert!(card_matches(&card("Lightning Kick", &[]), &filt));
+        // Tag branch (name has no "Light").
+        assert!(card_matches(&card("Backbreaker", &["Spotlight"]), &filt));
+        // Both branches.
+        assert!(card_matches(&card("Light Show", &["Spotlight"]), &filt));
+        // Neither branch -> excluded.
+        assert!(!card_matches(&card("Backbreaker", &[]), &filt));
+    }
+
+    #[test]
+    fn base_fields_still_and_with_any_of() {
+        // A base atk_type constraint ANDs on top of the disjunction.
+        let filt = CardFilter {
+            atk_type: Some(crate::ir::AtkType::Grapple),
+            any_of: vec![CardFilter {
+                tag: Some("Spotlight".to_owned()),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        // Spotlight but wrong base atk_type (card() builds a Strike) -> excluded.
+        assert!(!card_matches(&card("x", &["Spotlight"]), &filt));
     }
 }

@@ -367,6 +367,11 @@ class CardFilter(IRNode):
     # "a stop" / "for each stop …": constrain to STOP cards (effects declare a
     # Stop action). True = must be a stop, False = must not, None = unconstrained.
     is_stop: bool | None = None
+    # Cross-field OR: the card must match at least one of these sub-filters, in
+    # addition to any base-field constraints here. Empty = no disjunctive constraint.
+    # For a selector spanning DIFFERENT fields — "a card with 'X' in the name OR a
+    # Spotlight card" — which the ANDed base fields cannot express. schema v138
+    any_of: tuple["CardFilter", ...] = ()
 
 
 class RerollCostKind(Enum):

@@ -36,6 +36,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": "Ready to Rumble",
@@ -52,6 +53,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": "Ready to Rumble",
@@ -132,6 +134,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": "Ready to Rumble",
@@ -305,6 +308,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -363,6 +367,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -384,6 +389,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -477,6 +483,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -563,6 +570,7 @@
                   "count": 4,
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -618,6 +626,7 @@
           "random": true,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -792,6 +801,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -851,6 +861,7 @@
                   "@type": "AddFromDiscard",
                   "filter": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -946,6 +957,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -963,6 +975,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -980,6 +993,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -1023,6 +1037,7 @@
           "duration": "WHILE_IN_PLAY",
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -1116,6 +1131,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Strike",
               "is_stop": null,
               "name": null,
@@ -1135,6 +1151,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Submission",
               "is_stop": null,
               "name": null,
@@ -1154,6 +1171,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Grapple",
               "is_stop": null,
               "name": null,
@@ -1207,6 +1225,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -1259,6 +1278,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -1494,6 +1514,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": "Enjoy Everything",
@@ -1544,6 +1565,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": "Enjoy Everything",
@@ -1658,6 +1680,7 @@
         "cmp": ">",
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Strike",
           "is_stop": null,
           "name": null,
@@ -1707,6 +1730,7 @@
         "cmp": ">",
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Grapple",
           "is_stop": null,
           "name": null,
@@ -1756,6 +1780,7 @@
         "cmp": ">",
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Submission",
           "is_stop": null,
           "name": null,
@@ -1828,6 +1853,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Submission",
           "is_stop": null,
           "name": null,
@@ -1933,6 +1959,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Strike",
               "is_stop": null,
               "name": null,
@@ -1952,6 +1979,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Submission",
               "is_stop": null,
               "name": null,
@@ -1971,6 +1999,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Grapple",
               "is_stop": null,
               "name": null,
@@ -2111,6 +2140,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -2243,6 +2273,7 @@
           "either": false,
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -2446,6 +2477,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -2613,6 +2645,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Submission",
             "is_stop": null,
             "name": null,
@@ -2658,6 +2691,7 @@
                   "@type": "AddFromDiscard",
                   "filter": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -2756,6 +2790,7 @@
           "n": 1,
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -2876,6 +2911,7 @@
           "to_hand": 1,
           "to_hand_filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": true,
             "name": null,
@@ -2949,6 +2985,7 @@
           "delta": 1,
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -3043,6 +3080,7 @@
           "n": 1,
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": true,
             "name": null,
@@ -3116,6 +3154,7 @@
           ],
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Strike",
             "is_stop": null,
             "name": null,
@@ -3171,6 +3210,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -3213,6 +3253,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -3257,6 +3298,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -3274,6 +3316,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -3293,6 +3336,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Strike",
           "is_stop": null,
           "name": null,
@@ -3331,6 +3375,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -3352,6 +3397,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -3611,6 +3657,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Grapple",
           "is_stop": null,
           "name": null,
@@ -3754,6 +3801,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Grapple",
               "is_stop": null,
               "name": null,
@@ -3773,6 +3821,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Grapple",
               "is_stop": null,
               "name": null,
@@ -4032,6 +4081,7 @@
           "either": false,
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -4142,6 +4192,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -4193,6 +4244,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -4246,6 +4298,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -4302,6 +4355,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Strike",
           "is_stop": null,
           "name": null,
@@ -4594,6 +4648,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -4687,6 +4742,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -4705,6 +4761,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -4722,6 +4779,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -4825,6 +4883,7 @@
             "count": 2,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Submission",
               "is_stop": null,
               "name": null,
@@ -5002,6 +5061,7 @@
           ],
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Submission",
             "is_stop": null,
             "name": null,
@@ -5095,6 +5155,7 @@
             "count": 2,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Grapple",
               "is_stop": null,
               "name": null,
@@ -5183,6 +5244,7 @@
                   "random": false,
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -5399,6 +5461,7 @@
           "random": true,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -5508,6 +5571,7 @@
           "@type": "BlankText",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -5553,6 +5617,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -5686,6 +5751,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -5742,6 +5808,7 @@
                   "@type": "AddFromDiscard",
                   "filter": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": "Submission",
                     "is_stop": null,
                     "name": null,
@@ -5793,6 +5860,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -5921,6 +5989,7 @@
           "dest": "DECK_TOP",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Grapple",
             "is_stop": null,
             "name": null,
@@ -6024,6 +6093,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -6041,6 +6111,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -6129,6 +6200,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -6232,6 +6304,7 @@
           "dest": "DISCARD",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -6325,6 +6398,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": true,
           "name": null,
@@ -6399,6 +6473,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -6559,6 +6634,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -6590,6 +6666,167 @@
         "@type": "OnStop",
         "dir": "THEIRS",
         "order": null
+      }
+    }
+  ],
+  "6dc509f70d104b0cb32f53be04defacd": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Power",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Strike"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Strike",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Flip",
+          "n": 4,
+          "per": null,
+          "per_who": "SELF",
+          "until": null,
+          "until_to_hand": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Flip 4 cards.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddFromDiscard",
+          "filter": {
+            "@type": "CardFilter",
+            "any_of": [
+              {
+                "@type": "CardFilter",
+                "any_of": [],
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [
+                  "Light"
+                ],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": null,
+                "text_contains": []
+              },
+              {
+                "@type": "CardFilter",
+                "any_of": [],
+                "atk_type": null,
+                "is_stop": null,
+                "name": null,
+                "name_contains": [],
+                "number": null,
+                "play_order": null,
+                "play_orders": [],
+                "raw": null,
+                "tag": "Spotlight",
+                "text_contains": []
+              }
+            ],
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          }
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Add 1 card with \"Light\" in the name or a Spotlight card from your discard pile to your hand.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],
@@ -6795,6 +7032,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Grapple",
               "is_stop": null,
               "name": null,
@@ -6814,6 +7052,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Grapple",
               "is_stop": null,
               "name": null,
@@ -6945,6 +7184,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": null,
               "is_stop": null,
               "name": null,
@@ -6969,6 +7209,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -7067,6 +7308,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7108,6 +7350,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7125,6 +7368,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7251,6 +7495,7 @@
           "copy_tags": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7269,6 +7514,7 @@
           "@type": "BlankText",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7640,6 +7886,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Strike",
               "is_stop": null,
               "name": null,
@@ -7659,6 +7906,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Strike",
               "is_stop": null,
               "name": null,
@@ -7699,6 +7947,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7717,6 +7966,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7734,6 +7984,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7883,6 +8134,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -7974,6 +8226,7 @@
           "copy_tags": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -8217,6 +8470,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -8270,6 +8524,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Submission",
           "is_stop": null,
           "name": null,
@@ -8319,6 +8574,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -8340,6 +8596,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -8379,6 +8636,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -8526,6 +8784,7 @@
           "duration": "WHILE_IN_PLAY",
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -8573,6 +8832,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Grapple",
             "is_stop": null,
             "name": null,
@@ -8730,6 +8990,7 @@
           "random": true,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -8779,6 +9040,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9012,6 +9274,7 @@
           "dest": "DECK_TOP",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Strike",
             "is_stop": null,
             "name": null,
@@ -9448,6 +9711,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9526,6 +9790,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9543,6 +9808,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9560,6 +9826,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9628,6 +9895,7 @@
           "duration": "WHILE_IN_PLAY",
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9657,6 +9925,7 @@
           "duration": "WHILE_IN_PLAY",
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9686,6 +9955,7 @@
           "duration": "WHILE_IN_PLAY",
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9736,6 +10006,7 @@
           "count": 3,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -9811,6 +10082,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Submission",
           "is_stop": null,
           "name": null,
@@ -9955,6 +10227,7 @@
                   "@type": "AddFromDiscard",
                   "filter": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": "Submission",
                     "is_stop": null,
                     "name": null,
@@ -10028,6 +10301,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Grapple",
             "is_stop": null,
             "name": null,
@@ -10047,6 +10321,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Grapple",
           "is_stop": null,
           "name": null,
@@ -10546,6 +10821,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -10597,6 +10873,7 @@
           "duration": "WHILE_IN_PLAY",
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -10672,6 +10949,7 @@
           ],
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Grapple",
             "is_stop": null,
             "name": null,
@@ -10843,6 +11121,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -10860,6 +11139,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -11058,6 +11338,7 @@
         "count": 3,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -11093,6 +11374,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -11242,6 +11524,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Strike",
             "is_stop": null,
             "name": null,
@@ -11261,6 +11544,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Strike",
           "is_stop": null,
           "name": null,
@@ -11303,6 +11587,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Grapple",
             "is_stop": null,
             "name": null,
@@ -11322,6 +11607,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Grapple",
           "is_stop": null,
           "name": null,
@@ -11364,6 +11650,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Submission",
             "is_stop": null,
             "name": null,
@@ -11383,6 +11670,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Submission",
           "is_stop": null,
           "name": null,
@@ -11492,6 +11780,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -11701,6 +11990,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Submission",
             "is_stop": null,
             "name": null,
@@ -11718,6 +12008,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Submission",
             "is_stop": null,
             "name": null,
@@ -11757,6 +12048,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -11871,6 +12163,7 @@
           "delta": 1,
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -12018,6 +12311,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -12060,6 +12354,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -12293,6 +12588,7 @@
                   "@type": "AddFromDiscard",
                   "filter": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -12424,6 +12720,7 @@
                   "@type": "AddFromDiscard",
                   "filter": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -12555,6 +12852,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -12711,6 +13009,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Grapple",
             "is_stop": null,
             "name": null,
@@ -12749,6 +13048,7 @@
           "dest": "DECK_TOP",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Grapple",
             "is_stop": null,
             "name": null,
@@ -12932,6 +13232,7 @@
           "@type": "BlankText",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -13056,6 +13357,7 @@
           "@type": "BlankText",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -13288,6 +13590,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -13434,6 +13737,7 @@
           "random": true,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -13845,6 +14149,7 @@
                   "random": true,
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -13915,6 +14220,7 @@
         "count": 5,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -14165,6 +14471,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Strike",
             "is_stop": null,
             "name": null,
@@ -14195,6 +14502,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -14239,6 +14547,7 @@
                   "count": 1,
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -14269,6 +14578,7 @@
                   "random": false,
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -14323,6 +14633,7 @@
                   "count": 1,
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -14353,6 +14664,7 @@
                   "random": false,
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -14403,6 +14715,7 @@
           "duration": "WHILE_IN_PLAY",
           "per": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -14532,6 +14845,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -14637,6 +14951,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -14654,6 +14969,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -14671,6 +14987,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -14759,6 +15076,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -14812,6 +15130,7 @@
           "source_is_skillreq": false,
           "target": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -14902,6 +15221,7 @@
             "count": 2,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Strike",
               "is_stop": null,
               "name": null,
@@ -14921,6 +15241,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": "Strike",
               "is_stop": null,
               "name": null,
@@ -14963,6 +15284,7 @@
             "count": null,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": null,
               "is_stop": null,
               "name": null,
@@ -15069,6 +15391,7 @@
         "count": 2,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -15199,6 +15522,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -15216,6 +15540,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -15286,6 +15611,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -15303,6 +15629,7 @@
                   "@type": "ShuffleIntoDeck",
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -15365,6 +15692,7 @@
             "count": 1,
             "filter": {
               "@type": "CardFilter",
+              "any_of": [],
               "atk_type": null,
               "is_stop": null,
               "name": null,
@@ -15389,6 +15717,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -15581,6 +15910,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -15600,6 +15930,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Grapple",
           "is_stop": null,
           "name": null,
@@ -15873,6 +16204,7 @@
           "copy_tags": true,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -15919,6 +16251,7 @@
                   "@type": "AddFromDiscard",
                   "filter": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -15983,6 +16316,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -16034,6 +16368,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": "Submission",
             "is_stop": null,
             "name": null,
@@ -16064,6 +16399,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Submission",
           "is_stop": null,
           "name": null,
@@ -16332,6 +16668,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -16350,6 +16687,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -16367,6 +16705,7 @@
           "@type": "ShuffleIntoDeck",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -16422,6 +16761,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -16476,6 +16816,7 @@
         "count": 3,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -16579,6 +16920,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -16603,6 +16945,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Submission",
           "is_stop": null,
           "name": null,
@@ -16730,6 +17073,7 @@
           "count": 1,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -16921,6 +17265,7 @@
           "dest": "HAND",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -17122,6 +17467,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -17159,6 +17505,7 @@
           "source_is_skillreq": false,
           "target": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -17197,6 +17544,7 @@
           "@type": "BlankText",
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -17255,6 +17603,7 @@
         "count": 2,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Submission",
           "is_stop": null,
           "name": null,
@@ -17480,6 +17829,7 @@
                   "random": true,
                   "selector": {
                     "@type": "CardFilter",
+                    "any_of": [],
                     "atk_type": null,
                     "is_stop": null,
                     "name": null,
@@ -17549,6 +17899,7 @@
         "count": 4,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": null,
           "is_stop": null,
           "name": null,
@@ -17587,6 +17938,7 @@
           "@type": "AddFromDiscard",
           "filter": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -17694,6 +18046,7 @@
           "random": false,
           "selector": {
             "@type": "CardFilter",
+            "any_of": [],
             "atk_type": null,
             "is_stop": null,
             "name": null,
@@ -17747,6 +18100,7 @@
         "count": 1,
         "filter": {
           "@type": "CardFilter",
+          "any_of": [],
           "atk_type": "Strike",
           "is_stop": null,
           "name": null,
