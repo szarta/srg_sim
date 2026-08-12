@@ -17305,6 +17305,210 @@
       }
     }
   ],
+  "ee0defe517514f26860c5b695dbdd159": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": -1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Power",
+          "target_highest": false,
+          "target_lowest": false,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's Power is -1.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": -1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Technique",
+          "target_highest": false,
+          "target_lowest": false,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's Technique is -1.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": -1,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Agility",
+          "target_highest": false,
+          "target_lowest": false,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's Agility is -1.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankText",
+          "selector": {
+            "@type": "CardFilter",
+            "any_of": [],
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          },
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Blank all Spotlights for the rest of the match (your own; while in play).",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BlankText",
+          "selector": {
+            "@type": "CardFilter",
+            "any_of": [],
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": "Spotlight",
+            "text_contains": []
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Blank all Spotlights for the rest of the match (opponent's; while in play).",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "LoseBy",
+          "kind": "DISQUALIFICATION",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "If stopped, you lose the match via disqualification.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnStop",
+        "dir": "YOURS",
+        "order": null
+      }
+    }
+  ],
   "eea0b5bfc97b49dd8dacc7c787ad62a3": [
     {
       "@type": "Effect",

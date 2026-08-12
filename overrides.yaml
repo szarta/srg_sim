@@ -5979,6 +5979,150 @@ feeaf7eaf73f47618bd94f8549cff5ae:
   source: card
   optional: false
 
+# Blank-all Spotlights + P/T/A debuff + DQ-if-stopped (ee0defe5): "Your opponent's
+# Power, Technique, and Agility are -1. Blank all Spotlights for the rest of the
+# match. If stopped, you lose the match via disqualification."
+#   - P/T/A -1 -> 3x BuffSkill(-1, OPP) standing.
+#   - "Blank ALL Spotlights" (BOTH boards) -> a who=SELF blank (the caster's own
+#     Spotlights) AND a who=OPP blank (the opponent's), selector tag=Spotlight.
+#   - SIMPLIFICATION: "for the rest of the match" is modeled as WHILE_IN_PLAY (the
+#     blank holds while this Finish sits in play — the common case). A true
+#     rest-of-match persistence (surviving a board-clearing breakout, and catching
+#     Spotlights that enter play later) would need a persistent selector-blank
+#     mechanism the engine does not yet have; it is a single-card gap, tracked
+#     separately. ee0defe5 is not itself a Spotlight (tag Logoless), so the SELF
+#     blank does not self-cancel.
+#   - "If stopped, lose via DQ" -> OnStop{YOURS} -> LoseBy(DQ) (parses natively).
+ee0defe517514f26860c5b695dbdd159:
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Power
+    delta: -1
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your opponent's Power is -1.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Technique
+    delta: -1
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your opponent's Technique is -1.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BuffSkill
+    skill: Agility
+    delta: -1
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Your opponent's Agility is -1.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankText
+    who: SELF
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Blank all Spotlights for the rest of the match (your own; while in play).
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': Static
+  condition:
+    '@type': Always
+  actions:
+  - '@type': BlankText
+    who: OPP
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: Spotlight
+      name: null
+      raw: null
+      name_contains: []
+      text_contains: []
+  duration: WHILE_IN_PLAY
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: Blank all Spotlights for the rest of the match (opponent's; while in play).
+  source: card
+  optional: false
+- '@type': Effect
+  trigger:
+    '@type': OnStop
+    dir: YOURS
+    order: null
+  condition:
+    '@type': Always
+  actions:
+  - '@type': LoseBy
+    kind: DISQUALIFICATION
+    who: SELF
+  duration: INSTANT
+  frequency:
+    '@type': FrequencyGuard
+    kind: UNLIMITED
+    n: null
+  raw_clause: If stopped, you lose the match via disqualification.
+  source: card
+  optional: false
+
 # Count-based Spotlight buff (main-deck): 2 plain FinishBonus + a conditional
 # FinishRollBonus(Technique,+2) gated on HasInPlay(tag=Spotlight,>=3). schema-neutral.
 aa049f5ef34e463db3ec2c3a8fb1e343:
