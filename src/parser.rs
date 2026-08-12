@@ -79,13 +79,19 @@ fn on_hit() -> Trigger {
 
 /// "When you hit a `<atk_type>`" — an [`Trigger::OnHit`] gated on the hit card's type.
 fn on_hit_type(atk_type: AtkType) -> Trigger {
+    on_hit_type_who(atk_type, Who::SelfSide)
+}
+
+/// "When your opponent hits a `<atk_type>`" — the opponent-side [`Trigger::OnHit`]
+/// (Stung: "when your opponent hits a Strike, …").
+fn on_hit_type_who(atk_type: AtkType, who: Who) -> Trigger {
     Trigger::OnHit {
         atk_type: Some(atk_type),
         order: None,
         name_contains: Vec::new(),
         text_contains: Vec::new(),
         on_any: false,
-        who: Who::SelfSide,
+        who,
         from_hand: false,
     }
 }
@@ -3198,7 +3204,7 @@ fn build_skill_buff_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        rule(r"\+(\d+) to (?:your )?Finish rolls?", |c| {
+        rule(r"\+(\d+) to (?:your )?Finish [Rr]olls?", |c| {
             Some(eff(
                 Trigger::Static,
                 finish_roll_bonus(num(c, 1)),
@@ -3206,7 +3212,9 @@ fn build_skill_buff_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
-        rule(r"Your Finish rolls? (?:is|are) ([+-]\d+)", |c| {
+        // "[Rr]oll" — the game term "Finish Roll" is capitalized on ~7 cards (Stung's The
+        // Bee Sting: "Your Finish Roll is +3"); accept either case.
+        rule(r"Your Finish [Rr]olls? (?:is|are) ([+-]\d+)", |c| {
             Some(eff(
                 Trigger::Static,
                 finish_roll_bonus(num(c, 1)),
@@ -3572,6 +3580,24 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     on_hit(),
                     vec![search(filter, Dest::Discard, count)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Split tutor (Stung's The Buzzkill): "Search your deck for 2 <X>: Add 1 to your
+        // hand and put the other in your discard pile" — two 1-card searches of the same
+        // type, one to hand, one to discard.
+        rule(
+            r#"Search your deck for (.+?): [Aa]dd 1 to your hand and put the other in your discard pile"#,
+            |c| {
+                let (filter, _count) = search_target(&c[1])?;
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        search(filter.clone(), Dest::Hand, 1),
+                        search(filter, Dest::Discard, 1),
+                    ],
                     Condition::Always,
                     Duration::Instant,
                 ))
@@ -7205,6 +7231,12 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
         rule(&format!(r"When you hit (?:an? )?{ATK}[,:] (.+)"), |c| {
             trigger_body(on_hit_type(atk(&c[1])), &c[2])
         }),
+        // Opponent-side twin (Stung: "When your opponent hits a Strike, you may put 1
+        // Strike from your discard pile on top of your deck") -> OnHit{Opp, atk} + body.
+        rule(
+            &format!(r"When your opponent hits (?:an? )?{ATK}[,:] (.+)"),
+            |c| trigger_body(on_hit_type_who(atk(&c[1]), Who::Opp), &c[2]),
+        ),
         // Name/text-gated OnHit: "When you hit a [<type>] card with 'X' [or 'Y'] in the
         // name/text, <body>" -> OnHit{name_contains|text_contains[, atk_type]} + body.
         // "in the name" is the default when omitted. Group 1 = optional type, 2 = quoted
@@ -7287,6 +7319,30 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                 &c[1],
             )
         }),
+        // Bare self-loss body — "you lose the match via <Pinfall|Disqualification>". A body
+        // rule for the loss-on-trigger family (Stung's The Bee Sting: "If your opponent
+        // breaks out, you lose the match via Pinfall" -> OnBreakout{Opp} + LoseBy{Pinfall}).
+        // The "If stopped, … via disqualification" family above matches its whole clause
+        // first; this catches the other triggers' bodies.
+        rule(
+            r"[Yy]ou lose the match via (Pinfall|Disqualifications?)",
+            |c| {
+                let kind = if c[1].starts_with("Pinfall") {
+                    LoseKind::Pinfall
+                } else {
+                    LoseKind::Disqualification
+                };
+                Some(eff(
+                    Trigger::OnPlay,
+                    vec![Action::LoseBy {
+                        kind,
+                        who: Who::SelfSide,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"When you break out[,:] (.+)", |c| {
             trigger_body(
                 Trigger::OnBreakout {

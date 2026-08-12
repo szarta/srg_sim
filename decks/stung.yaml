@@ -1,0 +1,42 @@
+# Stung — BASELINE deck (favorite-comps modeling sweep, task #136).
+#
+# Real competitor + real finishes; generic cassandra-shell support (slots 1-27).
+# Fidelity: stat/gimmick/finish is real; the 1-27 support shell is a neutral placeholder.
+# All of Stung is grammar (no override): gimmick OnHit(opp Strike) -> optional recur of a
+# Strike from discard to the deck top; #29 The Buzzkill searches for 2 Strikes (1 to hand,
+# 1 to discard); #30 The Bee Sting is a flat Finish-Roll +3 with "if your opponent breaks
+# out, you lose via Pinfall". #28 Stunging Splash was already fully modeled.
+# stats: St9 Ag10 Pow7 Tec8 Sub6 Grp5
+competitor: {name: "Stung", db_uuid: 4fca7d06fac844ef810d022629b265ff}
+entrance: "App Battle on Supershow Go"
+cards:
+  - {number: 1, name: "Double Cross"}
+  - {number: 2, name: "Arm & Collar Tie Up"}
+  - {number: 3, name: "Snap Headlock"}
+  - {number: 4, name: "Double Chin Music"}
+  - {number: 5, name: "Super Hip Toss"}
+  - {number: 6, name: "Elevated Arm Bar"}
+  - {number: 7, name: "Drawin' Dimes"}
+  - {number: 8, name: "Sweet & Salty Impact Drop (Grapple)"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Headbutt"}
+  - {number: 11, name: "Matte Finish"}
+  - {number: 12, name: "Ready to Rumble"}
+  - {number: 13, name: "Soaring Dropkick"}
+  - {number: 14, name: "Al13n Boot Drop"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Big Boot"}
+  - {number: 17, name: "Snap DDT (Grapple)"}
+  - {number: 18, name: "You're Not Ready"}
+  - {number: 19, name: "Blockbuster Deal"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Destiny's Call (V2)"}
+  - {number: 25, name: "Simple Dropkick"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Stunging Splash", db_uuid: f5a9944a03c94d7191ee61128391a097}  # St finish
+  - {number: 29, name: "The Buzzkill", db_uuid: a296921d5231468190e0fce9eb9b69d3}  # Gr finish
+  - {number: 30, name: "The Bee Sting", db_uuid: f69ebfc6a60c4cf8b985a305a1125b9b}  # Sub finish

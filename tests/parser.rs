@@ -2749,6 +2749,52 @@ fn fortress_finishes_stop() {
     assert_eq!(stop["actions"][0]["atk_type"], "Strike");
 }
 
+/// Stung (task #136, favorite comps): the opponent-hit recur gimmick, The Buzzkill's
+/// split tutor, and The Bee Sting's flat Finish-Roll bonus + lose-on-opp-breakout. All
+/// grammar (no new IR).
+#[test]
+fn stung_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Gimmick: opponent-hit -> optional recur of a Strike from discard to the deck top.
+    let e =
+        one("When your opponent hits a Strike, you may put 1 Strike from your discard pile on top of your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["trigger"]["atk_type"], "Strike");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "RecurToDeckTop");
+    assert_eq!(e["actions"][0]["count"], 1);
+    assert_eq!(e["actions"][0]["selector"]["atk_type"], "Strike");
+
+    // #29 The Buzzkill: search for 2 Strikes -> 1 to hand, the other to discard.
+    let e = one("Search your deck for 2 Strikes: Add 1 to your hand and put the other in your discard pile.");
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(acts[0]["@type"], "Search");
+    assert_eq!(acts[0]["dest"], "HAND");
+    assert_eq!(acts[0]["filter"]["atk_type"], "Strike");
+    assert_eq!(acts[1]["dest"], "DISCARD");
+    assert_eq!(acts[1]["filter"]["atk_type"], "Strike");
+
+    // #30 The Bee Sting: "Your Finish Roll is +3" (capital Roll) -> flat FinishRollBonus.
+    let e = one("Your Finish Roll is +3.");
+    assert_eq!(e["actions"][0]["@type"], "FinishRollBonus");
+    assert_eq!(e["actions"][0]["delta"], 3);
+
+    // "If your opponent breaks out, you lose the match via Pinfall" -> OnBreakout{Opp} + LoseBy.
+    let e = one("If your opponent breaks out, you lose the match via Pinfall.");
+    assert_eq!(e["trigger"]["@type"], "OnBreakout");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["actions"][0]["@type"], "LoseBy");
+    assert_eq!(e["actions"][0]["kind"], "PINFALL");
+    assert_eq!(e["actions"][0]["who"], "SELF");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.
