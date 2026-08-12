@@ -2733,11 +2733,19 @@ fn per_discard(n: i64, desc: &str) -> Option<Effect> {
 /// effect owner picks WHICH opponent card (`choose:false` + `who:Opp`), so "discard
 /// N" and "choose N … and discard it" are the same node.
 fn remove_opp(count: i64, selector: CardFilter) -> Action {
+    remove_opp_to(count, selector, false)
+}
+
+/// Remove N of the opponent's in-play cards, `to_deck` sending them to the deck BOTTOM
+/// (a "bury") instead of the discard — "choose N cards your opponent has in play and
+/// bury it/them" (JT Dunn's gimmick).
+fn remove_opp_to(count: i64, selector: CardFilter, to_deck: bool) -> Action {
     Action::RemoveFromPlay {
         selector,
         who: Who::Opp,
         count,
         choose: false,
+        to_deck,
     }
 }
 
@@ -5245,6 +5253,21 @@ fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
             r"[Cc]hoose (\d+) cards? your opponent has in play and discard (?:it|them)",
             |c| remove_opp_play(num(c, 1), CardFilter::default()),
         ),
+        // "Choose N cards your opponent has in play and BURY it/them" (JT Dunn's gimmick;
+        // a 6-card family) -> RemoveFromPlay{to_deck}, sending the removed card to its
+        // owner's deck bottom rather than their discard. Composes with the OnHit-Strike
+        // split for the gimmick's "When you hit a Strike, <body>".
+        rule(
+            r"[Cc]hoose (\d+) cards? your opponent has in play and bury (?:it|them)",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![remove_opp_to(num(c, 1), CardFilter::default(), true)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         rule(r"[Dd]iscard (\d+) (.+?) your opponent has in play", |c| {
             remove_opp_play(num(c, 1), count_filter(&c[2])?)
         }),
@@ -7222,9 +7245,10 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
         rule(r"When you win (?:the|a) turn roll[,:;] (.+)", |c| {
             trigger_body(Trigger::OnWinTurn, &c[1])
         }),
-        rule(r"[Ii]f (?:this card is |this is )?stopped[,:] (.+)", |c| {
-            trigger_body(on_your_stop(), &c[1])
-        }),
+        rule(
+            r"[Ii]f (?:this card is |this is )?[Ss]topped[,:] (.+)",
+            |c| trigger_body(on_your_stop(), &c[1]),
+        ),
         // "When your opponent stops a card, <body>" — your card was stopped
         // (Direction::Yours), same trigger as "if stopped". The body re-parses through the
         // grammar; the subject "they"/"your opponent" carries into RevealAndDiscard etc.

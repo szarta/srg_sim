@@ -237,7 +237,7 @@ Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filte
                               # Draw/Discard `per`: n/count scales by the count of `per` cards in play,
                               # exactly like ModifyRoll (authored OnPlay for "for each OTHER … in play")
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
-AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1)  # board disruption -> discard
+AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1, to_deck=false)  # board disruption -> discard (to_deck=true = "bury it", to the owner's deck bottom; JT Dunn). schema v133
 AddFlippedToHand(count?, filter)  # "add N of the flipped cards to your hand" / "add all flipped Strikes …": move `count`
                              # (None = all) matching cards from the turn's flip pool (flipped_this_turn ∩ discard) to hand;
                              # owner picks on a choice. Flip-pool-scoped sibling of AddFromDiscard. schema v88

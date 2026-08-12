@@ -2595,6 +2595,37 @@ fn shattered_riders_grammar() {
     assert_eq!(e["actions"][0]["delta"], -1);
 }
 
+/// JT Dunn (task #136, favorite comps, schema v133): the OnHit-Strike "bury an opponent's
+/// in-play card" gimmick (RemoveFromPlay.to_deck) and the case-insensitive "If Stopped".
+#[test]
+fn jt_dunn_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Gimmick: "When you hit a Strike, choose 1 card your opponent has in play and bury it"
+    // -> OnHit(Strike) + RemoveFromPlay{who=OPP, to_deck} (bury to the owner's deck bottom,
+    // NOT the discard).
+    let e = one("When you hit a Strike, choose 1 card your opponent has in play and bury it.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["atk_type"], "Strike");
+    assert_eq!(e["actions"][0]["@type"], "RemoveFromPlay");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["count"], 1);
+    assert_eq!(e["actions"][0]["to_deck"], true);
+
+    // El Dirtay (V1): the capital "If Stopped," now composes with the OnStop split (the
+    // discard variant keeps to_deck off).
+    let e = one("If Stopped, choose 3 cards your opponent has in play and discard them.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["actions"][0]["@type"], "RemoveFromPlay");
+    assert_eq!(e["actions"][0]["count"], 3);
+    // to_deck is skip-serialized when false (discard removal).
+    assert!(e["actions"][0]["to_deck"].as_bool() != Some(true));
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.

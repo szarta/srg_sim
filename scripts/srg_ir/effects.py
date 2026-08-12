@@ -1136,6 +1136,9 @@ class RemoveFromPlay(IRNode):
     # and discard it" (Cherry Glamazon), which does not restrict whose board. `who`
     # is ignored when set.
     choose: bool = False
+    # Send the removed card to its owner's DECK BOTTOM instead of their discard —
+    # "choose 1 card your opponent has in play and BURY it" (JT Dunn). schema v133
+    to_deck: bool = False
 
 
 @dataclass(frozen=True)

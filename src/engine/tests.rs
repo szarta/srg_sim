@@ -2268,7 +2268,7 @@ mod choose_target_tests {
     fn choose_reaches_the_opponents_board() {
         let mut engine = engine("Bplay");
         engine
-            .act_remove_from_play(&any(), Who::SelfSide, 1, true, "A")
+            .act_remove_from_play(&any(), Who::SelfSide, 1, true, false, "A")
             .unwrap();
         assert_eq!(boards(&engine), (2, 1), "B lost a card despite who=SELF");
     }
@@ -2279,7 +2279,7 @@ mod choose_target_tests {
         // opponent, so A may discard its own.
         let mut engine = engine("Aplay");
         engine
-            .act_remove_from_play(&any(), Who::Opp, 1, true, "A")
+            .act_remove_from_play(&any(), Who::Opp, 1, true, false, "A")
             .unwrap();
         assert_eq!(boards(&engine), (1, 2), "A lost a card despite who=OPP");
     }
@@ -2289,9 +2289,32 @@ mod choose_target_tests {
         // Regression guard: choose=false keeps the original who-directed behaviour.
         let mut engine = engine("Aplay");
         engine
-            .act_remove_from_play(&any(), Who::Opp, 1, false, "A")
+            .act_remove_from_play(&any(), Who::Opp, 1, false, false, "A")
             .unwrap();
         assert_eq!(boards(&engine), (2, 1), "who=OPP still hits B");
+    }
+
+    #[test]
+    fn to_deck_buries_the_removed_card_to_the_owners_deck() {
+        // JT Dunn's "bury it" (to_deck=true): the opponent's in-play card lands on their
+        // own deck bottom, not their discard.
+        let mut engine = engine("Bplay");
+        let deck_before = engine.state.players["B"].deck.len();
+        let disc_before = engine.state.players["B"].discard.len();
+        engine
+            .act_remove_from_play(&any(), Who::Opp, 1, false, true, "A")
+            .unwrap();
+        assert_eq!(boards(&engine), (2, 1), "B lost an in-play card");
+        assert_eq!(
+            engine.state.players["B"].deck.len(),
+            deck_before + 1,
+            "buried to B's deck"
+        );
+        assert_eq!(
+            engine.state.players["B"].discard.len(),
+            disc_before,
+            "NOT sent to B's discard"
+        );
     }
 
     #[test]

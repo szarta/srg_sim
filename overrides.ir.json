@@ -3292,6 +3292,7 @@
             "tag": null,
             "text_contains": []
           },
+          "to_deck": false,
           "who": "SELF"
         }
       ],
@@ -4584,6 +4585,7 @@
             "tag": null,
             "text_contains": []
           },
+          "to_deck": false,
           "who": "OPP"
         },
         {
@@ -7590,6 +7592,7 @@
             "tag": null,
             "text_contains": []
           },
+          "to_deck": false,
           "who": "OPP"
         },
         {
@@ -12442,6 +12445,7 @@
             "tag": null,
             "text_contains": []
           },
+          "to_deck": false,
           "who": "OPP"
         }
       ],
@@ -14122,6 +14126,7 @@
                     "tag": null,
                     "text_contains": []
                   },
+                  "to_deck": false,
                   "who": "OPP"
                 }
               ],
@@ -14204,6 +14209,7 @@
                     "tag": null,
                     "text_contains": []
                   },
+                  "to_deck": false,
                   "who": "OPP"
                 }
               ],
@@ -16151,6 +16157,7 @@
             "tag": null,
             "text_contains": []
           },
+          "to_deck": false,
           "who": "OPP"
         },
         {
@@ -16546,6 +16553,7 @@
             "tag": null,
             "text_contains": []
           },
+          "to_deck": false,
           "who": "OPP"
         }
       ],

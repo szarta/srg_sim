@@ -4735,6 +4735,9 @@
         "selector": {
           "$ref": "#/$defs/CardFilter"
         },
+        "to_deck": {
+          "type": "boolean"
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
@@ -6269,5 +6272,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 132
+  "version": 133
 }

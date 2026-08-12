@@ -1,0 +1,41 @@
+# JT Dunn — BASELINE deck (favorite-comps modeling sweep, task #136).
+#
+# Real competitor + real finishes; generic cassandra-shell support (slots 1-27).
+# Fidelity: stat/gimmick/finish is real; the 1-27 support shell is a neutral
+# placeholder. JT Dunn has only TWO finishes (#29 Grapple El Dirtay, #30 Submission
+# Strong Style Sleeper) and no Strike finish, so slot 28 is a NEUTRAL FILLER
+# (Snap Superkick, +4 Strike) — not a JT Dunn card, just to fill the finish slot.
+# stats: St10 Ag9 Pow8 Tec7 Sub5 Grp6
+competitor: {name: "JT Dunn", db_uuid: b41d30281182409c8d64717d314ab4bc}
+entrance: "App Battle on Supershow Go"
+cards:
+  - {number: 1, name: "Double Cross"}
+  - {number: 2, name: "Arm & Collar Tie Up"}
+  - {number: 3, name: "Snap Headlock"}
+  - {number: 4, name: "Double Chin Music"}
+  - {number: 5, name: "Super Hip Toss"}
+  - {number: 6, name: "Elevated Arm Bar"}
+  - {number: 7, name: "Drawin' Dimes"}
+  - {number: 8, name: "Sweet & Salty Impact Drop (Grapple)"}
+  - {number: 9, name: "Apply Pressure"}
+  - {number: 10, name: "Headbutt"}
+  - {number: 11, name: "Matte Finish"}
+  - {number: 12, name: "Ready to Rumble"}
+  - {number: 13, name: "Soaring Dropkick"}
+  - {number: 14, name: "Al13n Boot Drop"}
+  - {number: 15, name: "Cosmic Knee in the Ropes"}
+  - {number: 16, name: "Big Boot"}
+  - {number: 17, name: "Snap DDT (Grapple)"}
+  - {number: 18, name: "You're Not Ready"}
+  - {number: 19, name: "Blockbuster Deal"}
+  - {number: 20, name: "Panic Slam"}
+  - {number: 21, name: "Back Rake"}
+  - {number: 22, name: "Spin Wheel Kick"}
+  - {number: 23, name: "Jackhammer"}
+  - {number: 24, name: "Destiny's Call (V2)"}
+  - {number: 25, name: "Simple Dropkick"}
+  - {number: 26, name: "Back Drop"}
+  - {number: 27, name: "Double Finger Lock"}
+  - {number: 28, name: "Snap Superkick", db_uuid: 251b0a546b484f50ae8d71acac396b0c}  # NEUTRAL filler (JT Dunn has no St finish)
+  - {number: 29, name: "El Dirtay (V2)", db_uuid: 57380ab45677479aa6c10306e6fd26aa}  # Gr finish
+  - {number: 30, name: "Strong Style Sleeper", db_uuid: 017ffaf9055f43b3afe0f8bb65546c7b}  # Sub finish

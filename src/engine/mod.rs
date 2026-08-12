@@ -1326,7 +1326,8 @@ impl Engine {
                 who,
                 count,
                 choose,
-            } => self.act_remove_from_play(selector, *who, *count, *choose, key)?,
+                to_deck,
+            } => self.act_remove_from_play(selector, *who, *count, *choose, *to_deck, key)?,
             Action::DiscardInPlayMatch => self.act_discard_in_play_match(key)?,
             Action::CoupledDiscard { offset } => self.act_coupled_discard(*offset, key)?,
             Action::ReturnToHand {
@@ -1799,6 +1800,7 @@ impl Engine {
         &mut self,
         selector: &CardFilter,
         count: i64,
+        to_deck: bool,
         key: &str,
     ) -> Eng<()> {
         let boards: Vec<String> = vec![key.to_owned(), self.state.opponent_of(key)];
@@ -1828,15 +1830,24 @@ impl Engine {
                 break;
             };
             let card = player.in_play.remove(pos);
-            player.discard.push(card);
+            if to_deck {
+                player.deck.push(card);
+            } else {
+                player.discard.push(card);
+            }
             let t = self.state.turn_no;
-            self.log(Event::Discard(CardMovement {
+            let mv = CardMovement {
                 t,
                 player: owner,
                 cards: vec![uuid],
                 source: Some("in_play".to_owned()),
                 hidden: false,
-            }));
+            };
+            if to_deck {
+                self.log(Event::Bury(mv));
+            } else {
+                self.log(Event::Discard(mv));
+            }
         }
         Ok(())
     }
@@ -2799,10 +2810,11 @@ impl Engine {
         who: Who,
         count: i64,
         choose: bool,
+        to_deck: bool,
         key: &str,
     ) -> Eng<()> {
         if choose {
-            return self.remove_from_either_board(selector, count, key);
+            return self.remove_from_either_board(selector, count, to_deck, key);
         }
         let target = self.target(who, key);
         for _ in 0..count.max(0) {
@@ -2816,27 +2828,40 @@ impl Engine {
                 return Ok(());
             }
             let card = self.pick_from(key, &matches, "target")?;
-            {
-                let player = self.state.players.get_mut(&target).unwrap();
-                if let Some(pos) = player
-                    .in_play
-                    .iter()
-                    .position(|c| c.db_uuid == card.db_uuid)
-                {
-                    player.in_play.remove(pos);
-                }
-                player.discard.push(card.clone());
-            }
-            let t = self.state.turn_no;
-            self.log(Event::Discard(CardMovement {
-                t,
-                player: target.clone(),
-                cards: vec![card.db_uuid],
-                source: Some("in_play".to_owned()),
-                hidden: false,
-            }));
+            self.remove_in_play_card(&target, &card, to_deck);
         }
         Ok(())
+    }
+
+    /// Pull `card` off `owner`'s board and send it to their discard (`to_deck = false`)
+    /// or their deck BOTTOM (`to_deck = true`, a "bury"). Logs the matching movement.
+    fn remove_in_play_card(&mut self, owner: &str, card: &Card, to_deck: bool) {
+        let player = self.state.players.get_mut(owner).unwrap();
+        if let Some(pos) = player
+            .in_play
+            .iter()
+            .position(|c| c.db_uuid == card.db_uuid)
+        {
+            player.in_play.remove(pos);
+        }
+        if to_deck {
+            player.deck.push(card.clone());
+        } else {
+            player.discard.push(card.clone());
+        }
+        let t = self.state.turn_no;
+        let mv = CardMovement {
+            t,
+            player: owner.to_owned(),
+            cards: vec![card.db_uuid.clone()],
+            source: Some("in_play".to_owned()),
+            hidden: false,
+        };
+        if to_deck {
+            self.log(Event::Bury(mv));
+        } else {
+            self.log(Event::Discard(mv));
+        }
     }
 
     /// Candyman Dan: discard 1 of the owner's own in-play cards (they choose), then
