@@ -2747,6 +2747,38 @@ fn remove_opp_to(count: i64, selector: CardFilter, to_deck: bool) -> Action {
         count,
         choose: false,
         to_deck,
+        all: false,
+    }
+}
+
+/// Wrap the per-player halves of an "each player …" board effect so a competitor with
+/// a matching [`Action::RedirectAuthority`] (Emo Mam) may pick who they affect. Inert
+/// (applies every half) when no such competitor is in the match. schema v135
+fn redirect_board_effect(actions: Vec<Action>) -> Action {
+    Action::RedirectBoardEffect { actions }
+}
+
+/// One player's half of Derailed: shuffle their WHOLE hand into their deck, then draw
+/// `count` (`hand_count: None` = the whole hand).
+fn shuffle_hand_draw(who: Who, count: i64) -> Action {
+    Action::ShuffleHandDraw {
+        who,
+        count,
+        choose: false,
+        hand_count: None,
+    }
+}
+
+/// Discard EVERY in-play card of `who` at once — "Discard all cards in play" (per the
+/// controller's side / the opponent's side). No per-card pick.
+fn discard_all_in_play(who: Who) -> Action {
+    Action::RemoveFromPlay {
+        selector: CardFilter::default(),
+        who,
+        count: 0,
+        choose: false,
+        to_deck: false,
+        all: true,
     }
 }
 
@@ -3532,14 +3564,65 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
         rule(r"Each player randomly buries their discard pile", |_| {
             Some(eff(
                 on_hit(),
-                vec![
+                vec![redirect_board_effect(vec![
                     bury_whole_discard(Who::SelfSide),
                     bury_whole_discard(Who::Opp),
-                ],
+                ])],
                 Condition::Always,
                 Duration::Instant,
             ))
         }),
+        // "Discard all cards in play" (Apocalypse) — a board clear, one half per player
+        // (the controller's board, the opponent's board), so Emo Mam's redirect can
+        // spare either. Absent that gimmick both halves apply. schema v135
+        rule(r"Discard all cards in play", |_| {
+            Some(eff(
+                on_hit(),
+                vec![redirect_board_effect(vec![
+                    discard_all_in_play(Who::SelfSide),
+                    discard_all_in_play(Who::Opp),
+                ])],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // "Each player shuffles their hand into their deck, then adds the top N cards of
+        // their deck to their hand" (Derailed) — a symmetric hand refresh, one
+        // ShuffleHandDraw half per player, wrapped for Emo Mam's redirect. schema v135
+        rule(
+            r"Each player shuffles their hand into their deck, then adds the top (\d+) cards? of their deck to their hand",
+            |c| {
+                let n = num(c, 1);
+                Some(eff(
+                    on_hit(),
+                    vec![redirect_board_effect(vec![
+                        shuffle_hand_draw(Who::SelfSide, n),
+                        shuffle_hand_draw(Who::Opp, n),
+                    ])],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Emo Mam's gimmick: "When you or your opponent hit '<cards>', you may choose who
+        // it affects (one, both, or neither player)." A passive redirect authority over
+        // the listed cards' board effects (their `RedirectBoardEffect`), keyed by the
+        // resolving card's name. The `(.+?)` captures the quoted card list. schema v135
+        rule(
+            r"When you or your opponent hit (.+?), you may choose who it affects \(one, both, or neither player\)",
+            |c| {
+                let groups = quoted_names(&c[1]);
+                if groups.is_empty() {
+                    return None;
+                }
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::RedirectAuthority { groups }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // "Each player randomly discards N cards from their hand" (Defector's
         // Disruptor + 5 more) — symmetric random hand loss; `Who` has no EACH, so
         // it is two Discard actions in one effect.

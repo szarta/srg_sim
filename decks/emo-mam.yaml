@@ -2,9 +2,10 @@
 #
 # Real competitor + real finishes; generic cassandra-shell support (slots 1-27).
 # Fidelity: stat/gimmick/finish is real; the 1-27 support shell is a neutral placeholder.
-# NOTE: Emo Mam's gimmick (redirect who "Apocalypse"/"Rejected"/"Derailed" affect) is a
-# card-specific targeting-override on 3 named cards — a documented tracked-Unsupported
-# (inert here; those cards aren't in the shell), see task #136.
+# NOTE: Emo Mam's gimmick — redirect who "Apocalypse"/"Rejected"/"Derailed" affect — is
+# fully modeled (schema v135): those cards' board effects wrap in RedirectBoardEffect and
+# her gimmick is a RedirectAuthority; she chooses one/both/neither at resolution. Inert in
+# this shell (none of the three are in the 1-27), but exercised DB-wide. See task #136.
 # stats: St7 Ag10 Pow6 Tec5 Sub8 Grp9
 competitor: {name: "Emo Mam", db_uuid: 621336854c0d4f8d8d02ea15e46fa711}
 entrance: "App Battle on Supershow Go"

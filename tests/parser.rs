@@ -2627,8 +2627,7 @@ fn jt_dunn_riders_grammar() {
 }
 
 /// Emo Mam (task #136, favorite comps, schema v134): #30 Me Against the World's
-/// WhileInDiscard "lose 2 Turn Rolls in a row -> may recur self" (the gimmick's targeting
-/// redirect is a documented tracked-Unsupported, not modelled).
+/// WhileInDiscard "lose 2 Turn Rolls in a row -> may recur self".
 #[test]
 fn emo_mam_riders_grammar() {
     let effs = parse_text(
@@ -2646,6 +2645,56 @@ fn emo_mam_riders_grammar() {
     assert_eq!(e["condition"]["at_least"], 2);
     assert_eq!(e["condition"]["who"], "SELF");
     assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
+}
+
+/// Emo Mam's gimmick (task #136, schema v135): "When you or your opponent hit
+/// 'Apocalypse', 'Rejected', or 'Derailed', you may choose who it affects (one, both, or
+/// neither player)" -> a Static RedirectAuthority over the three quoted names. Paired with
+/// the board effects of those cards, which now wrap in RedirectBoardEffect.
+#[test]
+fn emo_mam_gimmick_redirect_grammar() {
+    let effs = parse_text(
+        "When you or your opponent hit \"Apocalypse\", \"Rejected\", or \"Derailed\", you may choose who it affects (one, both, or neither player).",
+        EffectSource::Gimmick,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1);
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["actions"][0]["@type"], "RedirectAuthority");
+    assert_eq!(
+        e["actions"][0]["groups"],
+        serde_json::json!(["Apocalypse", "Rejected", "Derailed"])
+    );
+
+    // Apocalypse's board clear: one RedirectBoardEffect wrapping a per-player
+    // "discard all in play" (all=true), one half per side.
+    let apoc = parse_text("Discard all cards in play.", EffectSource::Card, None, None);
+    let a = serde_json::to_value(&apoc[0]).unwrap();
+    assert_eq!(a["actions"][0]["@type"], "RedirectBoardEffect");
+    let inner = a["actions"][0]["actions"].as_array().unwrap();
+    assert_eq!(inner.len(), 2);
+    for h in inner {
+        assert_eq!(h["@type"], "RemoveFromPlay");
+        assert_eq!(h["all"], true);
+    }
+
+    // Derailed's hand refresh: per-player ShuffleHandDraw(count=4), wrapped.
+    let der = parse_text(
+        "Each player shuffles their hand into their deck, then adds the top 4 cards of their deck to their hand.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let d = serde_json::to_value(&der[0]).unwrap();
+    assert_eq!(d["actions"][0]["@type"], "RedirectBoardEffect");
+    let dh = d["actions"][0]["actions"].as_array().unwrap();
+    assert_eq!(dh.len(), 2);
+    for h in dh {
+        assert_eq!(h["@type"], "ShuffleHandDraw");
+        assert_eq!(h["count"], 4);
+    }
 }
 
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
@@ -3407,9 +3456,13 @@ fn pod_fidelity_grammar() {
     assert_eq!(a["cap"], 3);
     assert_eq!(a["per"]["name_contains"], serde_json::json!(["Chin"]));
 
-    // Rejected!: nuke both discard piles at random.
+    // Rejected!: nuke both discard piles at random — wrapped in a RedirectBoardEffect so
+    // Emo Mam's gimmick can spare a player (inert here; both halves apply otherwise).
     let e = a1("Each player randomly buries their discard pile.");
-    let acts = e["actions"].as_array().unwrap();
+    let outer = e["actions"].as_array().unwrap();
+    assert_eq!(outer.len(), 1, "one redirectable board effect");
+    assert_eq!(outer[0]["@type"], "RedirectBoardEffect");
+    let acts = outer[0]["actions"].as_array().unwrap();
     assert_eq!(acts.len(), 2, "buries both players");
     for a in acts {
         assert_eq!(a["@type"], "Bury");

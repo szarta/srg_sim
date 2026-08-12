@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 134;
+pub const SCHEMA_VERSION: i64 = 135;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1287,6 +1287,30 @@ pub enum Action {
         /// 6-card family). `false` (the default) = the ordinary discard removal. schema v133
         #[serde(default, skip_serializing_if = "is_false")]
         to_deck: bool,
+        /// Remove EVERY matching in-play card of the target at once, with no per-card
+        /// pick ("Discard all cards in play", Apocalypse) — there is no real choice, so
+        /// this suppresses the phantom decisions a `count`-many loop would emit. `count`
+        /// is ignored when set. `false` (the default) = the ordinary N-many aimed removal.
+        /// schema v135
+        #[serde(default, skip_serializing_if = "is_false")]
+        all: bool,
+    },
+    /// The per-player halves of an "each player …" board effect (Apocalypse's board
+    /// clear, Rejected!'s discard-bury, Derailed's hand cycle), wrapped so a competitor
+    /// with a matching [`Action::RedirectAuthority`] (Emo Mam) may choose which players
+    /// they affect. Absent an active authority the wrapper applies every inner action —
+    /// byte-identical to a plain each-player effect — so wrapping is safe DB-wide. The
+    /// authority match is by the RESOLVING card's name, so only the cards it lists are
+    /// ever redirected. schema v135
+    RedirectBoardEffect {
+        actions: Vec<Action>,
+    },
+    /// A passive gimmick marker (Emo Mam): "when you or your opponent hit one of
+    /// `groups`, you may choose who it affects." Read by [`Action::RedirectBoardEffect`]
+    /// via the resolving card's name (trailing-`!`/case-insensitive, so "Rejected"
+    /// matches the card "Rejected!"). Never executes on its own. schema v135
+    RedirectAuthority {
+        groups: Vec<String>,
     },
     /// Discard 1 of the owner's own in-play cards, then discard 1 of the OPPONENT's
     /// in-play cards of the SAME play order (Candyman Dan). The second target's filter
@@ -2785,6 +2809,30 @@ pub enum IrNode {
         /// 6-card family). `false` (the default) = the ordinary discard removal. schema v133
         #[serde(default, skip_serializing_if = "is_false")]
         to_deck: bool,
+        /// Remove EVERY matching in-play card of the target at once, with no per-card
+        /// pick ("Discard all cards in play", Apocalypse) — there is no real choice, so
+        /// this suppresses the phantom decisions a `count`-many loop would emit. `count`
+        /// is ignored when set. `false` (the default) = the ordinary N-many aimed removal.
+        /// schema v135
+        #[serde(default, skip_serializing_if = "is_false")]
+        all: bool,
+    },
+    /// The per-player halves of an "each player …" board effect (Apocalypse's board
+    /// clear, Rejected!'s discard-bury, Derailed's hand cycle), wrapped so a competitor
+    /// with a matching [`Action::RedirectAuthority`] (Emo Mam) may choose which players
+    /// they affect. Absent an active authority the wrapper applies every inner action —
+    /// byte-identical to a plain each-player effect — so wrapping is safe DB-wide. The
+    /// authority match is by the RESOLVING card's name, so only the cards it lists are
+    /// ever redirected. schema v135
+    RedirectBoardEffect {
+        actions: Vec<Action>,
+    },
+    /// A passive gimmick marker (Emo Mam): "when you or your opponent hit one of
+    /// `groups`, you may choose who it affects." Read by [`Action::RedirectBoardEffect`]
+    /// via the resolving card's name (trailing-`!`/case-insensitive, so "Rejected"
+    /// matches the card "Rejected!"). Never executes on its own. schema v135
+    RedirectAuthority {
+        groups: Vec<String>,
     },
     /// Discard 1 of the owner's own in-play cards, then discard 1 of the OPPONENT's
     /// in-play cards of the SAME play order (Candyman Dan). The second target's filter

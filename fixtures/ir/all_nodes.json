@@ -790,6 +790,14 @@
     "who": "SELF"
   },
   {
+    "@type": "RedirectBoardEffect",
+    "actions": []
+  },
+  {
+    "@type": "RedirectAuthority",
+    "groups": []
+  },
+  {
     "@type": "DiscardInPlayMatch"
   },
   {

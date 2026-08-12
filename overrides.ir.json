@@ -3277,6 +3277,7 @@
       "actions": [
         {
           "@type": "RemoveFromPlay",
+          "all": false,
           "choose": false,
           "count": 1,
           "selector": {
@@ -4570,6 +4571,7 @@
       "actions": [
         {
           "@type": "RemoveFromPlay",
+          "all": false,
           "choose": false,
           "count": 1,
           "selector": {
@@ -7577,6 +7579,7 @@
       "actions": [
         {
           "@type": "RemoveFromPlay",
+          "all": false,
           "choose": false,
           "count": 1,
           "selector": {
@@ -12430,6 +12433,7 @@
       "actions": [
         {
           "@type": "RemoveFromPlay",
+          "all": false,
           "choose": false,
           "count": 1,
           "selector": {
@@ -14111,6 +14115,7 @@
               "actions": [
                 {
                   "@type": "RemoveFromPlay",
+                  "all": false,
                   "choose": true,
                   "count": 1,
                   "selector": {
@@ -14194,6 +14199,7 @@
               "actions": [
                 {
                   "@type": "RemoveFromPlay",
+                  "all": false,
                   "choose": true,
                   "count": 1,
                   "selector": {
@@ -16142,6 +16148,7 @@
       "actions": [
         {
           "@type": "RemoveFromPlay",
+          "all": false,
           "choose": false,
           "count": 1,
           "selector": {
@@ -16538,6 +16545,7 @@
       "actions": [
         {
           "@type": "RemoveFromPlay",
+          "all": false,
           "choose": false,
           "count": 1,
           "selector": {

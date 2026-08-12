@@ -1139,6 +1139,9 @@ class RemoveFromPlay(IRNode):
     # Send the removed card to its owner's DECK BOTTOM instead of their discard —
     # "choose 1 card your opponent has in play and BURY it" (JT Dunn). schema v133
     to_deck: bool = False
+    # Remove EVERY matching in-play card of the target at once, no per-card pick
+    # ("Discard all cards in play", Apocalypse); `count` is ignored. schema v135
+    all: bool = False
 
 
 @dataclass(frozen=True)

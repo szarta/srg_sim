@@ -2268,7 +2268,7 @@ mod choose_target_tests {
     fn choose_reaches_the_opponents_board() {
         let mut engine = engine("Bplay");
         engine
-            .act_remove_from_play(&any(), Who::SelfSide, 1, true, false, "A")
+            .act_remove_from_play(&any(), Who::SelfSide, 1, true, false, false, "A")
             .unwrap();
         assert_eq!(boards(&engine), (2, 1), "B lost a card despite who=SELF");
     }
@@ -2279,7 +2279,7 @@ mod choose_target_tests {
         // opponent, so A may discard its own.
         let mut engine = engine("Aplay");
         engine
-            .act_remove_from_play(&any(), Who::Opp, 1, true, false, "A")
+            .act_remove_from_play(&any(), Who::Opp, 1, true, false, false, "A")
             .unwrap();
         assert_eq!(boards(&engine), (1, 2), "A lost a card despite who=OPP");
     }
@@ -2289,7 +2289,7 @@ mod choose_target_tests {
         // Regression guard: choose=false keeps the original who-directed behaviour.
         let mut engine = engine("Aplay");
         engine
-            .act_remove_from_play(&any(), Who::Opp, 1, false, false, "A")
+            .act_remove_from_play(&any(), Who::Opp, 1, false, false, false, "A")
             .unwrap();
         assert_eq!(boards(&engine), (2, 1), "who=OPP still hits B");
     }
@@ -2302,7 +2302,7 @@ mod choose_target_tests {
         let deck_before = engine.state.players["B"].deck.len();
         let disc_before = engine.state.players["B"].discard.len();
         engine
-            .act_remove_from_play(&any(), Who::Opp, 1, false, true, "A")
+            .act_remove_from_play(&any(), Who::Opp, 1, false, true, false, "A")
             .unwrap();
         assert_eq!(boards(&engine), (2, 1), "B lost an in-play card");
         assert_eq!(
@@ -2398,6 +2398,174 @@ mod choose_target_tests {
             a.discard.iter().any(|c| c.db_uuid == "Adisc0"),
             "the top card stays"
         );
+    }
+}
+
+/// Emo Mam's gimmick (task #136, schema v135): a `RedirectAuthority` lets its owner
+/// choose who a resolving card's `RedirectBoardEffect` affects, keyed by the card's name.
+#[cfg(test)]
+mod redirect_board_effect_tests {
+    use super::*;
+
+    /// Picks the redirect option whose `affects` label matches; else the first legal.
+    struct PickAffects(&'static str);
+
+    impl Decider for PickAffects {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal
+                .iter()
+                .find(|o| o["affects"] == self.0)
+                .cloned()
+                .or_else(|| legal.first().cloned())
+        }
+
+        fn policy_name(&self, _viewer: &str) -> String {
+            "pick-affects".to_owned()
+        }
+    }
+
+    fn card(uuid: &str) -> Value {
+        json!({"atk_type": "Strike", "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+               "name": uuid, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []})
+    }
+
+    /// Both sides start with 2 cards in play. `authority` (if any) is the player whose
+    /// gimmick carries a `RedirectAuthority` over "Apocalypse".
+    fn engine(affects: &'static str, authority: Option<&str>) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Underworld", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let mut engine = Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(PickAffects(affects)),
+            1,
+            String::new(),
+            "sim".into(),
+        );
+        for side in ["A", "B"] {
+            let p = engine.state.players.get_mut(side).unwrap();
+            for i in 0..2 {
+                p.in_play
+                    .push(serde_json::from_value(card(&format!("{side}play{i}"))).unwrap());
+            }
+        }
+        if let Some(a) = authority {
+            engine
+                .state
+                .players
+                .get_mut(a)
+                .unwrap()
+                .competitor
+                .effects
+                .push(
+                    serde_json::from_value(json!({
+                        "@type": "Effect", "trigger": {"@type": "Static"},
+                        "condition": {"@type": "Always"},
+                        "actions": [{"@type": "RedirectAuthority", "groups": ["Apocalypse"]}],
+                        "duration": "INSTANT",
+                        "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                        "raw_clause": "gimmick", "source": "gimmick", "optional": false
+                    }))
+                    .unwrap(),
+                );
+        }
+        engine
+    }
+
+    fn boards(e: &Engine) -> (usize, usize) {
+        (
+            e.state.players["A"].in_play.len(),
+            e.state.players["B"].in_play.len(),
+        )
+    }
+
+    /// Apocalypse's board clear, wrapped: two `RemoveFromPlay { all }` halves (SELF/OPP).
+    fn apocalypse() -> Action {
+        serde_json::from_value(json!({
+            "@type": "RedirectBoardEffect",
+            "actions": [
+                {"@type": "RemoveFromPlay", "who": "SELF", "count": 0, "choose": false, "all": true,
+                 "selector": {"@type": "CardFilter"}},
+                {"@type": "RemoveFromPlay", "who": "OPP", "count": 0, "choose": false, "all": true,
+                 "selector": {"@type": "CardFilter"}},
+            ],
+        }))
+        .expect("action")
+    }
+
+    fn play(engine: &mut Engine, controller: &str, card_name: &str) {
+        engine.firing_card_name = Some(card_name.to_owned());
+        let apoc = apocalypse();
+        engine
+            .apply_action(&apoc, controller, "Discard all cards in play")
+            .unwrap();
+    }
+
+    #[test]
+    fn no_authority_clears_both_boards() {
+        // Absent an Emo Mam, the wrapper degrades to a plain each-player effect.
+        let mut engine = engine("both", None);
+        play(&mut engine, "A", "Apocalypse");
+        assert_eq!(boards(&engine), (0, 0), "both boards clear");
+    }
+
+    #[test]
+    fn authority_can_spare_itself() {
+        // B plays Apocalypse; A (Emo Mam) chooses to affect only the controller (B),
+        // sparing its own board — "one … player".
+        let mut engine = engine("controller", Some("A"));
+        play(&mut engine, "B", "Apocalypse");
+        assert_eq!(boards(&engine), (2, 0), "only the controller B is cleared");
+    }
+
+    #[test]
+    fn authority_can_spare_everyone() {
+        // "neither player": the board effect fizzles entirely.
+        let mut engine = engine("neither", Some("A"));
+        play(&mut engine, "B", "Apocalypse");
+        assert_eq!(boards(&engine), (2, 2), "neither board is cleared");
+    }
+
+    #[test]
+    fn a_card_not_in_the_gimmick_list_is_not_redirected() {
+        // A holds the authority (over "Apocalypse"), but a differently-named card resolves:
+        // no redirect, both halves apply despite the "neither" preference.
+        let mut engine = engine("neither", Some("A"));
+        play(&mut engine, "B", "Some Other Board Clear");
+        assert_eq!(
+            boards(&engine),
+            (0, 0),
+            "unlisted card is a plain each-player effect"
+        );
+    }
+
+    #[test]
+    fn all_flag_clears_a_board_without_a_decision() {
+        // The `all` path must not emit a per-card decision (there is no choice): a decider
+        // with no queued answers would yield/err if it did, so `.unwrap()` proves it did not.
+        let mut engine = engine("both", None);
+        let clear: Action = serde_json::from_value(json!({
+            "@type": "RemoveFromPlay", "who": "OPP", "count": 0, "choose": false, "all": true,
+            "selector": {"@type": "CardFilter"}
+        }))
+        .unwrap();
+        engine
+            .apply_action(&clear, "A", "Discard all cards in play")
+            .unwrap();
+        assert_eq!(boards(&engine), (2, 0), "B's whole board cleared at once");
     }
 }
 

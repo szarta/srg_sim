@@ -240,7 +240,14 @@ Flip(n, who=SELF, per?, per_who=SELF, until?, until_to_hand=False)  Search(filte
                               # Draw/Discard `per`: n/count scales by the count of `per` cards in play,
                               # exactly like ModifyRoll (authored OnPlay for "for each OTHER … in play")
 ShuffleDeck(who)              # shuffle a whole deck ("Shuffle your deck")
-AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1, to_deck=false)  # board disruption -> discard (to_deck=true = "bury it", to the owner's deck bottom; JT Dunn). schema v133
+AddFromDiscard(filter)        RemoveFromPlay(selector, who=OPP, count=1, to_deck=false, all=false)  # board disruption -> discard (to_deck=true = "bury it", to the owner's deck bottom; JT Dunn). all=true clears EVERY match of the who-side at once, no per-card pick ("Discard all cards in play", Apocalypse). schema v133 (all: v135)
+RedirectBoardEffect(actions)  # the per-player halves of an "each player …" board effect (Apocalypse's board clear, Rejected!'s
+                             # discard-bury, Derailed's hand cycle), wrapped so a competitor with a matching RedirectAuthority (Emo Mam)
+                             # may choose which players they affect (both / controller / opponent / neither). Absent an active authority
+                             # every half applies — byte-identical to a plain each-player effect — so wrapping is safe DB-wide. schema v135
+RedirectAuthority(groups)    # Static gimmick marker (Emo Mam): "when you or your opponent hit one of `groups`, you may choose who it
+                             # affects." Read by RedirectBoardEffect via the RESOLVING card's name (trailing-'!'/case-insensitive, so the
+                             # gimmick's "Rejected" matches the card "Rejected!"), so only the listed cards are ever redirected. schema v135
 AddFlippedToHand(count?, filter)  # "add N of the flipped cards to your hand" / "add all flipped Strikes …": move `count`
                              # (None = all) matching cards from the turn's flip pool (flipped_this_turn ∩ discard) to hand;
                              # owner picks on a choice. Flip-pool-scoped sibling of AddFromDiscard. schema v88

@@ -1328,7 +1328,13 @@ impl Engine {
                 count,
                 choose,
                 to_deck,
-            } => self.act_remove_from_play(selector, *who, *count, *choose, *to_deck, key)?,
+                all,
+            } => self.act_remove_from_play(selector, *who, *count, *choose, *to_deck, *all, key)?,
+            Action::RedirectBoardEffect { actions } => {
+                self.act_redirect_board_effect(actions, source, key)?
+            }
+            // A passive gimmick marker read by `RedirectBoardEffect` (Emo Mam); never fires.
+            Action::RedirectAuthority { .. } => {}
             Action::DiscardInPlayMatch => self.act_discard_in_play_match(key)?,
             Action::CoupledDiscard { offset } => self.act_coupled_discard(*offset, key)?,
             Action::ReturnToHand {
@@ -2805,6 +2811,7 @@ impl Engine {
     /// Board disruption: the actor sends up to `count` cards the target has in play
     /// to the target's discard, aiming via the `target` decision point (a visible
     /// removal — both endpoints public).
+    #[allow(clippy::too_many_arguments)]
     fn act_remove_from_play(
         &mut self,
         selector: &CardFilter,
@@ -2812,12 +2819,26 @@ impl Engine {
         count: i64,
         choose: bool,
         to_deck: bool,
+        all: bool,
         key: &str,
     ) -> Eng<()> {
         if choose {
             return self.remove_from_either_board(selector, count, to_deck, key);
         }
         let target = self.target(who, key);
+        // "Discard all cards in play": clear every match in board order, no per-card pick.
+        if all {
+            let matches: Vec<Card> = self.state.players[&target]
+                .in_play
+                .iter()
+                .filter(|c| conditions::card_matches(c, selector))
+                .cloned()
+                .collect();
+            for card in matches {
+                self.remove_in_play_card(&target, &card, to_deck);
+            }
+            return Ok(());
+        }
         for _ in 0..count.max(0) {
             let matches: Vec<Card> = self.state.players[&target]
                 .in_play
@@ -2863,6 +2884,61 @@ impl Engine {
         } else {
             self.log(Event::Discard(mv));
         }
+    }
+
+    /// Apply the per-player halves of an "each player …" board effect, letting an
+    /// active [`Action::RedirectAuthority`] (Emo Mam) pick which players they affect.
+    /// `key` is the resolving card's controller; each inner action's `who` resolves
+    /// relative to it. Absent an authority every half applies (plain each-player).
+    fn act_redirect_board_effect(
+        &mut self,
+        actions: &[Action],
+        source: &str,
+        key: &str,
+    ) -> Eng<()> {
+        let controller = key.to_owned();
+        let opp = self.state.opponent_of(key);
+        let card = self.firing_card_name.clone().unwrap_or_default();
+        let affected: Vec<String> = match self.state.redirect_authority_for(&card) {
+            None => vec![controller.clone(), opp.clone()],
+            Some(auth) => self.choose_redirect_targets(&auth, &controller, &opp)?,
+        };
+        for action in actions {
+            let target = self.target(redirect_action_who(action), &controller);
+            if affected.contains(&target) {
+                self.apply_action(action, &controller, source)?;
+                if self.resolve_pending() {
+                    return Ok(());
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// The authority (Emo Mam's owner) picks who a redirectable board effect affects:
+    /// both players, the controller only, the opponent only, or neither. Returns the
+    /// chosen player keys.
+    fn choose_redirect_targets(
+        &mut self,
+        auth: &str,
+        controller: &str,
+        opp: &str,
+    ) -> Eng<Vec<String>> {
+        let legal = vec![
+            json!({"kind": "redirect", "affects": "both", "players": [controller, opp]}),
+            json!({"kind": "redirect", "affects": "controller", "players": [controller]}),
+            json!({"kind": "redirect", "affects": "opponent", "players": [opp]}),
+            json!({"kind": "redirect", "affects": "neither", "players": []}),
+        ];
+        let chosen = self.decide("redirect_board_effect", auth, legal)?;
+        Ok(chosen["players"]
+            .as_array()
+            .map(|a| {
+                a.iter()
+                    .filter_map(|p| p.as_str().map(str::to_owned))
+                    .collect()
+            })
+            .unwrap_or_default())
     }
 
     /// Candyman Dan: discard 1 of the owner's own in-play cards (they choose), then
@@ -7324,6 +7400,19 @@ fn scry_value(card: &Card) -> i64 {
 
 /// The action's Python class name — the tail of an `unsupported` event's reason
 /// when an action reaches the executor without a modeled handler.
+/// Which player a redirectable board half targets, read off the inner action's own
+/// `who` (relative to the resolving card's controller). The three modeled board
+/// effects use `Bury`/`ShuffleHandDraw`/`RemoveFromPlay`; anything else defaults to
+/// the controller so a future unconditional half still applies.
+fn redirect_action_who(action: &Action) -> Who {
+    match action {
+        Action::Bury { who, .. }
+        | Action::ShuffleHandDraw { who, .. }
+        | Action::RemoveFromPlay { who, .. } => *who,
+        _ => Who::SelfSide,
+    }
+}
+
 fn action_name(action: &Action) -> &'static str {
     match action {
         Action::Draw { .. } => "Draw",
@@ -7344,6 +7433,8 @@ fn action_name(action: &Action) -> &'static str {
         Action::RecurToDeckTop { .. } => "RecurToDeckTop",
         Action::CountsAsInPlay { .. } => "CountsAsInPlay",
         Action::RemoveFromPlay { .. } => "RemoveFromPlay",
+        Action::RedirectBoardEffect { .. } => "RedirectBoardEffect",
+        Action::RedirectAuthority { .. } => "RedirectAuthority",
         Action::DiscardInPlayMatch => "DiscardInPlayMatch",
         Action::CoupledDiscard { .. } => "CoupledDiscard",
         Action::ReturnToHand { .. } => "ReturnToHand",

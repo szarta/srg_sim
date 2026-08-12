@@ -401,6 +401,13 @@ fn is_zero_i64(n: &i64) -> bool {
     *n == 0
 }
 
+/// Card-name equality that ignores a trailing `!` and case, so a gimmick that names
+/// "Rejected" matches the card "Rejected!" (Emo Mam's redirect list).
+fn card_name_eq_loose(a: &str, b: &str) -> bool {
+    let norm = |s: &str| s.trim().trim_end_matches('!').to_lowercase();
+    norm(a) == norm(b)
+}
+
 impl GameState {
     /// A fresh game state over the given players and RNG (crowd meter 0, turn 0,
     /// player `A` active).
@@ -617,6 +624,26 @@ impl GameState {
                         if self.poison_target(*who, pile_owner) == pile_owner)
                 }) && conditions::holds(&eff.condition, self, pile_owner, None)
             })
+    }
+
+    /// The player whose active gimmick lets them choose who the board effect of the
+    /// resolving card `card_name` affects (Emo Mam: "when you or your opponent hit
+    /// 'Apocalypse'/'Rejected'/'Derailed', you may choose who it affects"). Scans both
+    /// competitors' active Statics for a [`Action::RedirectAuthority`] whose `groups`
+    /// name this card; the match ignores a trailing `!` and case so the gimmick's
+    /// "Rejected" matches the card "Rejected!". `None` = a plain each-player effect.
+    pub fn redirect_authority_for(&self, card_name: &str) -> Option<String> {
+        self.players
+            .keys()
+            .find(|owner| {
+                self.any_active_static(owner, |eff| {
+                    eff.actions.iter().any(|a| {
+                        matches!(a, Action::RedirectAuthority { groups }
+                            if groups.iter().any(|g| card_name_eq_loose(g, card_name)))
+                    }) && conditions::holds(&eff.condition, self, owner, None)
+                })
+            })
+            .cloned()
     }
 
     /// Resolve a standing match-rule toggle for `loser` by LAST-PLAYED order (task #93);

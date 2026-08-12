@@ -1082,6 +1082,12 @@
                 "$ref": "#/$defs/RemoveFromPlay"
               },
               {
+                "$ref": "#/$defs/RedirectBoardEffect"
+              },
+              {
+                "$ref": "#/$defs/RedirectAuthority"
+              },
+              {
                 "$ref": "#/$defs/DiscardInPlayMatch"
               },
               {
@@ -1998,6 +2004,12 @@
               },
               {
                 "$ref": "#/$defs/RemoveFromPlay"
+              },
+              {
+                "$ref": "#/$defs/RedirectBoardEffect"
+              },
+              {
+                "$ref": "#/$defs/RedirectAuthority"
               },
               {
                 "$ref": "#/$defs/DiscardInPlayMatch"
@@ -3441,6 +3453,12 @@
           "$ref": "#/$defs/RemoveFromPlay"
         },
         {
+          "$ref": "#/$defs/RedirectBoardEffect"
+        },
+        {
+          "$ref": "#/$defs/RedirectAuthority"
+        },
+        {
           "$ref": "#/$defs/DiscardInPlayMatch"
         },
         {
@@ -4767,6 +4785,9 @@
         "@type": {
           "const": "RemoveFromPlay"
         },
+        "all": {
+          "type": "boolean"
+        },
         "choose": {
           "type": "boolean"
         },
@@ -4789,6 +4810,332 @@
         "count",
         "selector",
         "who"
+      ],
+      "type": "object"
+    },
+    "RedirectBoardEffect": {
+      "additionalProperties": false,
+      "description": "The per-player halves of an \"each player …\" board effect (Apocalypse, Rejected!, Derailed), wrapped so a competitor with a matching RedirectAuthority (Emo Mam) may choose which players they affect; absent one, every half applies (a plain each-player effect). schema v135",
+      "properties": {
+        "@type": {
+          "const": "RedirectBoardEffect"
+        },
+        "actions": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Draw"
+              },
+              {
+                "$ref": "#/$defs/Bury"
+              },
+              {
+                "$ref": "#/$defs/Flip"
+              },
+              {
+                "$ref": "#/$defs/MillDeck"
+              },
+              {
+                "$ref": "#/$defs/RollDraw"
+              },
+              {
+                "$ref": "#/$defs/NextRollSkillBonus"
+              },
+              {
+                "$ref": "#/$defs/MultiTurnRollBonus"
+              },
+              {
+                "$ref": "#/$defs/Discard"
+              },
+              {
+                "$ref": "#/$defs/Search"
+              },
+              {
+                "$ref": "#/$defs/ShuffleDeck"
+              },
+              {
+                "$ref": "#/$defs/ShuffleIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/AddFromDiscard"
+              },
+              {
+                "$ref": "#/$defs/AddFlippedToHand"
+              },
+              {
+                "$ref": "#/$defs/RecurToDeckTop"
+              },
+              {
+                "$ref": "#/$defs/CountsAsInPlay"
+              },
+              {
+                "$ref": "#/$defs/RemoveFromPlay"
+              },
+              {
+                "$ref": "#/$defs/RedirectBoardEffect"
+              },
+              {
+                "$ref": "#/$defs/RedirectAuthority"
+              },
+              {
+                "$ref": "#/$defs/DiscardInPlayMatch"
+              },
+              {
+                "$ref": "#/$defs/CoupledDiscard"
+              },
+              {
+                "$ref": "#/$defs/RevealAndDiscard"
+              },
+              {
+                "$ref": "#/$defs/Peek"
+              },
+              {
+                "$ref": "#/$defs/Reveal"
+              },
+              {
+                "$ref": "#/$defs/ForceRevealPlay"
+              },
+              {
+                "$ref": "#/$defs/CopyEntrance"
+              },
+              {
+                "$ref": "#/$defs/GrantSwapNextTurn"
+              },
+              {
+                "$ref": "#/$defs/Scry"
+              },
+              {
+                "$ref": "#/$defs/RevealRoute"
+              },
+              {
+                "$ref": "#/$defs/ShuffleHandDraw"
+              },
+              {
+                "$ref": "#/$defs/ModifyRoll"
+              },
+              {
+                "$ref": "#/$defs/RollBoost"
+              },
+              {
+                "$ref": "#/$defs/BuffSkill"
+              },
+              {
+                "$ref": "#/$defs/MaxHandSize"
+              },
+              {
+                "$ref": "#/$defs/MinHandSize"
+              },
+              {
+                "$ref": "#/$defs/MirrorOpponentIncrease"
+              },
+              {
+                "$ref": "#/$defs/Reroll"
+              },
+              {
+                "$ref": "#/$defs/WinTie"
+              },
+              {
+                "$ref": "#/$defs/Bump"
+              },
+              {
+                "$ref": "#/$defs/ElectBumpOnSameSkill"
+              },
+              {
+                "$ref": "#/$defs/Stop"
+              },
+              {
+                "$ref": "#/$defs/BlankGimmick"
+              },
+              {
+                "$ref": "#/$defs/FlipGimmick"
+              },
+              {
+                "$ref": "#/$defs/BlankText"
+              },
+              {
+                "$ref": "#/$defs/Unblank"
+              },
+              {
+                "$ref": "#/$defs/CopyText"
+              },
+              {
+                "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/BuryThisCard"
+              },
+              {
+                "$ref": "#/$defs/AddSelfToHand"
+              },
+              {
+                "$ref": "#/$defs/ShuffleSelfIntoDeck"
+              },
+              {
+                "$ref": "#/$defs/PlaySelf"
+              },
+              {
+                "$ref": "#/$defs/ChooseName"
+              },
+              {
+                "$ref": "#/$defs/LoseBy"
+              },
+              {
+                "$ref": "#/$defs/CrowdMeter"
+              },
+              {
+                "$ref": "#/$defs/PlayExtraCard"
+              },
+              {
+                "$ref": "#/$defs/SetFinishRoll"
+              },
+              {
+                "$ref": "#/$defs/FinishBonus"
+              },
+              {
+                "$ref": "#/$defs/FinishRollBonus"
+              },
+              {
+                "$ref": "#/$defs/TurnRollBonus"
+              },
+              {
+                "$ref": "#/$defs/BreakoutAttempts"
+              },
+              {
+                "$ref": "#/$defs/GrantBreakoutBonus"
+              },
+              {
+                "$ref": "#/$defs/BreakoutModifier"
+              },
+              {
+                "$ref": "#/$defs/LowestRollWins"
+              },
+              {
+                "$ref": "#/$defs/FlipGimmickSigns"
+              },
+              {
+                "$ref": "#/$defs/Unstoppable"
+              },
+              {
+                "$ref": "#/$defs/AlsoLead"
+              },
+              {
+                "$ref": "#/$defs/StopCountsOrderAs"
+              },
+              {
+                "$ref": "#/$defs/SuppressStop"
+              },
+              {
+                "$ref": "#/$defs/DoubleFinishIf"
+              },
+              {
+                "$ref": "#/$defs/DoubleFinishIfBumped"
+              },
+              {
+                "$ref": "#/$defs/Choice"
+              },
+              {
+                "$ref": "#/$defs/Unsupported"
+              },
+              {
+                "$ref": "#/$defs/DisqualificationRule"
+              },
+              {
+                "$ref": "#/$defs/CountOutRule"
+              },
+              {
+                "$ref": "#/$defs/ForceRandomDiscardMove"
+              },
+              {
+                "$ref": "#/$defs/LockDiscard"
+              },
+              {
+                "$ref": "#/$defs/SwapCrowdMeter"
+              },
+              {
+                "$ref": "#/$defs/SwitchRolledSkill"
+              },
+              {
+                "$ref": "#/$defs/ConsideredCompare"
+              },
+              {
+                "$ref": "#/$defs/SwapHandDiscard"
+              },
+              {
+                "$ref": "#/$defs/ReturnToHand"
+              },
+              {
+                "$ref": "#/$defs/SuppressOpponentDraw"
+              },
+              {
+                "$ref": "#/$defs/SuppressSelfHandLoss"
+              },
+              {
+                "$ref": "#/$defs/BumpDrawReplace"
+              },
+              {
+                "$ref": "#/$defs/BumpReplacement"
+              },
+              {
+                "$ref": "#/$defs/ScaleEntranceNumbers"
+              },
+              {
+                "$ref": "#/$defs/RevealForDraw"
+              },
+              {
+                "$ref": "#/$defs/AddText"
+              },
+              {
+                "$ref": "#/$defs/AbsorbGimmick"
+              },
+              {
+                "$ref": "#/$defs/AddTextToNext"
+              },
+              {
+                "$ref": "#/$defs/StopRequiresTag"
+              },
+              {
+                "$ref": "#/$defs/RequireStops"
+              },
+              {
+                "$ref": "#/$defs/AlsoAtkType"
+              },
+              {
+                "$ref": "#/$defs/RevealThen"
+              },
+              {
+                "$ref": "#/$defs/FinishRequires"
+              },
+              {
+                "$ref": "#/$defs/HandToDeckTop"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "actions"
+      ],
+      "type": "object"
+    },
+    "RedirectAuthority": {
+      "additionalProperties": false,
+      "description": "A passive gimmick marker (Emo Mam): the competitor may choose who the board effect of a resolving card named in `groups` affects. Read by RedirectBoardEffect; never executes on its own. schema v135",
+      "properties": {
+        "@type": {
+          "const": "RedirectAuthority"
+        },
+        "groups": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "groups"
       ],
       "type": "object"
     },
@@ -5136,6 +5483,12 @@
               },
               {
                 "$ref": "#/$defs/RemoveFromPlay"
+              },
+              {
+                "$ref": "#/$defs/RedirectBoardEffect"
+              },
+              {
+                "$ref": "#/$defs/RedirectAuthority"
               },
               {
                 "$ref": "#/$defs/DiscardInPlayMatch"
@@ -6316,5 +6669,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 134
+  "version": 135
 }
