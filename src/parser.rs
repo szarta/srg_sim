@@ -1821,6 +1821,7 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
             | Trigger::OnBreakoutRoll { .. }
             | Trigger::OnReroll { .. }
             | Trigger::OnDraw { .. }
+            | Trigger::OnLoseTurn { .. }
     ) {
         return None;
     }
@@ -4869,6 +4870,26 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                     Trigger::OnDraw { who: Who::SelfSide },
                     vec![Action::AddSelfToHand],
                     Condition::DrewThisTurn {
+                        who: Who::SelfSide,
+                        at_least: num(c, 1),
+                    },
+                    Duration::Instant,
+                );
+                e.optional = true;
+                Some(e)
+            },
+        ),
+        // Me Against the World recur: "When you lose N Turn Rolls in a row, you may add this
+        // card to your hand" -> OnLoseTurn gated on LostTurnRollsInARow{N} + optional
+        // AddSelfToHand. Reached via while_in_discard_effect (its allow-list admits
+        // OnLoseTurn); the OnLoseTurn trigger fires the WhileInDiscard recur from the pile.
+        rule(
+            r"When you lose (\d+) [Tt]urn [Rr]olls in a row, you may add this card to your hand",
+            |c| {
+                let mut e = eff(
+                    Trigger::OnLoseTurn { by: None },
+                    vec![Action::AddSelfToHand],
+                    Condition::LostTurnRollsInARow {
                         who: Who::SelfSide,
                         at_least: num(c, 1),
                     },

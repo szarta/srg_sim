@@ -515,6 +515,7 @@ impl Engine {
                         gimmick_flipped: false,
                         hits_this_turn: 0,
                         drew_this_turn: 0,
+                        turn_losses_in_a_row: 0,
                         breakout_bonus_eot: 0,
                         flipped_this_turn: Vec::new(),
                         hit_this_turn: Vec::new(),
@@ -5856,12 +5857,27 @@ impl Engine {
         self.state.active = winner.clone();
         self.state.in_turn_roll = false;
         let loser = self.state.opponent_of(&winner);
+        // Maintain the consecutive-turn-loss streak BEFORE firing OnLoseTurn so a
+        // `LostTurnRollsInARow` recur sees the current streak (Me Against the World).
+        self.state
+            .players
+            .get_mut(&winner)
+            .unwrap()
+            .turn_losses_in_a_row = 0;
+        self.state
+            .players
+            .get_mut(&loser)
+            .unwrap()
+            .turn_losses_in_a_row += 1;
         let ctx_w = self.roll_ctx.get(&winner).cloned().unwrap_or_default();
         let ctx_l = self.roll_ctx.get(&loser).cloned().unwrap_or_default();
         let eff_w = self.standing_effects(&winner);
         self.run_effects(&eff_w, "OnWinTurn", &winner, Some(&ctx_w))?;
         let eff_l = self.standing_effects(&loser);
         self.run_effects(&eff_l, "OnLoseTurn", &loser, Some(&ctx_l))?;
+        // WhileInDiscard OnLoseTurn recur (self_card bound so AddSelfToHand resurrects the
+        // source) — the discard-pile counterpart of the standing OnLoseTurn above.
+        self.run_on_lose_turn(&loser)?;
         // Same srgpc ordering rule for the post-roll OnRoll gimmicks.
         for key in Self::roll_order(
             self.roll_ctx.get("A").and_then(|c| c.value).unwrap_or(0),
@@ -5898,6 +5914,23 @@ impl Engine {
                 continue;
             };
             if self.target(*who, key) != key {
+                continue;
+            }
+            self.self_card = Some(uuid);
+            let r = self.fire_if_ready(&eff, key, None);
+            self.self_card = None;
+            r?;
+        }
+        Ok(())
+    }
+
+    /// Fire `key`'s `OnLoseTurn` effects declared from their DISCARD pile (self_card
+    /// bound so `AddSelfToHand` resurrects the source) — Me Against the World's "lose 2
+    /// Turn Rolls in a row" recur. Mirrors [`run_on_draw`](Self::run_on_draw); the
+    /// standing (in-play/gimmick) OnLoseTurn is dispatched separately at the roll-off.
+    fn run_on_lose_turn(&mut self, key: &str) -> Eng<()> {
+        for (uuid, eff) in self.discard_self_triggers(key) {
+            if !matches!(eff.trigger, Trigger::OnLoseTurn { .. }) {
                 continue;
             }
             self.self_card = Some(uuid);

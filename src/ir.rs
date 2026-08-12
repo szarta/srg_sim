@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 133;
+pub const SCHEMA_VERSION: i64 = 134;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -992,6 +992,15 @@ pub enum Condition {
     /// Lead"). Reads `PlayerState.drew_this_turn`, incremented at the `draw` chokepoint and
     /// reset at turn start. schema v129
     DrewThisTurn {
+        #[serde(default)]
+        who: Who,
+        at_least: i64,
+    },
+    /// `who` has LOST at least `at_least` turn rolls IN A ROW — "if you lose 2 Turn Rolls
+    /// in a row, …" (Me Against the World's discard recur). Reads
+    /// `PlayerState.turn_losses_in_a_row`, incremented on a turn-roll loss and reset on a
+    /// win. schema v134
+    LostTurnRollsInARow {
         #[serde(default)]
         who: Who,
         at_least: i64,
@@ -2497,6 +2506,15 @@ pub enum IrNode {
         who: Who,
     },
     DrewThisTurn {
+        #[serde(default)]
+        who: Who,
+        at_least: i64,
+    },
+    /// `who` has LOST at least `at_least` turn rolls IN A ROW — "if you lose 2 Turn Rolls
+    /// in a row, …" (Me Against the World's discard recur). Reads
+    /// `PlayerState.turn_losses_in_a_row`, incremented on a turn-roll loss and reset on a
+    /// win. schema v134
+    LostTurnRollsInARow {
         #[serde(default)]
         who: Who,
         at_least: i64,

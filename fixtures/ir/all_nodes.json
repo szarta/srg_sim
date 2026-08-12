@@ -46,6 +46,11 @@
     "at_least": 1
   },
   {
+    "@type": "LostTurnRollsInARow",
+    "who": "SELF",
+    "at_least": 2
+  },
+  {
     "@type": "GrantBreakoutBonus",
     "delta": 1
   },

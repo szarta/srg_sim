@@ -210,6 +210,9 @@ HitCard(filter, who?, last_turn?)  # who hit a card matching `filter` this turn 
                              # (by-card, rotated at turn start); empty filter = any hit. Filtered sibling of HitThisTurn. schema v91
 DrewThisTurn(who?, at_least)  # who has DRAWN at least `at_least` cards this turn — "if you drew 1 or more cards this turn"
                              # (Gobstopper recur; Brotherly Love "drew 3+ → also a Lead"). Reads PlayerState.drew_this_turn
+LostTurnRollsInARow(who?, at_least)  # who has LOST at least `at_least` turn rolls IN A ROW — "if you lose 2 Turn Rolls in a row"
+                             # (Me Against the World's discard recur, via a WhileInDiscard OnLoseTurn). Reads PlayerState.turn_losses_in_a_row
+                             # (incremented on a loss, reset on a win). schema v134
                              # (incremented at the draw chokepoint, reset at turn start). schema v129
 DuringTurn(who)              # it is currently who's turn (GameState.active == who-side) — gates a continuous
                              # effect to a turn phase ("during your opponent's turn: …" — La Fenix). schema v19

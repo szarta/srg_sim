@@ -230,6 +230,9 @@
               "$ref": "#/$defs/DrewThisTurn"
             },
             {
+              "$ref": "#/$defs/LostTurnRollsInARow"
+            },
+            {
               "$ref": "#/$defs/HitThisTurn"
             },
             {
@@ -373,6 +376,9 @@
               },
               {
                 "$ref": "#/$defs/DrewThisTurn"
+              },
+              {
+                "$ref": "#/$defs/LostTurnRollsInARow"
               },
               {
                 "$ref": "#/$defs/HitThisTurn"
@@ -1779,6 +1785,9 @@
               "$ref": "#/$defs/DrewThisTurn"
             },
             {
+              "$ref": "#/$defs/LostTurnRollsInARow"
+            },
+            {
               "$ref": "#/$defs/HitThisTurn"
             },
             {
@@ -2304,6 +2313,9 @@
             },
             {
               "$ref": "#/$defs/DrewThisTurn"
+            },
+            {
+              "$ref": "#/$defs/LostTurnRollsInARow"
             },
             {
               "$ref": "#/$defs/HitThisTurn"
@@ -3133,6 +3145,26 @@
       ],
       "type": "object"
     },
+    "LostTurnRollsInARow": {
+      "additionalProperties": false,
+      "description": "who has lost at least at_least turn rolls in a row ('if you lose 2 Turn Rolls in a row, …', Me Against the World). Reads PlayerState.turn_losses_in_a_row.",
+      "properties": {
+        "@type": {
+          "const": "LostTurnRollsInARow"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "at_least": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "at_least"
+      ],
+      "type": "object"
+    },
     "IRNode": {
       "oneOf": [
         {
@@ -3524,6 +3556,9 @@
         },
         {
           "$ref": "#/$defs/DrewThisTurn"
+        },
+        {
+          "$ref": "#/$defs/LostTurnRollsInARow"
         },
         {
           "$ref": "#/$defs/HitThisTurn"
@@ -3974,6 +4009,9 @@
             },
             {
               "$ref": "#/$defs/DrewThisTurn"
+            },
+            {
+              "$ref": "#/$defs/LostTurnRollsInARow"
             },
             {
               "$ref": "#/$defs/HitThisTurn"
@@ -4550,6 +4588,9 @@
               },
               {
                 "$ref": "#/$defs/DrewThisTurn"
+              },
+              {
+                "$ref": "#/$defs/LostTurnRollsInARow"
               },
               {
                 "$ref": "#/$defs/HitThisTurn"
@@ -5659,6 +5700,9 @@
               "$ref": "#/$defs/DrewThisTurn"
             },
             {
+              "$ref": "#/$defs/LostTurnRollsInARow"
+            },
+            {
               "$ref": "#/$defs/HitThisTurn"
             },
             {
@@ -6272,5 +6316,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 133
+  "version": 134
 }

@@ -2626,6 +2626,28 @@ fn jt_dunn_riders_grammar() {
     assert!(e["actions"][0]["to_deck"].as_bool() != Some(true));
 }
 
+/// Emo Mam (task #136, favorite comps, schema v134): #30 Me Against the World's
+/// WhileInDiscard "lose 2 Turn Rolls in a row -> may recur self" (the gimmick's targeting
+/// redirect is a documented tracked-Unsupported, not modelled).
+#[test]
+fn emo_mam_riders_grammar() {
+    let effs = parse_text(
+        "When this card is in your discard pile and you lose 2 Turn Rolls in a row, you may add this card to your hand.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1);
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["trigger"]["@type"], "OnLoseTurn");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["condition"]["@type"], "LostTurnRollsInARow");
+    assert_eq!(e["condition"]["at_least"], 2);
+    assert_eq!(e["condition"]["who"], "SELF");
+    assert_eq!(e["actions"][0]["@type"], "AddSelfToHand");
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.

@@ -243,6 +243,13 @@ pub struct PlayerState {
     /// state, never serialized (re-derives on replay).
     #[serde(skip)]
     pub drew_this_turn: i64,
+    /// Turn rolls this player has LOST IN A ROW — incremented on each turn-roll loss,
+    /// reset to 0 on a win. Read by [`Condition::LostTurnRollsInARow`] ("if you lose 2
+    /// Turn Rolls in a row, …", Me Against the World). Unlike `drew_this_turn` this streak
+    /// spans turns, so it IS part of a snapshot — but only serialized when non-zero, so a
+    /// fresh position stays byte-identical.
+    #[serde(default, skip_serializing_if = "is_zero_i64")]
+    pub turn_losses_in_a_row: i64,
     /// A TIMED breakout-roll bonus granted imperatively this turn and swept at the next
     /// turn start — "add +1 to your breakout rolls until the end of the turn" (The
     /// Mailman Always Delivers, via [`Action::GrantBreakoutBonus`]). Added for the
@@ -388,6 +395,10 @@ fn default_active() -> String {
 /// Serde skip predicate: omit a `bool` field from a snapshot when it is `false`.
 fn is_false(b: &bool) -> bool {
     !*b
+}
+
+fn is_zero_i64(n: &i64) -> bool {
+    *n == 0
 }
 
 impl GameState {

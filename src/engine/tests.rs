@@ -3147,6 +3147,56 @@ mod dq_immunity_tests {
     }
 
     #[test]
+    fn lose_two_turn_rolls_in_a_row_recurs_the_discard_card() {
+        // Me Against the World: a WhileInDiscard OnLoseTurn recur gated on
+        // LostTurnRollsInARow{2}. `run_on_lose_turn` fires it from the discard (self_card
+        // bound); the streak counter gates it. Non-optional here to keep it policy-free.
+        let mut e = engine_with(json!([]), json!([]));
+        let meaw: Card = serde_json::from_value(json!({
+            "atk_type": "Submission", "db_uuid": "meaw", "name": "Me Against the World",
+            "number": 30, "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect",
+                "trigger": {"@type": "OnLoseTurn", "by": null},
+                "condition": {"@type": "LostTurnRollsInARow", "who": "SELF", "at_least": 2},
+                "actions": [{"@type": "AddSelfToHand"}],
+                "duration": "WHILE_IN_DISCARD",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "recur", "source": "card", "optional": false
+            }]
+        }))
+        .unwrap();
+        e.state.players.get_mut("A").unwrap().discard.push(meaw);
+        // A streak of 1 does not satisfy the gate -> the card stays in the discard.
+        e.state.players.get_mut("A").unwrap().turn_losses_in_a_row = 1;
+        e.run_on_lose_turn("A").unwrap();
+        assert!(
+            e.state.players["A"]
+                .hand
+                .iter()
+                .all(|c| c.db_uuid != "meaw"),
+            "a 1-loss streak does not recur"
+        );
+        // Two in a row -> the recur fires and adds the card back to the hand.
+        e.state.players.get_mut("A").unwrap().turn_losses_in_a_row = 2;
+        e.run_on_lose_turn("A").unwrap();
+        assert!(
+            e.state.players["A"]
+                .hand
+                .iter()
+                .any(|c| c.db_uuid == "meaw"),
+            "two losses in a row recur the card to hand"
+        );
+        assert!(
+            e.state.players["A"]
+                .discard
+                .iter()
+                .all(|c| c.db_uuid != "meaw"),
+            "the recurred card left the discard"
+        );
+    }
+
+    #[test]
     fn grant_breakout_bonus_can_target_the_opponent() {
         // #30 Why So Serious?!?: "your opponent's breakout rolls are -1" grants the penalty
         // to the OPPONENT's timed breakout store, not the actor's.

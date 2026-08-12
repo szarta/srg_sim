@@ -456,6 +456,10 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             let subject = who_key(state, owner, *who);
             state.players[&subject].drew_this_turn >= *at_least
         }
+        Condition::LostTurnRollsInARow { who, at_least } => {
+            let subject = who_key(state, owner, *who);
+            state.players[&subject].turn_losses_in_a_row >= *at_least
+        }
         Condition::HitCard {
             filter,
             who,
