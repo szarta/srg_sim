@@ -12185,3 +12185,47 @@ f42eb6454c7e41b089ba563fdd333ab5:
   raw_clause: 'When this card is in your discard pile: Choose an opponent. When their card or Gimmick would move a card from their discard pile, they must do it randomly.'
   source: card
   optional: false
+
+# --- Shattered Split (decks/shattered-split.yaml) — #29 Split Personality (task #130, schema v132) ---
+# "+1 Power, +1 Submission, When this card is in your discard pile, your opponent cannot
+# move other cards from your discard pile." The two FinishBonus restate the grammar; the
+# lock is a Static WHILE_IN_DISCARD LockDiscard{SELF} (the owner's own pile), read at
+# bury_from_discard by `GameState::discard_move_locked`. Overridden (not grammar) because
+# a Static declaration in the discard is excluded from `while_in_discard_effect`'s
+# triggered-only allow-list (same reason as the DisqualificationRule-in-discard family).
+4171d7464914421e9c36a381ed559aa1:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': FinishBonus
+    skill: Power
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': FinishBonus
+    skill: Submission
+    delta: 1
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +1 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': LockDiscard
+    who: SELF
+  duration: WHILE_IN_DISCARD
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: When this card is in your discard pile, your opponent cannot move other cards from your discard pile.
+  source: card
+  optional: false

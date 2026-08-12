@@ -2550,6 +2550,51 @@ fn khloe_riders_grammar() {
     assert_eq!(e["actions"][0]["@type"], "BuryThisCard");
 }
 
+/// Shattered Split (task #130, schema v132): the two grammar-modelled finish riders. #29
+/// Split Personality's discard-lock is an override (tested in the engine), so it is not
+/// covered here.
+#[test]
+fn shattered_riders_grammar() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // #28 Bonk!: look at the deck BOTTOM, keep 1 to hand, re-bury the rest -> a bottom
+    // Scry (bottom=4, to_hand=1, bury=3).
+    let e = one(
+        "Look at the bottom 4 cards of your deck, add one to your hand and randomly bury the others.",
+    );
+    assert_eq!(e["actions"][0]["@type"], "Scry");
+    assert_eq!(e["actions"][0]["deck"], "SELF");
+    assert_eq!(e["actions"][0]["bottom"], 4);
+    assert_eq!(e["actions"][0]["to_hand"], 1);
+    assert_eq!(e["actions"][0]["bury"], 3);
+
+    // #30 Why So Serious?!?: reveal the deck bottom, and if it is a Strike, penalise the
+    // opponent's breakout rolls -> RevealThen{filter=Strike} whose `then` is an imperative
+    // GrantBreakoutBonus{who=OPP, -1} (a timed grant so it composes as a reveal consequence;
+    // the "1st and 2nd" ordinal is simplified to all the opponent's breakout rolls).
+    let e = one(
+        "Reveal the bottom card of your deck, if it is a Strike, your opponent's 1st and 2nd breakout rolls are -1.",
+    );
+    assert_eq!(e["actions"][0]["@type"], "RevealThen");
+    assert_eq!(e["actions"][0]["reveal_from"], "DECK_BOTTOM");
+    assert_eq!(e["actions"][0]["filter"]["atk_type"], "Strike");
+    let then = &e["actions"][0]["then"][0];
+    assert_eq!(then["@type"], "GrantBreakoutBonus");
+    assert_eq!(then["who"], "OPP");
+    assert_eq!(then["delta"], -1);
+
+    // The consequence also stands alone (a finish clause outside a reveal-then): a one-shot
+    // grant applied when the finish hits.
+    let e = one("Your opponent's 1st and 2nd breakout rolls are -1.");
+    assert_eq!(e["actions"][0]["@type"], "GrantBreakoutBonus");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(e["actions"][0]["delta"], -1);
+}
+
 /// Re-roll grammar (task #130): the `Reroll` action pre-existed but was override-only.
 /// "[You may] re-roll your [next] turn roll" / "… your Finish roll" / "[You may] force
 /// your opponent to re-roll …". "You may" -> optional; "next" -> NEXT, else THIS.

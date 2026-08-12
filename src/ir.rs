@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 131;
+pub const SCHEMA_VERSION: i64 = 132;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1724,6 +1724,16 @@ pub enum Action {
     ForceRandomDiscardMove {
         who: Who,
     },
+    /// A Static poison: while the declaring card sits in play/discard, an OPPONENT
+    /// cannot move ANY card out of the `who`-side's discard pile (Split Personality:
+    /// "your opponent cannot move other cards from your discard pile", `who = SelfSide`
+    /// = the owner's own pile). Read at the discard-move choice site (`bury_from_discard`,
+    /// the only path that reaches the OTHER player's pile) via `GameState::
+    /// discard_move_locked`, never executed as a mutation. Distinct from
+    /// [`Action::ForceRandomDiscardMove`], which merely randomises the choice. schema v132
+    LockDiscard {
+        who: Who,
+    },
     /// Install a Crowd Meter match-type's standing rules (GM Calace V1: "replace all
     /// Crowd Meter cards with … Steel Cage / Psycho Circus / Lumberjack / No DQ /
     /// Submission"). Appends `effects` to the owner's **Entrance** effects so they are
@@ -1936,9 +1946,14 @@ pub enum Action {
     /// off an in-play card), this accumulates onto the actor's `breakout_bonus_eot` store
     /// and so survives the SOURCE card leaving play — needed because Mailman shuffles
     /// itself away as it grants the bonus. `breakout_bonus` adds the store for the
-    /// defender. schema v128
+    /// defender. `who` names WHOSE breakout rolls it lands on from the actor's POV:
+    /// `SelfSide` (the default, Mailman) = the actor's own; `Opp` = "your opponent's
+    /// breakout rolls are -N" (Shattered Split's Why So Serious?!?, revealed as a Strike).
+    /// schema v132
     GrantBreakoutBonus {
         delta: i64,
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
     },
     /// Modifies the NUMBER of breakout attempts (rolls) the affected player gets this
     /// turn — the "reduced / extra breakout rolls" family, distinct from
@@ -3193,6 +3208,16 @@ pub enum IrNode {
     ForceRandomDiscardMove {
         who: Who,
     },
+    /// A Static poison: while the declaring card sits in play/discard, an OPPONENT
+    /// cannot move ANY card out of the `who`-side's discard pile (Split Personality:
+    /// "your opponent cannot move other cards from your discard pile", `who = SelfSide`
+    /// = the owner's own pile). Read at the discard-move choice site (`bury_from_discard`,
+    /// the only path that reaches the OTHER player's pile) via `GameState::
+    /// discard_move_locked`, never executed as a mutation. Distinct from
+    /// [`Action::ForceRandomDiscardMove`], which merely randomises the choice. schema v132
+    LockDiscard {
+        who: Who,
+    },
     /// Install a Crowd Meter match-type's standing rules (GM Calace V1: "replace all
     /// Crowd Meter cards with … Steel Cage / Psycho Circus / Lumberjack / No DQ /
     /// Submission"). Appends `effects` to the owner's **Entrance** effects so they are
@@ -3405,9 +3430,14 @@ pub enum IrNode {
     /// off an in-play card), this accumulates onto the actor's `breakout_bonus_eot` store
     /// and so survives the SOURCE card leaving play — needed because Mailman shuffles
     /// itself away as it grants the bonus. `breakout_bonus` adds the store for the
-    /// defender. schema v128
+    /// defender. `who` names WHOSE breakout rolls it lands on from the actor's POV:
+    /// `SelfSide` (the default, Mailman) = the actor's own; `Opp` = "your opponent's
+    /// breakout rolls are -N" (Shattered Split's Why So Serious?!?, revealed as a Strike).
+    /// schema v132
     GrantBreakoutBonus {
         delta: i64,
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
     },
     /// Modifies the NUMBER of breakout attempts (rolls) the affected player gets this
     /// turn — the "reduced / extra breakout rolls" family, distinct from

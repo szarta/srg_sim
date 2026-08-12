@@ -561,13 +561,16 @@
     },
     "GrantBreakoutBonus": {
       "additionalProperties": false,
-      "description": "Grant the actor a timed '+delta to your breakout rolls until the end of the turn' bonus (The Mailman Always Delivers), swept at the next turn start; survives the source card leaving play.",
+      "description": "Grant a timed '+delta to breakout rolls until the end of the turn' bonus, swept at the next turn start; survives the source card leaving play. who (default SELF, Mailman) names whose rolls: OPP = 'your opponent's breakout rolls are -N' (Why So Serious?!?).",
       "properties": {
         "@type": {
           "const": "GrantBreakoutBonus"
         },
         "delta": {
           "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
         }
       },
       "required": [
@@ -1236,6 +1239,9 @@
               },
               {
                 "$ref": "#/$defs/ForceRandomDiscardMove"
+              },
+              {
+                "$ref": "#/$defs/LockDiscard"
               },
               {
                 "$ref": "#/$defs/SwapCrowdMeter"
@@ -2151,6 +2157,9 @@
               },
               {
                 "$ref": "#/$defs/ForceRandomDiscardMove"
+              },
+              {
+                "$ref": "#/$defs/LockDiscard"
               },
               {
                 "$ref": "#/$defs/SwapCrowdMeter"
@@ -3481,6 +3490,9 @@
           "$ref": "#/$defs/ForceRandomDiscardMove"
         },
         {
+          "$ref": "#/$defs/LockDiscard"
+        },
+        {
           "$ref": "#/$defs/SwapCrowdMeter"
         },
         {
@@ -3674,6 +3686,22 @@
       "required": [
         "@type",
         "types"
+      ],
+      "type": "object"
+    },
+    "LockDiscard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "LockDiscard"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
       ],
       "type": "object"
     },
@@ -5231,6 +5259,9 @@
                 "$ref": "#/$defs/ForceRandomDiscardMove"
               },
               {
+                "$ref": "#/$defs/LockDiscard"
+              },
+              {
                 "$ref": "#/$defs/SwapCrowdMeter"
               },
               {
@@ -6238,5 +6269,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 131
+  "version": 132
 }

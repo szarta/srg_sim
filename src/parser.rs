@@ -783,6 +783,23 @@ fn scry_bottom_bury(n: i64) -> Action {
     }
 }
 
+/// "Look at the bottom N cards of your deck, add `to_hand` to your hand and randomly bury
+/// the others" (Shattered Split's Bonk!) — the bottom-window counterpart of [`scry_keep`]:
+/// peek the deck bottom, take the `to_hand` BEST to hand, and re-bury the remaining
+/// `N - to_hand` to the deck bottom. Same family simplifications: kept = best (`scry_value`)
+/// not free-choice, "randomly bury" -> the value sort, buried cards go to the deck bottom.
+fn scry_bottom_keep(n: i64, to_hand: i64) -> Action {
+    Action::Scry {
+        deck: Who::SelfSide,
+        top: 0,
+        bottom: n,
+        reveal: false,
+        to_hand,
+        bury: (n - to_hand).max(0),
+        rest: ScryRest::Return,
+    }
+}
+
 /// "Look at / Reveal the top card of `deck`'s deck, you may flip it" — a single-card
 /// peek with an *optional* flip ([`ScryRest::MayFlip`]): the actor sees the top card,
 /// then mills it only when worthwhile (deny an opponent their Finish/stop, or shed
@@ -4747,6 +4764,21 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Look at the deck BOTTOM, keep some, re-bury the rest: "Look at the bottom N cards
+        // of your deck, add one/M to your hand and randomly bury the others" (Shattered
+        // Split's Bonk!; a 6-card family). Distinct tail from the bury-all rule above.
+        rule(
+            r"Look at the bottom (\d+) cards? of your deck, add (?:one|(\d+)) to your hand and randomly bury the others",
+            |c| {
+                let to_hand = c.get(2).map_or(1, |m| m.as_str().parse().unwrap());
+                Some(eff(
+                    on_hit(),
+                    vec![scry_bottom_keep(num(c, 1), to_hand)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Single-card peek with an optional flip: "Look at the top card of your
         // opponent's deck, you may flip it" -> Scry{top:1, rest:MayFlip}. "Look at"
         // keeps it private (reveal:false); "Reveal" is public. deck follows the
@@ -6386,6 +6418,28 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // "Your opponent's 1st and 2nd breakout rolls are ±N" (Shattered Split's Why So
+        // Serious?!?, as a reveal-then consequence) -> an IMPERATIVE `GrantBreakoutBonus`
+        // on the opponent, not a Static per-ordinal `BreakoutModifier`: RevealThen applies
+        // its `then` actions imperatively, so the penalty must be a timed grant to compose
+        // there. Documented simplification: the ±N lands on ALL the opponent's breakout
+        // rolls this turn, not strictly the 1st/2nd (a breakout rarely reaches a 3rd roll,
+        // so the over-reach is marginal). Placed before the single-ordinal rule; the two
+        // never overlap ("rolls are" vs "roll is"). schema v132.
+        rule(
+            r"Your opponent'?s 1st and 2nd [Bb]reakout [Rr]olls? (?:is|are) ([+-]\d+)",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::GrantBreakoutBonus {
+                        delta: c[1].parse().ok()?,
+                        who: Who::Opp,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Attempt-indexed bonus: "[Your opponent's] 3rd breakout roll is +N" -> the bonus
         // applies only on that attempt (BreakoutModifier.attempts, an attempt-index gate).
         rule(
@@ -7050,7 +7104,10 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                     },
                     vec![
                         Action::ShuffleSelfIntoDeck,
-                        Action::GrantBreakoutBonus { delta: num(c, 1) },
+                        Action::GrantBreakoutBonus {
+                            delta: num(c, 1),
+                            who: Who::SelfSide,
+                        },
                     ],
                     Condition::Always,
                     Duration::Instant,

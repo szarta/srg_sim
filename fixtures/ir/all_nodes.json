@@ -331,6 +331,10 @@
     "who": "OPP"
   },
   {
+    "@type": "LockDiscard",
+    "who": "SELF"
+  },
+  {
     "@type": "SwapCrowdMeter",
     "effects": [],
     "name": "Steel Cage Match"

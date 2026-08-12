@@ -1773,6 +1773,16 @@ class ForceRandomDiscardMove(IRNode):
 
 
 @dataclass(frozen=True)
+class LockDiscard(IRNode):
+    """A Static poison: while the declaring card sits in play/discard, an OPPONENT cannot
+    move ANY card out of the ``who``-side's discard pile (Split Personality: "your opponent
+    cannot move other cards from your discard pile", ``who = SELF`` = the owner's own pile).
+    Read at the discard-move choice site, never executed. schema v132"""
+
+    who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
 class SwapCrowdMeter(IRNode):
     """Install a Crowd Meter match-type's standing rules (GM Calace V1: "replace all
     Crowd Meter cards with … Steel Cage / Psycho Circus / Lumberjack / No DQ /

@@ -1450,9 +1450,10 @@ impl Engine {
             | Action::DoubleFinishIf { .. }
             | Action::DisqualificationRule { .. }
             | Action::CountOutRule { .. }
-            // A Static discard-random poison, read at the discard-move choice sites via
-            // `force_random_discard_move`, not executed here — a no-op.
+            // Static discard poisons, read at the discard-move choice sites (via
+            // `force_random_discard_move` / `discard_move_locked`), not executed — no-ops.
             | Action::ForceRandomDiscardMove { .. }
+            | Action::LockDiscard { .. }
             | Action::ConsideredCompare { .. }
             | Action::SuppressOpponentDraw
             | Action::SuppressSelfHandLoss
@@ -1480,7 +1481,10 @@ impl Engine {
             Action::BuryThisCard => self.act_bury_this_card(key),
             Action::AddSelfToHand => self.act_add_self_to_hand(key),
             Action::ShuffleSelfIntoDeck => self.act_shuffle_self_into_deck(key)?,
-            Action::GrantBreakoutBonus { delta } => self.act_grant_breakout_bonus(*delta, key),
+            Action::GrantBreakoutBonus { delta, who } => {
+                let target = self.target(*who, key);
+                self.act_grant_breakout_bonus(*delta, &target)
+            }
             Action::PlaySelf => self.act_play_self(key)?,
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
             Action::AddTextToNext {
@@ -1859,6 +1863,12 @@ impl Engine {
         } else {
             vec![self.target(who, key)]
         };
+        // A LockDiscard poison (Split Personality) removes a pile from `key`'s reach when
+        // `key` is not its owner — "your opponent cannot move cards from your discard".
+        let piles: Vec<String> = piles
+            .into_iter()
+            .filter(|p| !self.state.discard_move_locked(p, key))
+            .collect();
         for _ in 0..count.max(0) {
             let legal: Vec<Value> = piles
                 .iter()
@@ -7326,6 +7336,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::DisqualificationRule { .. } => "DisqualificationRule",
         Action::CountOutRule { .. } => "CountOutRule",
         Action::ForceRandomDiscardMove { .. } => "ForceRandomDiscardMove",
+        Action::LockDiscard { .. } => "LockDiscard",
         Action::SwapCrowdMeter { .. } => "SwapCrowdMeter",
         Action::ConsideredCompare { .. } => "ConsideredCompare",
         Action::SuppressOpponentDraw => "SuppressOpponentDraw",

@@ -3084,6 +3084,66 @@ mod dq_immunity_tests {
     }
 
     #[test]
+    fn split_personality_locks_the_owners_discard() {
+        // #29 Split Personality sits in B's discard declaring a Static WHILE_IN_DISCARD
+        // LockDiscard{SELF}: A cannot move cards OUT of B's discard, but B still can, and
+        // A's own discard is not locked.
+        let mut e = engine_with(json!([]), json!([]));
+        let lock: Card = serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "split-personality", "name": "Split Personality",
+            "number": 29, "play_order": "Finish", "raw_text": "", "tags": [],
+            "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect",
+                "trigger": {"@type": "Static"},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "LockDiscard", "who": "SELF"}],
+                "duration": "WHILE_IN_DISCARD",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "lock", "source": "card", "optional": false
+            }]
+        }))
+        .unwrap();
+        assert!(
+            !e.state.discard_move_locked("B", "A"),
+            "no lock in play yet"
+        );
+        e.state.players.get_mut("B").unwrap().discard.push(lock);
+        assert!(
+            e.state.discard_move_locked("B", "A"),
+            "A cannot move cards out of B's locked discard"
+        );
+        assert!(
+            !e.state.discard_move_locked("B", "B"),
+            "B can always move its OWN discard"
+        );
+        assert!(
+            !e.state.discard_move_locked("A", "B"),
+            "A's discard carries no lock"
+        );
+    }
+
+    #[test]
+    fn grant_breakout_bonus_can_target_the_opponent() {
+        // #30 Why So Serious?!?: "your opponent's breakout rolls are -1" grants the penalty
+        // to the OPPONENT's timed breakout store, not the actor's.
+        let mut e = engine_with(json!([]), json!([]));
+        let grant = Action::GrantBreakoutBonus {
+            delta: -1,
+            who: Who::Opp,
+        };
+        e.apply_action(&grant, "A", "").unwrap();
+        assert_eq!(
+            e.state.players["B"].breakout_bonus_eot, -1,
+            "the -1 lands on A's opponent (B)"
+        );
+        assert_eq!(
+            e.state.players["A"].breakout_bonus_eot, 0,
+            "the actor's own store is untouched"
+        );
+    }
+
+    #[test]
     fn a_blanked_gimmick_declares_no_immunity() {
         // The 2026-07-20 call: blanking a gimmick makes its text inert, so Cardona's
         // "you cannot be disqualified" dies with it — matching the suppression flags.

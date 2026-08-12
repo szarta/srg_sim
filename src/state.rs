@@ -534,51 +534,78 @@ impl GameState {
         self.players.keys().all(|k| self.is_dq_immune(k))
     }
 
+    /// Run `f` over every ACTIVE Static declaration `owner` currently carries — those on
+    /// the gimmick (unless blanked), the entrance, and in-play cards, plus `WhileInDiscard`
+    /// declarations on cards in `owner`'s discard pile (a Static effect fires only in its
+    /// zone). Returns true as soon as `f` does. The zone-aware source scan shared by the
+    /// discard-move poisons; the trigger/duration gate mirrors [`rule_immune`](Self::rule_immune).
+    fn any_active_static<F>(&self, owner: &str, mut f: F) -> bool
+    where
+        F: FnMut(&Effect) -> bool,
+    {
+        let player = &self.players[owner];
+        let gimmick: &[Effect] = if self.is_gimmick_blanked(owner) {
+            &[]
+        } else {
+            &player.competitor.effects
+        };
+        let sources = std::iter::once((gimmick, false))
+            .chain(std::iter::once((player.entrance.effects.as_slice(), false)))
+            .chain(player.in_play.iter().map(|c| (c.effects.as_slice(), false)))
+            .chain(player.discard.iter().map(|c| (c.effects.as_slice(), true)));
+        for (effects, is_discard) in sources {
+            for eff in effects {
+                if matches!(eff.trigger, Trigger::Static)
+                    && (eff.duration == Duration::WhileInDiscard) == is_discard
+                    && f(eff)
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// The player a discard poison's `who` designates, from the declaring `owner`'s POV.
+    fn poison_target(&self, who: Who, owner: &str) -> String {
+        match who {
+            Who::SelfSide => owner.to_owned(),
+            Who::Opp => self.opponent_of(owner),
+        }
+    }
+
     /// Whether `mover` must resolve every card-/Gimmick-driven move of a card OUT of
     /// their OWN discard pile RANDOMLY — some OPPONENT has an active Static
     /// [`Action::ForceRandomDiscardMove`] poison (Bleeding Out, declared from play or
     /// their own discard pile) whose `who` targets `mover`. Read at the discard-move
     /// choice sites so the poisoned player loses the free choice of which card to recur.
-    /// Mirrors [`rule_immune`](Self::rule_immune)'s zone-aware source scan. schema v131
+    /// schema v131
     pub fn force_random_discard_move(&self, mover: &str) -> bool {
-        for (owner, player) in &self.players {
-            if owner == mover {
-                continue; // the poison targets the declaring owner's OPPONENT
-            }
-            let gimmick: &[Effect] = if self.is_gimmick_blanked(owner) {
-                &[]
-            } else {
-                &player.competitor.effects
-            };
-            let sources = std::iter::once((gimmick, false))
-                .chain(std::iter::once((player.entrance.effects.as_slice(), false)))
-                .chain(player.in_play.iter().map(|c| (c.effects.as_slice(), false)))
-                .chain(player.discard.iter().map(|c| (c.effects.as_slice(), true)));
-            for (effects, is_discard) in sources {
-                for eff in effects {
-                    if !matches!(eff.trigger, Trigger::Static) {
-                        continue;
-                    }
-                    if (eff.duration == Duration::WhileInDiscard) != is_discard {
-                        continue; // a discard-scoped poison fires only from the discard
-                    }
-                    for action in &eff.actions {
-                        let Action::ForceRandomDiscardMove { who } = action else {
-                            continue;
-                        };
-                        // `who` from the owner's POV: Opp = the owner's opponent.
-                        let target = match who {
-                            Who::SelfSide => owner.clone(),
-                            Who::Opp => self.opponent_of(owner),
-                        };
-                        if target == mover && conditions::holds(&eff.condition, self, owner, None) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        false
+        self.players.keys().any(|owner| {
+            owner != mover
+                && self.any_active_static(owner, |eff| {
+                    eff.actions.iter().any(|a| {
+                        matches!(a, Action::ForceRandomDiscardMove { who }
+                            if self.poison_target(*who, owner) == mover)
+                    }) && conditions::holds(&eff.condition, self, owner, None)
+                })
+        })
+    }
+
+    /// Whether `pile_owner`'s discard pile is LOCKED against `mover` — `pile_owner` has an
+    /// active Static [`Action::LockDiscard`] over their own pile (Split Personality: "your
+    /// opponent cannot move other cards from your discard pile"), so an opponent's
+    /// card/Gimmick cannot move cards out of it. A player can always move their OWN pile.
+    /// Read at [`bury_from_discard`](crate::engine) — the only move path that reaches the
+    /// OTHER player's discard. schema v132
+    pub fn discard_move_locked(&self, pile_owner: &str, mover: &str) -> bool {
+        pile_owner != mover
+            && self.any_active_static(pile_owner, |eff| {
+                eff.actions.iter().any(|a| {
+                    matches!(a, Action::LockDiscard { who }
+                        if self.poison_target(*who, pile_owner) == pile_owner)
+                }) && conditions::holds(&eff.condition, self, pile_owner, None)
+            })
     }
 
     /// Resolve a standing match-rule toggle for `loser` by LAST-PLAYED order (task #93);
