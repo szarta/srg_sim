@@ -2402,6 +2402,19 @@ fn unstoppable(by_order: Option<PlayOrder>, by_name: Option<String>) -> Action {
     }
 }
 
+/// "This card can only be stopped by `<order>`" — the WHITELIST inverse of the
+/// "cannot be stopped by `<order>`" shield. The attack is `Unstoppable` against a stopper
+/// of every OTHER play order, so only a stopper of `only` gets through. Modeled with NO
+/// new IR as one `Unstoppable{by_order}` per complementary order (stoppers always carry a
+/// real Lead/Follow Up/Finish order).
+fn only_stopped_by(only: PlayOrder) -> Vec<Action> {
+    [PlayOrder::Lead, PlayOrder::Followup, PlayOrder::Finish]
+        .into_iter()
+        .filter(|o| *o != only)
+        .map(|o| unstoppable(Some(o), None))
+        .collect()
+}
+
 /// "Cannot be stopped by Skill Requirement cards" — an `Unstoppable` keyed on the
 /// stopper carrying a skill requirement.
 fn unstoppable_skillreq() -> Action {
@@ -6263,6 +6276,27 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     Trigger::Static,
                     vec![unstoppable(by_order, None)],
+                    condition,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // "[If/When <cond>,] this card can only be stopped by [a] <order>" — the WHITELIST
+        // inverse of "cannot be stopped by <order>": unstoppable against every OTHER play
+        // order, so only the named order can stop it (see `only_stopped_by`). Optionally
+        // condition-gated ("If your opponent has a card in play, …" / "If you have a card
+        // with 'X' in the name in play, …") via the shared `gate_condition`.
+        rule(
+            r"(?:(?:If|When) (.+?),? )?[Tt]his card can only be stopped by (?:an? )?(Follow[ -]?Ups?|Leads?|Finish(?:es)?)",
+            |c| {
+                let only = stopper_order(&c[2]);
+                let condition = match c.get(1) {
+                    Some(m) => gate_condition(m.as_str())?,
+                    None => Condition::Always,
+                };
+                Some(eff(
+                    Trigger::Static,
+                    only_stopped_by(only),
                     condition,
                     Duration::WhileInPlay,
                 ))

@@ -1154,6 +1154,51 @@ fn versatile_or_stop_grammar() {
     assert_eq!(e[0]["actions"][1]["who"], "OPP");
 }
 
+/// Whitelist "can only be stopped by <order>" (#120): the inverse of "cannot be stopped
+/// by <order>" — modeled with no new IR as an `Unstoppable{by_order}` per COMPLEMENTARY
+/// play order, optionally condition-gated.
+#[test]
+fn only_stopped_by_grammar() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+
+    // Conditional whitelist: opp-has-a-card gate + Unstoppable vs the two non-Follow-Up orders.
+    let e =
+        effs("If your opponent has a card in play, this card can only be stopped by Follow Ups.");
+    assert_eq!(e.len(), 1);
+    assert_eq!(e[0]["condition"]["@type"], "HasInPlay");
+    assert_eq!(e[0]["condition"]["who"], "OPP");
+    let orders: Vec<&str> = e[0]["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| {
+            assert_eq!(a["@type"], "Unstoppable");
+            a["by_order"].as_str().unwrap()
+        })
+        .collect();
+    assert_eq!(orders, vec!["Lead", "Finish"], "complement of Follow Up");
+
+    // Bare (unconditional) "a Follow Up" singular, name-in-play gate variant.
+    let e = effs(
+        "If you have a card with \"Elbow\" in the name in play, this card can only be stopped by a Follow Up.",
+    );
+    assert_eq!(e[0]["condition"]["@type"], "HasInPlay");
+    assert_eq!(e[0]["condition"]["who"], "SELF");
+    assert_eq!(e[0]["actions"][0]["by_order"], "Lead");
+    assert_eq!(e[0]["actions"][1]["by_order"], "Finish");
+
+    // Whitelisting Leads shields the Follow Up + Finish orders.
+    let e = effs("This card can only be stopped by Leads.");
+    assert_eq!(e[0]["condition"]["@type"], "Always");
+    assert_eq!(e[0]["actions"][0]["by_order"], "Followup");
+    assert_eq!(e[0]["actions"][1]["by_order"], "Finish");
+}
+
 /// Flip-until grammar (task #119): "Flip cards until you flip a <X>[, add it to
 /// your hand]" reuses `Flip` with the `until` filter + `until_to_hand`.
 #[test]

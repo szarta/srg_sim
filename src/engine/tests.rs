@@ -4477,6 +4477,102 @@ mod even_unstoppable_stop_tests {
     }
 }
 
+/// "This card can only be stopped by Follow Ups" (#120 whitelist inverse): the parser
+/// emits an `Unstoppable{by_order}` per COMPLEMENTARY order (Lead, Finish), so a stopper
+/// of either shielded order can't catch it while a Follow Up stopper can. The stopper's
+/// OWN `play_order` is what `unstoppable_gate` keys on.
+#[cfg(test)]
+mod only_stopped_by_tests {
+    use super::*;
+    use serde_json::json;
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            l: &[serde_json::Value],
+            _: &mut GameState,
+        ) -> Option<serde_json::Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// A stop card whose OWN play order is `card_order`, carrying a wide `Stop{None}`
+    /// (order-agnostic) so only the whitelist decides whether it may catch the attack.
+    fn stopper_of_order(card_order: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "s", "name": "s", "number": 1,
+            "play_order": card_order, "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": null, "atk_type": null,
+                             "source_is_skillreq": false, "even_unstoppable": false}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stopper")
+    }
+
+    /// A Finish attack that "can only be stopped by Follow Ups" — Unstoppable vs Leads and
+    /// Finishes (the complement of Follow Up).
+    fn only_followup_attack() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [
+                    {"@type": "Unstoppable", "by_order": "Lead"},
+                    {"@type": "Unstoppable", "by_order": "Finish"}
+                ],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }]
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn only_the_whitelisted_order_can_stop() {
+        let engine = engine();
+        let atk = only_followup_attack();
+        // The whitelisted Follow Up stopper gets through…
+        assert!(engine.card_can_stop("A", &stopper_of_order("Followup"), &atk));
+        // …but Lead and Finish stoppers are shielded out.
+        assert!(!engine.card_can_stop("A", &stopper_of_order("Lead"), &atk));
+        assert!(!engine.card_can_stop("A", &stopper_of_order("Finish"), &atk));
+    }
+}
+
 /// `StopRequiresTag { or_unstoppable }` (schema v137): the tag gate is OR-ed with the
 /// attack being unstoppable — 4115e53f, "Stop any Finish Submission that has a Spotlight
 /// OR that cannot be stopped." The paired `Stop { even_unstoppable }` pierces the
