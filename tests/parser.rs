@@ -1168,6 +1168,46 @@ fn versatile_or_stop_grammar() {
     assert_eq!(e[1]["actions"][0]["@type"], "Stop");
 }
 
+/// "Stop any <X> if it is not the first card played this turn" (#120): the opponent's
+/// opening card is safe. Modeled with NO new IR as a `HitThisTurn{Opp}` gate on the Stop —
+/// at the stop window the attacker's per-turn hit count is >= 1 iff this isn't their first
+/// card. The compound "<A> that cannot be stopped or <B> that is not the first card played
+/// this turn" splits into two differently-gated stop effects.
+#[test]
+fn not_first_card_stop_grammar() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+
+    // Simple form: one Stop gated on the attacker having already hit this turn.
+    let e = effs("Stop any Submission if it is not the first card played this turn.");
+    assert_eq!(e.len(), 1);
+    assert_eq!(e[0]["actions"][0]["@type"], "Stop");
+    assert_eq!(e[0]["actions"][0]["atk_type"], "Submission");
+    assert_eq!(e[0]["condition"]["@type"], "HitThisTurn");
+    assert_eq!(e[0]["condition"]["who"], "OPP");
+
+    // Compound: an unconditional even-unstoppable Stop on <A>, plus a gated Stop on <B>.
+    let e = effs(
+        "Stop any Finish Strike that cannot be stopped or any Strike that is not the first card played this turn.",
+    );
+    assert_eq!(e.len(), 2);
+    assert_eq!(e[0]["actions"][0]["@type"], "Stop");
+    assert_eq!(e[0]["actions"][0]["order"], "Finish");
+    assert_eq!(e[0]["actions"][0]["atk_type"], "Strike");
+    assert_eq!(e[0]["actions"][0]["even_unstoppable"], true);
+    assert_eq!(e[0]["condition"]["@type"], "Always");
+    assert_eq!(e[1]["actions"][0]["@type"], "Stop");
+    assert_eq!(e[1]["actions"][0]["atk_type"], "Strike");
+    assert_eq!(e[1]["actions"][0]["order"], Value::Null);
+    assert_eq!(e[1]["actions"][0]["even_unstoppable"], false);
+    assert_eq!(e[1]["condition"]["@type"], "HitThisTurn");
+    assert_eq!(e[1]["condition"]["who"], "OPP");
+}
+
 /// Whitelist "can only be stopped by <order>" (#120): the inverse of "cannot be stopped
 /// by <order>" — modeled with no new IR as an `Unstoppable{by_order}` per COMPLEMENTARY
 /// play order, optionally condition-gated.

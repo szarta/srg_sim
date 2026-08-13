@@ -1727,6 +1727,27 @@ fn versatile_or_stop(clause: &str) -> Option<Vec<Effect>> {
     None
 }
 
+/// "Stop any <A> that cannot be stopped or any <B> that is not the first card played
+/// this turn" — TWO stop capabilities with DIFFERENT gates (an unconditional
+/// even-unstoppable Stop on <A>, plus a `HitThisTurn{Opp}`-gated Stop on <B>, whose
+/// opening card is safe). A single multi-target Stop effect shares one condition, so
+/// this can't be one effect — it emits the two independently gated stop effects.
+fn stop_first_card_compound(clause: &str) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"^Stop any (.+?) that cannot be stopped or any (.+?) that is not the first card played this turn$",
+        )
+        .unwrap()
+    });
+    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    let unstoppable = stop_eff(
+        &format!("{} that cannot be stopped", &c[1]),
+        Condition::Always,
+    )?;
+    let gated = stop_eff(&c[2], Condition::HitThisTurn { who: Who::Opp })?;
+    Some(vec![unstoppable, gated])
+}
+
 /// One candidate " or " split for [`versatile_or_stop`]: parse each side, require exactly
 /// one to be a pure Stop capability, return `[offensive, stop]`.
 fn versatile_split(left: &str, right: &str) -> Option<Vec<Effect>> {
@@ -7344,6 +7365,15 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                 })
             },
         ),
+        // "Stop any <X> if it is not the first card played this turn" — the opponent's
+        // OPENING card of the turn is safe; this card can stop <X> only once they have
+        // already landed one. At the stop window (before the current card lands) the
+        // attacker's per-turn hit count is >= 1 iff this is not their first card, so the
+        // gate is `HitThisTurn{Opp}` (evaluated from the defender's view = the attacker).
+        rule(
+            r"Stop any (.+?) if it is not the first card played this turn",
+            |c| stop_eff(&c[1], Condition::HitThisTurn { who: Who::Opp }),
+        ),
         rule(r"Stop any (.+)", |c| stop_eff(&c[1], Condition::Always)),
         rule(
             &format!(
@@ -8712,6 +8742,22 @@ pub fn parse_text(
             .iter()
             .any(|a| matches!(a, Action::Unsupported { .. }))
         {
+            // "Stop any <A> that cannot be stopped or any <B> that is not the first card
+            // played this turn" — two differently-gated stop effects (see the fn).
+            if let Some(effs) = stop_first_card_compound(clause) {
+                for mut e in effs {
+                    e.raw_clause = clause.clone();
+                    e.source = source;
+                    e.frequency = FrequencyGuard {
+                        node_type: FrequencyGuardTag,
+                        kind: freq,
+                        n,
+                    };
+                    effects.push(scope(e, &window));
+                }
+                i += 1;
+                continue;
+            }
             if let Some(effs) = versatile_or_stop(clause) {
                 for mut e in effs {
                     e.raw_clause = clause.clone();

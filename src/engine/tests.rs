@@ -4695,6 +4695,96 @@ mod logoless_stop_target_tests {
     }
 }
 
+/// "Stop any <X> if it is not the first card played this turn" (#120): a `Stop` gated on
+/// `HitThisTurn{Opp}`. At the stop window the attacker's `hits_this_turn` is 0 for their
+/// opening card (still safe) and >= 1 once they have landed one (now stoppable).
+#[cfg(test)]
+mod not_first_card_stop_tests {
+    use super::*;
+    use serde_json::json;
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            l: &[serde_json::Value],
+            _: &mut GameState,
+        ) -> Option<serde_json::Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// A stop carrying `Stop{Submission}` gated on `HitThisTurn{Opp}`.
+    fn gated_stopper() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "s", "name": "s", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "OnPlay"},
+                "condition": {"@type": "HitThisTurn", "who": "OPP"},
+                "actions": [{"@type": "Stop", "order": null, "atk_type": "Submission",
+                             "source_is_skillreq": false, "even_unstoppable": false,
+                             "target": null}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stopper")
+    }
+
+    fn submission_attack() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Submission", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Followup", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": []
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn only_stops_after_the_attacker_has_hit_this_turn() {
+        let mut engine = engine();
+        // A defends; B attacks. B's opening card (hits_this_turn == 0) is safe.
+        assert!(
+            !engine.card_can_stop("A", &gated_stopper(), &submission_attack()),
+            "the attacker's first card of the turn cannot be stopped"
+        );
+        // Once B has landed a card this turn, the same attack becomes stoppable.
+        engine.state.players.get_mut("B").unwrap().hits_this_turn = 1;
+        assert!(
+            engine.card_can_stop("A", &gated_stopper(), &submission_attack()),
+            "a non-opening card is stoppable"
+        );
+    }
+}
+
 /// `StopRequiresTag { or_unstoppable }` (schema v137): the tag gate is OR-ed with the
 /// attack being unstoppable — 4115e53f, "Stop any Finish Submission that has a Spotlight
 /// OR that cannot be stopped." The paired `Stop { even_unstoppable }` pierces the
