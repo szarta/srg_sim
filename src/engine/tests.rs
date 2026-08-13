@@ -1314,6 +1314,7 @@ mod on_discard_move_tests {
                     .act_shuffle_into_deck(
                         &any_card(),
                         ShuffleSource::Discard,
+                        Who::SelfSide,
                         false,
                         false,
                         false,
@@ -6108,6 +6109,7 @@ mod cardona_mechanism_tests {
                 ..Default::default()
             },
             source: ShuffleSource::InPlay,
+            who: Who::SelfSide,
             all: false,
             then_draw: false,
             then_bury: false,
@@ -6125,6 +6127,40 @@ mod cardona_mechanism_tests {
             "only the Lead remains in play"
         );
         assert_eq!(e.state.players["A"].in_play[0].db_uuid, "lead");
+    }
+
+    #[test]
+    fn shuffle_into_deck_who_opp_recurs_the_opponents_own_discard() {
+        // "each player shuffles 1 Grapple from their discard pile into their deck" emits a
+        // who=Opp action (alongside the who=SELF one); who=Opp must recur B's OWN discard
+        // into B's OWN deck even though A owns the effect.
+        let mut e = engine();
+        e.state.players.get_mut("B").unwrap().discard = vec![card("g", "Followup")];
+        e.state.players.get_mut("B").unwrap().deck = vec![];
+        let a_discard_before = e.state.players["A"].discard.len();
+        let shuffle = Action::ShuffleIntoDeck {
+            selector: CardFilter::default(),
+            source: ShuffleSource::Discard,
+            who: Who::Opp,
+            all: false,
+            then_draw: false,
+            then_bury: false,
+        };
+        e.apply_action(&shuffle, "A", "").unwrap();
+        assert_eq!(
+            e.state.players["B"].deck.len(),
+            1,
+            "B's card recurred into B's deck"
+        );
+        assert!(
+            e.state.players["B"].discard.is_empty(),
+            "pulled from B's discard"
+        );
+        assert_eq!(
+            e.state.players["A"].discard.len(),
+            a_discard_before,
+            "A's own zones untouched by a who=Opp shuffle"
+        );
     }
 
     #[test]
@@ -6149,6 +6185,7 @@ mod cardona_mechanism_tests {
                 ..Default::default()
             },
             source: ShuffleSource::Discard,
+            who: Who::SelfSide,
             all: true,
             then_draw: true,
             then_bury: false,
@@ -6706,6 +6743,7 @@ mod cardona_mechanism_tests {
         e.act_shuffle_into_deck(
             &CardFilter::default(),
             ShuffleSource::Hand,
+            Who::SelfSide,
             true,
             true,
             false,
@@ -6729,6 +6767,7 @@ mod cardona_mechanism_tests {
         e.act_shuffle_into_deck(
             &CardFilter::default(),
             ShuffleSource::Discard,
+            Who::SelfSide,
             true,
             false,
             true,

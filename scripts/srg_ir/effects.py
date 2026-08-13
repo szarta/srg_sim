@@ -1079,6 +1079,10 @@ class ShuffleDeck(IRNode):
 class ShuffleIntoDeck(IRNode):
     selector: CardFilter = CardFilter()
     source: ShuffleSource = ShuffleSource.DISCARD
+    # Whose zone the shuffle acts on — SELF (default) or OPP/each-player ("each player
+    # shuffles 1 Grapple from their discard pile into their deck" emits one per side).
+    # schema v143
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)

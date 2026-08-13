@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 142;
+pub const SCHEMA_VERSION: i64 = 143;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1301,6 +1301,11 @@ pub enum Action {
         /// ("shuffle 1 Follow Up you have in play into your deck"). schema v83
         #[serde(default)]
         source: ShuffleSource,
+        /// Whose zone the shuffle acts on — `SelfSide` (default) or `Opp`/each-player
+        /// ("each player shuffles 1 Grapple from their discard pile into their deck" emits
+        /// one per side). Each player recurs THEIR OWN zone into THEIR OWN deck. schema v143
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
         /// Shuffle EVERY matching card in the source zone (not just one chosen card).
         /// "Take any number of Lead cards … and shuffle them into your deck" — the
         /// "any number" is the whole matching set. schema v124
@@ -2879,6 +2884,11 @@ pub enum IrNode {
         /// ("shuffle 1 Follow Up you have in play into your deck"). schema v83
         #[serde(default)]
         source: ShuffleSource,
+        /// Whose zone the shuffle acts on — `SelfSide` (default) or `Opp`/each-player
+        /// ("each player shuffles 1 Grapple from their discard pile into their deck" emits
+        /// one per side). Each player recurs THEIR OWN zone into THEIR OWN deck. schema v143
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
         /// Shuffle EVERY matching card in the source zone (not just one chosen card).
         /// "Take any number of Lead cards … and shuffle them into your deck" — the
         /// "any number" is the whole matching set. schema v124

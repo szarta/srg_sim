@@ -1152,6 +1152,20 @@ fn versatile_or_stop_grammar() {
     assert_eq!(e.len(), 1);
     assert_eq!(e[0]["actions"][0]["@type"], "ShuffleDeck");
     assert_eq!(e[0]["actions"][1]["who"], "OPP");
+
+    // Typed discard-recur offensive branch (schema v143 ShuffleIntoDeck.who): both players
+    // recur their own discard; tolerates the "dsicard" DB typo. Stop-first ordering.
+    let e = effs("Stop any Strike or each player shuffles 1 Submission from their dsicard pile into their deck.");
+    assert_eq!(e.len(), 2);
+    assert_eq!(e[0]["actions"][0]["@type"], "ShuffleIntoDeck");
+    assert_eq!(e[0]["actions"][0]["source"], "DISCARD");
+    assert_eq!(
+        e[0]["actions"][0]["who"],
+        Value::Null,
+        "SELF omitted (skip_serializing_if)"
+    );
+    assert_eq!(e[0]["actions"][1]["who"], "OPP");
+    assert_eq!(e[1]["actions"][0]["@type"], "Stop");
 }
 
 /// Whitelist "can only be stopped by <order>" (#120): the inverse of "cannot be stopped

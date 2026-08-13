@@ -1302,11 +1302,12 @@ impl Engine {
             Action::ShuffleIntoDeck {
                 selector,
                 source,
+                who,
                 all,
                 then_draw,
                 then_bury,
             } => self.act_shuffle_into_deck(
-                selector, *source, *all, *then_draw, *then_bury, key,
+                selector, *source, *who, *all, *then_draw, *then_bury, key,
             )?,
             Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
             Action::AddFlippedToHand {
@@ -2513,15 +2514,24 @@ impl Engine {
 
     /// Recur one matching card from discard into the deck, then shuffle ("shuffle N
     /// cards" is authored as repeated actions; DESIGN.md §3 review gate).
+    #[allow(clippy::too_many_arguments)]
     fn act_shuffle_into_deck(
         &mut self,
         selector: &CardFilter,
         source: ShuffleSource,
+        who: Who,
         all: bool,
         then_draw: bool,
         then_bury: bool,
-        key: &str,
+        owner: &str,
     ) -> Eng<()> {
+        // `who` picks whose zone/deck the shuffle acts on; each player recurs THEIR OWN
+        // zone into THEIR OWN deck (an each-player clause emits one action per side).
+        let key_owned = match who {
+            Who::SelfSide => owner.to_owned(),
+            Who::Opp => self.state.opponent_of(owner),
+        };
+        let key = key_owned.as_str();
         let matches: Vec<Card> = {
             let player = &self.state.players[key];
             shuffle_zone(player, source)

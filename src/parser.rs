@@ -601,9 +601,17 @@ fn modify_roll_on_skill(delta: i64, skill: Skill) -> Action {
 /// case. The multi-card "take any number … then draw the same number" recur sets those
 /// two flags on the struct literal directly.
 fn shuffle_into(selector: CardFilter, source: ShuffleSource) -> Action {
+    shuffle_into_who(selector, source, Who::SelfSide)
+}
+
+/// [`shuffle_into`] with an explicit actor — `Opp`/each-player recur of a chosen zone
+/// back into that player's deck ("each player shuffles 1 Grapple from their discard pile
+/// into their deck" emits one per side). schema v143
+fn shuffle_into_who(selector: CardFilter, source: ShuffleSource, who: Who) -> Action {
     Action::ShuffleIntoDeck {
         selector,
         source,
+        who,
         all: false,
         then_draw: false,
         then_bury: false,
@@ -5847,6 +5855,26 @@ fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "Each player shuffles N <type> from their discard pile into their deck" — both
+        // players recur a matching card from their OWN discard back into their OWN deck
+        // (schema v143, ShuffleIntoDeck.who). A branch of the "Stop any X or each player
+        // shuffles …" versatile-or shape (#120). Tolerates the "dsicard" DB typo and a
+        // doubled space before "pile".
+        rule(
+            r"[Ee]ach player shuffles (?:up to )?\d+ (.+?) from their d(?:is|si)card\s+pile into their deck",
+            |c| {
+                let filter = recur_filter(&c[1])?;
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        shuffle_into_who(filter.clone(), ShuffleSource::Discard, Who::SelfSide),
+                        shuffle_into_who(filter, ShuffleSource::Discard, Who::Opp),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Conditional prefix: "If you have another <play order/skill> in play, your
         // opponent buries N card(s) in their hand."
         rule(
@@ -6076,6 +6104,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                     vec![Action::ShuffleIntoDeck {
                         selector: recur_filter(&c[1])?,
                         source: ShuffleSource::Discard,
+                        who: Who::SelfSide,
                         all: true,
                         then_draw: true,
                         then_bury: false,
@@ -6096,6 +6125,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                     vec![Action::ShuffleIntoDeck {
                         selector: CardFilter::default(),
                         source: ShuffleSource::Hand,
+                        who: Who::SelfSide,
                         all: true,
                         then_draw: true,
                         then_bury: false,
@@ -6116,6 +6146,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                     vec![Action::ShuffleIntoDeck {
                         selector: CardFilter::default(),
                         source: ShuffleSource::Discard,
+                        who: Who::SelfSide,
                         all: true,
                         then_draw: false,
                         then_bury: true,
