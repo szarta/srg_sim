@@ -2763,6 +2763,12 @@ fn strip_target_filter(part: &str) -> (&str, Option<CardFilter>) {
         Regex::new(r"(?i)^(.*?),? (?:that (?:doesn'?t|does not) have|without) a competitor logo$")
             .unwrap()
     });
+    // "with a skill requirement" — a skill-requirement qualifier. The loader folds a
+    // card's `requirements:` block into the synthetic `SkillRequirement` tag, so the
+    // attack must carry it (engine `card_matches` reads `.tag`). Tolerates the DB's
+    // "Requireement" typo (an extra e).
+    static SKILLREQ_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^(.*?),? with an? skill requiree?ments?$").unwrap());
     let p = part.trim();
     if let Some(c) = RE.captures(p) {
         let names = vec![c[2].to_owned()];
@@ -2781,6 +2787,12 @@ fn strip_target_filter(part: &str) -> (&str, Option<CardFilter>) {
     }
     if let Some(c) = LOGO_RE.captures(p) {
         return (c.get(1).unwrap().as_str(), Some(cf_tag("Logoless")));
+    }
+    if let Some(c) = SKILLREQ_RE.captures(p) {
+        return (
+            c.get(1).unwrap().as_str(),
+            Some(cf_tag(crate::cards::SKILL_REQUIREMENT_TAG)),
+        );
     }
     (p, None)
 }

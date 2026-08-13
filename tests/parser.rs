@@ -1279,6 +1279,14 @@ fn stop_target_logo_and_printed_grammar() {
     assert_eq!(a["order"], "Finish");
     assert_eq!(a["atk_type"], "Submission");
     assert_eq!(a["target"], Value::Null);
+
+    // "with a skill requirement" -> a SkillRequirement synthetic-tag target (the loader
+    // folds a card's requirements: block into that tag). Tolerates the "Requireement" typo.
+    let a = stop("Stop any Strike with a skill requirement.");
+    assert_eq!(a["atk_type"], "Strike");
+    assert_eq!(a["target"]["tag"], "SkillRequirement");
+    let a = stop("Stop any Submission with a Skill Requireement.");
+    assert_eq!(a["target"]["tag"], "SkillRequirement");
 }
 
 /// The stopped-card-logo GATE (#120): "If the stopped card did not have a competitor logo
