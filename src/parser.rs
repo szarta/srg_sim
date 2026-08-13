@@ -2494,6 +2494,21 @@ fn strip_stop_override(t: &str) -> (&str, bool) {
     (t, false)
 }
 
+/// A FINISH-OFF-STOP effect: "[if the stopped card had no logo/req,] this card is also a
+/// Finish [when played as a Stop]". An `OnStop{Theirs}` effect (fires when THIS card
+/// stops something) carrying an optional Crowd-Meter swing plus the `FinishIfStop` marker;
+/// the engine's `apply_stop` runs the finish sequence off the successful stop. The gate
+/// (`Always` for "if played as a Stop", `StoppedCardNoLogoNoReq` for the logo/skill-req
+/// variant) rides on the effect condition, so it also gates the Crowd-Meter swing.
+fn finish_off_stop(cm_delta: Option<i64>, condition: Condition) -> Effect {
+    let mut actions = Vec::new();
+    if let Some(d) = cm_delta {
+        actions.push(Action::CrowdMeter { delta: d });
+    }
+    actions.push(Action::FinishIfStop);
+    eff(on_their_stop(), actions, condition, Duration::Instant)
+}
+
 /// Parse the guard of a conditional "If/When `<cond>`, this card cannot be stopped"
 /// into a [`Condition`], covering the common gate shapes (Crowd Meter, skill-vs-opp,
 /// hand size, in-play count / name-count / none, turn-roll value/skill, same skill).
@@ -6681,6 +6696,28 @@ fn build_reveal_alsolead_rules() -> Vec<(Regex, Builder)> {
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))
+            },
+        ),
+        // FINISH-OFF-STOP (#120): "If played as a Stop, [the Crowd Meter is +N and] this
+        // (card) is also a Finish" — when this stop lands, run a finish sequence off it (a
+        // breakout attempt). Distinct from the AlsoLead "also a Finish" playability family
+        // below; placed FIRST so it wins on the stop-context phrasings. See `finish_off_stop`.
+        rule(
+            r"(?i)If played as a stop,? (?:the [Cc]rowd [Mm]eter is \+(\d+) and )?this (?:card )?is also a Finish",
+            |c| {
+                let cm = c.get(1).and_then(|m| m.as_str().parse().ok());
+                Some(finish_off_stop(cm, Condition::Always))
+            },
+        ),
+        // Finish-off-stop, gated on the STOPPED card lacking a logo/skill-requirement
+        // (Universal Dropkick / Sweeping Slam / Umbrella Hold V1/V2). Placed before the
+        // general AlsoLead rule, which would otherwise fold it to an (engine-inert on the
+        // stop path) AlsoLead{Finish}. The condition rides the effect, gating the CM swing too.
+        rule(
+            r"(?i)If the stopped card did not have a competitor logo or (?:a )?skill requirement,? (?:the [Cc]rowd [Mm]eter is \+(\d+) and )?this card is also a Finish",
+            |c| {
+                let cm = c.get(1).and_then(|m| m.as_str().parse().ok());
+                Some(finish_off_stop(cm, Condition::StoppedCardNoLogoNoReq))
             },
         ),
         // General "[If/When <gate>,] this card is also a <order>" (a 264-clause family):

@@ -367,6 +367,12 @@ BlankStoppedText             # "the stopped card has blank text until the end of
                              # GameState.blanked_text (a selector scan cannot: the blanking stop card stays in play, so it would never end);
                              # cleared by the end-of-turn sweep. Resolved BEFORE the stopped card's own OnStop, so it suppresses that card's
                              # "If Stopped" text — the point of the family ("stop any X WITH 'If Stopped' in the text: …"). schema v36
+FinishIfStop                 # FINISH-OFF-STOP: "if played as a Stop, this card is also a Finish". A passive marker read in apply_stop
+                             # (maybe_finish_off_stop): when this stop lands SUCCESSFULLY it runs a full finish sequence off the stop — the
+                             # stopper is the finisher, the stopped attacker the target (a breakout attempt that can end the match). Authored
+                             # on an OnStop{Theirs} effect whose CONDITION carries the gate (Always for "if played as a Stop";
+                             # StoppedCardNoLogoNoReq for "if the stopped card had no logo/skill requirement"), so a sibling CrowdMeter action
+                             # ("the Crowd Meter is +N and …") is gated with it. Distinct from AlsoLead "also a Finish" (playability). schema v145
 ChooseName(options)          # "Choose 1: <name>, <name>, or <name>" (Raven): bind one option for the match into PlayerState.chosen_name,
                              # authored under StartOfMatch. Read by the ChosenNameIs condition (§3), which resolves "that" name by gating one
                              # concrete effect per option, so exactly one is live. schema v37

@@ -171,6 +171,9 @@
     "@type": "BlankStoppedText"
   },
   {
+    "@type": "FinishIfStop"
+  },
+  {
     "@type": "BuryThisCard"
   },
   {

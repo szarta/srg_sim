@@ -1111,6 +1111,119 @@ mod on_stop_order_tests {
     }
 }
 
+/// FINISH-OFF-STOP (#120, schema v145): a stop card carrying `FinishIfStop` runs a finish
+/// sequence off a SUCCESSFUL stop — the stopper is the finisher, the stopped attacker the
+/// target. Verified via `apply_stop`: with the Crowd Meter high the finish auto-succeeds
+/// (value >= 11, CM > 0), so the stopper wins outright.
+#[cfg(test)]
+mod finish_off_stop_tests {
+    use super::*;
+
+    /// A stop card with an `OnStop{Theirs}` effect carrying `FinishIfStop` under `cond`.
+    fn finish_stop_card(cond: Value) -> Value {
+        json!({
+            "atk_type": "Strike", "db_uuid": "fos-stop", "name": "fos", "number": 1,
+            "play_order": "Followup", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "OnStop", "dir": "THEIRS", "order": null},
+                "condition": cond,
+                "actions": [{"@type": "FinishIfStop"}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "if played as a stop, this card is also a Finish",
+                "source": "card", "optional": false
+            }]
+        })
+    }
+
+    fn attack_card(tags: Value) -> Value {
+        json!({
+            "atk_type": "Strike", "db_uuid": "fos-atk", "name": "atk", "number": 2,
+            "play_order": "Lead", "raw_text": "", "tags": tags, "finish_bonuses": {}, "effects": []
+        })
+    }
+
+    fn new_engine() -> Engine {
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": {"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5},
+                    "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let decider = Box::new(ReplayDecider::new(BTreeMap::new(), BTreeMap::new()));
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            decider,
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// B stops A's card with an unconditional finish-off-stop; the high Crowd Meter makes
+    /// the finish auto-succeed, so B (the stopper) wins.
+    #[test]
+    fn unconditional_finish_off_stop_wins_for_the_stopper() {
+        let mut engine = new_engine();
+        engine.state.crowd_meter = 8; // finish value 5 + 8 >= 11, CM > 0 -> auto-success
+        let attack: Card = serde_json::from_value(attack_card(json!([]))).unwrap();
+        let stop: Card =
+            serde_json::from_value(finish_stop_card(json!({"@type": "Always"}))).unwrap();
+        engine.apply_stop("A", "B", attack, stop, vec![]).unwrap();
+        assert!(engine.ended(), "the finish off the stop resolved the match");
+        assert_eq!(engine.result.as_ref().unwrap().winner, "B");
+    }
+
+    /// A plain stop (no `FinishIfStop`) does NOT trigger a finish, even with a high Crowd
+    /// Meter — the match stays live.
+    #[test]
+    fn a_plain_stop_does_not_finish() {
+        let mut engine = new_engine();
+        engine.state.crowd_meter = 8;
+        let attack: Card = serde_json::from_value(attack_card(json!([]))).unwrap();
+        let plain: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "plain", "name": "p", "number": 1,
+            "play_order": "Followup", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []
+        }))
+        .unwrap();
+        engine.apply_stop("A", "B", attack, plain, vec![]).unwrap();
+        assert!(!engine.ended(), "a plain stop is not a finish");
+    }
+
+    /// The `StoppedCardNoLogoNoReq`-gated finish fires only when the stopped card is
+    /// logoless AND carries no skill requirement (the flag `apply_stop` stamps).
+    #[test]
+    fn gated_finish_off_stop_respects_the_stopped_card() {
+        // Logoless attack, no skill requirement -> the gate holds -> B finishes and wins.
+        let mut engine = new_engine();
+        engine.state.crowd_meter = 8;
+        let attack: Card = serde_json::from_value(attack_card(json!(["Logoless"]))).unwrap();
+        let stop: Card =
+            serde_json::from_value(finish_stop_card(json!({"@type": "StoppedCardNoLogoNoReq"})))
+                .unwrap();
+        engine.apply_stop("A", "B", attack, stop, vec![]).unwrap();
+        assert!(engine.ended(), "a logoless stopped card arms the finish");
+        assert_eq!(engine.result.as_ref().unwrap().winner, "B");
+
+        // A logo'd attack (no Logoless tag) -> the gate fails -> no finish, match live.
+        let mut engine = new_engine();
+        engine.state.crowd_meter = 8;
+        let attack: Card = serde_json::from_value(attack_card(json!([]))).unwrap();
+        let stop: Card =
+            serde_json::from_value(finish_stop_card(json!({"@type": "StoppedCardNoLogoNoReq"})))
+                .unwrap();
+        engine.apply_stop("A", "B", attack, stop, vec![]).unwrap();
+        assert!(
+            !engine.ended(),
+            "a card with a logo does not arm the finish"
+        );
+    }
+}
+
 #[cfg(test)]
 mod on_shuffle_tests {
     use super::*;

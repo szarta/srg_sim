@@ -1289,34 +1289,51 @@ fn stop_target_logo_and_printed_grammar() {
     assert_eq!(a["target"]["tag"], "SkillRequirement");
 }
 
-/// The stopped-card-logo GATE (#120): "If the stopped card did not have a competitor logo
-/// or skill requirement, this card is also a Finish" -> AlsoLead{Finish} gated on the new
-/// `StoppedCardNoLogoNoReq` condition (case-insensitive on the DB's capitalized variant).
+/// FINISH-OFF-STOP (#120, schema v145): "[if the stopped card had no logo/req / if played
+/// as a Stop,] this card is also a Finish" -> an `OnStop{Theirs}` effect carrying the
+/// `FinishIfStop` marker (the engine runs a finish sequence off the successful stop), the
+/// gate on the effect condition. A "the Crowd Meter is +N and …" prefix folds in a sibling
+/// `CrowdMeter`. This replaces the earlier (engine-inert on the stop path) AlsoLead model.
 #[test]
-fn stopped_card_no_logo_gate_grammar() {
+fn finish_off_stop_grammar() {
     fn eff0(text: &str) -> Value {
         let e = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(e.len(), 1, "one effect for {text:?}");
         serde_json::to_value(&e[0]).unwrap()
     }
 
+    // "If played as a Stop, this card is also a Finish" -> OnStop{Theirs} + FinishIfStop.
+    let e = eff0("If played as a Stop, this card is also a Finish.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["trigger"]["dir"], "THEIRS");
+    assert_eq!(e["condition"]["@type"], "Always");
+    assert_eq!(e["actions"][0]["@type"], "FinishIfStop");
+
+    // The CM-compound variant folds a sibling CrowdMeter before the marker (either casing /
+    // missing comma from the DB).
+    let e = eff0("If played as a stop the Crowd Meter is +2 and this is also a Finish.");
+    assert_eq!(e["actions"][0]["@type"], "CrowdMeter");
+    assert_eq!(e["actions"][0]["delta"], 2);
+    assert_eq!(e["actions"][1]["@type"], "FinishIfStop");
+
+    // The stopped-card logo/skill-req gate rides the effect condition (reconciled from the
+    // prior AlsoLead model). Case-insensitive on the DB's capitalized variant.
     let e = eff0(
         "If the stopped card did not have a competitor logo or skill requirement, this card is also a Finish.",
     );
+    assert_eq!(e["actions"][0]["@type"], "FinishIfStop");
+    assert_eq!(e["condition"]["@type"], "StoppedCardNoLogoNoReq");
+    let e = eff0(
+        "If the stopped card did not have a Competitor Logo or Skill Requirement, the Crowd Meter is +1 and this card is also a Finish.",
+    );
+    assert_eq!(e["condition"]["@type"], "StoppedCardNoLogoNoReq");
+    assert_eq!(e["actions"][0]["@type"], "CrowdMeter");
+    assert_eq!(e["actions"][1]["@type"], "FinishIfStop");
+
+    // A NON-stop "also a Finish" (CM-gated playability) still maps to AlsoLead, unchanged.
+    let e = eff0("If the Crowd Meter is 5 or greater, this card is also a Finish.");
     assert_eq!(e["actions"][0]["@type"], "AlsoLead");
     assert_eq!(e["actions"][0]["order"], "Finish");
-    assert_eq!(
-        e["actions"][0]["condition"]["@type"],
-        "StoppedCardNoLogoNoReq"
-    );
-
-    // The capitalized DB variant maps the same (gate match lowercases).
-    let e = eff0(
-        "If the stopped card did not have a Competitor Logo or Skill Requirement, this card is also a Finish.",
-    );
-    assert_eq!(
-        e["actions"][0]["condition"]["@type"],
-        "StoppedCardNoLogoNoReq"
-    );
 }
 
 /// Flip-until grammar (task #119): "Flip cards until you flip a <X>[, add it to
@@ -3435,9 +3452,12 @@ fn also_a_order_gates() {
     assert_eq!(a["condition"]["@type"], "Or");
     assert_eq!(a["condition"]["items"][0]["@type"], "StoppedCard");
 
-    // A gate gate_condition/stop_condition can't parse -> whole clause Unsupported.
+    // "If played as a Stop, this card is also a Finish" is NOT an AlsoLead playability
+    // grant — it is finish-off-stop (schema v145), handled by a dedicated rule ahead of the
+    // general "also a <order>" rule. See `finish_off_stop_grammar`.
     let e = one("If played as a Stop, this card is also a Finish.");
-    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+    assert_eq!(e["actions"][0]["@type"], "FinishIfStop");
+    assert_eq!(e["trigger"]["dir"], "THEIRS");
 }
 
 /// Hit-history gate (task #130): "If you hit <filter> (this|last) turn, <body>" and the

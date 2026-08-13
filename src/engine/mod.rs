@@ -1466,6 +1466,9 @@ impl Engine {
             // not an "unsupported" event.
             | Action::Stop { .. }
             | Action::AlsoLead { .. }
+            // Finish-off-stop is read structurally in `apply_stop` (`maybe_finish_off_stop`),
+            // which runs the finish sequence off a successful stop — never executed here.
+            | Action::FinishIfStop
             | Action::DoubleFinishIfBumped
             | Action::DoubleFinishIf { .. }
             | Action::DisqualificationRule { .. }
@@ -5289,6 +5292,30 @@ impl Engine {
         let stopped = attack.play_order;
         self.run_on_stop_gimmicks(active, Direction::Yours, stopped)?;
         self.run_on_stop_gimmicks(defender, Direction::Theirs, stopped)?;
+        // Finish-off-stop LAST, after every OnStop (incl. a "the Crowd Meter is +N"
+        // sibling) has resolved, so the finish roll reads the updated Crowd Meter.
+        if !self.ended() {
+            self.maybe_finish_off_stop(defender, active, &stop)?;
+        }
+        Ok(())
+    }
+
+    /// A stop card that "is also a Finish when played as a Stop" runs a finish sequence
+    /// off the successful stop: the `defender` (who played the stop) is the finisher, the
+    /// `active` attacker is the target. Fires when the stop carries a `FinishIfStop` marker
+    /// on an effect whose condition holds from the stopper's view (`Always` for "if played
+    /// as a Stop", `StoppedCardNoLogoNoReq` for the logo/skill-requirement gate). At most
+    /// one finish, even if several effects declare it.
+    fn maybe_finish_off_stop(&mut self, defender: &str, active: &str, stop: &Card) -> Eng<()> {
+        let fires = stop.effects.iter().any(|eff| {
+            eff.actions
+                .iter()
+                .any(|a| matches!(a, Action::FinishIfStop))
+                && conditions::holds(&eff.condition, &self.state, defender, None)
+        });
+        if fires {
+            self.finish_sequence(defender, active, stop)?;
+        }
         Ok(())
     }
 
@@ -7647,6 +7674,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::Unblank { .. } => "Unblank",
         Action::CopyText { .. } => "CopyText",
         Action::BlankStoppedText => "BlankStoppedText",
+        Action::FinishIfStop => "FinishIfStop",
         Action::BuryThisCard => "BuryThisCard",
         Action::AddSelfToHand => "AddSelfToHand",
         Action::ShuffleSelfIntoDeck => "ShuffleSelfIntoDeck",

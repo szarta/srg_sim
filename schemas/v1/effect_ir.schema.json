@@ -477,6 +477,18 @@
       ],
       "type": "object"
     },
+    "FinishIfStop": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "FinishIfStop"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "BlankText": {
       "additionalProperties": false,
       "properties": {
@@ -1227,6 +1239,9 @@
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/FinishIfStop"
               },
               {
                 "$ref": "#/$defs/BuryThisCard"
@@ -2166,6 +2181,9 @@
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/FinishIfStop"
               },
               {
                 "$ref": "#/$defs/BuryThisCard"
@@ -3322,6 +3340,9 @@
         },
         {
           "$ref": "#/$defs/BlankStoppedText"
+        },
+        {
+          "$ref": "#/$defs/FinishIfStop"
         },
         {
           "$ref": "#/$defs/BuryThisCard"
@@ -5140,6 +5161,9 @@
                 "$ref": "#/$defs/BlankStoppedText"
               },
               {
+                "$ref": "#/$defs/FinishIfStop"
+              },
+              {
                 "$ref": "#/$defs/BuryThisCard"
               },
               {
@@ -5760,6 +5784,9 @@
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/FinishIfStop"
               },
               {
                 "$ref": "#/$defs/BuryThisCard"
@@ -6884,5 +6911,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 144
+  "version": 145
 }

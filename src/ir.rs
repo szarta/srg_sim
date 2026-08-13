@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 144;
+pub const SCHEMA_VERSION: i64 = 145;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1814,6 +1814,16 @@ pub enum Action {
     /// (which is the entire point of the family — several members read "stop any card
     /// with 'If Stopped' in the text: that card has blank text …"). schema v36
     BlankStoppedText,
+    /// "If played as a Stop, this card is also a Finish" — the FINISH-OFF-STOP marker.
+    /// A stop card carrying this runs a full finish sequence (finish roll → opponent
+    /// breakout roll → win/resume) off a SUCCESSFUL stop, with the stopper as the
+    /// finisher and the stopped attacker as the target. A passive marker: read in
+    /// `apply_stop` (`maybe_finish_off_stop`), never executed as a mutation. Authored on
+    /// an `OnStop{Theirs}` effect whose condition carries the gate — `Always` for "if
+    /// played as a Stop", or `StoppedCardNoLogoNoReq` for "if the stopped card had no
+    /// competitor logo or skill requirement". A sibling `CrowdMeter` action in the same
+    /// effect handles the "the Crowd Meter is +N and …" variants. schema v145
+    FinishIfStop,
     /// "Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
     /// `options` for the rest of the match, stored as `PlayerState.chosen_name`.
     /// Authored under `StartOfMatch`; the binding is then read by
@@ -3401,6 +3411,16 @@ pub enum IrNode {
     /// (which is the entire point of the family — several members read "stop any card
     /// with 'If Stopped' in the text: that card has blank text …"). schema v36
     BlankStoppedText,
+    /// "If played as a Stop, this card is also a Finish" — the FINISH-OFF-STOP marker.
+    /// A stop card carrying this runs a full finish sequence (finish roll → opponent
+    /// breakout roll → win/resume) off a SUCCESSFUL stop, with the stopper as the
+    /// finisher and the stopped attacker as the target. A passive marker: read in
+    /// `apply_stop` (`maybe_finish_off_stop`), never executed as a mutation. Authored on
+    /// an `OnStop{Theirs}` effect whose condition carries the gate — `Always` for "if
+    /// played as a Stop", or `StoppedCardNoLogoNoReq` for "if the stopped card had no
+    /// competitor logo or skill requirement". A sibling `CrowdMeter` action in the same
+    /// effect handles the "the Crowd Meter is +N and …" variants. schema v145
+    FinishIfStop,
     /// "Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
     /// `options` for the rest of the match, stored as `PlayerState.chosen_name`.
     /// Authored under `StartOfMatch`; the binding is then read by
