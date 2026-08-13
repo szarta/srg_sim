@@ -5148,15 +5148,36 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
         // for the "If stopped, …" family). Reached as a triggered/gated body — the
         // WHILE_IN_DISCARD "when you roll <S>, put this card on top" clause and the
         // "If stopped, put this card on top of your deck" clause. Trigger + "you may"
-        // come from trigger_body/gate_body; the placeholder OnPlay is overwritten.
+        // come from trigger_body/gate_body; the on_hit() placeholder is overwritten (no
+        // card uses this body standalone). on_hit() (not OnPlay) so it folds with the
+        // put-from-hand tail below under `compound_body`, which requires a shared trigger.
         rule(r"[Pp]ut (?:this card|it) on top of your deck", |_| {
             Some(eff(
-                Trigger::OnPlay,
+                on_hit(),
                 vec![Action::PutSelfOnDeckTop],
                 Condition::Always,
                 Duration::Instant,
             ))
         }),
+        // "put N card(s) from your hand on top of your deck" -> PutFromHandOnDeckTop{N}.
+        // The owner picks which. Two contexts: standalone on hit (Diving Headbutt's "Put
+        // 1 card from your hand on top of your deck. Look at your opponent's hand …"), and
+        // the tail of a self-recycle via compound_body ("put this card on top of your
+        // deck, then put 1 card from your hand on top") — the "If stopped, …" and
+        // WHILE_IN_DISCARD put-on-top families, whose trigger comes from upstream.
+        rule(
+            r"[Pp]ut (\d+) cards? from your hand on top of your deck",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::PutFromHandOnDeckTop {
+                        count: c[1].parse().ok()?,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // "you may play it[ as an additional card this turn]" -> PlaySelf (the play is
         // itself the bonus action, so "as an additional card" folds in).
         rule(

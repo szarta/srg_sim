@@ -1777,6 +1777,17 @@ class PutSelfOnDeckTop(IRNode):
 
 
 @dataclass(frozen=True)
+class PutFromHandOnDeckTop(IRNode):
+    """Put ``count`` cards from the owner's HAND on TOP of their deck (drawn next),
+    unshuffled — "put N card(s) from your hand on top of your deck." The owner chooses
+    which; the loop stops early when the hand runs dry. Standalone (on hit) or the tail
+    of a ``PutSelfOnDeckTop`` recycle ("…, then put 1 card from your hand on top of your
+    deck"). schema v142"""
+
+    count: int
+
+
+@dataclass(frozen=True)
 class PlaySelf(IRNode):
     """Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
     may] play it[ as an additional card this turn]." The referent (``Engine.flipped_card``)
@@ -2240,6 +2251,7 @@ Action = (
     | AddSelfToHand
     | ShuffleSelfIntoDeck
     | PutSelfOnDeckTop
+    | PutFromHandOnDeckTop
     | PlaySelf
     | ChooseName
     | LoseBy

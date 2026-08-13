@@ -2367,6 +2367,23 @@ fn trent_riders_grammar() {
     assert_eq!(e["trigger"]["dir"], "YOURS");
     assert_eq!(e["actions"][0]["@type"], "PutSelfOnDeckTop");
 
+    // Compound tail: "put this card on top …, then put N card(s) from your hand on top" ->
+    // [PutSelfOnDeckTop, PutFromHandOnDeckTop{N}] folded on one OnStop (Physically Necrosis).
+    let e = one(
+        "If stopped, put this card on top of your deck, then put 1 card from your hand on top of your deck.",
+    );
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["actions"][0]["@type"], "PutSelfOnDeckTop");
+    assert_eq!(e["actions"][1]["@type"], "PutFromHandOnDeckTop");
+    assert_eq!(e["actions"][1]["count"], 1);
+
+    // Standalone (no self-recycle): a plain OnHit "put N cards from your hand on top"
+    // (Diving Headbutt's first clause) — the owner picks which.
+    let e = one("Put 2 cards from your hand on top of your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["actions"][0]["@type"], "PutFromHandOnDeckTop");
+    assert_eq!(e["actions"][0]["count"], 2);
+
     // #29 Dudebuster: shuffle any number from HAND, draw the same number.
     let e = one("Shuffle any number of cards from your hand into your deck, then draw the same number of cards.");
     assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");

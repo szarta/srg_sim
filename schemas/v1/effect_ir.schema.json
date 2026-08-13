@@ -1235,6 +1235,9 @@
                 "$ref": "#/$defs/PutSelfOnDeckTop"
               },
               {
+                "$ref": "#/$defs/PutFromHandOnDeckTop"
+              },
+              {
                 "$ref": "#/$defs/PlaySelf"
               },
               {
@@ -2166,6 +2169,9 @@
               },
               {
                 "$ref": "#/$defs/PutSelfOnDeckTop"
+              },
+              {
+                "$ref": "#/$defs/PutFromHandOnDeckTop"
               },
               {
                 "$ref": "#/$defs/PlaySelf"
@@ -3304,6 +3310,9 @@
         },
         {
           "$ref": "#/$defs/PutSelfOnDeckTop"
+        },
+        {
+          "$ref": "#/$defs/PutFromHandOnDeckTop"
         },
         {
           "$ref": "#/$defs/PlaySelf"
@@ -4876,6 +4885,22 @@
       ],
       "type": "object"
     },
+    "PutFromHandOnDeckTop": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "PutFromHandOnDeckTop"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "count"
+      ],
+      "type": "object"
+    },
     "RecurToDeckTop": {
       "additionalProperties": false,
       "properties": {
@@ -5092,6 +5117,9 @@
               },
               {
                 "$ref": "#/$defs/PutSelfOnDeckTop"
+              },
+              {
+                "$ref": "#/$defs/PutFromHandOnDeckTop"
               },
               {
                 "$ref": "#/$defs/PlaySelf"
@@ -5711,6 +5739,9 @@
               },
               {
                 "$ref": "#/$defs/PutSelfOnDeckTop"
+              },
+              {
+                "$ref": "#/$defs/PutFromHandOnDeckTop"
               },
               {
                 "$ref": "#/$defs/PlaySelf"
@@ -6814,5 +6845,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 141
+  "version": 142
 }

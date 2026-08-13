@@ -183,6 +183,10 @@
     "@type": "PutSelfOnDeckTop"
   },
   {
+    "@type": "PutFromHandOnDeckTop",
+    "count": 1
+  },
+  {
     "@type": "PlaySelf"
   },
   {

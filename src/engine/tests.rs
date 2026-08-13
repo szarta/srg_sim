@@ -4904,6 +4904,38 @@ mod put_self_on_deck_top_tests {
         e.act_put_self_on_deck_top("A");
         assert_eq!(e.state.players["A"].discard.len(), 1, "unbound -> no move");
     }
+
+    /// `PutFromHandOnDeckTop` (schema v142): move N chosen hand cards to the deck FRONT.
+    #[test]
+    fn puts_two_hand_cards_on_deck_front() {
+        let mut e = engine();
+        let hand = &mut e.state.players.get_mut("A").unwrap().hand;
+        hand.push(card("a"));
+        hand.push(card("b"));
+        hand.push(card("c"));
+        e.act_put_from_hand_on_deck_top(2, "A").unwrap();
+        assert_eq!(e.state.players["A"].hand.len(), 1, "2 of 3 left the hand");
+        assert_eq!(
+            e.state.players["A"].deck.len(),
+            2,
+            "both landed on the deck"
+        );
+        // NoDecider picks the first legal card each pass, so "a" then "b" moved; the
+        // last-picked ("b") sits on top.
+        assert_eq!(e.state.players["A"].deck[0].db_uuid, "b");
+        assert_eq!(e.state.players["A"].deck[1].db_uuid, "a");
+        assert_eq!(e.state.players["A"].hand[0].db_uuid, "c");
+    }
+
+    /// The loop stops early (no panic) when the hand runs dry before `count`.
+    #[test]
+    fn stops_early_when_hand_smaller_than_count() {
+        let mut e = engine();
+        e.state.players.get_mut("A").unwrap().hand.push(card("a"));
+        e.act_put_from_hand_on_deck_top(3, "A").unwrap();
+        assert!(e.state.players["A"].hand.is_empty());
+        assert_eq!(e.state.players["A"].deck.len(), 1);
+    }
 }
 
 #[cfg(test)]

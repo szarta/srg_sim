@@ -266,6 +266,8 @@ ShuffleSelfIntoDeck           # "If this card is flipped, [you may] shuffle it [
                              # discard -> deck, then shuffle (fires OnShuffle). Sibling of AddSelfToHand. schema v86
 PutSelfOnDeckTop              # "[you may] put this card on top of your deck": self referent (self_card, or stopped_card for
                              # the "If stopped, …" family) moves discard/hand -> deck FRONT (drawn next), unshuffled. schema v141
+PutFromHandOnDeckTop{count}   # "put N card(s) from your hand on top of your deck": owner picks which; hand -> deck FRONT.
+                             # Standalone (on hit) or the tail of a PutSelfOnDeckTop recycle ("…, then put 1 from hand on top"). schema v142
 PlaySelf                      # "If this card is flipped, [you may] play it[ as an additional card this turn]": flipped
                              # referent discard -> resolve_play by its owner (stop window, OnPlay/OnHit), a bonus play. schema v86
 RecurToDeckTop(selector, count=1)  # "up to N" discard -> TOP of deck (redraw next turn)

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 141;
+pub const SCHEMA_VERSION: i64 = 142;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1159,6 +1159,14 @@ pub enum Action {
     /// family); the card moves from wherever it sits (discard/hand) to the deck front,
     /// unshuffled. "you may" lives on [`Effect::optional`]. schema v141
     PutSelfOnDeckTop,
+    /// Put `count` cards from the owner's HAND on TOP of their deck (drawn next),
+    /// unshuffled — "put N card(s) from your hand on top of your deck." The owner chooses
+    /// which (their hidden hand); the loop stops early when the hand runs dry. Tails the
+    /// [`Action::PutSelfOnDeckTop`] recycle ("put this card on top of your deck, then put
+    /// 1 card from your hand on top of your deck"). schema v142
+    PutFromHandOnDeckTop {
+        count: i64,
+    },
     /// Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
     /// may] play it[ as an additional card this turn]." The referent is
     /// [`Engine::self_card`]; the card leaves the discard pile and resolves as a
@@ -2729,6 +2737,14 @@ pub enum IrNode {
     /// family); the card moves from wherever it sits (discard/hand) to the deck front,
     /// unshuffled. "you may" lives on [`Effect::optional`]. schema v141
     PutSelfOnDeckTop,
+    /// Put `count` cards from the owner's HAND on TOP of their deck (drawn next),
+    /// unshuffled — "put N card(s) from your hand on top of your deck." The owner chooses
+    /// which (their hidden hand); the loop stops early when the hand runs dry. Tails the
+    /// [`Action::PutSelfOnDeckTop`] recycle ("put this card on top of your deck, then put
+    /// 1 card from your hand on top of your deck"). schema v142
+    PutFromHandOnDeckTop {
+        count: i64,
+    },
     /// Play the TRIGGERING (flipped) card immediately — "If this card is flipped, [you
     /// may] play it[ as an additional card this turn]." The referent is
     /// [`Engine::self_card`]; the card leaves the discard pile and resolves as a

@@ -1505,6 +1505,9 @@ impl Engine {
             Action::AddSelfToHand => self.act_add_self_to_hand(key),
             Action::ShuffleSelfIntoDeck => self.act_shuffle_self_into_deck(key)?,
             Action::PutSelfOnDeckTop => self.act_put_self_on_deck_top(key),
+            Action::PutFromHandOnDeckTop { count } => {
+                self.act_put_from_hand_on_deck_top(*count, key)?
+            }
             Action::GrantBreakoutBonus { delta, who } => {
                 let target = self.target(*who, key);
                 self.act_grant_breakout_bonus(*delta, &target)
@@ -4218,6 +4221,33 @@ impl Engine {
         };
         player.deck.insert(0, card); // top of deck (drawn next turn)
         self.log_effect(key, "PutSelfOnDeckTop", None, json!({"card": uuid}));
+    }
+
+    /// Put `count` cards from `key`'s HAND on TOP of their deck (drawn next), unshuffled —
+    /// the owner picks which ([`pick_from`](Self::pick_from), their hidden hand), one at a
+    /// time so the last-picked lands on top. Stops early when the hand runs dry. Tails a
+    /// `PutSelfOnDeckTop` recycle ("put this card on top …, then put 1 from your hand on
+    /// top"). See [`Action::PutFromHandOnDeckTop`].
+    fn act_put_from_hand_on_deck_top(&mut self, count: i64, key: &str) -> Eng<()> {
+        let mut moved: Vec<String> = Vec::new();
+        for _ in 0..count.max(0) {
+            let hand = &self.state.players[key].hand;
+            if hand.is_empty() {
+                break;
+            }
+            let pool = hand.clone();
+            let card = self.pick_from(key, &pool, "put_hand_on_deck_top")?;
+            let player = self.state.players.get_mut(key).unwrap();
+            if let Some(pos) = player.hand.iter().position(|c| c.db_uuid == card.db_uuid) {
+                let card = player.hand.remove(pos);
+                moved.push(card.db_uuid.clone());
+                player.deck.insert(0, card);
+            }
+        }
+        if !moved.is_empty() {
+            self.log_effect(key, "PutFromHandOnDeckTop", None, json!({ "cards": moved }));
+        }
+        Ok(())
     }
 
     /// Accumulate a TIMED "+`delta` to your breakout rolls until the end of the turn"
@@ -7600,6 +7630,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::AddSelfToHand => "AddSelfToHand",
         Action::ShuffleSelfIntoDeck => "ShuffleSelfIntoDeck",
         Action::PutSelfOnDeckTop => "PutSelfOnDeckTop",
+        Action::PutFromHandOnDeckTop { .. } => "PutFromHandOnDeckTop",
         Action::GrantBreakoutBonus { .. } => "GrantBreakoutBonus",
         Action::PlaySelf => "PlaySelf",
         Action::ChooseName { .. } => "ChooseName",
