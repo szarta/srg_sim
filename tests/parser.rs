@@ -2404,6 +2404,23 @@ fn trent_riders_grammar() {
     let e = one("Add 1 card from your discard pile to your hand.");
     assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
 
+    // Self "randomly bury N cards in your hand" (the optional-prefix twin of the plain
+    // self bury) sets random selection; the plain form still picks deterministically.
+    let e = one("Randomly bury 2 cards in your hand.");
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["random"], true);
+    let e = one("Bury 2 cards in your hand.");
+    assert_eq!(e["actions"][0]["random"], false);
+
+    // Put-on-top tail via the self random-bury: "randomly bury 1 card in your hand then
+    // put this card on top" -> optional [Bury(random), PutSelfOnDeckTop] (The Butterfly Effect).
+    let e = one("If stopped, you may randomly bury 1 card in your hand then put this card on top of your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][0]["random"], true);
+    assert_eq!(e["actions"][1]["@type"], "PutSelfOnDeckTop");
+
     // #29 Dudebuster: shuffle any number from HAND, draw the same number.
     let e = one("Shuffle any number of cards from your hand into your deck, then draw the same number of cards.");
     assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");

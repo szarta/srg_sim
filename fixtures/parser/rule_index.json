@@ -176,7 +176,7 @@
 {"domain":"removal_hand","index":174,"pattern":"^(?:(?:[Ll]ook at your opponent'?s hand[,;] )?(?:[Tt]hey discard all|[Dd]iscard all their) (.+))$"},
 {"domain":"removal_hand","index":175,"pattern":"^(?:[Ll]ook at your opponent'?s hand, choose (\\d+) cards? and bury (?:it|them))$"},
 {"domain":"removal_hand","index":176,"pattern":"^(?:[Dd]raw (\\d+) cards?,? then bury (\\d+) cards? in your hand)$"},
-{"domain":"removal_hand","index":177,"pattern":"^(?:[Bb]ury (\\d+) cards? in your hand)$"},
+{"domain":"removal_hand","index":177,"pattern":"^(?:([Rr]andomly )?[Bb]ury (\\d+) cards? in your hand)$"},
 {"domain":"removal_hand","index":178,"pattern":"^(?:[Ee]ach player randomly buries (\\d+) cards? in their hand)$"},
 {"domain":"removal_hand","index":179,"pattern":"^(?:[Ee]ach player buries (\\d+) cards? in their hand)$"},
 {"domain":"removal_hand","index":180,"pattern":"^(?:If you have another (Strike|Grapple|Submission) in play, your opponent buries (\\d+) cards? in their hand)$"},

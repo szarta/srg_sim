@@ -5730,11 +5730,20 @@ fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
-        // Self-hand-bury and both-players.
-        rule(r"[Bb]ury (\d+) cards? in your hand", |c| {
+        // Self-hand-bury and both-players. An optional "randomly" prefix sets random
+        // selection (mirrors the opponent-side "your opponent randomly buries …" rule and
+        // "each player randomly buries …"); the deterministic form lets the owner pick.
+        // Unlocks the standalone / "If stopped, …" self random-buries and the put-on-top
+        // tail "randomly bury 1 card in your hand then put this card on top".
+        rule(r"([Rr]andomly )?[Bb]ury (\d+) cards? in your hand", |c| {
             Some(eff(
                 on_hit(),
-                vec![bury_hand(num(c, 1), Who::SelfSide, false, false)],
+                vec![bury_hand(
+                    num(c, 2),
+                    Who::SelfSide,
+                    c.get(1).is_some(),
+                    false,
+                )],
                 Condition::Always,
                 Duration::Instant,
             ))
