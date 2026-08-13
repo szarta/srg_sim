@@ -1213,6 +1213,34 @@ fn only_stopped_by_grammar() {
     assert_eq!(e[0]["actions"][1]["by_order"], "Finish");
 }
 
+/// Stop-target logo qualifier + "printed" modifier (#120): "without/doesn't have a
+/// Competitor logo" sets `Stop.target = {tag: Logoless}` (the DB tags logoless cards);
+/// "printed Finish" is emphasis that maps to a plain `Stop{Finish}`.
+#[test]
+fn stop_target_logo_and_printed_grammar() {
+    fn stop(text: &str) -> Value {
+        let e = parse_text(text, EffectSource::Card, None, None);
+        serde_json::to_value(&e[0]).unwrap()["actions"][0].clone()
+    }
+
+    // "without a Competitor logo" -> a Logoless tag target on the Finish/type stop.
+    let a = stop("Stop any Finish Grapple without a Competitor logo.");
+    assert_eq!(a["@type"], "Stop");
+    assert_eq!(a["order"], "Finish");
+    assert_eq!(a["atk_type"], "Grapple");
+    assert_eq!(a["target"]["tag"], "Logoless");
+
+    // "that doesn't have a Competitor logo" — the same target.
+    let a = stop("Stop any Finish Strike that doesn't have a Competitor logo.");
+    assert_eq!(a["target"]["tag"], "Logoless");
+
+    // "printed Finish X" strips to a plain Stop{Finish, X} (no target).
+    let a = stop("Stop any printed Finish Submission.");
+    assert_eq!(a["order"], "Finish");
+    assert_eq!(a["atk_type"], "Submission");
+    assert_eq!(a["target"], Value::Null);
+}
+
 /// Flip-until grammar (task #119): "Flip cards until you flip a <X>[, add it to
 /// your hand]" reuses `Flip` with the `until` filter + `until_to_hand`.
 #[test]

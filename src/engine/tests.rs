@@ -4574,6 +4574,97 @@ mod only_stopped_by_tests {
     }
 }
 
+/// "Stop any Finish X without a Competitor logo" (#120): the DB tags logoless cards
+/// `Logoless`; the parser sets `Stop.target = CardFilter{tag: "Logoless"}`, so the engine
+/// (via `card_matches`) stops only an attack carrying that tag.
+#[cfg(test)]
+mod logoless_stop_target_tests {
+    use super::*;
+    use serde_json::json;
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            l: &[serde_json::Value],
+            _: &mut GameState,
+        ) -> Option<serde_json::Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// A stop carrying `Stop{Finish, target: Logoless}` ("Stop any Finish Strike without a
+    /// Competitor logo").
+    fn logoless_stopper() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "s", "name": "s", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": "Finish", "atk_type": null,
+                             "source_is_skillreq": false, "even_unstoppable": false,
+                             "target": {"@type": "CardFilter", "tag": "Logoless"}}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stopper")
+    }
+
+    fn finish_attack(tags: serde_json::Value) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": tags, "finish_bonuses": {},
+            "effects": []
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn logoless_target_stops_only_the_logoless_finish() {
+        let engine = engine();
+        assert!(
+            engine.card_can_stop(
+                "A",
+                &logoless_stopper(),
+                &finish_attack(json!(["Logoless"]))
+            ),
+            "a logoless Finish is caught"
+        );
+        assert!(
+            !engine.card_can_stop("A", &logoless_stopper(), &finish_attack(json!([]))),
+            "a Finish WITH a competitor logo is not"
+        );
+    }
+}
+
 /// `StopRequiresTag { or_unstoppable }` (schema v137): the tag gate is OR-ed with the
 /// attack being unstoppable — 4115e53f, "Stop any Finish Submission that has a Spotlight
 /// OR that cannot be stopped." The paired `Stop { even_unstoppable }` pierces the

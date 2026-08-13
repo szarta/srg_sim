@@ -2395,6 +2395,10 @@ fn count_filter(text: &str) -> Option<CardFilter> {
 fn norm_stop_part(part: &str) -> &str {
     let p = part.trim();
     let p = p.strip_prefix("any ").unwrap_or(p);
+    // "printed Finish" = a Finish by its printed play order, which is exactly what a
+    // `Stop{order:Finish}` already matches (the engine keys on `attack.play_order`); the
+    // word is emphasis, so drop it.
+    let p = p.strip_prefix("printed ").unwrap_or(p);
     let p = p
         .strip_suffix(" cards")
         .or_else(|| p.strip_suffix(" card"))
@@ -2727,6 +2731,13 @@ fn stop_condition(text: &str) -> Option<Condition> {
 fn strip_target_filter(part: &str) -> (&str, Option<CardFilter>) {
     static RE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r#"^(.*?) with "([^"]+)" in the (name|text)$"#).unwrap());
+    // "without a Competitor logo" / "that doesn't|does not have a Competitor logo" — a
+    // logo qualifier. The DB tags logoless cards `Logoless`; the attack must carry it, so
+    // the target filter matches that synthetic tag (engine `card_matches` reads it).
+    static LOGO_RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^(.*?),? (?:that (?:doesn'?t|does not) have|without) a competitor logo$")
+            .unwrap()
+    });
     let p = part.trim();
     if let Some(c) = RE.captures(p) {
         let names = vec![c[2].to_owned()];
@@ -2742,6 +2753,9 @@ fn strip_target_filter(part: &str) -> (&str, Option<CardFilter>) {
             }
         };
         return (c.get(1).unwrap().as_str(), Some(filter));
+    }
+    if let Some(c) = LOGO_RE.captures(p) {
+        return (c.get(1).unwrap().as_str(), Some(cf_tag("Logoless")));
     }
     (p, None)
 }
