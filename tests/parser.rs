@@ -5182,6 +5182,60 @@ fn while_in_discard_onroll_self_recursion() {
     );
 }
 
+/// Bare "When this card is in your discard pile:" split-header (task #115 slice 4):
+/// the colon-form on its own line opens a persistent WhileInDiscard scope over the
+/// following body clause(s), which are re-parsed through `while_in_discard_effect`. The
+/// header no longer surfaces as its own Unsupported clause, and a discard-only passive is
+/// NOT leaked as an active-in-play effect — it declines to Unsupported instead.
+#[test]
+fn while_in_discard_split_header_scope() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+    fn is_unsupported(e: &Value) -> bool {
+        e["actions"][0]["@type"] == "Unsupported"
+    }
+
+    // The bare header is consumed (no standalone effect); the in-play stat line stays
+    // in-play; the wired OnRoll body lands as a WhileInDiscard self-recur.
+    let es = effs(
+        "+2 to Strike\nWhen this card is in your discard pile:\nWhen you roll Power for your turn roll, you may add it to your hand.",
+    );
+    assert_eq!(es.len(), 2, "stat line + body, header consumed");
+    assert_eq!(es[0]["actions"][0]["@type"], "FinishBonus");
+    assert_eq!(es[0]["duration"], "WHILE_IN_PLAY");
+    assert_eq!(es[1]["trigger"]["@type"], "OnRoll");
+    assert_eq!(es[1]["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(es[1]["actions"][0]["@type"], "AddSelfToHand");
+    assert!(!es
+        .iter()
+        .any(|e| e["raw_clause"] == "When this card is in your discard pile:"));
+
+    // A discard-only passive body (blank text) declines to Unsupported rather than
+    // leaking a wrongly-active-in-play BlankText effect. The header is still consumed.
+    let es = effs(
+        "When this card is in your discard pile:\nYour opponent's skill cards have blank text.",
+    );
+    assert_eq!(es.len(), 1);
+    assert!(is_unsupported(&es[0]));
+    assert_eq!(
+        es[0]["raw_clause"],
+        "Your opponent's skill cards have blank text."
+    );
+
+    // The header must be BARE: an inline single-line form keeps its own body and is
+    // handled by the whole-clause grammar, not this scope (regression guard).
+    let es = effs(
+        "When this card is in your discard pile: When you roll Strike for your turn roll, you may put this card on top of your deck.",
+    );
+    assert_eq!(es.len(), 1);
+    assert_eq!(es[0]["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(es[0]["actions"][0]["@type"], "PutSelfOnDeckTop");
+}
+
 /// Absolute maximum-handsize set ("... maximum handsize is N", task #131): the cap
 /// becomes N (set field), distinct from the signed "+/-N" delta form. The timed "until
 /// the end of the turn" variant declines (needs the timed-buff path, not this standing fold).

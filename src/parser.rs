@@ -1626,6 +1626,19 @@ fn cm_increase_header(clause: &str) -> bool {
     RE.is_match(clause.trim())
 }
 
+/// A BARE, standalone "When this card is in your discard pile:" header — the colon-form
+/// on its own line, its body arriving as the FOLLOWING clause(s) rather than inline. It
+/// opens a persistent [`Duration::WhileInDiscard`] scope (task #115 slice 4): the discard
+/// section is always the last block of a card's text, so every clause after the header is
+/// re-parsed through [`while_in_discard_effect`] to end of text. The inline form ("… pile:
+/// `<body>`" on one line) is NOT this — it carries its own body and is handled by the
+/// whole-clause grammar rule; this matches only the header alone, so the two never collide.
+fn discard_header(clause: &str) -> bool {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^When this card is in your discard pile:?$").unwrap());
+    RE.is_match(clause.trim())
+}
+
 /// A standalone "Choose one[ of the following]:" header. Unlike the inline "X or Y"
 /// that [`choice_body`] splits, its options arrive as the FOLLOWING clauses — composed
 /// by [`choice_from_following`] in the parse loop.
@@ -8122,6 +8135,12 @@ fn compile(clause: &str, source: EffectSource, freq: Frequency, n: Option<i64>) 
         eff.frequency = g;
         return eff;
     }
+    unsupported_effect(clause, source, g)
+}
+
+/// Build the fallback "no grammar match" [`Action::Unsupported`] effect for a clause the
+/// grammar couldn't map — the never-silently-dropped floor of the parser.
+fn unsupported_effect(clause: &str, source: EffectSource, freq: FrequencyGuard) -> Effect {
     Effect {
         node_type: EffectTag,
         trigger: Trigger::OnPlay,
@@ -8131,7 +8150,7 @@ fn compile(clause: &str, source: EffectSource, freq: Frequency, n: Option<i64>) 
             reason: "no grammar match".to_owned(),
         }],
         duration: Duration::Instant,
-        frequency: g,
+        frequency: freq,
         raw_clause: clause.to_owned(),
         source,
         optional: false,
@@ -8163,6 +8182,12 @@ pub fn parse_text(
     // following clauses are re-scoped to the roll-off (`scope_to_turn_roll`). Persists
     // to end of text, like `window`/`roll_win`.
     let mut turn_roll_scope = false;
+    // An active bare "When this card is in your discard pile:" header (`discard_header`):
+    // every following clause is re-parsed through `while_in_discard_effect` and carries
+    // Duration::WhileInDiscard. Persists to end of text — the discard section is always a
+    // card's last block. Bodies whose trigger isn't a wired discard-dispatch site (or that
+    // have no grammar) decline to Unsupported rather than leak a wrongly-in-play effect.
+    let mut discard_scope = false;
     // AND the active turn-window onto an effect's condition (a no-op when Always).
     let scope = |mut eff: Effect, window: &Condition| {
         if !matches!(window, Condition::Always) {
@@ -8227,6 +8252,36 @@ pub fn parse_text(
         // following standing skill buffs are re-scoped to the roll-off.
         if turn_roll_header(clause) {
             turn_roll_scope = true;
+            i += 1;
+            continue;
+        }
+        // Bare "When this card is in your discard pile:" header: open a WhileInDiscard
+        // scope over the rest of the text (the discard section is a card's last block).
+        if discard_header(clause) {
+            discard_scope = true;
+            i += 1;
+            continue;
+        }
+        // Under an active discard scope, every clause is a body the card declares only
+        // from the pile: re-parse it as a WhileInDiscard effect. This runs BEFORE the
+        // in-play handlers below so a discard-only passive (e.g. "your opponent's skill
+        // cards have blank text") can't leak an active-in-play effect; an unwired or
+        // grammarless body compiles to Unsupported instead (never a silent drop).
+        if discard_scope {
+            let g = FrequencyGuard {
+                node_type: FrequencyGuardTag,
+                kind: freq,
+                n,
+            };
+            let e = while_in_discard_effect(clause)
+                .map(|mut eff| {
+                    eff.raw_clause = clause.clone();
+                    eff.source = source;
+                    eff.frequency = g.clone();
+                    eff
+                })
+                .unwrap_or_else(|| unsupported_effect(clause, source, g));
+            effects.push(scope(e, &window));
             i += 1;
             continue;
         }
