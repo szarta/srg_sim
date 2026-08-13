@@ -460,6 +460,15 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
         // begins, so `<= 1` covers both. (A "considered first turn" re-label is a separate
         // unmodeled action; this reads the raw turn counter.)
         Condition::FirstTurn => state.turn_no <= 1,
+        // The owner's most recently stopped card lacked both a competitor logo and a skill
+        // requirement — a boolean stamped on the stopping side by `apply_stop`.
+        Condition::StoppedCardNoLogoNoReq => {
+            state.players[owner]
+                .flags
+                .get("stopped_card_no_logo_no_req")
+                .and_then(serde_json::Value::as_bool)
+                == Some(true)
+        }
         Condition::CompetitorIs { name_contains } => {
             let name = &state.players[owner].competitor.name;
             any_substr_ci(name_contains, name)

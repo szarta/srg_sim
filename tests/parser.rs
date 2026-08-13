@@ -1241,6 +1241,36 @@ fn stop_target_logo_and_printed_grammar() {
     assert_eq!(a["target"], Value::Null);
 }
 
+/// The stopped-card-logo GATE (#120): "If the stopped card did not have a competitor logo
+/// or skill requirement, this card is also a Finish" -> AlsoLead{Finish} gated on the new
+/// `StoppedCardNoLogoNoReq` condition (case-insensitive on the DB's capitalized variant).
+#[test]
+fn stopped_card_no_logo_gate_grammar() {
+    fn eff0(text: &str) -> Value {
+        let e = parse_text(text, EffectSource::Card, None, None);
+        serde_json::to_value(&e[0]).unwrap()
+    }
+
+    let e = eff0(
+        "If the stopped card did not have a competitor logo or skill requirement, this card is also a Finish.",
+    );
+    assert_eq!(e["actions"][0]["@type"], "AlsoLead");
+    assert_eq!(e["actions"][0]["order"], "Finish");
+    assert_eq!(
+        e["actions"][0]["condition"]["@type"],
+        "StoppedCardNoLogoNoReq"
+    );
+
+    // The capitalized DB variant maps the same (gate match lowercases).
+    let e = eff0(
+        "If the stopped card did not have a Competitor Logo or Skill Requirement, this card is also a Finish.",
+    );
+    assert_eq!(
+        e["actions"][0]["condition"]["@type"],
+        "StoppedCardNoLogoNoReq"
+    );
+}
+
 /// Flip-until grammar (task #119): "Flip cards until you flip a <X>[, add it to
 /// your hand]" reuses `Flip` with the `until` filter + `until_to_hand`.
 #[test]

@@ -4663,6 +4663,36 @@ mod logoless_stop_target_tests {
             "a Finish WITH a competitor logo is not"
         );
     }
+
+    /// `Condition::StoppedCardNoLogoNoReq` reads the `stopped_card_no_logo_no_req` boolean
+    /// flag off the effect owner (stamped by `apply_stop`); it gates "…, this card is also
+    /// a Finish".
+    #[test]
+    fn stopped_card_no_logo_no_req_reads_the_flag() {
+        use crate::conditions::holds;
+        use crate::ir::Condition;
+        let mut e = engine();
+        let cond = Condition::StoppedCardNoLogoNoReq;
+        // Absent flag -> false.
+        assert!(!holds(&cond, &e.state, "A", None));
+        // Stamped true -> true, for that owner only.
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flags
+            .insert("stopped_card_no_logo_no_req".to_owned(), json!(true));
+        assert!(holds(&cond, &e.state, "A", None));
+        assert!(!holds(&cond, &e.state, "B", None), "owner-scoped");
+        // Stamped false (stopped a card that HAD a logo/req) -> false.
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flags
+            .insert("stopped_card_no_logo_no_req".to_owned(), json!(false));
+        assert!(!holds(&cond, &e.state, "A", None));
+    }
 }
 
 /// `StopRequiresTag { or_unstoppable }` (schema v137): the tag gate is OR-ed with the

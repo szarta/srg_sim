@@ -221,6 +221,9 @@
               "$ref": "#/$defs/FirstTurn"
             },
             {
+              "$ref": "#/$defs/StoppedCardNoLogoNoReq"
+            },
+            {
               "$ref": "#/$defs/DuringTurn"
             },
             {
@@ -370,6 +373,9 @@
               },
               {
                 "$ref": "#/$defs/FirstTurn"
+              },
+              {
+                "$ref": "#/$defs/StoppedCardNoLogoNoReq"
               },
               {
                 "$ref": "#/$defs/DuringTurn"
@@ -1839,6 +1845,9 @@
               "$ref": "#/$defs/FirstTurn"
             },
             {
+              "$ref": "#/$defs/StoppedCardNoLogoNoReq"
+            },
+            {
               "$ref": "#/$defs/DuringTurn"
             },
             {
@@ -2387,6 +2396,9 @@
               "$ref": "#/$defs/FirstTurn"
             },
             {
+              "$ref": "#/$defs/StoppedCardNoLogoNoReq"
+            },
+            {
               "$ref": "#/$defs/DuringTurn"
             },
             {
@@ -2746,6 +2758,18 @@
       "properties": {
         "@type": {
           "const": "FirstTurn"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "StoppedCardNoLogoNoReq": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "StoppedCardNoLogoNoReq"
         }
       },
       "required": [
@@ -3660,6 +3684,9 @@
           "$ref": "#/$defs/FirstTurn"
         },
         {
+          "$ref": "#/$defs/StoppedCardNoLogoNoReq"
+        },
+        {
           "$ref": "#/$defs/DuringTurn"
         },
         {
@@ -4114,6 +4141,9 @@
             },
             {
               "$ref": "#/$defs/FirstTurn"
+            },
+            {
+              "$ref": "#/$defs/StoppedCardNoLogoNoReq"
             },
             {
               "$ref": "#/$defs/DuringTurn"
@@ -4708,6 +4738,9 @@
               },
               {
                 "$ref": "#/$defs/FirstTurn"
+              },
+              {
+                "$ref": "#/$defs/StoppedCardNoLogoNoReq"
               },
               {
                 "$ref": "#/$defs/DuringTurn"
@@ -6214,6 +6247,9 @@
               "$ref": "#/$defs/FirstTurn"
             },
             {
+              "$ref": "#/$defs/StoppedCardNoLogoNoReq"
+            },
+            {
               "$ref": "#/$defs/DuringTurn"
             },
             {
@@ -6848,5 +6884,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 143
+  "version": 144
 }

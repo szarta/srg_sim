@@ -5237,12 +5237,23 @@ impl Engine {
         // Stamp the turn on the STOPPING side so `Condition::StoppedCard` reads it this
         // and next turn ("if you stopped a card last turn, …"), like `broke_out_turn`.
         let turn = self.state.turn_no;
-        self.state
-            .players
-            .get_mut(defender)
-            .unwrap()
+        // "did not have a competitor logo or skill requirement" = the stopped card carries
+        // the `Logoless` tag AND lacks `SkillRequirement`. Stamp it for
+        // `Condition::StoppedCardNoLogoNoReq` ("… this card is also a Finish"), same recipe
+        // as the turn stamp below.
+        let no_logo_no_req = attack.tags.iter().any(|t| t == "Logoless")
+            && !attack
+                .tags
+                .iter()
+                .any(|t| t == crate::cards::SKILL_REQUIREMENT_TAG);
+        let stopping = self.state.players.get_mut(defender).unwrap();
+        stopping
             .flags
             .insert("stopped_card_turn".to_owned(), json!(turn));
+        stopping.flags.insert(
+            "stopped_card_no_logo_no_req".to_owned(),
+            json!(no_logo_no_req),
+        );
         self.land_stop_card(defender, &stop, &attack)?;
         // Extra stops a `RequireStops` attack forced: each lands as a committed stop.
         // The heavy attack-side resolution below (blank-text, OnStop) runs once, keyed

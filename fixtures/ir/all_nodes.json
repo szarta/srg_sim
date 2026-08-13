@@ -995,6 +995,9 @@
     "@type": "FirstTurn"
   },
   {
+    "@type": "StoppedCardNoLogoNoReq"
+  },
+  {
     "@type": "BrokeOutLastTurn",
     "who": "SELF"
   },

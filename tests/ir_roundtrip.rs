@@ -5,7 +5,7 @@
 //!
 //!   * `fixtures/ir/deck_effects.json` — every `Effect` node compiled from the
 //!     six reference decks (real `cards.ir.json` data, 42 distinct node types).
-//!   * `fixtures/ir/all_nodes.json` — one schema-minimal instance of *all* 164
+//!   * `fixtures/ir/all_nodes.json` — one schema-minimal instance of *all* 165
 //!     node types, so every `IrNode` variant is exercised even if no deck uses
 //!     it yet.
 //!
@@ -70,8 +70,8 @@ fn all_nodes_covers_every_type() {
     tags.dedup();
     assert_eq!(
         tags.len(),
-        164,
-        "expected 164 distinct node types, got {}",
+        165,
+        "expected 165 distinct node types, got {}",
         tags.len()
     );
 }

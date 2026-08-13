@@ -196,6 +196,10 @@ SameRolledSkill              # you and your target rolled the SAME skill this tu
                              # set only in the post-roll/pair contexts). Needs a roll ctx. schema v18
 FirstTurn                    # this is the first turn of the game (GameState.turn_no <= 1). Gates "if this is the first
                              # turn of the game, this card is also a <order> / cannot be stopped". schema v119
+StoppedCardNoLogoNoReq       # the owner's most recently stopped card had neither a competitor logo nor a skill
+                             # requirement (Logoless tag AND no SkillRequirement; flags["stopped_card_no_logo_no_req"],
+                             # stamped by apply_stop). Gates "if the stopped card did not have a competitor logo or
+                             # skill requirement, this card is also a Finish". schema v144
 BrokeOutLastTurn{who}        # `who` broke out on the PREVIOUS turn (flags["broke_out_turn"] == turn_no-1, stamped by
                              # `breakout` on success). Gates "if you broke out last turn, …"; "either/any player" -> Or. schema v120
 StoppedCard{who,last_turn}   # `who` performed a stop last turn (last_turn) or this turn (flags["stopped_card_turn"], stamped

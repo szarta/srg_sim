@@ -2049,6 +2049,10 @@ fn gate_condition(text: &str) -> Option<Condition> {
         "this is the first turn of the game" | "this is the first turn of the match" => {
             return Some(Condition::FirstTurn)
         }
+        "the stopped card did not have a competitor logo or skill requirement"
+        | "the stopped card did not have a competitor logo or a skill requirement" => {
+            return Some(Condition::StoppedCardNoLogoNoReq)
+        }
         "you broke out last turn" => {
             return Some(Condition::BrokeOutLastTurn { who: Who::SelfSide })
         }

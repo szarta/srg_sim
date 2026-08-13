@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 143;
+pub const SCHEMA_VERSION: i64 = 144;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -945,6 +945,13 @@ pub enum Condition {
     /// (this card is also a `<order>` / cannot be stopped). A "considered first turn"
     /// override that re-labels a later turn is a separate, unmodeled action. schema v119
     FirstTurn,
+    /// The card the owner most recently stopped had NEITHER a competitor logo NOR a skill
+    /// requirement — i.e. it carried the `Logoless` tag AND lacked `SkillRequirement`.
+    /// Read from `PlayerState.flags["stopped_card_no_logo_no_req"]`, stamped on the
+    /// stopping side by `apply_stop` (the same flags recipe as `StoppedCard`'s turn stamp).
+    /// Gates "if the stopped card did not have a competitor logo or skill requirement, this
+    /// card is also a Finish". schema v144
+    StoppedCardNoLogoNoReq,
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
@@ -2578,6 +2585,10 @@ pub enum IrNode {
     /// This is the first turn of the game (`GameState.turn_no <= 1`). Gates the "if this is
     /// the first turn of the game, …" riders. schema v119
     FirstTurn,
+    /// The card the owner most recently stopped had neither a competitor logo nor a skill
+    /// requirement (`Logoless` tag AND no `SkillRequirement`). Read from
+    /// `flags["stopped_card_no_logo_no_req"]`, stamped by `apply_stop`. schema v144
+    StoppedCardNoLogoNoReq,
     /// The owner's opponent won the *previous* turn's roll-off
     /// (`GameState.last_roll_winner`); false before turn 1. Gates Dunn's re-roll.
     OppWonLastRoll,
