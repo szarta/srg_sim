@@ -5175,6 +5175,7 @@ impl Engine {
             order,
             atk_type,
             target,
+            also_order,
             ..
         } = stop
         else {
@@ -5193,7 +5194,30 @@ impl Engine {
         let target_ok = target
             .as_ref()
             .is_none_or(|f| conditions::card_matches(attack, f));
-        order_ok && atk_type.is_none_or(|want| attack.counts_as_atk_type(want)) && target_ok
+        // "… that is also a Lead[ or a Follow Up]" — the attack must ALSO declare one of
+        // these orders via an `AlsoLead` whose condition holds (a multi-order card).
+        let also_ok = also_order.is_empty()
+            || self.attack_also_declares(attack, also_order, &self.state.opponent_of(defender));
+        order_ok
+            && atk_type.is_none_or(|want| attack.counts_as_atk_type(want))
+            && target_ok
+            && also_ok
+    }
+
+    /// Whether `attack` declares an `AlsoLead` for one of `orders` (e.g. a printed Finish
+    /// that "is also a Lead") whose condition currently holds from the attacker's view —
+    /// the "is also a `<order>`" identity a multi-order stop target keys on. Unlike
+    /// `also_lead_now`, board-legality is irrelevant: this reads the card's declared
+    /// identity, not whether it could be played in that slot.
+    fn attack_also_declares(&self, attack: &Card, orders: &[PlayOrder], attacker: &str) -> bool {
+        let roll = self.roll_ctx.get(attacker);
+        attack.effects.iter().any(|eff| {
+            eff.actions.iter().any(|a| {
+                matches!(a, Action::AlsoLead { condition, order }
+                    if orders.contains(order)
+                        && conditions::holds(condition, &self.state, attacker, roll))
+            })
+        })
     }
 
     /// Apply a stop: the stopped ATTACK goes to the attacker's discard; the stopping

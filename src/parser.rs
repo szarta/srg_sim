@@ -2812,13 +2812,41 @@ fn strip_target_filter(part: &str) -> (&str, Option<CardFilter>) {
     (p, None)
 }
 
+/// Peel a trailing "that is also a `<order>`[ or [a] `<order>`]" off a stop-target body,
+/// returning the bare body and the ALSO-order list — "Stop any Finish Strike that is also
+/// a Lead or a Follow Up". Peeled BEFORE the target OR-split so the inner " or " does not
+/// masquerade as a second stop target. Only Lead/Follow Up appear (a Finish that is "also a
+/// Finish" is meaningless).
+fn strip_also_order(body: &str) -> (&str, Vec<PlayOrder>) {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^(.*?) that is also (?:an? )?(Lead|Follow Up)(?: or (?:an? )?(Lead|Follow Up))?$",
+        )
+        .unwrap()
+    });
+    let word = |s: &str| match s.to_ascii_lowercase().as_str() {
+        "lead" => PlayOrder::Lead,
+        _ => PlayOrder::Followup, // the regex only admits "Lead" | "Follow Up"
+    };
+    if let Some(c) = RE.captures(body.trim()) {
+        let mut orders = vec![word(&c[2])];
+        if let Some(m) = c.get(3) {
+            orders.push(word(m.as_str()));
+        }
+        return (c.get(1).unwrap().as_str(), orders);
+    }
+    (body, Vec::new())
+}
+
 /// Parse a "stop any …" target into `Stop` actions, or `None` if any part is not
 /// a plain `<type>` / `<order> <type>` (handles the "X or Y" two-target form). A
 /// trailing "(that / even if it) cannot be stopped" flags every Stop to bypass the
-/// attack's `Unstoppable`; a `with "X" in the name/text` qualifier sets `target`.
+/// attack's `Unstoppable`; a `with "X" in the name/text` qualifier sets `target`; a
+/// trailing "that is also a Lead[ or a Follow Up]" sets `also_order` (a multi-order attack).
 fn stop_targets(text: &str) -> Option<Vec<Action>> {
     static OR_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+or\s+").unwrap());
     let (body, even_unstoppable) = strip_stop_override(text.trim());
+    let (body, also_order) = strip_also_order(body);
     let mut stops = Vec::new();
     for part in OR_RE.split(body) {
         let (head, target) = strip_target_filter(part);
@@ -2829,6 +2857,7 @@ fn stop_targets(text: &str) -> Option<Vec<Action>> {
             source_is_skillreq: false,
             even_unstoppable,
             target,
+            also_order: also_order.clone(),
         });
     }
     if stops.is_empty() {
@@ -7407,6 +7436,7 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                             source_is_skillreq: false,
                             even_unstoppable: false,
                             target: Some(cf_name(names)),
+                            also_order: Vec::new(),
                         }],
                         Condition::Always,
                         Duration::Instant,

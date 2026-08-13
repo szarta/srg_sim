@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 145;
+pub const SCHEMA_VERSION: i64 = 146;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1732,6 +1732,13 @@ pub enum Action {
         /// `None` = no extra filter. schema v66
         #[serde(default)]
         target: Option<CardFilter>,
+        /// "Stop any Finish Strike that is also a Lead [or a Follow Up]" — the stopped
+        /// attack must ALSO count as one of these play orders via an `AlsoLead`
+        /// declaration whose condition currently holds (a multi-order card, e.g. a printed
+        /// Finish that is "also a Lead"). Empty = no such constraint. AND-ed with
+        /// `order`/`atk_type`/`target` in `stop_matches_for`. schema v146
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        also_order: Vec<PlayOrder>,
     },
     StopRequiresTag {
         tag: String,
@@ -3329,6 +3336,13 @@ pub enum IrNode {
         /// `None` = no extra filter. schema v66
         #[serde(default)]
         target: Option<CardFilter>,
+        /// "Stop any Finish Strike that is also a Lead [or a Follow Up]" — the stopped
+        /// attack must ALSO count as one of these play orders via an `AlsoLead`
+        /// declaration whose condition currently holds (a multi-order card, e.g. a printed
+        /// Finish that is "also a Lead"). Empty = no such constraint. AND-ed with
+        /// `order`/`atk_type`/`target` in `stop_matches_for`. schema v146
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        also_order: Vec<PlayOrder>,
     },
     StopRequiresTag {
         tag: String,

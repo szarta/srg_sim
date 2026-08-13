@@ -1289,6 +1289,36 @@ fn stop_target_logo_and_printed_grammar() {
     assert_eq!(a["target"]["tag"], "SkillRequirement");
 }
 
+/// Multi-order stop target (#120, schema v146): "Stop any Finish X that is also a Lead[ or
+/// [a] Follow Up]" -> `Stop{order: Finish, also_order: [...]}`. The trailing "or Follow Up"
+/// (with/without article) is the also-order list, NOT a second stop target.
+#[test]
+fn stop_also_order_grammar() {
+    fn stop(text: &str) -> Value {
+        let e = parse_text(text, EffectSource::Card, None, None);
+        serde_json::to_value(&e[0]).unwrap()["actions"][0].clone()
+    }
+
+    // Single also-order.
+    let a = stop("Stop any Finish Grapple that is also a Lead.");
+    assert_eq!(a["order"], "Finish");
+    assert_eq!(a["atk_type"], "Grapple");
+    assert_eq!(a["also_order"], serde_json::json!(["Lead"]));
+
+    // "or a Follow Up" (with article) -> two also-orders, ONE Stop (not split on the inner or).
+    let a = stop("Stop any Finish Strike that is also a Lead or a Follow Up.");
+    assert_eq!(a["atk_type"], "Strike");
+    assert_eq!(a["also_order"], serde_json::json!(["Lead", "Followup"]));
+
+    // "or Follow Up" (no article) parses the same.
+    let a = stop("Stop any Finish Submission that is also a Lead or Follow Up.");
+    assert_eq!(a["also_order"], serde_json::json!(["Lead", "Followup"]));
+
+    // A plain stop has NO also_order key (skip_serializing_if empty).
+    let a = stop("Stop any Finish Grapple.");
+    assert_eq!(a["also_order"], Value::Null);
+}
+
 /// FINISH-OFF-STOP (#120, schema v145): "[if the stopped card had no logo/req / if played
 /// as a Stop,] this card is also a Finish" -> an `OnStop{Theirs}` effect carrying the
 /// `FinishIfStop` marker (the engine runs a finish sequence off the successful stop), the

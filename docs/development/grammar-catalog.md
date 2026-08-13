@@ -4,7 +4,7 @@
 
 The parser's 303 grammar rules (regex → Effect builder), in **precedence order** —
 the FIRST matching rule wins (`match_grammar`). Check here whether a clause shape is
-already handled before modeling a new one. Examples are real clauses from `/tmp/claude-1000/-home-brandon-data-srg-sim/82ed5f82-161f-46c3-8c41-eb3db1044a5c/scratchpad/cards_fixed.yaml` that
+already handled before modeling a new one. Examples are real clauses from `/home/brandon/data/srg_card_search_website/backend/app/cards.yaml` that
 each rule is the first to match; `N×` is how many DB clauses it covers.
 
 Regenerate after adding/changing rules: `invoke grammar-catalog`. The rule inventory
@@ -353,7 +353,7 @@ _41 rules._
 
 - **#262** `^(?:Stop ("[^"]+"(?:(?:,\s*(?:or\s+)?|\s+or\s+)"[^"]+")*))$` — 23× · `Stop "Call to the Crowd".`, `Stop "Strength in Numbers".`, `Stop "Chugga-Chugga Chugga-Chugga Chugga-Chugga, Chug!".`, `Stop "Rolling Forearm".`
 - **#263** `^(?:Stop any (.+?) if it is not the first card played this turn)$` — 5× · `Stop any Grapple if it is not the first card played this turn.`, `Stop any Submission if it is not the first card played this turn.`, `Stop any Strike if it is not the first card played this turn.`
-- **#264** `^(?:Stop any (.+))$` — 262× · `Stop any Lead Submission.`, `Stop any Finish Strike that doesn't have a Competitor logo.`, `Stop any Lead Strike.`, `Stop any Follow Up Grapple.`
+- **#264** `^(?:Stop any (.+))$` — 266× · `Stop any Lead Submission.`, `Stop any Finish Strike that doesn't have a Competitor logo.`, `Stop any Lead Strike.`, `Stop any Follow Up Grapple.`
 - **#265** `^(?:If your (Power|Technique|Agility|Strike|Submission|Grapple)(?: skill)? is greater than your opponent'?s (Power|Technique|Agility|Strike|Submission|Grapple)(?: skill)?, stop any (.+))$` — 75× · `If your Submission skill is greater than your opponent's Submission skill, stop any Strike.`, `If your Submission skill is greater than your opponent's Submission skill, stop any Follow Up Strike or Finish Strike.`, `If your Strike skill is greater than your opponent's Strike skill, stop any Grapple.`, `If your Agility skill is greater than your opponent's Agility skill, stop any Grapple.`
 - **#266** `^(?:If your (Power|Technique|Agility|Strike|Submission|Grapple)(?: skill)? is at least (\d+) greater than your opponent'?s (Power|Technique|Agility|Strike|Submission|Grapple)(?: skill)?, stop any (.+))$` — 10× · `If your Strike skill is at least 2 greater than your opponent's Strike skill, stop any Grapple.`, `If your Agility skill is at least 2 greater than your opponent's Agility skill, stop any Grapple.`, `If your Agility skill is at least 3 greater than your opponent's Agility skill, stop any Grapple.`, `If your Power skill is at least 2 greater than your opponent's Power skill, stop any Submission.`
 - **#267** `^(?:If your opponent has another (Strike|Grapple|Submission) in play, stop any (.+))$` — 65× · `If your opponent has another Strike in play, stop any Strike.`, `If your opponent has another Submission in play, stop any Submission.`, `If your opponent has another Grapple in play, stop any Grapple.`, `If your opponent has another Grapple in play, stop any Grapple`

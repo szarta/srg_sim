@@ -4898,6 +4898,103 @@ mod not_first_card_stop_tests {
     }
 }
 
+/// Multi-order stop target (#120, schema v146): `Stop{order: Finish, also_order: [Lead]}`
+/// ("Stop any Finish X that is also a Lead") catches only a Finish attack that ALSO
+/// declares an `AlsoLead{Lead}` whose condition holds — a multi-order card.
+#[cfg(test)]
+mod stop_also_order_tests {
+    use super::*;
+    use serde_json::json;
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            l: &[serde_json::Value],
+            _: &mut GameState,
+        ) -> Option<serde_json::Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    fn engine() -> Engine {
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": {"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5},
+                    "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    /// A stopper: `Stop{Finish Grapple, also_order: [Lead]}`.
+    fn stopper() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "s", "name": "s", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "OnPlay"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": "Finish", "atk_type": "Grapple",
+                             "source_is_skillreq": false, "even_unstoppable": false,
+                             "target": null, "also_order": ["Lead"]}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stopper")
+    }
+
+    /// A Finish attack, optionally declaring `AlsoLead{Lead}`.
+    fn finish_attack(also_lead: bool) -> Card {
+        let effects = if also_lead {
+            json!([{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "AlsoLead", "condition": {"@type": "Always"}, "order": "Lead"}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "also a lead", "source": "card", "optional": false
+            }])
+        } else {
+            json!([])
+        };
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": effects
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn catches_only_a_finish_that_is_also_a_lead() {
+        let engine = engine();
+        assert!(
+            engine.card_can_stop("A", &stopper(), &finish_attack(true)),
+            "a Finish that is also a Lead is caught"
+        );
+        assert!(
+            !engine.card_can_stop("A", &stopper(), &finish_attack(false)),
+            "a Finish that is NOT also a Lead is not caught"
+        );
+    }
+}
+
 /// `StopRequiresTag { or_unstoppable }` (schema v137): the tag gate is OR-ed with the
 /// attack being unstoppable — 4115e53f, "Stop any Finish Submission that has a Spotlight
 /// OR that cannot be stopped." The paired `Stop { even_unstoppable }` pierces the

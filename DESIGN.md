@@ -346,7 +346,7 @@ SwitchRolledSkill(from_skill, to)  # "when you roll from_skill for your turn/Fin
                               # on `to`'s stat); a switched Finish die recomputes base+combo from `to`.
 WinTie(who)                   Bump(who)
 ElectBumpOnSameSkill(uses=2)  # Static roll-off grant: owner MAY bump on a same-skill roll, N times/match
-Stop(order?, atk_type?, source_is_skillreq?)   BlankGimmick(who, duration=WHILE_IN_PLAY)
+Stop(order?, atk_type?, source_is_skillreq?, even_unstoppable=False, target?, also_order=[])   # also_order (v146): the stopped attack must ALSO count as one of these orders via an AlsoLead whose condition holds — "Stop any Finish X that is also a Lead[ or a Follow Up]" (a multi-order attack). AND-ed in stop_matches_for.  BlankGimmick(who, duration=WHILE_IN_PLAY)
 StopRequiresTag(tag)          # marker paired with a sibling Stop in the same effect: the stop is legal only vs an attacker carrying `tag` — "Stop any Grapple with a Spotlight" (read by card_can_stop). schema v26
 Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)
 AlsoLead(condition, order=Lead)  # Static self-decl: also playable in `order`'s slot while `condition` holds
