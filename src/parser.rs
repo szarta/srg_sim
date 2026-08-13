@@ -1689,36 +1689,47 @@ fn choice_from_following(clauses: &[String]) -> Option<(Effect, usize)> {
     Some((effect, consumed))
 }
 
-/// "Each player flips N card(s) or [<gate>,] stop any <X>" — a VERSATILE card: play it
-/// as a Lead/Follow Up (each player flips) OR use it defensively as a Stop. The two
-/// capabilities never both fire — the flip is `OnHit` (attacking, when the card leads and
-/// hits), the Stop is a capability consulted only by the engine's `card_can_stop`
-/// (defending, when the card is played as a stop) — so they model as two independent
-/// effects, NOT a `Choice`. The stop-body reuses the existing stop grammar ("Stop any
-/// <X>", "If your <S> skill is greater …, stop any <X>", "If your opponent has another
-/// <X> in play, stop any <X>"), whose condition the engine already honors at stop time.
-/// Declines (falls to Unsupported) unless the "or" branch really parses to a `Stop`.
-fn each_flip_or_stop(clause: &str) -> Option<Vec<Effect>> {
-    static RE: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"(?i)^Each player flips (\d+) cards? or (.+)$").expect("flip-or-stop regex")
-    });
-    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
-    let n: i64 = c[1].parse().ok()?;
-    let stop_effect = match_grammar(&capitalize_first(c[2].trim()))?;
-    if !stop_effect
-        .actions
-        .iter()
-        .any(|a| matches!(a, Action::Stop { .. }))
-    {
-        return None; // the "or" branch is not a stop capability — not this shape
+/// A VERSATILE "<offensive> or <stop>" card: play it offensively (each player flips /
+/// shuffles / adds the bottom card / buries) OR use it defensively as a Stop. The two
+/// capabilities never both fire — the offensive branch is `OnHit` (attacking, when the
+/// card leads and hits), the Stop is a capability consulted only by the engine's
+/// `card_can_stop` (defending, when the card is played as a stop) — so they model as two
+/// independent effects, NOT a `Choice`. Both branches reuse the existing grammar: the
+/// stop-body ("Stop any <X>", "If your <S> skill is greater …, stop any <X>", the
+/// opponent-has-another gate …) whose condition the engine already honors at stop time,
+/// and the offensive body (each-player flip/shuffle/bottom-draw/bury).
+///
+/// Splits on " or " and requires the two sides to fully parse with EXACTLY ONE being a
+/// pure Stop capability and the other a non-stop effect — so both flip orderings
+/// ("<offensive> or stop …" and "stop … or <offensive>") work and false positives are
+/// unlikely. Emits the offensive effect first (as the old flip-first composer did).
+/// Declines (leaving the clause Unsupported) on any other shape. Reached only as a rescue
+/// after normal compilation fails, so it can never shadow a clause with real grammar.
+fn versatile_or_stop(clause: &str) -> Option<Vec<Effect>> {
+    let c = clause.trim().trim_end_matches('.').trim();
+    let lower = c.to_ascii_lowercase();
+    let mut from = 0;
+    while let Some(rel) = lower[from..].find(" or ") {
+        let idx = from + rel;
+        if let Some(pair) = versatile_split(&c[..idx], &c[idx + 4..]) {
+            return Some(pair);
+        }
+        from = idx + 4;
     }
-    let flip_effect = eff(
-        on_hit(),
-        vec![flip(n, Who::SelfSide), flip(n, Who::Opp)],
-        Condition::Always,
-        Duration::Instant,
-    );
-    Some(vec![flip_effect, stop_effect])
+    None
+}
+
+/// One candidate " or " split for [`versatile_or_stop`]: parse each side, require exactly
+/// one to be a pure Stop capability, return `[offensive, stop]`.
+fn versatile_split(left: &str, right: &str) -> Option<Vec<Effect>> {
+    let le = match_grammar(&capitalize_first(left.trim()))?;
+    let re = match_grammar(&capitalize_first(right.trim()))?;
+    let has_stop = |e: &Effect| e.actions.iter().any(|a| matches!(a, Action::Stop { .. }));
+    match (has_stop(&le), has_stop(&re)) {
+        (false, true) => Some(vec![le, re]),
+        (true, false) => Some(vec![re, le]),
+        _ => None, // neither or both are stops — not a versatile-or card
+    }
 }
 
 /// "The player with the fewest/most cards in hand draws/discards N" — the actor is
@@ -5775,6 +5786,54 @@ fn build_removal_hand_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // "Each player buries N card(s) in their discard pile" — the discard-pile twin of
+        // the each-player hand bury above. `bury` recycles from EACH player's own discard
+        // to their deck bottom (BuryFrom::Discard). A branch of the "Stop any X or each
+        // player buries N in their discard pile" versatile-or shape (#120).
+        rule(
+            r"[Ee]ach player buries (\d+) cards? in their discard pile",
+            |c| {
+                let n = num(c, 1);
+                Some(eff(
+                    on_hit(),
+                    vec![bury(n, Who::SelfSide), bury(n, Who::Opp)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "Each player shuffles their deck" — both players reshuffle their own deck (the
+        // per-player twin of the self-only "Shuffle your deck"). A branch of the "Each
+        // player shuffles their deck or stop any X" versatile-or shape (#120).
+        rule(r"[Ee]ach player shuffles their deck", |_| {
+            Some(eff(
+                on_hit(),
+                vec![
+                    Action::ShuffleDeck { who: Who::SelfSide },
+                    Action::ShuffleDeck { who: Who::Opp },
+                ],
+                Condition::Always,
+                Duration::Instant,
+            ))
+        }),
+        // "Each player adds the bottom card of their deck to their hand" — a 1-card
+        // bottom-draw for BOTH players (per-player twin of "Add the bottom card of your
+        // deck to your hand"). A branch of the "Each player adds the bottom card … or
+        // stop any X" versatile-or shape (#120).
+        rule(
+            r"[Ee]ach player adds the bottom card of their deck to their hand",
+            |_| {
+                Some(eff(
+                    on_hit(),
+                    vec![
+                        draw(1, Who::SelfSide, DeckEnd::Bottom, None, Who::SelfSide),
+                        draw(1, Who::Opp, DeckEnd::Bottom, None, Who::SelfSide),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Conditional prefix: "If you have another <play order/skill> in play, your
         // opponent buries N card(s) in their hand."
         rule(
@@ -8540,22 +8599,6 @@ pub fn parse_text(
             i += 1;
             continue;
         }
-        // "Each player flips N card(s) or [<gate>,] stop any <X>" — a versatile card:
-        // TWO effects (the each-player flip on hit + the gated Stop capability).
-        if let Some(effs) = each_flip_or_stop(clause) {
-            for mut e in effs {
-                e.raw_clause = clause.clone();
-                e.source = source;
-                e.frequency = FrequencyGuard {
-                    node_type: FrequencyGuardTag,
-                    kind: freq,
-                    n,
-                };
-                effects.push(scope(e, &window));
-            }
-            i += 1;
-            continue;
-        }
         // Under an active roll-phase window, re-parse the body clause with the OnRoll
         // trigger stamped on (and the multi-skill gate AND-ed onto its condition). Falls
         // through to the plain compile below when the body has no grammar, so an
@@ -8578,6 +8621,29 @@ pub fn parse_text(
             }
         }
         let mut compiled = compile(clause, source, freq, n);
+        // Rescue: a versatile "<offensive> or <stop>" card (each player flips/shuffles/
+        // buries OR use it as a Stop) — two independent effects. Tried only once normal
+        // grammar has failed, so it never shadows a clause with real grammar.
+        if compiled
+            .actions
+            .iter()
+            .any(|a| matches!(a, Action::Unsupported { .. }))
+        {
+            if let Some(effs) = versatile_or_stop(clause) {
+                for mut e in effs {
+                    e.raw_clause = clause.clone();
+                    e.source = source;
+                    e.frequency = FrequencyGuard {
+                        node_type: FrequencyGuardTag,
+                        kind: freq,
+                        n,
+                    };
+                    effects.push(scope(e, &window));
+                }
+                i += 1;
+                continue;
+            }
+        }
         if turn_roll_scope {
             compiled = scope_to_turn_roll(compiled);
         }

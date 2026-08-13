@@ -1107,6 +1107,53 @@ fn each_flip_or_stop_grammar() {
     assert_eq!(e[0]["actions"][0]["@type"], "Choice");
 }
 
+/// The generalized versatile-"<offensive> or <stop>" composer (#120): the offensive
+/// branch may be an each-player shuffle / bottom-draw / bury (not just a flip), and it may
+/// appear on EITHER side of the "or". Always TWO effects — the offensive OnHit and the
+/// Stop capability — emitted offensive-first, in either source order.
+#[test]
+fn versatile_or_stop_grammar() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+
+    // Offensive-first: "each player shuffles their deck" both-player -> two ShuffleDeck.
+    let e = effs("Each player shuffles their deck or stop any Follow Up Strike.");
+    assert_eq!(e.len(), 2);
+    assert_eq!(e[0]["trigger"]["@type"], "OnHit");
+    assert_eq!(e[0]["actions"][0]["@type"], "ShuffleDeck");
+    assert_eq!(e[0]["actions"][0]["who"], "SELF");
+    assert_eq!(e[0]["actions"][1]["who"], "OPP");
+    assert_eq!(e[1]["actions"][0]["@type"], "Stop");
+    assert_eq!(e[1]["actions"][0]["order"], "Followup");
+
+    // Bottom-draw offensive branch -> a 1-card bottom draw for both players.
+    let e =
+        effs("Each player adds the bottom card of their deck to their hand or stop any Grapple.");
+    assert_eq!(e[0]["actions"][0]["@type"], "Draw");
+    assert_eq!(e[0]["actions"][0]["source"], "BOTTOM");
+    assert_eq!(e[0]["actions"][1]["who"], "OPP");
+    assert_eq!(e[1]["actions"][0]["@type"], "Stop");
+
+    // Stop-FIRST ordering, discard-pile bury offensive branch -> still offensive-first out.
+    let e = effs("Stop any Lead Strike or each player buries 1 card in their discard pile.");
+    assert_eq!(e.len(), 2);
+    assert_eq!(e[0]["actions"][0]["@type"], "Bury");
+    assert_eq!(e[0]["actions"][0]["source"], "DISCARD");
+    assert_eq!(e[0]["actions"][1]["who"], "OPP");
+    assert_eq!(e[1]["actions"][0]["@type"], "Stop");
+    assert_eq!(e[1]["actions"][0]["order"], "Lead");
+
+    // Standalone "Each player shuffles their deck." (no "or") -> the plain both-player rule.
+    let e = effs("Each player shuffles their deck.");
+    assert_eq!(e.len(), 1);
+    assert_eq!(e[0]["actions"][0]["@type"], "ShuffleDeck");
+    assert_eq!(e[0]["actions"][1]["who"], "OPP");
+}
+
 /// Flip-until grammar (task #119): "Flip cards until you flip a <X>[, add it to
 /// your hand]" reuses `Flip` with the `until` filter + `until_to_hand`.
 #[test]
