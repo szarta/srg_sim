@@ -2384,6 +2384,26 @@ fn trent_riders_grammar() {
     assert_eq!(e["actions"][0]["@type"], "PutFromHandOnDeckTop");
     assert_eq!(e["actions"][0]["count"], 2);
 
+    // Cost tail: "<pay from hand> to put this card on top" -> optional [cost,
+    // PutSelfOnDeckTop] on the gate's trigger. "you may" -> optional (Can't Get Rid of Me!).
+    let e =
+        one("If stopped, you may bury 5 cards in your hand to put this card on top of your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["optional"], true);
+    assert_eq!(e["actions"][0]["@type"], "Bury");
+    assert_eq!(e["actions"][1]["@type"], "PutSelfOnDeckTop");
+
+    // The same cost tail as a WHILE_IN_DISCARD roll body (discard cost).
+    let e = one("When this card is in your discard pile and you roll Submission for your turn roll, you may discard 3 cards from your hand to put this card on top of your deck.");
+    assert_eq!(e["trigger"]["@type"], "OnRoll");
+    assert_eq!(e["duration"], "WHILE_IN_DISCARD");
+    assert_eq!(e["actions"][0]["@type"], "Discard");
+    assert_eq!(e["actions"][1]["@type"], "PutSelfOnDeckTop");
+
+    // A non-cost "… to your hand" tail must NOT be mistaken for the cost form.
+    let e = one("Add 1 card from your discard pile to your hand.");
+    assert_eq!(e["actions"][0]["@type"], "AddFromDiscard");
+
     // #29 Dudebuster: shuffle any number from HAND, draw the same number.
     let e = one("Shuffle any number of cards from your hand into your deck, then draw the same number of cards.");
     assert_eq!(e["actions"][0]["@type"], "ShuffleIntoDeck");

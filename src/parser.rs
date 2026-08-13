@@ -5178,6 +5178,28 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // "<cost> to put (this card|it) on top of your deck" -> a COST-gated self-recycle:
+        // [<cost>, PutSelfOnDeckTop] folded on one trigger. The "you may" (always present)
+        // is stripped upstream by trigger_body/gate_body and sets Effect::optional, so the
+        // player controls whether to pay. The cost is re-parsed through the grammar and must
+        // be a plain on-hit action (bury/discard N from hand) so the two fold — "bury 5
+        // cards in your hand to …" (If stopped) / "discard 3 cards from your hand to …"
+        // (WHILE_IN_DISCARD roll). NOTE the "to" is a cost modeled as a bundled optional
+        // compound: a short hand pays LESS than the stated cost, an over-generosity the
+        // "you may" keeps in the player's hands. schema v142
+        rule(r"(.+?) to put (?:this card|it) on top of your deck", |c| {
+            let cost = match_grammar(&capitalize_first(c[1].trim()))?;
+            let plain = cost.trigger == on_hit()
+                && !cost.optional
+                && cost.condition == Condition::Always
+                && cost.duration == Duration::Instant;
+            if !plain {
+                return None;
+            }
+            let mut actions = cost.actions;
+            actions.push(Action::PutSelfOnDeckTop);
+            Some(eff(on_hit(), actions, Condition::Always, Duration::Instant))
+        }),
         // "you may play it[ as an additional card this turn]" -> PlaySelf (the play is
         // itself the bonus action, so "as an additional card" folds in).
         rule(
