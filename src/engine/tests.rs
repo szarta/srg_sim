@@ -1304,6 +1304,71 @@ mod end_turn_tests {
     }
 }
 
+/// BlankHitCard (#120, schema v148): blanks the card that triggered the current OnHit (the
+/// `hit_card` referent) until end of turn — Jax's "that card has blank text".
+#[cfg(test)]
+mod blank_hit_card_tests {
+    use super::*;
+    use serde_json::json;
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            l: &[serde_json::Value],
+            _: &mut GameState,
+        ) -> Option<serde_json::Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    fn engine() -> Engine {
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": {"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5},
+                    "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn blanks_the_current_hit_card_by_identity() {
+        let mut engine = engine();
+        let hit: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "animal-card", "name": "Cat Scratch", "number": 1,
+            "play_order": "Lead", "raw_text": "Draw 2", "tags": [], "finish_bonuses": {}, "effects": []
+        }))
+        .unwrap();
+        // No hit context -> no-op.
+        engine.act_blank_hit_card("B");
+        assert!(engine.state.blanked_text.is_empty());
+        // With the referent set, the hit card is blanked by identity.
+        engine.hit_card = Some("animal-card".to_owned());
+        engine.act_blank_hit_card("B");
+        assert!(engine.state.blanked_text.contains("animal-card"));
+        assert!(
+            engine.state.is_text_blanked(&hit, "A"),
+            "the just-hit card reads as text-blanked"
+        );
+    }
+}
+
 #[cfg(test)]
 mod on_shuffle_tests {
     use super::*;

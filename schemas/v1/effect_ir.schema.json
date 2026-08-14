@@ -477,6 +477,18 @@
       ],
       "type": "object"
     },
+    "BlankHitCard": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "BlankHitCard"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "FinishIfStop": {
       "additionalProperties": false,
       "properties": {
@@ -1251,6 +1263,9 @@
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/BlankHitCard"
               },
               {
                 "$ref": "#/$defs/FinishIfStop"
@@ -2196,6 +2211,9 @@
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/BlankHitCard"
               },
               {
                 "$ref": "#/$defs/FinishIfStop"
@@ -3358,6 +3376,9 @@
         },
         {
           "$ref": "#/$defs/BlankStoppedText"
+        },
+        {
+          "$ref": "#/$defs/BlankHitCard"
         },
         {
           "$ref": "#/$defs/FinishIfStop"
@@ -5182,6 +5203,9 @@
                 "$ref": "#/$defs/BlankStoppedText"
               },
               {
+                "$ref": "#/$defs/BlankHitCard"
+              },
+              {
                 "$ref": "#/$defs/FinishIfStop"
               },
               {
@@ -5808,6 +5832,9 @@
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
+              },
+              {
+                "$ref": "#/$defs/BlankHitCard"
               },
               {
                 "$ref": "#/$defs/FinishIfStop"
@@ -6944,5 +6971,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 147
+  "version": 148
 }

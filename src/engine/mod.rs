@@ -1502,6 +1502,7 @@ impl Engine {
             | Action::ScaleEntranceNumbers { .. } => {}
             Action::EndTurn => self.act_end_turn(),
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
+            Action::BlankHitCard => self.act_blank_hit_card(key),
             Action::BlankTextPermanent { selector, who } => {
                 let target = self.target(*who, key);
                 self.act_blank_text_permanent(selector, target);
@@ -4136,6 +4137,17 @@ impl Engine {
         };
         self.state.blanked_text.insert(uuid.clone());
         self.log_effect(key, "BlankStoppedText", None, json!({"card": uuid}));
+    }
+
+    /// Blank the card that just triggered this OnHit (the `hit_card` referent) by identity,
+    /// until end of turn — the hit twin of [`Self::act_blank_stopped_text`] (Jax's "that
+    /// card has blank text"). A no-op outside a hit context.
+    fn act_blank_hit_card(&mut self, key: &str) {
+        let Some(uuid) = self.hit_card.clone() else {
+            return;
+        };
+        self.state.blanked_text.insert(uuid.clone());
+        self.log_effect(key, "BlankHitCard", None, json!({"card": uuid}));
     }
 
     /// Stamp a rest-of-match ("poison") text blank: every card `target` owns matching
@@ -7720,6 +7732,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::Unblank { .. } => "Unblank",
         Action::CopyText { .. } => "CopyText",
         Action::BlankStoppedText => "BlankStoppedText",
+        Action::BlankHitCard => "BlankHitCard",
         Action::FinishIfStop => "FinishIfStop",
         Action::EndTurn => "EndTurn",
         Action::BuryThisCard => "BuryThisCard",

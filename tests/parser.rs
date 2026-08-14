@@ -4069,6 +4069,35 @@ fn pod_fidelity_grammar() {
     let e = a1("Your opponent's skill cards have blank text.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 
+    // "When hit: Your opponent's cards with <names> in the name have blank text" (Ultra
+    // Dracula, #120): a STATEFUL blank -> OnHit{Opp, on_any} + BlankTextPermanent{OPP}.
+    let e = a1("When hit: Your opponent's cards with \"Bat\", \"Chain\", or \"Wire\" in the name have blank text.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(e["trigger"]["on_any"], true);
+    assert_eq!(e["actions"][0]["@type"], "BlankTextPermanent");
+    assert_eq!(e["actions"][0]["who"], "OPP");
+    assert_eq!(
+        e["actions"][0]["selector"]["name_contains"],
+        serde_json::json!(["Bat", "Chain", "Wire"])
+    );
+
+    // "When your opponent hits a card with <names> in the name, that card has blank text and
+    // their next turn roll is -1" (Jax, #120) -> OnHit{Opp, name_contains} + [BlankHitCard,
+    // ModifyRoll{Opp, NEXT}].
+    let e = a1("When your opponent hits a card with \"Cat\" or \"Dog\" in the name, that card has blank text and their next turn roll is -1.");
+    assert_eq!(e["trigger"]["@type"], "OnHit");
+    assert_eq!(e["trigger"]["who"], "OPP");
+    assert_eq!(
+        e["trigger"]["name_contains"],
+        serde_json::json!(["Cat", "Dog"])
+    );
+    assert_eq!(e["actions"][0]["@type"], "BlankHitCard");
+    assert_eq!(e["actions"][1]["@type"], "ModifyRoll");
+    assert_eq!(e["actions"][1]["who"], "OPP");
+    assert_eq!(e["actions"][1]["when"], "NEXT");
+    assert_eq!(e["actions"][1]["delta"], -1);
+
     // Discard-pile blank: opponent's pile -> BlankText{discard_only, OPP, any selector}.
     let a = a1("Cards in your opponent's discard pile have blank text.")["actions"][0].clone();
     assert_eq!(a["@type"], "BlankText");

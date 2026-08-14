@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 147;
+pub const SCHEMA_VERSION: i64 = 148;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1821,6 +1821,13 @@ pub enum Action {
     /// (which is the entire point of the family — several members read "stop any card
     /// with 'If Stopped' in the text: that card has blank text …"). schema v36
     BlankStoppedText,
+    /// "… that card has blank text" — blank the card that JUST triggered this `OnHit`
+    /// (the hit referent `GameState.hit_card`), by identity, until end of turn. The hit
+    /// twin of [`Action::BlankStoppedText`]. Jax, Pet of the Year: "when your opponent hits
+    /// a card with \"…\" in the name, that card has blank text and their next turn roll is
+    /// -1". Authored on an `OnHit{who:Opp, name_contains}` gimmick effect (a blanked gimmick
+    /// never reaches here). schema v148
+    BlankHitCard,
     /// "If played as a Stop, this card is also a Finish" — the FINISH-OFF-STOP marker.
     /// A stop card carrying this runs a full finish sequence (finish roll → opponent
     /// breakout roll → win/resume) off a SUCCESSFUL stop, with the stopper as the
@@ -3431,6 +3438,13 @@ pub enum IrNode {
     /// (which is the entire point of the family — several members read "stop any card
     /// with 'If Stopped' in the text: that card has blank text …"). schema v36
     BlankStoppedText,
+    /// "… that card has blank text" — blank the card that JUST triggered this `OnHit`
+    /// (the hit referent `GameState.hit_card`), by identity, until end of turn. The hit
+    /// twin of [`Action::BlankStoppedText`]. Jax, Pet of the Year: "when your opponent hits
+    /// a card with \"…\" in the name, that card has blank text and their next turn roll is
+    /// -1". Authored on an `OnHit{who:Opp, name_contains}` gimmick effect (a blanked gimmick
+    /// never reaches here). schema v148
+    BlankHitCard,
     /// "If played as a Stop, this card is also a Finish" — the FINISH-OFF-STOP marker.
     /// A stop card carrying this runs a full finish sequence (finish roll → opponent
     /// breakout roll → win/resume) off a SUCCESSFUL stop, with the stopper as the

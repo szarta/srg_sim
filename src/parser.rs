@@ -4096,6 +4096,69 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // "When hit: Your opponent's cards with <name-list> in the name have blank text"
+        // (Ultra Dracula) — a STATEFUL blank: only once this competitor is hit does the
+        // opponent's themed set go blank. OnHit{who:Opp, on_any} fires whenever the opponent
+        // lands ANY card (= "when hit") and stamps a rest-of-match BlankTextPermanent on the
+        // opponent's named cards. A blanked gimmick is excluded from the OnHit scan, so it
+        // stops stamping when hit.
+        rule(
+            r#"When hit:\s+Your opponent'?s cards with ("[^"]+"(?:,? (?:and |or )?"[^"]+")*) in the name have blank text"#,
+            |c| {
+                let names = quoted_names(&c[1]);
+                if names.is_empty() {
+                    return None;
+                }
+                Some(eff(
+                    Trigger::OnHit {
+                        order: None,
+                        atk_type: None,
+                        name_contains: Vec::new(),
+                        text_contains: Vec::new(),
+                        on_any: true,
+                        who: Who::Opp,
+                        from_hand: false,
+                    },
+                    vec![Action::BlankTextPermanent {
+                        selector: cf_name(names),
+                        who: Who::Opp,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // "When your opponent hits a card with <name-list> in the name, that card has blank
+        // text and their next turn roll is <±N>" (Jax, Pet of the Year) — OnHit{who:Opp,
+        // name_contains} fires when the opponent hits a themed card; blank THAT card
+        // (BlankHitCard, the hit referent) and debuff the opponent's next turn roll.
+        rule(
+            r#"When your opponent hits a card with ("[^"]+"(?:,? (?:and |or )?"[^"]+")*) in the name, that card has blank text and their next turn roll is ([+-]\d+)"#,
+            |c| {
+                let names = quoted_names(&c[1]);
+                if names.is_empty() {
+                    return None;
+                }
+                let delta: i64 = c[2].parse().ok()?;
+                Some(eff(
+                    Trigger::OnHit {
+                        order: None,
+                        atk_type: None,
+                        name_contains: names,
+                        text_contains: Vec::new(),
+                        on_any: false,
+                        who: Who::Opp,
+                        from_hand: false,
+                    },
+                    vec![
+                        Action::BlankHitCard,
+                        modify_roll(Who::Opp, delta, RollWhen::Next, None, Who::SelfSide),
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Impact is Family (V1) once-per-match rider: when the opponent STALLED (ended
         // their turn without playing) AND buried a Spotlight, arm +1 to your next turn
         // roll. Modeled as an OnTurnStart effect (fires before the roll-off, so the armed
