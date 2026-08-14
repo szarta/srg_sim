@@ -1348,23 +1348,38 @@ mod blank_hit_card_tests {
     }
 
     #[test]
-    fn blanks_the_current_hit_card_by_identity() {
+    fn blanks_the_current_hit_card_while_in_play() {
         let mut engine = engine();
         let hit: Card = serde_json::from_value(json!({
             "atk_type": "Strike", "db_uuid": "animal-card", "name": "Cat Scratch", "number": 1,
             "play_order": "Lead", "raw_text": "Draw 2", "tags": [], "finish_bonuses": {}, "effects": []
         }))
         .unwrap();
+        // The hit card is on A's board (it was just hit into play).
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(hit.clone());
         // No hit context -> no-op.
         engine.act_blank_hit_card("B");
-        assert!(engine.state.blanked_text.is_empty());
-        // With the referent set, the hit card is blanked by identity.
+        assert!(engine.state.blanked_in_play.is_empty());
+        // With the referent set, the hit card is blanked while it is in play.
         engine.hit_card = Some("animal-card".to_owned());
         engine.act_blank_hit_card("B");
-        assert!(engine.state.blanked_text.contains("animal-card"));
+        assert!(engine.state.blanked_in_play.contains("animal-card"));
         assert!(
             engine.state.is_text_blanked(&hit, "A"),
-            "the just-hit card reads as text-blanked"
+            "the just-hit card reads as text-blanked while in play"
+        );
+        // Once it leaves play, the blank self-expires (the in-play guard), even though the
+        // set entry may linger.
+        engine.state.players.get_mut("A").unwrap().in_play.clear();
+        assert!(
+            !engine.state.is_text_blanked(&hit, "A"),
+            "the blank ends when the card leaves play"
         );
     }
 }

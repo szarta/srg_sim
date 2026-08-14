@@ -327,6 +327,15 @@ pub struct GameState {
     /// blank would never end. Consulted by [`GameState::is_text_blanked`].
     #[serde(default)]
     pub blanked_text: std::collections::BTreeSet<String>,
+    /// `db_uuid`s blanked WHILE IN PLAY by a [`Action::BlankHitCard`] ("… that card has
+    /// blank text", Jax): a card blanked the moment it is HIT (comes into play) that stays
+    /// blank as long as it remains in play, ending when it leaves play. Card-identity
+    /// scoped; [`GameState::is_text_blanked`] honours an entry only while a card of that
+    /// `db_uuid` is actually in the owner's play area (so it self-expires on any leave-play
+    /// path), and the breakout board-clear drops the discarded uuids. Distinct from
+    /// `blanked_text` (turn-scoped) and `permanent_blanks` (selector, rest-of-match).
+    #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
+    pub blanked_in_play: std::collections::BTreeSet<String>,
     /// REST-OF-MATCH ("poison") text blanks — a selector-scoped blank that persists for
     /// the whole match, surviving the source card leaving play (a board-clearing
     /// breakout, discard, etc.) and catching matching cards that enter play LATER.
@@ -440,6 +449,7 @@ impl GameState {
             last_roll_winner: None,
             last_turn_bumped: false,
             blanked_text: Default::default(),
+            blanked_in_play: Default::default(),
             permanent_blanks: Vec::new(),
             play_seq: 0,
             blank_guard: RefCell::new(HashSet::new()),
@@ -747,6 +757,17 @@ impl GameState {
         }
         // A card blanked by a stop this turn stays blanked regardless of zone.
         if self.blanked_text.contains(&card.db_uuid) {
+            return true;
+        }
+        // A card blanked WHILE IN PLAY when it was hit (BlankHitCard) — honoured only while
+        // a copy of that card is actually in the owner's play area, so the blank self-expires
+        // the moment it leaves play (breakout, discard, …), without per-site cleanup.
+        if self.blanked_in_play.contains(&card.db_uuid)
+            && self.players[owner]
+                .in_play
+                .iter()
+                .any(|c| c.db_uuid == card.db_uuid)
+        {
             return true;
         }
         // A rest-of-match ("poison") blank: persists after its source card left play,

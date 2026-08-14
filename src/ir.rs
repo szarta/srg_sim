@@ -1822,11 +1822,12 @@ pub enum Action {
     /// with 'If Stopped' in the text: that card has blank text …"). schema v36
     BlankStoppedText,
     /// "… that card has blank text" — blank the card that JUST triggered this `OnHit`
-    /// (the hit referent `GameState.hit_card`), by identity, until end of turn. The hit
-    /// twin of [`Action::BlankStoppedText`]. Jax, Pet of the Year: "when your opponent hits
-    /// a card with \"…\" in the name, that card has blank text and their next turn roll is
-    /// -1". Authored on an `OnHit{who:Opp, name_contains}` gimmick effect (a blanked gimmick
-    /// never reaches here). schema v148
+    /// (the hit referent `GameState.hit_card`), by identity, for as long as it stays IN
+    /// PLAY (the card was just hit, so it is now on the board; the blank self-expires when
+    /// it leaves play). Jax, Pet of the Year: "when your opponent hits a card with \"…\" in
+    /// the name, that card has blank text and their next turn roll is -1". Authored on an
+    /// `OnHit{who:Opp, name_contains}` gimmick effect (a blanked gimmick never reaches
+    /// here). Stamps `GameState.blanked_in_play`. schema v148
     BlankHitCard,
     /// "If played as a Stop, this card is also a Finish" — the FINISH-OFF-STOP marker.
     /// A stop card carrying this runs a full finish sequence (finish roll → opponent
@@ -3439,11 +3440,12 @@ pub enum IrNode {
     /// with 'If Stopped' in the text: that card has blank text …"). schema v36
     BlankStoppedText,
     /// "… that card has blank text" — blank the card that JUST triggered this `OnHit`
-    /// (the hit referent `GameState.hit_card`), by identity, until end of turn. The hit
-    /// twin of [`Action::BlankStoppedText`]. Jax, Pet of the Year: "when your opponent hits
-    /// a card with \"…\" in the name, that card has blank text and their next turn roll is
-    /// -1". Authored on an `OnHit{who:Opp, name_contains}` gimmick effect (a blanked gimmick
-    /// never reaches here). schema v148
+    /// (the hit referent `GameState.hit_card`), by identity, for as long as it stays IN
+    /// PLAY (the card was just hit, so it is now on the board; the blank self-expires when
+    /// it leaves play). Jax, Pet of the Year: "when your opponent hits a card with \"…\" in
+    /// the name, that card has blank text and their next turn roll is -1". Authored on an
+    /// `OnHit{who:Opp, name_contains}` gimmick effect (a blanked gimmick never reaches
+    /// here). Stamps `GameState.blanked_in_play`. schema v148
     BlankHitCard,
     /// "If played as a Stop, this card is also a Finish" — the FINISH-OFF-STOP marker.
     /// A stop card carrying this runs a full finish sequence (finish roll → opponent

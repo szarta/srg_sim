@@ -367,8 +367,9 @@ BlankStoppedText             # "the stopped card has blank text until the end of
                              # GameState.blanked_text (a selector scan cannot: the blanking stop card stays in play, so it would never end);
                              # cleared by the end-of-turn sweep. Resolved BEFORE the stopped card's own OnStop, so it suppresses that card's
                              # "If Stopped" text — the point of the family ("stop any X WITH 'If Stopped' in the text: …"). schema v36
-BlankHitCard                 # "… that card has blank text" — the HIT twin of BlankStoppedText: blanks GameState.hit_card (the card that just
-                             # triggered this OnHit) by identity, until end of turn. Jax, Pet of the Year ("when your opponent hits a <named>
+BlankHitCard                 # "… that card has blank text" — blanks GameState.hit_card (the card that just triggered this OnHit) by identity,
+                             # for as long as it stays IN PLAY (stamps blanked_in_play; is_text_blanked honours it only while a copy is in the
+                             # owner's play area, so it self-expires on leave-play). Jax, Pet of the Year ("when your opponent hits a <named>
                              # card, that card has blank text and their next turn roll is -1"), on an OnHit{who:Opp, name_contains} gimmick. schema v148
 FinishIfStop                 # FINISH-OFF-STOP: "if played as a Stop, this card is also a Finish". A passive marker read in apply_stop
                              # (maybe_finish_off_stop): when this stop lands SUCCESSFULLY it runs a full finish sequence off the stop — the

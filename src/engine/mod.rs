@@ -1032,8 +1032,14 @@ impl Engine {
             return;
         }
         let cards: Vec<Card> = std::mem::take(&mut player.in_play);
-        let uuids = cards.iter().map(|c| c.db_uuid.clone()).collect();
+        let uuids: Vec<String> = cards.iter().map(|c| c.db_uuid.clone()).collect();
         player.discard.extend(cards);
+        // These cards left play, so drop any WHILE-IN-PLAY blank on them (BlankHitCard) —
+        // hygiene against a later replay re-reading a stale entry (the in-play guard in
+        // `is_text_blanked` already keeps them un-blanked while out of play).
+        for u in &uuids {
+            self.state.blanked_in_play.remove(u);
+        }
         let t = self.state.turn_no;
         self.log(Event::Discard(CardMovement {
             t,
@@ -4140,13 +4146,15 @@ impl Engine {
     }
 
     /// Blank the card that just triggered this OnHit (the `hit_card` referent) by identity,
-    /// until end of turn — the hit twin of [`Self::act_blank_stopped_text`] (Jax's "that
-    /// card has blank text"). A no-op outside a hit context.
+    /// for as long as it stays IN PLAY — Jax's "that card has blank text" (the card was
+    /// just hit, so it is now on the board). `is_text_blanked` honours the entry only while
+    /// the card is in play, so it self-expires when the card leaves. A no-op outside a hit
+    /// context.
     fn act_blank_hit_card(&mut self, key: &str) {
         let Some(uuid) = self.hit_card.clone() else {
             return;
         };
-        self.state.blanked_text.insert(uuid.clone());
+        self.state.blanked_in_play.insert(uuid.clone());
         self.log_effect(key, "BlankHitCard", None, json!({"card": uuid}));
     }
 
