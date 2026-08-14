@@ -4044,6 +4044,31 @@ fn pod_fidelity_grammar() {
     assert_eq!(e["actions"].as_array().unwrap().len(), 1);
     assert_eq!(e["actions"][0]["who"], "SELF");
 
+    // Opponent-scoped continuous blank (#120): "(Their|Your opponent's) <desc> have blank
+    // text" -> BlankText{OPP, <selector>}. Name-substring OR-list.
+    let a = a1("Their cards with \"Chop\", \"Kick\", or \"Strike\" in the name have blank text.")
+        ["actions"][0]
+        .clone();
+    assert_eq!(a["@type"], "BlankText");
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(
+        a["selector"]["name_contains"],
+        serde_json::json!(["Chop", "Kick", "Strike"])
+    );
+    // Play-order / tag / any descriptors.
+    let a = a1("Your opponent's Finishes have blank text.")["actions"][0].clone();
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(a["selector"]["play_order"], "Finish");
+    let a = a1("Your opponent's Skill Requirement cards have blank text.")["actions"][0].clone();
+    assert_eq!(a["selector"]["tag"], "SkillRequirement");
+    let a = a1("Your opponent's cards in play have blank text.")["actions"][0].clone();
+    assert_eq!(a["who"], "OPP");
+    assert_eq!(a["selector"]["name_contains"], serde_json::json!([]));
+    assert_eq!(a["selector"]["play_order"], Value::Null);
+    // An unrecognized descriptor declines (stays Unsupported), not silently blanked.
+    let e = a1("Your opponent's skill cards have blank text.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+
     // Discard-pile blank: opponent's pile -> BlankText{discard_only, OPP, any selector}.
     let a = a1("Cards in your opponent's discard pile have blank text.")["actions"][0].clone();
     assert_eq!(a["@type"], "BlankText");

@@ -205,6 +205,31 @@ fn blank_text(selector: CardFilter, who: Who) -> Action {
     }
 }
 
+/// Selector for a "(Their|Your opponent's) `<desc>` have blank text" clause — the
+/// opponent-scoped continuous blank family. Covers a name-substring OR-list ("cards with
+/// \"X\"[ or \"Y\"] in the name"), a play order ("Finishes"), the SkillRequirement tag
+/// ("Skill Requirement cards"), and the unscoped "cards in play"/"cards" (any). Returns
+/// `None` (the rule then declines → stays Unsupported) for anything else, so a "without …"
+/// negation or an ambiguous "skill cards" is never silently mis-blanked.
+fn opp_blank_selector(desc: &str) -> Option<CardFilter> {
+    static NAMES: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r#"(?i)^cards with ("[^"]+"(?:,? (?:and |or )?"[^"]+")*) in the name$"#).unwrap()
+    });
+    let d = desc.trim();
+    if let Some(c) = NAMES.captures(d) {
+        let names = quoted_names(&c[1]);
+        if !names.is_empty() {
+            return Some(cf_name(names));
+        }
+    }
+    match d.to_ascii_lowercase().as_str() {
+        "finishes" | "finish cards" => Some(cf_order(PlayOrder::Finish)),
+        "skill requirement cards" => Some(cf_tag(crate::cards::SKILL_REQUIREMENT_TAG)),
+        "cards in play" | "cards" => Some(CardFilter::default()),
+        _ => None,
+    }
+}
+
 /// Blank every card in `who`'s discard pile — "cards in your opponent's discard pile
 /// have blank text" (neutralises their WhileInDiscard abilities).
 fn blank_discard(who: Who) -> Action {
@@ -4058,6 +4083,19 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Opponent-scoped continuous blank: "(Their|Your opponent's) <desc> have blank
+        // text" -> BlankText{OPP, <selector>}. `opp_blank_selector` maps <desc> (a
+        // name-substring OR-list, a play order, the SkillRequirement tag, or "cards in
+        // play") and DECLINES anything else (incl. "without …" negations), so an unmodeled
+        // descriptor stays Unsupported. Placed after the Spotlight rule (which wins first).
+        rule(r"(?:Their|Your opponent'?s) (.+?) have blank text", |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![blank_text(opp_blank_selector(&c[1])?, Who::Opp)],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
         // Impact is Family (V1) once-per-match rider: when the opponent STALLED (ended
         // their turn without playing) AND buried a Spotlight, arm +1 to your next turn
         // roll. Modeled as an OnTurnStart effect (fires before the roll-off, so the armed
