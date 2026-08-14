@@ -2838,25 +2838,53 @@ fn strip_also_order(body: &str) -> (&str, Vec<PlayOrder>) {
     (body, Vec::new())
 }
 
+/// Peel a trailing `with <name-list> in the (name|text)` qualifier — an OR/AND-list of TWO
+/// OR MORE quoted names ("with \"Flying\" or \"Splash\" in the name") — off a stop-target
+/// body at the BODY level, so the list's inner " or " is not mistaken for a second stop
+/// target. Returns the bare head and a `name_contains`/`text_contains` filter. A SINGLE
+/// quoted name declines here (returns `None`) so the per-part `strip_target_filter` keeps
+/// handling it unchanged.
+fn strip_target_names(body: &str) -> (&str, Option<CardFilter>) {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r#"(?i)^(.*?) with ("[^"]+"(?:(?:,\s*(?:or\s+)?|\s+or\s+)"[^"]+")+) in the (name|text)$"#,
+        )
+        .unwrap()
+    });
+    if let Some(c) = RE.captures(body.trim()) {
+        let names = quoted_names(&c[2]);
+        if names.len() >= 2 {
+            return (
+                c.get(1).unwrap().as_str(),
+                Some(name_or_text_filter(&c[3], names)),
+            );
+        }
+    }
+    (body, None)
+}
+
 /// Parse a "stop any …" target into `Stop` actions, or `None` if any part is not
 /// a plain `<type>` / `<order> <type>` (handles the "X or Y" two-target form). A
 /// trailing "(that / even if it) cannot be stopped" flags every Stop to bypass the
-/// attack's `Unstoppable`; a `with "X" in the name/text` qualifier sets `target`; a
-/// trailing "that is also a Lead[ or a Follow Up]" sets `also_order` (a multi-order attack).
+/// attack's `Unstoppable`; a `with "X"[ or "Y"] in the name/text` qualifier sets `target`;
+/// a trailing "that is also a Lead[ or a Follow Up]" sets `also_order` (a multi-order attack).
 fn stop_targets(text: &str) -> Option<Vec<Action>> {
     static OR_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+or\s+").unwrap());
     let (body, even_unstoppable) = strip_stop_override(text.trim());
     let (body, also_order) = strip_also_order(body);
+    // A multi-name qualifier is peeled at body level (its inner " or " must not split into a
+    // second target); it applies to every type-part below. A single name stays per-part.
+    let (body, list_target) = strip_target_names(body);
     let mut stops = Vec::new();
     for part in OR_RE.split(body) {
-        let (head, target) = strip_target_filter(part);
+        let (head, part_target) = strip_target_filter(part);
         let m = STOP_PART_RE.captures(norm_stop_part(head))?;
         stops.push(Action::Stop {
             order: m.get(1).map(|g| order(g.as_str())),
             atk_type: Some(atk(&m[2])),
             source_is_skillreq: false,
             even_unstoppable,
-            target,
+            target: list_target.clone().or(part_target),
             also_order: also_order.clone(),
         });
     }

@@ -1287,6 +1287,24 @@ fn stop_target_logo_and_printed_grammar() {
     assert_eq!(a["target"]["tag"], "SkillRequirement");
     let a = stop("Stop any Submission with a Skill Requireement.");
     assert_eq!(a["target"]["tag"], "SkillRequirement");
+
+    // Name OR-list (#120): "with \"X\" or \"Y\" in the name" -> one Stop whose target
+    // name_contains is the list (card_matches ORs it). The inner " or " must NOT split into
+    // a second stop target — it is peeled at the body level.
+    let e = parse_text(
+        "Stop any Strike with \"Flying\" or \"Splash\" in the name.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(e.len(), 1);
+    let a = serde_json::to_value(&e[0]).unwrap()["actions"].clone();
+    assert_eq!(a.as_array().unwrap().len(), 1, "one Stop, not two");
+    assert_eq!(a[0]["atk_type"], "Strike");
+    assert_eq!(
+        a[0]["target"]["name_contains"],
+        serde_json::json!(["Flying", "Splash"])
+    );
 }
 
 /// Multi-order stop target (#120, schema v146): "Stop any Finish X that is also a Lead[ or
