@@ -1344,6 +1344,29 @@ fn stop_then_blank_stopped_grammar() {
     assert_eq!(e[1]["actions"][0]["@type"], "BlankStoppedText");
 }
 
+/// Stop-then-end-turn (#120, schema v147): "Stop any <target> and end the current turn" ->
+/// the Stop capability (OnPlay) + an `EndTurn` on `OnStop{Theirs}`.
+#[test]
+fn stop_then_end_turn_grammar() {
+    let e = parse_text(
+        "Stop any Grapple with \"Double Team\" in the text and end the current turn.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let e: Vec<Value> = e.iter().map(|x| serde_json::to_value(x).unwrap()).collect();
+    assert_eq!(e.len(), 2);
+    assert_eq!(e[0]["actions"][0]["@type"], "Stop");
+    assert_eq!(e[0]["actions"][0]["atk_type"], "Grapple");
+    assert_eq!(
+        e[0]["actions"][0]["target"]["text_contains"],
+        serde_json::json!(["Double Team"])
+    );
+    assert_eq!(e[1]["trigger"]["@type"], "OnStop");
+    assert_eq!(e[1]["trigger"]["dir"], "THEIRS");
+    assert_eq!(e[1]["actions"][0]["@type"], "EndTurn");
+}
+
 /// Multi-order stop target (#120, schema v146): "Stop any Finish X that is also a Lead[ or
 /// [a] Follow Up]" -> `Stop{order: Finish, also_order: [...]}`. The trailing "or Follow Up"
 /// (with/without article) is the also-order list, NOT a second stop target.

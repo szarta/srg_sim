@@ -1500,6 +1500,7 @@ impl Engine {
             // (`try_bump_replacement`), never executed here — a no-op, not Unsupported.
             | Action::BumpReplacement { .. }
             | Action::ScaleEntranceNumbers { .. } => {}
+            Action::EndTurn => self.act_end_turn(),
             Action::BlankStoppedText => self.act_blank_stopped_text(key),
             Action::BlankTextPermanent { selector, who } => {
                 let target = self.target(*who, key);
@@ -4458,6 +4459,26 @@ impl Engine {
         );
     }
 
+    /// "End the current turn" — flag the ACTIVE player's turn as over so the turn loop's
+    /// extra-play loop stops (cancelling any remaining `PlayExtraCard` grants). Keyed on the
+    /// active player, not the effect owner: a defender's stop ("stop any Double Team … and
+    /// end the current turn") ends the ATTACKER's turn. Cleared at each turn start.
+    fn act_end_turn(&mut self) {
+        let active = self.state.active.clone();
+        if let Some(p) = self.state.players.get_mut(&active) {
+            p.flags.insert("turn_ended".to_owned(), json!(true));
+        }
+    }
+
+    /// Whether `key`'s turn has been force-ended this turn (`Action::EndTurn`).
+    fn turn_ended(&self, key: &str) -> bool {
+        self.state.players[key]
+            .flags
+            .get("turn_ended")
+            .and_then(Value::as_bool)
+            == Some(true)
+    }
+
     /// Grant one more turn action this turn ("you may play an additional card");
     /// consumed by the turn loop, reset each turn.
     fn act_play_extra_card(&mut self, key: &str) {
@@ -4479,6 +4500,7 @@ impl Engine {
         self.clear_turn_freq();
         for player in self.state.players.values_mut() {
             player.flags.remove("extra_plays"); // "additional card this turn" is per-turn
+            player.flags.remove("turn_ended"); // "end the current turn" (EndTurn) is per-turn
             player.hits_this_turn = 0; // reset the per-turn hit count (HitThisTurn)
             player.drew_this_turn = 0; // reset the per-turn draw count (DrewThisTurn)
             player.breakout_bonus_eot = 0; // "+N breakout until end of turn" expires
@@ -4517,7 +4539,7 @@ impl Engine {
             return Ok(());
         }
         self.take_turn_action(&winner)?; // play ONE card (or pass+bury)
-        while !self.ended() && self.consume_extra_play(&winner) {
+        while !self.ended() && !self.turn_ended(&winner) && self.consume_extra_play(&winner) {
             self.take_turn_action(&winner)?; // a PlayExtraCard granted another action
         }
         Ok(())
@@ -7699,6 +7721,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::CopyText { .. } => "CopyText",
         Action::BlankStoppedText => "BlankStoppedText",
         Action::FinishIfStop => "FinishIfStop",
+        Action::EndTurn => "EndTurn",
         Action::BuryThisCard => "BuryThisCard",
         Action::AddSelfToHand => "AddSelfToHand",
         Action::ShuffleSelfIntoDeck => "ShuffleSelfIntoDeck",

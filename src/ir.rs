@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 146;
+pub const SCHEMA_VERSION: i64 = 147;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1831,6 +1831,12 @@ pub enum Action {
     /// competitor logo or skill requirement". A sibling `CrowdMeter` action in the same
     /// effect handles the "the Crowd Meter is +N and …" variants. schema v145
     FinishIfStop,
+    /// "… and end the current turn" — end the ACTIVE player's turn immediately (Boot Off
+    /// the Apron / Capture Headlock / Take You for a Ride, on stopping a "Double Team"
+    /// card). Executed: sets the active player's `turn_ended` flag, which the turn loop's
+    /// extra-play loop honours (cancelling any remaining `PlayExtraCard` grants). Authored
+    /// on an `OnStop{Theirs}` effect so it fires when this card stops. schema v147
+    EndTurn,
     /// "Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
     /// `options` for the rest of the match, stored as `PlayerState.chosen_name`.
     /// Authored under `StartOfMatch`; the binding is then read by
@@ -3435,6 +3441,12 @@ pub enum IrNode {
     /// competitor logo or skill requirement". A sibling `CrowdMeter` action in the same
     /// effect handles the "the Crowd Meter is +N and …" variants. schema v145
     FinishIfStop,
+    /// "… and end the current turn" — end the ACTIVE player's turn immediately (Boot Off
+    /// the Apron / Capture Headlock / Take You for a Ride, on stopping a "Double Team"
+    /// card). Executed: sets the active player's `turn_ended` flag, which the turn loop's
+    /// extra-play loop honours (cancelling any remaining `PlayExtraCard` grants). Authored
+    /// on an `OnStop{Theirs}` effect so it fires when this card stops. schema v147
+    EndTurn,
     /// "Choose 1: "Kendo Stick", "Steel Chair", or "Trash Can"" (Raven) — bind ONE of
     /// `options` for the rest of the match, stored as `PlayerState.chosen_name`.
     /// Authored under `StartOfMatch`; the binding is then read by

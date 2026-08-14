@@ -1224,6 +1224,86 @@ mod finish_off_stop_tests {
     }
 }
 
+/// EndTurn (#120, schema v147): a stop carrying `EndTurn` on `OnStop{Theirs}` flags the
+/// ACTIVE player's turn as over (cancelling their remaining extra-play grants).
+#[cfg(test)]
+mod end_turn_tests {
+    use super::*;
+    use serde_json::json;
+
+    struct NoDecider;
+    impl Decider for NoDecider {
+        fn decide(
+            &mut self,
+            _: &str,
+            _: &str,
+            l: &[serde_json::Value],
+            _: &mut GameState,
+        ) -> Option<serde_json::Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _: &str) -> String {
+            "none".to_owned()
+        }
+    }
+
+    fn engine() -> Engine {
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": {"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5},
+                    "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(NoDecider),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn end_turn_stop() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "s", "name": "s", "number": 1,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "OnStop", "dir": "THEIRS", "order": null},
+                "condition": {"@type": "Always"},
+                "actions": [{"@type": "EndTurn"}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "end the current turn", "source": "card", "optional": false
+            }]
+        }))
+        .expect("stop")
+    }
+
+    #[test]
+    fn stopping_flags_the_active_players_turn_over() {
+        let mut engine = engine();
+        engine.state.active = "A".to_owned(); // A is the turn's active player (attacker)
+        let attack: Card = serde_json::from_value(json!({
+            "atk_type": "Grapple", "db_uuid": "atk", "name": "atk", "number": 2,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []
+        }))
+        .unwrap();
+        assert!(!engine.turn_ended("A"));
+        engine
+            .apply_stop("A", "B", attack, end_turn_stop(), vec![])
+            .unwrap();
+        assert!(engine.turn_ended("A"), "the active player's turn is ended");
+        assert!(
+            !engine.turn_ended("B"),
+            "the stopper's turn flag is untouched"
+        );
+    }
+}
+
 #[cfg(test)]
 mod on_shuffle_tests {
     use super::*;

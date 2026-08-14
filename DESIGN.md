@@ -373,6 +373,9 @@ FinishIfStop                 # FINISH-OFF-STOP: "if played as a Stop, this card 
                              # on an OnStop{Theirs} effect whose CONDITION carries the gate (Always for "if played as a Stop";
                              # StoppedCardNoLogoNoReq for "if the stopped card had no logo/skill requirement"), so a sibling CrowdMeter action
                              # ("the Crowd Meter is +N and …") is gated with it. Distinct from AlsoLead "also a Finish" (playability). schema v145
+EndTurn                      # "… and end the current turn" (Boot Off the Apron / Capture Headlock / Take You for a Ride, on stopping a "Double
+                             # Team" card). Executed: flags the ACTIVE player's turn_ended, which the turn loop's extra-play loop honours —
+                             # cancelling any remaining PlayExtraCard grants (a stop already ends the turn otherwise). Authored on OnStop{Theirs}. schema v147
 ChooseName(options)          # "Choose 1: <name>, <name>, or <name>" (Raven): bind one option for the match into PlayerState.chosen_name,
                              # authored under StartOfMatch. Read by the ChosenNameIs condition (§3), which resolves "that" name by gating one
                              # concrete effect per option, so exactly one is live. schema v37

@@ -489,6 +489,18 @@
       ],
       "type": "object"
     },
+    "EndTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "EndTurn"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "BlankText": {
       "additionalProperties": false,
       "properties": {
@@ -1242,6 +1254,9 @@
               },
               {
                 "$ref": "#/$defs/FinishIfStop"
+              },
+              {
+                "$ref": "#/$defs/EndTurn"
               },
               {
                 "$ref": "#/$defs/BuryThisCard"
@@ -2184,6 +2199,9 @@
               },
               {
                 "$ref": "#/$defs/FinishIfStop"
+              },
+              {
+                "$ref": "#/$defs/EndTurn"
               },
               {
                 "$ref": "#/$defs/BuryThisCard"
@@ -3343,6 +3361,9 @@
         },
         {
           "$ref": "#/$defs/FinishIfStop"
+        },
+        {
+          "$ref": "#/$defs/EndTurn"
         },
         {
           "$ref": "#/$defs/BuryThisCard"
@@ -5164,6 +5185,9 @@
                 "$ref": "#/$defs/FinishIfStop"
               },
               {
+                "$ref": "#/$defs/EndTurn"
+              },
+              {
                 "$ref": "#/$defs/BuryThisCard"
               },
               {
@@ -5787,6 +5811,9 @@
               },
               {
                 "$ref": "#/$defs/FinishIfStop"
+              },
+              {
+                "$ref": "#/$defs/EndTurn"
               },
               {
                 "$ref": "#/$defs/BuryThisCard"
@@ -6917,5 +6944,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 146
+  "version": 147
 }

@@ -1771,6 +1771,26 @@ fn stop_then_blank_stopped(clause: &str) -> Option<Vec<Effect>> {
     ])
 }
 
+/// "Stop any `<target>` and end the current turn" — a Stop capability (OnPlay) plus an
+/// `EndTurn` on `OnStop{Theirs}` (fires when this card stops), which cancels the stopped
+/// player's remaining `PlayExtraCard` grants. Boot Off the Apron / Capture Headlock / Take
+/// You for a Ride, stopping a "Double Team" card.
+fn stop_then_end_turn(clause: &str) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^Stop any (.+?) and end the current turn$").unwrap());
+    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    let stops = stop_targets(&c[1])?;
+    Some(vec![
+        eff(Trigger::OnPlay, stops, Condition::Always, Duration::Instant),
+        eff(
+            on_their_stop(),
+            vec![Action::EndTurn],
+            Condition::Always,
+            Duration::Instant,
+        ),
+    ])
+}
+
 /// One candidate " or " split for [`versatile_or_stop`]: parse each side, require exactly
 /// one to be a pure Stop capability, return `[offensive, stop]`.
 fn versatile_split(left: &str, right: &str) -> Option<Vec<Effect>> {
@@ -8891,6 +8911,22 @@ pub fn parse_text(
             // "Stop any <target>: that card has blank text until the end of the turn" — the
             // Jurassic "If Stopped" family: a Stop capability + a BlankStoppedText OnStop.
             if let Some(effs) = stop_then_blank_stopped(clause) {
+                for mut e in effs {
+                    e.raw_clause = clause.clone();
+                    e.source = source;
+                    e.frequency = FrequencyGuard {
+                        node_type: FrequencyGuardTag,
+                        kind: freq,
+                        n,
+                    };
+                    effects.push(scope(e, &window));
+                }
+                i += 1;
+                continue;
+            }
+            // "Stop any <target> and end the current turn" — a Stop capability + an EndTurn
+            // OnStop (cancels the stopped player's remaining extra-play grants).
+            if let Some(effs) = stop_then_end_turn(clause) {
                 for mut e in effs {
                     e.raw_clause = clause.clone();
                     e.source = source;
