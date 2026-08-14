@@ -1307,6 +1307,43 @@ fn stop_target_logo_and_printed_grammar() {
     );
 }
 
+/// Stop-then-blank-stopped (#120): "Stop any <target>: that card has blank text until the
+/// end of the turn" (the Jurassic "If Stopped" family) -> TWO effects: the Stop capability
+/// (OnPlay) + a `BlankStoppedText` on `OnStop{Theirs}`, matching the override shape.
+#[test]
+fn stop_then_blank_stopped_grammar() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+
+    let e = effs(
+        "Stop any Grapple with \"If Stopped\" in the text: That card has blank text until the end of the turn.",
+    );
+    assert_eq!(e.len(), 2);
+    // Effect 1: the stop capability, targeting cards with "If Stopped" in the text.
+    assert_eq!(e[0]["trigger"]["@type"], "OnPlay");
+    assert_eq!(e[0]["actions"][0]["@type"], "Stop");
+    assert_eq!(e[0]["actions"][0]["atk_type"], "Grapple");
+    assert_eq!(
+        e[0]["actions"][0]["target"]["text_contains"],
+        serde_json::json!(["If Stopped"])
+    );
+    // Effect 2: BlankStoppedText fires when this card stops (Direction::Theirs).
+    assert_eq!(e[1]["trigger"]["@type"], "OnStop");
+    assert_eq!(e[1]["trigger"]["dir"], "THEIRS");
+    assert_eq!(e[1]["actions"][0]["@type"], "BlankStoppedText");
+
+    // Lowercase "that" (DB casing varies) parses the same.
+    let e = effs(
+        "Stop any Strike with \"If Stopped\" in the text: that card has blank text until the end of the turn.",
+    );
+    assert_eq!(e.len(), 2);
+    assert_eq!(e[1]["actions"][0]["@type"], "BlankStoppedText");
+}
+
 /// Multi-order stop target (#120, schema v146): "Stop any Finish X that is also a Lead[ or
 /// [a] Follow Up]" -> `Stop{order: Finish, also_order: [...]}`. The trailing "or Follow Up"
 /// (with/without article) is the also-order list, NOT a second stop target.

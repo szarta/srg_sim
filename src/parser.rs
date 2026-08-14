@@ -1748,6 +1748,29 @@ fn stop_first_card_compound(clause: &str) -> Option<Vec<Effect>> {
     Some(vec![unstoppable, gated])
 }
 
+/// "Stop any `<target>`: that card has blank text until the end of the turn" — the Jurassic
+/// "If Stopped" family (the stop's `<target>` is usually "… with \"If Stopped\" in the
+/// text"). TWO effects: the Stop capability (OnPlay, read by `card_can_stop`) plus a
+/// `BlankStoppedText` on `OnStop{Theirs}` — the same shape the overrides use. The blank
+/// resolves BEFORE the stopped card's own `OnStop`, suppressing its "If Stopped" text.
+fn stop_then_blank_stopped(clause: &str) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^Stop any (.+?): that card has blank text until the end of the turn$")
+            .unwrap()
+    });
+    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    let stops = stop_targets(&c[1])?;
+    Some(vec![
+        eff(Trigger::OnPlay, stops, Condition::Always, Duration::Instant),
+        eff(
+            on_their_stop(),
+            vec![Action::BlankStoppedText],
+            Condition::Always,
+            Duration::Instant,
+        ),
+    ])
+}
+
 /// One candidate " or " split for [`versatile_or_stop`]: parse each side, require exactly
 /// one to be a pure Stop capability, return `[offensive, stop]`.
 fn versatile_split(left: &str, right: &str) -> Option<Vec<Effect>> {
@@ -8852,6 +8875,22 @@ pub fn parse_text(
             // "Stop any <A> that cannot be stopped or any <B> that is not the first card
             // played this turn" — two differently-gated stop effects (see the fn).
             if let Some(effs) = stop_first_card_compound(clause) {
+                for mut e in effs {
+                    e.raw_clause = clause.clone();
+                    e.source = source;
+                    e.frequency = FrequencyGuard {
+                        node_type: FrequencyGuardTag,
+                        kind: freq,
+                        n,
+                    };
+                    effects.push(scope(e, &window));
+                }
+                i += 1;
+                continue;
+            }
+            // "Stop any <target>: that card has blank text until the end of the turn" — the
+            // Jurassic "If Stopped" family: a Stop capability + a BlankStoppedText OnStop.
+            if let Some(effs) = stop_then_blank_stopped(clause) {
                 for mut e in effs {
                     e.raw_clause = clause.clone();
                     e.source = source;
