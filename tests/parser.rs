@@ -4021,6 +4021,29 @@ fn pod_fidelity_grammar() {
     let sel = &e["actions"][0]["selector"]["name_contains"];
     assert_eq!(*sel, serde_json::json!(["Rejected", "Derailed"]));
 
+    // Plural "have" (two names) -> still both boards (#120).
+    let e = a1("\"Making Waves\" and \"Unreal Teamwork\" have blank text.");
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 2);
+    assert_eq!(
+        acts[0]["selector"]["name_contains"],
+        serde_json::json!(["Making Waves", "Unreal Teamwork"])
+    );
+
+    // "Your <names> have/has blank text" -> OWNER's board only (SELF), one action (#120).
+    let e = a1("Your \"Backslide\" and \"School Boy\" have blank text.");
+    let acts = e["actions"].as_array().unwrap();
+    assert_eq!(acts.len(), 1, "owner-scoped: SELF only");
+    assert_eq!(acts[0]["@type"], "BlankText");
+    assert_eq!(acts[0]["who"], "SELF");
+    assert_eq!(
+        acts[0]["selector"]["name_contains"],
+        serde_json::json!(["Backslide", "School Boy"])
+    );
+    let e = a1("Your \"Double Death Drop\" has blank text.");
+    assert_eq!(e["actions"].as_array().unwrap().len(), 1);
+    assert_eq!(e["actions"][0]["who"], "SELF");
+
     // Discard-pile blank: opponent's pile -> BlankText{discard_only, OPP, any selector}.
     let a = a1("Cards in your opponent's discard pile have blank text.")["actions"][0].clone();
     assert_eq!(a["@type"], "BlankText");

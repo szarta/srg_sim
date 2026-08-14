@@ -4111,14 +4111,33 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
-        // Named-card blank ("\"Apocalypse\" has blank text", "\"X\" or \"Y\" has blank
-        // text"): the named card(s) are blank whoever holds them. The clause names no
-        // owner (these target opponent counters — Apocalypse / Rejected / Derailed — but
-        // say only "X has blank text"), so blank the name on BOTH boards: BlankText{SELF}
-        // + BlankText{OPP} with the same name-substring OR-list selector (mirrors the
-        // two-action "each player" pattern; Who has no Both variant).
+        // Owner-scoped named-card blank ("Your \"Backslide\" and \"School Boy\" have blank
+        // text"): the OWNER's cards of those names are blank -> BlankText{SELF} only. Placed
+        // before the ownerless rule below (which would else blank both boards). "has"/"have"
+        // both appear (singular/plural by the name count).
         rule(
-            r#"("[^"]+"(?:,? (?:and |or )?"[^"]+")*) has blank text"#,
+            r#"Your ("[^"]+"(?:,? (?:and |or )?"[^"]+")*) (?:has|have) blank text"#,
+            |c| {
+                let names = quoted_names(&c[1]);
+                if names.is_empty() {
+                    return None;
+                }
+                Some(eff(
+                    Trigger::Static,
+                    vec![blank_text(cf_name(names), Who::SelfSide)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Named-card blank ("\"Apocalypse\" has blank text", "\"X\" or \"Y\" have blank
+        // text"): the named card(s) are blank whoever holds them. The clause names no
+        // owner (these target opponent counters — Apocalypse / Rejected / Derailed, or an
+        // opponent's tag-team cards — but say only "X has/have blank text"), so blank the
+        // name on BOTH boards: BlankText{SELF} + BlankText{OPP} with the same name-substring
+        // OR-list selector (mirrors the two-action "each player" pattern; Who has no Both).
+        rule(
+            r#"("[^"]+"(?:,? (?:and |or )?"[^"]+")*) (?:has|have) blank text"#,
             |c| {
                 let names = quoted_names(&c[1]);
                 if names.is_empty() {
