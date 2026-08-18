@@ -654,7 +654,16 @@ impl Engine {
     /// may see project to `None` and add no frame.
     fn capture(&mut self, event: &Event) {
         let seq = self.frames.len() as i64;
-        if let Some(frame) = crate::record::frame_for(seq, event, &self.state, &self.card_names) {
+        // The current turn roll's final values per seat, so a `turn_result` frame can
+        // carry the winning/losing totals (`roll_ctx` is set just before the event fires).
+        let rolls: BTreeMap<String, i64> = self
+            .roll_ctx
+            .iter()
+            .filter_map(|(k, c)| c.value.map(|v| (k.clone(), v)))
+            .collect();
+        if let Some(frame) =
+            crate::record::frame_for(seq, event, &self.state, &self.card_names, &rolls)
+        {
             self.frames.push(frame);
         }
     }

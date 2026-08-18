@@ -138,7 +138,19 @@ pub enum Action {
     /// itself is public; the bury it recycles (if any) arrives as its own action.
     Pass { player: String },
     /// The roll-off resolved: `winner` takes the turn (after `tie_bumps` bumps).
-    TurnResult { winner: String, tie_bumps: i64 },
+    /// `value` is the winner's final (post-modifier) roll total and `opponent_value`
+    /// the loser's, so a viewer can show the winning roll — "A wins the roll-off
+    /// 18–14" — without correlating back to the two `Roll` frames (which, with
+    /// re-rolls/bumps, may be several). Both default to 0 on a hand-authored archive
+    /// that omits them.
+    TurnResult {
+        winner: String,
+        tie_bumps: i64,
+        #[serde(default)]
+        value: i64,
+        #[serde(default)]
+        opponent_value: i64,
+    },
     /// Cards drawn — deck→hand is private on both ends, so this is a count only.
     Draw { player: String, count: i64 },
     /// Cards sent to a discard pile (public unless the move was hidden end-to-end).
@@ -370,15 +382,28 @@ pub fn opening_frame(state: &GameState) -> Frame {
 
 /// Project one game-log event into a frame over `state` (the state as of that
 /// event), or `None` for an event no observer may see (`decision`, `unsupported`).
-pub fn frame_for(seq: i64, event: &Event, state: &GameState, names: &CardNames) -> Option<Frame> {
-    let ctx = Ctx { state, names };
+pub fn frame_for(
+    seq: i64,
+    event: &Event,
+    state: &GameState,
+    names: &CardNames,
+    rolls: &BTreeMap<String, i64>,
+) -> Option<Frame> {
+    let ctx = Ctx {
+        state,
+        names,
+        rolls,
+    };
     project(event, &ctx).map(|action| build_frame(seq, action, state))
 }
 
-/// What the projection needs: the live state (zones, counts) and the card index.
+/// What the projection needs: the live state (zones, counts), the card index, and the
+/// current turn roll's final values per player (`rolls`, keyed by seat) so a
+/// `turn_result` frame can carry the winning/losing totals.
 struct Ctx<'a> {
     state: &'a GameState,
     names: &'a CardNames,
+    rolls: &'a BTreeMap<String, i64>,
 }
 
 fn build_frame(seq: i64, action: Action, state: &GameState) -> Frame {
@@ -553,10 +578,22 @@ fn project_match(event: &Event, ctx: &Ctx) -> Option<Action> {
         }),
         Event::TurnResult {
             winner, tie_bumps, ..
-        } => Some(Action::TurnResult {
-            winner: winner.clone(),
-            tie_bumps: *tie_bumps,
-        }),
+        } => {
+            // The winner's final roll total, and the loser's (the other seat's entry).
+            let value = ctx.rolls.get(winner).copied().unwrap_or(0);
+            let opponent_value = ctx
+                .rolls
+                .iter()
+                .find(|(seat, _)| *seat != winner)
+                .map(|(_, v)| *v)
+                .unwrap_or(0);
+            Some(Action::TurnResult {
+                winner: winner.clone(),
+                tie_bumps: *tie_bumps,
+                value,
+                opponent_value,
+            })
+        }
         Event::FinishAttempt {
             player,
             finish,

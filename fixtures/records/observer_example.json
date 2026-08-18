@@ -123,7 +123,9 @@
       "action": {
         "type": "turn_result",
         "winner": "A",
-        "tie_bumps": 0
+        "tie_bumps": 0,
+        "value": 10,
+        "opponent_value": 7
       },
       "players": {
         "A": {
@@ -640,7 +642,9 @@
       "action": {
         "type": "turn_result",
         "winner": "B",
-        "tie_bumps": 0
+        "tie_bumps": 0,
+        "value": 9,
+        "opponent_value": 6
       },
       "players": {
         "A": {

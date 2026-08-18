@@ -95,7 +95,7 @@ redacted: `decision` (its `legal` list enumerates the deciding player's hand) an
 | `play` | `player, card, order, atk_type` | `order`: Lead \| Followup \| Finish \| None |
 | `stop` | `player, card, stopped, reason?` | `player` is the seat playing the stop |
 | `pass` | `player` | the active seat passed; the card it recycles arrives as a separate `bury` |
-| `turn_result` | `winner, tie_bumps` | the roll-off |
+| `turn_result` | `winner, tie_bumps, value?, opponent_value?` | the roll-off; `value` = the winner's final roll total (the winning roll), `opponent_value` = the loser's. Both optional (default 0 on a hand-authored archive that omits them) |
 | `draw` | `player, count` | deck→hand is private both ends: **count only** |
 | `discard` \| `bury` \| `search` | `player, count, cards[]?, from?` | `cards` present only when the move was publicly visible |
 | `finish_attempt` | `player, finish, value, crowd_meter, auto_success` | |

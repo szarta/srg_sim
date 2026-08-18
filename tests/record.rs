@@ -137,6 +137,45 @@ fn frames_never_leak_hidden_zones() {
     assert!(drew > 0, "a match always has draws to redact");
 }
 
+/// A `turn_result` frame carries the winning and losing roll totals directly, so a
+/// viewer can show the roll-off without correlating back to the `roll` frames. On an
+/// un-bumped turn those totals equal the two seats' most recent `roll` values.
+#[test]
+fn turn_result_carries_the_winning_and_losing_roll() {
+    let record = record(7);
+    let mut last: BTreeMap<String, i64> = BTreeMap::new();
+    let mut checked = 0;
+    for frame in &record.frames {
+        match &frame.action {
+            Action::Roll { player, value, .. } => {
+                last.insert(player.clone(), *value);
+            }
+            Action::TurnResult {
+                winner,
+                tie_bumps,
+                value,
+                opponent_value,
+            } => {
+                if *tie_bumps == 0 && last.len() == 2 {
+                    let loser = last.keys().find(|k| *k != winner).cloned().unwrap();
+                    assert_eq!(*value, last[winner], "value is the winner's roll total");
+                    assert_eq!(
+                        *opponent_value, last[&loser],
+                        "opponent_value is the loser's roll total"
+                    );
+                    checked += 1;
+                }
+                last.clear();
+            }
+            _ => {}
+        }
+    }
+    assert!(
+        checked > 0,
+        "seed 7 must have an un-bumped roll-off to check"
+    );
+}
+
 /// A passed turn is the one decision an observer *can* see, so it gets a frame —
 /// carrying the seat and nothing else (the deciding player's hand is what the
 /// underlying `decision` event's `legal` list would have leaked).

@@ -190,7 +190,9 @@
           "properties": {
             "type": { "const": "turn_result" },
             "winner": { "$ref": "#/$defs/Seat" },
-            "tie_bumps": { "type": "integer", "minimum": 0, "description": "How many bumps the roll-off needed." }
+            "tie_bumps": { "type": "integer", "minimum": 0, "description": "How many bumps the roll-off needed." },
+            "value": { "type": "integer", "description": "The winner's final (post-modifier) turn-roll total — the winning roll. Optional; 0 if a hand-authored archive omits it." },
+            "opponent_value": { "type": "integer", "description": "The loser's final turn-roll total, so a viewer can show the roll-off as a pair. Optional; 0 if omitted." }
           }
         },
         {
