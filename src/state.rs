@@ -100,6 +100,12 @@ pub struct PendingRollDraw {
     pub skill: Skill,
     pub count: i64,
     pub watch: Who,
+    /// When set, a non-matching turn roll does NOT consume the entry — it waits until
+    /// the watched side rolls `skill` ("the next time you roll that skill", Catch These
+    /// Hands via [`Action::RollDrawChosen`]). The default one-shot ([`Action::RollDraw`])
+    /// is a single-turn window that fizzles on a miss. schema-neutral (runtime state).
+    #[serde(default)]
+    pub persist: bool,
 }
 
 /// One live timed skill buff on a player (DESIGN.md §3, `Duration::UntilEndOfTurn` /
@@ -199,6 +205,11 @@ pub struct PlayerState {
     /// [`Condition::ChosenNameIs`]. `None` until the choice is made.
     #[serde(default)]
     pub chosen_name: Option<String>,
+    /// The skill bound by [`Action::ChooseSkill`] ("Choose a skill: …" — Catch These
+    /// Hands), fixed for the rest of the match and read by [`Action::BuffSkill`]'s
+    /// `target_chosen` and [`Action::RollDrawChosen`]. `None` until the choice is made.
+    #[serde(default)]
+    pub chosen_skill: Option<crate::ir::Skill>,
     /// Queued one-shot "added text" for this player's next matching card. See
     /// [`PendingText`]; survives the source card leaving play.
     #[serde(default)]
@@ -1062,6 +1073,7 @@ impl GameState {
                     who,
                     target_highest,
                     target_lowest,
+                    target_chosen,
                     per_crowd,
                     cap,
                     per,
@@ -1079,11 +1091,13 @@ impl GameState {
                             *skill,
                             *target_highest,
                             *target_lowest,
+                            *target_chosen,
                             *per_crowd,
                             *cap,
                             *delta,
                             per.as_ref(),
                             *per_zone,
+                            owner,
                             target,
                             exclude,
                         );
@@ -1099,19 +1113,30 @@ impl GameState {
     /// (ties broken by canonical skill order), `per_crowd` uses the Crowd Meter
     /// as the delta, clamped to `cap` when set.
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     fn resolve_buff(
         &self,
         skill: Skill,
         target_highest: bool,
         target_lowest: bool,
+        target_chosen: bool,
         per_crowd: bool,
         cap: Option<i64>,
         delta: i64,
         per: Option<&CardFilter>,
         per_zone: CountZone,
+        owner: &str,
         target: &str,
         exclude: Option<&Card>,
     ) -> (Skill, i64) {
+        // `target_chosen` retargets to the skill the OWNER bound via ChooseSkill; until a
+        // choice is made the buff is inert (delta 0 on a placeholder skill).
+        if target_chosen {
+            return match self.players[owner].chosen_skill {
+                Some(sk) => (sk, delta),
+                None => (skill, 0),
+            };
+        }
         let sk = if target_highest || target_lowest {
             let base = self.players[target].competitor.stats;
             let mut best = Skill::ALL[0];

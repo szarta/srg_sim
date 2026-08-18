@@ -1074,6 +1074,7 @@ fn buff(skill: Skill, delta: i64, who: Who) -> Action {
         duration: Duration::WhileInPlay,
         target_highest: false,
         target_lowest: false,
+        target_chosen: false,
         per_crowd: false,
         cap: None,
         per: None,
@@ -1109,6 +1110,7 @@ fn buff_extreme(highest: bool, delta: i64, who: Who) -> Action {
         duration: Duration::WhileInPlay,
         target_highest: highest,
         target_lowest: !highest,
+        target_chosen: false,
         per_crowd: false,
         cap: None,
         per: None,
@@ -1135,6 +1137,7 @@ fn buff_per(
         duration: Duration::WhileInPlay,
         target_highest: false,
         target_lowest: false,
+        target_chosen: false,
         per_crowd: false,
         cap,
         per,
@@ -1194,6 +1197,7 @@ fn crowd_meter_buff(skills_text: &str, cap: Option<regex::Match>) -> Option<Effe
             duration: Duration::WhileInPlay,
             target_highest: false,
             target_lowest: false,
+            target_chosen: false,
             per_crowd: true,
             cap,
             per: None,
@@ -1812,6 +1816,51 @@ fn stop_then_end_turn(clause: &str) -> Option<Vec<Effect>> {
             vec![Action::EndTurn],
             Condition::Always,
             Duration::Instant,
+        ),
+    ])
+}
+
+/// "Choose a skill: your opponent's skill of that type is -N" (Catch These Hands family):
+/// TWO effects — an OnHit [`Action::ChooseSkill`] that binds the referenced skill, plus a
+/// Static `BuffSkill{target_chosen, who: Opp}` that reads that binding live in derived
+/// stats. Split because the choice is executed once while the debuff is a standing fold.
+/// Tolerant of the DB's authoring drift: apostrophe count (`opponent'*s`), `Skill`/`skill`
+/// casing, the `sklil` typo, and a `your`/`their`/absent possessor — the whole family maps
+/// without editing the living DB.
+fn choose_skill_opp_debuff(clause: &str) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^Choose a skill: (?:your |their )?opponent'*s (?:skill|sklil) of that type is -(\d+)$",
+        )
+        .unwrap()
+    });
+    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    let delta: i64 = c[1].parse().ok()?;
+    Some(vec![
+        eff(
+            on_hit(),
+            vec![Action::ChooseSkill],
+            Condition::Always,
+            Duration::Instant,
+        ),
+        eff(
+            Trigger::Static,
+            vec![Action::BuffSkill {
+                skill: Skill::ALL[0], // placeholder — target_chosen picks the bound skill
+                delta: -delta,
+                who: Who::Opp,
+                duration: Duration::WhileInPlay,
+                target_highest: false,
+                target_lowest: false,
+                target_chosen: true,
+                per_crowd: false,
+                cap: None,
+                per: None,
+                per_zone: CountZone::InPlay,
+                per_excludes_self: false,
+            }],
+            Condition::Always,
+            Duration::WhileInPlay,
         ),
     ])
 }
@@ -3504,6 +3553,7 @@ fn build_skill_buff_rules() -> Vec<(Regex, Builder)> {
                         duration: Duration::WhileInPlay,
                         target_highest: false,
                         target_lowest: false,
+                        target_chosen: false,
                         per_crowd: false,
                         cap,
                         per: Some(cf_name(names)),
@@ -3812,6 +3862,50 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![search(filter, Dest::DeckTop, count)],
                     Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Self-type gated tutor: "If you have another <order|atk> in play, search your
+        // deck for <SEL> and put it on top of your shuffled deck" (Thunderous Punch, Double
+        // Throw, Blood in the Water, the "another Follow Up" trio). Every printed card with
+        // this clause is itself of the gated order/type, and the tutor fires OnHit (after
+        // the card entered play — `record_landed_hit` precedes the OnHit pass), so the
+        // engine's HasInPlay, which counts the source card, must read "another" as count>=2
+        // — this card plus at least one other. Placed before the generic gate rule (whose
+        // gate_condition emits the always-true count=1) so this faithful model wins. Mirrors
+        // the count>=2 convention of the "another … your next turn roll is +N" rule below.
+        rule(
+            r#"If you have another (.+?) in play, search your deck for (.+?),? and put (?:it|them) on top of your shuffled deck"#,
+            |c| {
+                let gate = count_filter(&c[1])?;
+                let (filter, count) = search_target(&c[2])?;
+                Some(eff(
+                    on_hit(),
+                    vec![search(filter, Dest::DeckTop, count)],
+                    has_in_play(Who::SelfSide, gate, 2),
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Self-type gated hand cycle: "If you have another <order> in play, bury up to N
+        // cards in your hand to draw the same number of cards +M" (Stolen Valor, Back
+        // Cracker Potion, Win When You Can…). BuryToDraw sheds up to N and draws (buried+M).
+        // Every printed card is itself of the gated order and fires OnHit (after landing),
+        // so "another" is count>=2. Placed before the generic gate rule (its count=1) so
+        // this faithful model wins. Mirrors the search-to-top family above.
+        rule(
+            r#"If you have another (.+?) in play, bury up to (\d+) cards? in your hand to draw the same number of cards \+(\d+)"#,
+            |c| {
+                let gate = count_filter(&c[1])?;
+                Some(eff(
+                    on_hit(),
+                    vec![Action::BuryToDraw {
+                        max: num(c, 2),
+                        bonus: num(c, 3),
+                        who: Who::SelfSide,
+                    }],
+                    has_in_play(Who::SelfSide, gate, 2),
                     Duration::Instant,
                 ))
             },
@@ -4478,6 +4572,25 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
                         who: Who::Opp,
                         skill: skill(&c[1]),
                         count: num(c, 2),
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Chosen-skill draw: "The next time you roll that skill[,] draw N card(s)" (Catch
+        // These Hands and its siblings). Pairs with the "Choose a skill: your opponent's
+        // skill of that type is -1" clause (see `choose_skill_opp_debuff`), whose ChooseSkill
+        // binds the referenced skill. RollDrawChosen arms a PERSISTENT one-shot keyed to the
+        // owner's bound skill — it waits until that skill is rolled rather than fizzling.
+        rule(
+            r"The next time you roll that skill,? draw (\d+) cards?",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::RollDrawChosen {
+                        who: Who::SelfSide,
+                        count: num(c, 1),
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -7499,6 +7612,7 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                     duration: Duration::WhileInPlay,
                     target_highest: false,
                     target_lowest: false,
+                    target_chosen: false,
                     per_crowd: false,
                     cap: None,
                     per: Some(per.clone()),
@@ -8360,6 +8474,7 @@ fn buff_to_turn_roll_bonus(a: &Action) -> Option<Action> {
             duration: Duration::WhileInPlay,
             target_highest: false,
             target_lowest: false,
+            target_chosen: false,
             per_crowd,
             cap,
             per: None,
@@ -9061,6 +9176,22 @@ pub fn parse_text(
                 continue;
             }
             if let Some(effs) = versatile_or_stop(clause) {
+                for mut e in effs {
+                    e.raw_clause = clause.clone();
+                    e.source = source;
+                    e.frequency = FrequencyGuard {
+                        node_type: FrequencyGuardTag,
+                        kind: freq,
+                        n,
+                    };
+                    effects.push(scope(e, &window));
+                }
+                i += 1;
+                continue;
+            }
+            // "Choose a skill: your opponent's skill of that type is -N" — a ChooseSkill
+            // binding + a Static target_chosen debuff on the opponent (see the fn).
+            if let Some(effs) = choose_skill_opp_debuff(clause) {
                 for mut e in effs {
                     e.raw_clause = clause.clone();
                     e.source = source;

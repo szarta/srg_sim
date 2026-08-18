@@ -539,6 +539,7 @@
           "A": {
             "blank_until_next_turn": null,
             "chosen_name": null,
+            "chosen_skill": null,
             "competitor": {
               "db_uuid": "894c9965da684adb8ab5f532bafbff59",
               "division": "",
@@ -923,6 +924,7 @@
           "B": {
             "blank_until_next_turn": null,
             "chosen_name": null,
+            "chosen_skill": null,
             "competitor": {
               "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
               "division": "World Championship",
@@ -2633,6 +2635,7 @@
           "A": {
             "blank_until_next_turn": null,
             "chosen_name": null,
+            "chosen_skill": null,
             "competitor": {
               "db_uuid": "894c9965da684adb8ab5f532bafbff59",
               "division": "",
@@ -3312,6 +3315,7 @@
           "B": {
             "blank_until_next_turn": null,
             "chosen_name": null,
+            "chosen_skill": null,
             "competitor": {
               "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
               "division": "World Championship",
@@ -4730,6 +4734,7 @@
           "A": {
             "blank_until_next_turn": null,
             "chosen_name": null,
+            "chosen_skill": null,
             "competitor": {
               "db_uuid": "31b5d4f1aa0743b4bc3d0622d81b0d92",
               "division": "Intergalactic",
@@ -5363,6 +5368,7 @@
           "B": {
             "blank_until_next_turn": null,
             "chosen_name": null,
+            "chosen_skill": null,
             "competitor": {
               "db_uuid": "c37902890fa44033ad8ca1412ba9ae3d",
               "division": "World Championship",

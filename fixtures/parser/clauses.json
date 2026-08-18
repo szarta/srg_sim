@@ -4062,7 +4062,7 @@
             {
               "@type": "Search",
               "count": 1,
-              "dest": "HAND",
+              "dest": "DECK_TOP",
               "filter": {
                 "@type": "CardFilter",
                 "atk_type": "Grapple",
@@ -4081,7 +4081,7 @@
           "condition": {
             "@type": "HasInPlay",
             "cmp": ">=",
-            "count": 1,
+            "count": 2,
             "filter": {
               "@type": "CardFilter",
               "atk_type": "Grapple",
@@ -4104,10 +4104,16 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "if another Grapple in play, search your deck for a Grapple (to hand ~ 'on top')",
+          "raw_clause": "If you have another Grapple in play, search your deck for 1 Grapple and put it on top of your shuffled deck.",
           "source": "card",
           "trigger": {
-            "@type": "OnPlay"
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
           }
         }
       ],
@@ -5023,6 +5029,35 @@
           "@type": "Effect",
           "actions": [
             {
+              "@type": "ChooseSkill"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "Choose a skill: your opponent's skill of that type is -1.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
               "@type": "BuffSkill",
               "cap": null,
               "delta": -1,
@@ -5030,7 +5065,8 @@
               "per": null,
               "per_crowd": false,
               "per_zone": "IN_PLAY",
-              "skill": "Agility",
+              "skill": "Power",
+              "target_chosen": true,
               "target_highest": false,
               "target_lowest": false,
               "who": "OPP"
@@ -5046,10 +5082,41 @@
             "n": null
           },
           "optional": false,
-          "raw_clause": "choose a skill: opponent's skill is -1 (choice simplified to Agility; 'next roll draw 1' rider dropped)",
+          "raw_clause": "Choose a skill: your opponent's skill of that type is -1.",
           "source": "card",
           "trigger": {
             "@type": "Static"
+          }
+        },
+        {
+          "@type": "Effect",
+          "actions": [
+            {
+              "@type": "RollDrawChosen",
+              "count": 1,
+              "who": "SELF"
+            }
+          ],
+          "condition": {
+            "@type": "Always"
+          },
+          "duration": "INSTANT",
+          "frequency": {
+            "@type": "FrequencyGuard",
+            "kind": "UNLIMITED",
+            "n": null
+          },
+          "optional": false,
+          "raw_clause": "The next time you roll that skill, draw 1 card.",
+          "source": "card",
+          "trigger": {
+            "@type": "OnHit",
+            "atk_type": null,
+            "name_contains": [],
+            "on_any": false,
+            "order": null,
+            "text_contains": [],
+            "who": "SELF"
           }
         }
       ],
@@ -9143,8 +9210,8 @@
     }
   ],
   "coverage_golden": {
-    "grammar": 97,
-    "override": 118,
+    "grammar": 100,
+    "override": 115,
     "top_unparsed": [
       [
         "Finishes with \"Cannot Breakout\" in the text instead have blank text.",

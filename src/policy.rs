@@ -25,7 +25,7 @@
 use crate::cards::Card;
 use crate::conditions;
 use crate::engine::Decider;
-use crate::ir::{Action, AtkType, PlayOrder, Trigger};
+use crate::ir::{Action, AtkType, PlayOrder, Skill, Trigger};
 use crate::state::GameState;
 use serde_json::Value;
 use std::cmp::Reverse;
@@ -476,6 +476,7 @@ impl Policy for HeuristicPolicy {
             // deck bottom) — same "drop your least valuable" read as a discard.
             "bury_hand" => self.at_discard(legal, state, key),
             "bury_opp_hand" => self.at_bury_opp_hand(legal, state, key),
+            "skill" => at_choose_skill(legal, state, key),
             "discard" => self.at_discard(legal, state, key),
             "reveal" => at_reveal(legal, state, key),
             "optional" => self.at_optional(legal),
@@ -623,6 +624,27 @@ fn opp_flips_gimmick_signs(state: &GameState, key: &str) -> bool {
                 .iter()
                 .any(|a| matches!(a, Action::FlipGimmickSigns { .. }))
     })
+}
+
+/// "Choose a skill" (Catch These Hands): pick the opponent's strongest skill, so the -1
+/// debuff bites hardest — and, since the sibling "next time you roll that skill, draw"
+/// keys off the same choice, we can steer a turn roll to it. Ties keep the first legal
+/// option (canonical skill order).
+fn at_choose_skill(legal: &[Value], state: &GameState, key: &str) -> Value {
+    let opp = state.opponent_of(key);
+    let stats = state.players[&opp].competitor.stats;
+    let stat_of = |o: &Value| -> i64 {
+        let name = o.get("skill").and_then(Value::as_str).unwrap_or("");
+        Skill::ALL
+            .iter()
+            .find(|s| s.name() == name)
+            .map_or(i64::MIN, |s| stats.get(*s))
+    };
+    // Highest opponent stat; `Reverse(i)` breaks ties toward the earliest legal option.
+    (0..legal.len())
+        .max_by_key(|&i| (stat_of(&legal[i]), Reverse(i)))
+        .map(|i| legal[i].clone())
+        .unwrap_or_else(|| legal[0].clone())
 }
 
 fn holds_finish(state: &GameState, key: &str) -> bool {

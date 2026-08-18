@@ -794,6 +794,10 @@
           "default": false,
           "type": "boolean"
         },
+        "target_chosen": {
+          "default": false,
+          "type": "boolean"
+        },
         "who": {
           "$ref": "#/$defs/Who"
         }
@@ -1145,6 +1149,15 @@
                 "$ref": "#/$defs/MultiTurnRollBonus"
               },
               {
+                "$ref": "#/$defs/BuryToDraw"
+              },
+              {
+                "$ref": "#/$defs/ChooseSkill"
+              },
+              {
+                "$ref": "#/$defs/RollDrawChosen"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -1454,6 +1467,40 @@
       "required": [
         "@type",
         "options"
+      ],
+      "type": "object"
+    },
+    "ChooseSkill": {
+      "additionalProperties": false,
+      "description": "\"Choose a skill: …\" (Catch These Hands): the owner binds ONE of the six skills for the rest of the match, stored as PlayerState.chosen_skill. Read by BuffSkill's target_chosen and by RollDrawChosen. Authored on the card's OnHit; a no-op if already bound. schema v150",
+      "properties": {
+        "@type": {
+          "const": "ChooseSkill"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
+    "RollDrawChosen": {
+      "additionalProperties": false,
+      "description": "\"The next time you roll that skill draw N card(s)\" (Catch These Hands): arms a PERSISTENT one-shot draw keyed to the owner's chosen_skill. `who` is which side's turn roll to WATCH (SelfSide); the owner draws `count` the next time that side rolls the bound skill, then it is consumed. Unlike RollDraw it does NOT fizzle on a non-matching roll. A no-op if no skill is bound. schema v150",
+      "properties": {
+        "@type": {
+          "const": "RollDrawChosen"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "count"
       ],
       "type": "object"
     },
@@ -2091,6 +2138,15 @@
               },
               {
                 "$ref": "#/$defs/MultiTurnRollBonus"
+              },
+              {
+                "$ref": "#/$defs/BuryToDraw"
+              },
+              {
+                "$ref": "#/$defs/ChooseSkill"
+              },
+              {
+                "$ref": "#/$defs/RollDrawChosen"
               },
               {
                 "$ref": "#/$defs/Discard"
@@ -2984,6 +3040,31 @@
       ],
       "type": "object"
     },
+    "BuryToDraw": {
+      "additionalProperties": false,
+      "description": "\"Bury up to `max` cards in your hand to draw the same number of cards +`bonus`\" (Stolen Valor, Back Cracker Potion, Win When You Can…). `who` buries their least valuable hand cards (to the deck bottom) and then draws that many PLUS `bonus`; the draw is coupled to the ACTUAL bury count, so zero buries still draw `bonus`. The \"up to\" collapses to burying min(max, hand size), matching the \"bury up to N\" family convention. schema v149",
+      "properties": {
+        "@type": {
+          "const": "BuryToDraw"
+        },
+        "max": {
+          "type": "integer"
+        },
+        "bonus": {
+          "type": "integer"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "max",
+        "bonus",
+        "who"
+      ],
+      "type": "object"
+    },
     "FlipGimmick": {
       "additionalProperties": false,
       "properties": {
@@ -3484,6 +3565,15 @@
         },
         {
           "$ref": "#/$defs/MultiTurnRollBonus"
+        },
+        {
+          "$ref": "#/$defs/BuryToDraw"
+        },
+        {
+          "$ref": "#/$defs/ChooseSkill"
+        },
+        {
+          "$ref": "#/$defs/RollDrawChosen"
         },
         {
           "$ref": "#/$defs/FlipGimmick"
@@ -5083,6 +5173,15 @@
                 "$ref": "#/$defs/MultiTurnRollBonus"
               },
               {
+                "$ref": "#/$defs/BuryToDraw"
+              },
+              {
+                "$ref": "#/$defs/ChooseSkill"
+              },
+              {
+                "$ref": "#/$defs/RollDrawChosen"
+              },
+              {
                 "$ref": "#/$defs/Discard"
               },
               {
@@ -5712,6 +5811,15 @@
               },
               {
                 "$ref": "#/$defs/MultiTurnRollBonus"
+              },
+              {
+                "$ref": "#/$defs/BuryToDraw"
+              },
+              {
+                "$ref": "#/$defs/ChooseSkill"
+              },
+              {
+                "$ref": "#/$defs/RollDrawChosen"
               },
               {
                 "$ref": "#/$defs/Discard"
@@ -6971,5 +7079,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 148
+  "version": 150
 }

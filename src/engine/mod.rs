@@ -236,6 +236,7 @@ fn negate_action(action: &Action) -> Action {
             duration,
             target_highest,
             target_lowest,
+            target_chosen,
             per_crowd,
             cap,
             per,
@@ -248,6 +249,7 @@ fn negate_action(action: &Action) -> Action {
             duration: *duration,
             target_highest: *target_highest,
             target_lowest: *target_lowest,
+            target_chosen: *target_chosen,
             per_crowd: *per_crowd,
             cap: *cap,
             per: per.clone(),
@@ -506,6 +508,7 @@ impl Engine {
                         reroll_grants: Default::default(),
                         timed_buffs: Vec::new(),
                         chosen_name: None,
+                        chosen_skill: None,
                         pending_text: Vec::new(),
                         blank_until_next_turn: None,
                         blank_until_hit: false,
@@ -1278,6 +1281,7 @@ impl Engine {
             Action::MultiTurnRollBonus { who, rolls, delta } => {
                 self.act_multi_turn_roll_bonus(*who, *rolls, *delta, key)
             }
+            Action::BuryToDraw { max, bonus, who } => self.act_bury_to_draw(*max, *bonus, *who, key)?,
             Action::Discard {
                 selector,
                 count,
@@ -1526,6 +1530,8 @@ impl Engine {
             }
             Action::PlaySelf => self.act_play_self(key)?,
             Action::ChooseName { options } => self.act_choose_name(options, key)?,
+            Action::ChooseSkill => self.act_choose_skill(key)?,
+            Action::RollDrawChosen { who, count } => self.act_roll_draw_chosen(*who, *count, key),
             Action::AddTextToNext {
                 who,
                 selector,
@@ -1847,6 +1853,31 @@ impl Engine {
         Ok(())
     }
 
+    /// "Bury up to `max` cards in your hand to draw the same number of cards +`bonus`"
+    /// (Stolen Valor family): `who` sheds their least valuable hand cards to the deck
+    /// bottom, then draws that many PLUS `bonus`. The draw is coupled to the ACTUAL bury
+    /// count (`bury_from_hand` stops early once the hand empties), so a smaller hand draws
+    /// fewer; zero buries still draw `bonus`. Reuses the `bury_hand` shed heuristic, and —
+    /// like the "bury up to N" family — collapses "up to" to burying min(`max`, hand size).
+    fn act_bury_to_draw(&mut self, max: i64, bonus: i64, who: Who, key: &str) -> Eng<()> {
+        let target = self.target(who, key);
+        let buried = self.bury_from_hand(
+            &target,
+            &target,
+            max.max(0) as usize,
+            false,
+            &CardFilter::default(),
+        )?;
+        if buried > 0 {
+            self.run_on_bury(&target, true, false)?; // effect-caused hand bury (parity with act_bury)
+        }
+        let draw_n = buried as i64 + bonus;
+        if draw_n > 0 {
+            self.draw(&target, draw_n as usize, DeckEnd::Top)?;
+        }
+        Ok(())
+    }
+
     /// "Choose 1 card in play and discard it" with no side restriction (Cherry
     /// Glamazon): the actor picks from EITHER board and the card goes to its OWNER's
     /// discard. Mirrors `act_return_to_hand`'s `choose` branch.
@@ -2144,6 +2175,7 @@ impl Engine {
                 skill,
                 count,
                 watch: who,
+                persist: false,
             });
         self.log_effect(
             key,
@@ -2176,6 +2208,15 @@ impl Engine {
                     if self.ended() {
                         return Ok(());
                     }
+                } else if entry.persist {
+                    // "the next time you roll that skill" — a miss does not consume a
+                    // persistent entry; it waits until the watched side rolls `skill`.
+                    self.state
+                        .players
+                        .get_mut(key)
+                        .unwrap()
+                        .pending_roll_draws
+                        .push(entry);
                 }
             }
         }
@@ -4132,6 +4173,57 @@ impl Engine {
         self.state.players.get_mut(key).unwrap().chosen_name = Some(name.clone());
         self.log_effect(key, "ChooseName", Some(key), json!({"name": name}));
         Ok(())
+    }
+
+    /// "Choose a skill: …" (Catch These Hands): `key` binds one of the six skills for the
+    /// rest of the match, stored as `chosen_skill` and read by the `target_chosen` debuff
+    /// and by [`Self::act_roll_draw_chosen`]. Idempotent — a card that re-chooses rebinds.
+    fn act_choose_skill(&mut self, key: &str) -> Eng<()> {
+        let legal: Vec<Value> = Skill::ALL
+            .iter()
+            .map(|s| json!({"kind": "skill", "skill": s.name()}))
+            .collect();
+        let chosen = self.decide("skill", key, legal)?;
+        let name = chosen["skill"].as_str().unwrap_or_default();
+        let skill = Skill::ALL
+            .iter()
+            .copied()
+            .find(|s| s.name() == name)
+            .unwrap_or(Skill::ALL[0]);
+        self.state.players.get_mut(key).unwrap().chosen_skill = Some(skill);
+        self.log_effect(
+            key,
+            "ChooseSkill",
+            Some(key),
+            json!({"skill": skill.name()}),
+        );
+        Ok(())
+    }
+
+    /// "The next time you roll that skill draw 1 card" (Catch These Hands): arm a
+    /// PERSISTENT one-shot draw keyed to `key`'s bound `chosen_skill`. A no-op if no skill
+    /// is bound (the sibling ChooseSkill runs first, so in practice it is always set).
+    fn act_roll_draw_chosen(&mut self, who: Who, count: i64, key: &str) {
+        let Some(skill) = self.state.players[key].chosen_skill else {
+            return;
+        };
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .pending_roll_draws
+            .push(PendingRollDraw {
+                skill,
+                count,
+                watch: who,
+                persist: true,
+            });
+        self.log_effect(
+            key,
+            "RollDrawChosen",
+            None,
+            json!({"skill": skill.name(), "count": count, "watch": format!("{who:?}")}),
+        );
     }
 
     /// "The stopped card has blank text until the end of the turn": blank the card
@@ -7686,6 +7778,9 @@ fn action_name(action: &Action) -> &'static str {
         Action::RollDraw { .. } => "RollDraw",
         Action::NextRollSkillBonus { .. } => "NextRollSkillBonus",
         Action::MultiTurnRollBonus { .. } => "MultiTurnRollBonus",
+        Action::BuryToDraw { .. } => "BuryToDraw",
+        Action::ChooseSkill => "ChooseSkill",
+        Action::RollDrawChosen { .. } => "RollDrawChosen",
         Action::Discard { .. } => "Discard",
         Action::Search { .. } => "Search",
         Action::ShuffleDeck { .. } => "ShuffleDeck",

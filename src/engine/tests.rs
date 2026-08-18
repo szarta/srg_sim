@@ -791,6 +791,7 @@ mod breakout_modifier_tests {
                     skill,
                     count,
                     watch,
+                    persist: false,
                 });
         };
         let stock = |engine: &mut Engine, n: usize| {
@@ -3561,6 +3562,134 @@ mod suppress_hand_loss_tests {
         let mut engine = engine_with(v2_effects(), DRAW_OPT);
         engine.setup().unwrap();
         assert!(!engine.suppresses_self_hand_loss("A", "B"));
+    }
+}
+
+/// `BuryToDraw` (Stolen Valor family, schema v149): "bury up to N cards in your hand to
+/// draw the same number of cards +M" — the buried count and the draw stay coupled, and
+/// the hand nets +M regardless of how many are buried.
+#[cfg(test)]
+mod bury_to_draw_tests {
+    use super::*;
+
+    /// Trivial decider: always takes the first legal option (the shed pool's first card).
+    struct PickFirst;
+    impl Decider for PickFirst {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+        fn policy_name(&self, _viewer: &str) -> String {
+            "pick-first".to_owned()
+        }
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..20)
+            .map(|i| {
+                json!({"atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+                       "finish_bonuses": {}, "name": format!("c{i}"), "number": 1,
+                       "play_order": "Lead", "raw_text": "", "tags": []})
+            })
+            .collect();
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "SV", "name": "SV", "division": "World Championship",
+                "stats": stats},
+            "entrance": {"db_uuid": "SV-ent", "name": "ent"}, "cards": cards.clone(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "World Championship",
+                "stats": stats},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": cards,
+        }))
+        .expect("deck B");
+        Engine::new(
+            deck_a,
+            deck_b,
+            Box::new(PickFirst),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn lead(uuid: &str) -> Card {
+        serde_json::from_value(json!({"atk_type": "Strike", "db_uuid": uuid, "effects": [],
+            "finish_bonuses": {}, "name": uuid, "number": 1, "play_order": "Lead",
+            "raw_text": "", "tags": []}))
+        .expect("card")
+    }
+
+    fn setup(hand: &[&str], deck: &[&str]) -> Engine {
+        let mut e = engine();
+        e.setup().unwrap();
+        let a = e.state.players.get_mut("A").unwrap();
+        a.hand = hand.iter().map(|u| lead(u)).collect();
+        a.deck = deck.iter().map(|u| lead(u)).collect();
+        e
+    }
+
+    fn bury_to_draw(max: i64, bonus: i64) -> Action {
+        Action::BuryToDraw {
+            max,
+            bonus,
+            who: Who::SelfSide,
+        }
+    }
+
+    #[test]
+    fn buries_the_max_and_draws_that_many_plus_bonus() {
+        // Hand of 5, deck of 8. Bury up to 3 -> draw 3+1=4. Net hand +1, deck -1, total
+        // conserved. The 4 drawn come off the deck TOP; the 3 buried land on the BOTTOM.
+        let mut e = setup(
+            &["h0", "h1", "h2", "h3", "h4"],
+            &["t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7"],
+        );
+        e.apply_action(&bury_to_draw(3, 1), "A", "").unwrap();
+        let a = &e.state.players["A"];
+        assert_eq!(a.hand.len(), 6, "hand nets +bonus (5 - 3 buried + 4 drawn)");
+        assert_eq!(a.deck.len(), 7, "deck nets -bonus (8 + 3 buried - 4 drawn)");
+        for u in ["t0", "t1", "t2", "t3"] {
+            assert!(
+                a.hand.iter().any(|c| c.db_uuid == u),
+                "{u} drawn from deck top"
+            );
+        }
+        // Three hand cards were buried; the two kept remain in hand.
+        assert_eq!(
+            a.hand.iter().filter(|c| c.db_uuid.starts_with('h')).count(),
+            2,
+            "3 of the 5 hand cards were buried"
+        );
+    }
+
+    #[test]
+    fn draw_stays_coupled_to_the_actual_bury_count() {
+        // Hand of only 2 with max 3: buries 2 (hand runs dry), draws 2+1=3. Hand still
+        // nets +1; the draw follows the ACTUAL bury count, not the max.
+        let mut e = setup(&["h0", "h1"], &["t0", "t1", "t2", "t3"]);
+        e.apply_action(&bury_to_draw(3, 1), "A", "").unwrap();
+        let a = &e.state.players["A"];
+        assert_eq!(a.hand.len(), 3, "2 buried, 3 drawn -> net +1");
+        assert_eq!(a.deck.len(), 3, "4 + 2 buried - 3 drawn");
+    }
+
+    #[test]
+    fn zero_buries_still_draw_the_bonus() {
+        // Empty hand: nothing to bury, but the +bonus draw still fires.
+        let mut e = setup(&[], &["t0", "t1"]);
+        e.apply_action(&bury_to_draw(3, 1), "A", "").unwrap();
+        let a = &e.state.players["A"];
+        assert_eq!(a.hand.len(), 1, "drew the lone bonus card");
+        assert_eq!(a.deck.len(), 1);
     }
 }
 
@@ -9791,5 +9920,161 @@ mod gm_calace_tests {
         e.apply_action(&take("Nonexistent"), "A", "").unwrap();
         assert_eq!(e.state.players["A"].hand.len(), hand_before);
         assert_eq!(e.state.players["A"].deck.len(), 1);
+    }
+}
+
+/// `ChooseSkill` + `BuffSkill{target_chosen}` + `RollDrawChosen` (Catch These Hands
+/// family, schema v150): the bound skill drives an opponent debuff and a persistent
+/// "next time you roll that skill, draw" that waits rather than fizzling.
+#[cfg(test)]
+mod catch_these_hands_tests {
+    use super::*;
+
+    /// Picks the named skill at a `skill` decision point; first legal elsewhere.
+    struct PickSkill(&'static str);
+    impl Decider for PickSkill {
+        fn decide(
+            &mut self,
+            point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            if point == "skill" {
+                return legal
+                    .iter()
+                    .find(|o| o["skill"].as_str() == Some(self.0))
+                    .cloned()
+                    .or_else(|| legal.first().cloned());
+            }
+            legal.first().cloned()
+        }
+        fn policy_name(&self, _viewer: &str) -> String {
+            "pick-skill".to_owned()
+        }
+    }
+
+    /// A gimmick carrying the two standing pieces: an OnHit ChooseSkill binding and a
+    /// Static `target_chosen` debuff on the opponent.
+    fn gimmick() -> Value {
+        json!([
+            {"@type": "Effect",
+             "trigger": {"@type": "OnHit", "atk_type": null, "name_contains": [],
+                         "text_contains": [], "on_any": false},
+             "condition": {"@type": "Always"},
+             "actions": [{"@type": "ChooseSkill"}],
+             "duration": "INSTANT",
+             "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+             "raw_clause": "choose", "source": "gimmick", "optional": false},
+            {"@type": "Effect",
+             "trigger": {"@type": "Static"},
+             "condition": {"@type": "Always"},
+             "actions": [{"@type": "BuffSkill", "skill": "Power", "delta": -1, "who": "OPP",
+                          "duration": "WHILE_IN_PLAY", "target_highest": false,
+                          "target_lowest": false, "target_chosen": true, "per_crowd": false,
+                          "cap": null, "per": null, "per_zone": "IN_PLAY"}],
+             "duration": "WHILE_IN_PLAY",
+             "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+             "raw_clause": "debuff", "source": "gimmick", "optional": false}
+        ])
+    }
+
+    fn engine(pick: &'static str) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..12)
+            .map(|i| {
+                json!({"atk_type": "Strike", "db_uuid": format!("c{i}"), "effects": [],
+                       "finish_bonuses": {}, "name": format!("c{i}"), "number": 1,
+                       "play_order": "Lead", "raw_text": "", "tags": []})
+            })
+            .collect();
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "CTH", "name": "CTH", "division": "World Championship",
+                "stats": stats, "effects": gimmick()},
+            "entrance": {"db_uuid": "CTH-ent", "name": "ent"}, "cards": cards.clone(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "World Championship",
+                "stats": stats},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": cards,
+        }))
+        .expect("deck B");
+        Engine::new(
+            deck_a,
+            deck_b,
+            Box::new(PickSkill(pick)),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn chosen_skill_debuffs_only_that_opponent_skill() {
+        let mut e = engine("Strike");
+        e.setup().unwrap();
+        // Inert until a skill is bound.
+        assert_eq!(e.state.effective_stats("B", None).get(Skill::Strike), 5);
+        e.apply_action(&Action::ChooseSkill, "A", "").unwrap();
+        assert_eq!(e.state.players["A"].chosen_skill, Some(Skill::Strike));
+        assert_eq!(
+            e.state.effective_stats("B", None).get(Skill::Strike),
+            4,
+            "the chosen skill is -1"
+        );
+        assert_eq!(
+            e.state.effective_stats("B", None).get(Skill::Power),
+            5,
+            "other skills are untouched"
+        );
+    }
+
+    #[test]
+    fn chosen_roll_draw_waits_then_fires() {
+        let mut e = engine("Grapple");
+        e.setup().unwrap();
+        e.apply_action(&Action::ChooseSkill, "A", "").unwrap();
+        e.apply_action(
+            &Action::RollDrawChosen {
+                who: Who::SelfSide,
+                count: 1,
+            },
+            "A",
+            "",
+        )
+        .unwrap();
+        assert_eq!(e.state.players["A"].pending_roll_draws.len(), 1);
+
+        let ctx = |s: Skill| RollContext {
+            skill: Some(s),
+            gap: None,
+            value: Some(10),
+            opp_skill: None,
+        };
+        // A non-matching roll does NOT consume a persistent entry.
+        e.roll_ctx.insert("A".into(), ctx(Skill::Power));
+        e.roll_ctx.insert("B".into(), ctx(Skill::Power));
+        let before = e.state.players["A"].hand.len();
+        e.resolve_pending_roll_draws().unwrap();
+        assert_eq!(e.state.players["A"].hand.len(), before, "no draw on a miss");
+        assert_eq!(
+            e.state.players["A"].pending_roll_draws.len(),
+            1,
+            "the entry waits for the chosen skill"
+        );
+        // The chosen skill finally comes up -> draw and consume.
+        e.roll_ctx.insert("A".into(), ctx(Skill::Grapple));
+        e.resolve_pending_roll_draws().unwrap();
+        assert_eq!(
+            e.state.players["A"].hand.len(),
+            before + 1,
+            "drew when the chosen skill was rolled"
+        );
+        assert!(
+            e.state.players["A"].pending_roll_draws.is_empty(),
+            "consumed after firing"
+        );
     }
 }

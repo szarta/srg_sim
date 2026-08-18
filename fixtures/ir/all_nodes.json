@@ -206,6 +206,14 @@
     ]
   },
   {
+    "@type": "ChooseSkill"
+  },
+  {
+    "@type": "RollDrawChosen",
+    "who": "SELF",
+    "count": 1
+  },
+  {
     "@type": "BreakoutModifier",
     "attempts": null,
     "delta": 0,
@@ -482,6 +490,12 @@
     "who": "OPP",
     "rolls": 3,
     "delta": -1
+  },
+  {
+    "@type": "BuryToDraw",
+    "max": 3,
+    "bonus": 1,
+    "who": "SELF"
   },
   {
     "@type": "FlipGimmick",

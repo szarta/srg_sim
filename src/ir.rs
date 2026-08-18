@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 148;
+pub const SCHEMA_VERSION: i64 = 150;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1270,6 +1270,17 @@ pub enum Action {
         rolls: i64,
         delta: i64,
     },
+    /// "Bury up to `max` cards in your hand to draw the same number of cards +`bonus`"
+    /// (Stolen Valor, Back Cracker Potion, Win When You Can…). `who` buries their least
+    /// valuable hand cards (to the deck bottom) and then draws that many PLUS `bonus`;
+    /// the draw is coupled to the ACTUAL bury count, so zero buries still draw `bonus`.
+    /// The "up to" collapses to burying min(`max`, hand size), matching the "bury up to N"
+    /// family convention. schema v149
+    BuryToDraw {
+        max: i64,
+        bonus: i64,
+        who: Who,
+    },
     Discard {
         selector: CardFilter,
         count: i64,
@@ -1583,6 +1594,12 @@ pub enum Action {
         /// schema v93
         #[serde(default)]
         target_lowest: bool,
+        /// Retarget the buff to the skill the OWNER bound via [`Action::ChooseSkill`]
+        /// ("Choose a skill: Your opponent's skill of that type is -1" — Catch These
+        /// Hands): the delta lands on the owner's `chosen_skill`, read live in derived
+        /// stats. Inert (contributes nothing) until a choice is bound. schema v150
+        #[serde(default, skip_serializing_if = "is_false")]
+        target_chosen: bool,
         per_crowd: bool,
         /// Clamps the bonus. Under a `While*` duration this bounds the per-read
         /// `per`/`per_crowd` product (see `per`). Under a TIMED duration
@@ -1852,6 +1869,22 @@ pub enum Action {
     /// name. A no-op if `options` is empty. schema v37
     ChooseName {
         options: Vec<String>,
+    },
+    /// "Choose a skill: …" (Catch These Hands) — the owner binds ONE of the six skills
+    /// for the rest of the match, stored as `PlayerState.chosen_skill`. Read by
+    /// [`Action::BuffSkill`]'s `target_chosen` (the debuff on "your opponent's skill of
+    /// that type") and by [`Action::RollDrawChosen`] ("the next time you roll that
+    /// skill"). Authored on the card's OnHit; a no-op if already bound. schema v150
+    ChooseSkill,
+    /// "The next time you roll that skill draw 1 card" (Catch These Hands) — arms a
+    /// PERSISTENT one-shot draw keyed to the owner's `chosen_skill`: the next time `who`
+    /// (SelfSide) rolls that skill for a turn roll, the owner draws `count`, and it is
+    /// then consumed. Unlike [`Action::RollDraw`] it does NOT fizzle on a non-matching
+    /// roll — it waits until the chosen skill comes up. A no-op if no skill is bound.
+    /// schema v150
+    RollDrawChosen {
+        who: Who,
+        count: i64,
     },
     LoseBy {
         kind: LoseKind,
@@ -2888,6 +2921,17 @@ pub enum IrNode {
         rolls: i64,
         delta: i64,
     },
+    /// "Bury up to `max` cards in your hand to draw the same number of cards +`bonus`"
+    /// (Stolen Valor, Back Cracker Potion, Win When You Can…). `who` buries their least
+    /// valuable hand cards (to the deck bottom) and then draws that many PLUS `bonus`;
+    /// the draw is coupled to the ACTUAL bury count, so zero buries still draw `bonus`.
+    /// The "up to" collapses to burying min(`max`, hand size), matching the "bury up to N"
+    /// family convention. schema v149
+    BuryToDraw {
+        max: i64,
+        bonus: i64,
+        who: Who,
+    },
     Discard {
         selector: CardFilter,
         count: i64,
@@ -3201,6 +3245,12 @@ pub enum IrNode {
         /// schema v93
         #[serde(default)]
         target_lowest: bool,
+        /// Retarget the buff to the skill the OWNER bound via [`Action::ChooseSkill`]
+        /// ("Choose a skill: Your opponent's skill of that type is -1" — Catch These
+        /// Hands): the delta lands on the owner's `chosen_skill`, read live in derived
+        /// stats. Inert (contributes nothing) until a choice is bound. schema v150
+        #[serde(default, skip_serializing_if = "is_false")]
+        target_chosen: bool,
         per_crowd: bool,
         /// Clamps the bonus. Under a `While*` duration this bounds the per-read
         /// `per`/`per_crowd` product (see `per`). Under a TIMED duration
@@ -3470,6 +3520,22 @@ pub enum IrNode {
     /// name. A no-op if `options` is empty. schema v37
     ChooseName {
         options: Vec<String>,
+    },
+    /// "Choose a skill: …" (Catch These Hands) — the owner binds ONE of the six skills
+    /// for the rest of the match, stored as `PlayerState.chosen_skill`. Read by
+    /// [`Action::BuffSkill`]'s `target_chosen` (the debuff on "your opponent's skill of
+    /// that type") and by [`Action::RollDrawChosen`] ("the next time you roll that
+    /// skill"). Authored on the card's OnHit; a no-op if already bound. schema v150
+    ChooseSkill,
+    /// "The next time you roll that skill draw 1 card" (Catch These Hands) — arms a
+    /// PERSISTENT one-shot draw keyed to the owner's `chosen_skill`: the next time `who`
+    /// (SelfSide) rolls that skill for a turn roll, the owner draws `count`, and it is
+    /// then consumed. Unlike [`Action::RollDraw`] it does NOT fizzle on a non-matching
+    /// roll — it waits until the chosen skill comes up. A no-op if no skill is bound.
+    /// schema v150
+    RollDrawChosen {
+        who: Who,
+        count: i64,
     },
     LoseBy {
         kind: LoseKind,
