@@ -458,6 +458,85 @@ mod breakout_modifier_tests {
         );
     }
 
+    fn bump_instead_gimmick() -> Value {
+        json!({
+            "@type": "Effect", "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "BumpInsteadOnSameSkillLoss"}],
+            "duration": "WHILE_GIMMICK_ACTIVE",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "bump instead", "source": "gimmick", "optional": false
+        })
+    }
+
+    #[test]
+    fn forced_same_skill_bump_only_fires_for_the_losing_owner() {
+        // Brock Smith V1: same skill + the owner would LOSE -> forced bump. Higher wins.
+        let s = Skill::Strike;
+        let g = Skill::Grapple;
+
+        // A holds the gimmick and would lose the same-skill roll -> A is forced to bump.
+        let mut e = engine();
+        push_gimmick(&mut e, "A", bump_instead_gimmick());
+        assert_eq!(
+            e.forced_same_skill_bump_loser(s, 5, s, 9, false).as_deref(),
+            Some("A"),
+            "same skill, A losing -> A bumps"
+        );
+        // A winning on the same skill: the card only converts a LOSS, so no bump.
+        assert_eq!(e.forced_same_skill_bump_loser(s, 9, s, 5, false), None);
+        // Different skills: the gimmick keys on a same-skill roll only.
+        assert_eq!(e.forced_same_skill_bump_loser(s, 5, g, 9, false), None);
+        // A value tie already bumps for free — not this path.
+        assert_eq!(e.forced_same_skill_bump_loser(s, 7, s, 7, false), None);
+
+        // The WINNER's gimmick never fires: B holds it, A is losing (so B is winning).
+        let mut e = engine();
+        push_gimmick(&mut e, "B", bump_instead_gimmick());
+        assert_eq!(e.forced_same_skill_bump_loser(s, 5, s, 9, false), None);
+        // ...but when B is the one losing on the same skill, B's gimmick forces a bump.
+        assert_eq!(
+            e.forced_same_skill_bump_loser(s, 9, s, 5, false).as_deref(),
+            Some("B"),
+        );
+    }
+
+    #[test]
+    fn forced_same_skill_bump_uses_the_lowest_wins_rule() {
+        // Under lowest-roll-wins, "would win" flips: the HIGHER value is the loser.
+        let s = Skill::Strike;
+        let mut e = engine();
+        push_gimmick(&mut e, "A", bump_instead_gimmick());
+        // A has the higher value -> A loses under lowest-wins -> A bumps.
+        assert_eq!(
+            e.forced_same_skill_bump_loser(s, 9, s, 5, true).as_deref(),
+            Some("A"),
+        );
+        // A has the lower value -> A wins under lowest-wins -> no bump.
+        assert_eq!(e.forced_same_skill_bump_loser(s, 5, s, 9, true), None);
+    }
+
+    #[test]
+    fn finish_roll_bonus_counts_cards_in_hand_with_divisor() {
+        // GOAT's Dive Bomb Superkick: "+1 for every 4 cards in your hand" reads the
+        // hand zone (CountZone::Hand) and floors by the divisor -> floor(hand/4).
+        let mut engine = engine();
+        push_gimmick(&mut engine, "A", finish_roll_per("HAND", json!(4)));
+        // The `per` filter here is atk_type=Strike, so give A a hand of Strike cards.
+        engine.state.players.get_mut("A").unwrap().hand = strike_cards(9);
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Grapple, 5),
+            2,
+            "floor(9/4)"
+        );
+        engine.state.players.get_mut("A").unwrap().hand = strike_cards(3);
+        assert_eq!(
+            engine.finish_roll_bonus("A", Skill::Grapple, 5),
+            0,
+            "floor(3/4)"
+        );
+    }
+
     #[test]
     fn finish_roll_bonus_per_crowd_adds_the_live_crowd_meter_capped() {
         // "Your Finish roll is + the Crowd Meter (Max +2)" (task #131): a SECOND
@@ -5860,6 +5939,74 @@ mod man_from_it_tests {
         engine.act_coupled_discard(-1, "A").unwrap();
         assert_eq!(engine.state.players["A"].hand.len(), 1, "A sheds 4 of 5");
         assert_eq!(engine.state.players["B"].hand.len(), 0, "B sheds 3 (N-1)");
+    }
+
+    /// The Dismantler bug fix: "discard **any number**" is the ACTOR's choice, so a
+    /// player driving the decision (a human/frontend, here a scripted decider) can stop
+    /// early — including discarding NOTHING — instead of being forced to empty their hand.
+    fn scripted_engine(a_choices: Vec<Value>, b_choices: Vec<Value>) -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let deck = |id: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": id, "name": id, "division": "World Championship",
+                    "stats": stats, "effects": []},
+                "entrance": {"db_uuid": format!("{id}-ent"), "name": "ent"}, "cards": [],
+            }))
+            .expect("deck")
+        };
+        let decisions = BTreeMap::from([("A".to_owned(), a_choices), ("B".to_owned(), b_choices)]);
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(ReplayDecider::new(decisions, BTreeMap::new())),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    #[test]
+    fn coupled_discard_actor_may_discard_nothing() {
+        // Script A to stop immediately: 0 discarded -> opponent sheds max(0, 0-1) = 0.
+        let mut engine = scripted_engine(vec![json!({"kind": "none"})], vec![]);
+        let mk = |u: &str| -> Card { serde_json::from_value(card(u, "Lead", 1)).unwrap() };
+        engine.state.players.get_mut("A").unwrap().hand =
+            (0..5).map(|i| mk(&format!("a{i}"))).collect();
+        engine.state.players.get_mut("B").unwrap().hand =
+            (0..3).map(|i| mk(&format!("b{i}"))).collect();
+        engine.act_coupled_discard(-1, "A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            5,
+            "A kept its whole hand"
+        );
+        assert_eq!(engine.state.players["B"].hand.len(), 3, "B sheds nothing");
+    }
+
+    #[test]
+    fn coupled_discard_actor_may_stop_partway() {
+        // Script A to discard 2 then stop -> opponent sheds 2 - 1 = 1 (not emptied).
+        let mut engine = scripted_engine(
+            vec![
+                json!({"kind": "discard", "card": "a0"}),
+                json!({"kind": "discard", "card": "a1"}),
+                json!({"kind": "none"}),
+            ],
+            vec![json!({"kind": "discard", "card": "b0"})], // B's forced shed of 1
+        );
+        let mk = |u: &str| -> Card { serde_json::from_value(card(u, "Lead", 1)).unwrap() };
+        engine.state.players.get_mut("A").unwrap().hand =
+            (0..5).map(|i| mk(&format!("a{i}"))).collect();
+        engine.state.players.get_mut("B").unwrap().hand =
+            (0..3).map(|i| mk(&format!("b{i}"))).collect();
+        engine.act_coupled_discard(-1, "A").unwrap();
+        assert_eq!(
+            engine.state.players["A"].hand.len(),
+            3,
+            "A shed the 2 it chose"
+        );
+        assert_eq!(engine.state.players["B"].hand.len(), 2, "B shed 1 (2 - 1)");
     }
 
     /// A finish-roll re-roll (`Reroll{when:This, finish:true}`, schema v76) is offered

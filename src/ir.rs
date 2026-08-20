@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 150;
+pub const SCHEMA_VERSION: i64 = 151;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -310,6 +310,10 @@ pub enum CountZone {
     /// +1 to Strike and Power" (Five Star Heart Punch). Transient turn state,
     /// re-derived on replay. schema v74
     FlippedThisTurn,
+    /// Cards in the target's **hand** — "+1 for every 4 cards in your hand" (GOAT's
+    /// Dive Bomb Superkick, Party Package). Counted live; a `per_divisor` floors the
+    /// count into groups. schema v151
+    Hand,
 }
 
 /// Reach of a [`Action::DisqualificationRule`] toggle. `SelfSide` = "you cannot
@@ -1732,6 +1736,15 @@ pub enum Action {
     ElectBumpOnSameSkill {
         uses: i64,
     },
+    /// A persistent, FORCED same-skill bump when the owner would LOSE the turn roll
+    /// (Brock Smith V1's start-of-match gimmick: "when you and that opponent roll the
+    /// same skill and they would win the turn roll, bump instead"). Unlike the elective
+    /// [`Action::ElectBumpOnSameSkill`] (a per-match charge the owner MAY spend on any
+    /// same-skill roll), this is unlimited and mandatory, but only fires on a
+    /// same-skill roll the owner is losing — the exact case the card converts into a
+    /// bump. The "choose an opponent" targeting is the sole opponent in a 1v1 match.
+    /// schema v151
+    BumpInsteadOnSameSkillLoss,
     Stop {
         order: Option<PlayOrder>,
         atk_type: Option<AtkType>,
@@ -3383,6 +3396,15 @@ pub enum IrNode {
     ElectBumpOnSameSkill {
         uses: i64,
     },
+    /// A persistent, FORCED same-skill bump when the owner would LOSE the turn roll
+    /// (Brock Smith V1's start-of-match gimmick: "when you and that opponent roll the
+    /// same skill and they would win the turn roll, bump instead"). Unlike the elective
+    /// [`Action::ElectBumpOnSameSkill`] (a per-match charge the owner MAY spend on any
+    /// same-skill roll), this is unlimited and mandatory, but only fires on a
+    /// same-skill roll the owner is losing — the exact case the card converts into a
+    /// bump. The "choose an opponent" targeting is the sole opponent in a 1v1 match.
+    /// schema v151
+    BumpInsteadOnSameSkillLoss,
     Stop {
         order: Option<PlayOrder>,
         atk_type: Option<AtkType>,

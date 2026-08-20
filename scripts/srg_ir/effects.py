@@ -249,6 +249,7 @@ class CountZone(Enum):
 
     IN_PLAY = "IN_PLAY"
     DISCARD = "DISCARD"
+    HAND = "HAND"
 
 
 class DqScope(Enum):
@@ -1528,6 +1529,16 @@ class ElectBumpOnSameSkill(IRNode):
     a bump both fires the owner's OnBump punish and arms a bumped finish (T-Virus)."""
 
     uses: int = 2
+
+
+@dataclass(frozen=True)
+class BumpInsteadOnSameSkillLoss(IRNode):
+    """A persistent, FORCED same-skill bump when the owner would LOSE the turn roll
+    (Brock Smith V1: "when you and that opponent roll the same skill and they would win
+    the turn roll, bump instead"). Unlike the elective :class:`ElectBumpOnSameSkill`
+    (a per-match charge the owner MAY spend on any same-skill roll), this is unlimited
+    and mandatory, firing only on a same-skill roll the owner is losing. Read
+    structurally in the roll-off. The "choose an opponent" is the sole opponent 1v1."""
 
 
 @dataclass(frozen=True)

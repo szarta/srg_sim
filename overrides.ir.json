@@ -462,6 +462,31 @@
       }
     }
   ],
+  "0640ec286ebd4c409d6b0fa17ab5711e": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BumpInsteadOnSameSkillLoss"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_GIMMICK_ACTIVE",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Choose an opponent, when you and that opponent roll the same skill and they would win the turn roll, bump instead.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
   "09edf17fc41849f0b0fec783384e8339": [
     {
       "@type": "Effect",
@@ -4639,6 +4664,88 @@
       "optional": false,
       "raw_clause": "Once per match: When you would bump, draw 2 cards instead and each player re-rolls their turn roll.",
       "source": "entrance",
+      "trigger": {
+        "@type": "Static"
+      }
+    }
+  ],
+  "52344a7efe4e4de4a783e860e384a546": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Draw",
+          "cap": null,
+          "n": 2,
+          "per": null,
+          "per_excludes_trigger": false,
+          "per_who": "SELF",
+          "source": "TOP",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Draw 2 cards.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishRollBonus",
+          "delta": 1,
+          "either": false,
+          "per": {
+            "@type": "CardFilter",
+            "any_of": [],
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "per_who": "SELF",
+          "per_zone": "HAND",
+          "when_base_ge": null,
+          "when_base_le": null,
+          "when_skill": null
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your Power and Strike cards are +1 for every 4 cards in your hand.",
+      "source": "card",
       "trigger": {
         "@type": "Static"
       }
@@ -15716,6 +15823,83 @@
       "source": "card",
       "trigger": {
         "@type": "Static"
+      }
+    }
+  ],
+  "d9691f0c50c94186abfffb99b59d4211": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Strike"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Strike",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 1,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+1 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ShuffleSelfIntoDeck"
+        }
+      ],
+      "condition": {
+        "@type": "SameRolledSkill"
+      },
+      "duration": "WHILE_IN_DISCARD",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "When this card is in your discard pile and you roll the same skill as an opponent, you may shuffle it into your deck.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnRoll",
+        "skill": null,
+        "who": "SELF"
       }
     }
   ],

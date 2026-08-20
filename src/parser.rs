@@ -456,23 +456,21 @@ fn flip_both_instead(clause: &str) -> Option<Condition> {
     gate_condition(&c[1])
 }
 
-/// "If your `<S>` skill is greater than your opponent's `<S>` skill, `<body>` instead" — a
-/// skill-comparison that REPLACES the preceding sibling effect's consequence when the
-/// compare holds ("Draw 1 card. If your Power skill is greater than your opponent's Power
-/// skill, draw 2 cards instead."). Returns `(gate, replacement actions)`; `parse_text`
-/// gates the preceding base effect on `Not(gate)` and pushes the replacement — sharing the
-/// base's trigger — gated on `gate`, so exactly one fires (mirrors [`flip_both_instead`]).
-/// The word "instead" may sit at the body's end ("draw 2 cards instead") or mid-body
-/// ("your next turn roll is instead +2"); it is stripped before compiling. `None` when the
-/// clause isn't a skill-compare-instead or the body has no grammar — "put that card on top
-/// of your deck" (a flip referent) declines and stays Unsupported.
-fn skill_compare_instead(clause: &str, source: EffectSource) -> Option<(Condition, Vec<Action>)> {
-    static RE: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(
-            r"(?i)^If (your \w+ skill is (?:greater|higher) than your opponent.?s \w+ skill)[,:;] (.+)$",
-        )
-        .unwrap()
-    });
+/// "If `<gate>`, `<body>` instead" — a gated clause that REPLACES the preceding sibling
+/// effect's consequence when `<gate>` holds ("Draw 1 card. If your Power skill is greater
+/// than your opponent's Power skill, draw 2 cards instead."; "Your opponent buries 2 cards
+/// in their hand. If the Crowd Meter is 3 or greater, your opponent buries 3 cards in their
+/// hand instead."). The gate is anything [`gate_condition`] parses — a skill compare, a
+/// Crowd-Meter threshold, a has-in-play count, a turn-roll gate, … Returns `(gate,
+/// replacement actions)`; `parse_text` gates the preceding base effect on `Not(gate)` and
+/// pushes the replacement — sharing the base's trigger — gated on `gate`, so exactly one
+/// fires (mirrors [`flip_both_instead`]), and only when the base's first action is the SAME
+/// variant as the replacement (a draw replaces a draw, a bury a bury). The word "instead"
+/// may sit at the body's end ("draw 2 cards instead") or mid-body ("your next turn roll is
+/// instead +2"); it is stripped before compiling. `None` when the gate doesn't parse or the
+/// body has no grammar — those fall through to the generic gate / Unsupported.
+fn gated_instead(clause: &str, source: EffectSource) -> Option<(Condition, Vec<Action>)> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^If (.+?)[,:;] (.+)$").unwrap());
     let caps = RE.captures(clause.trim().trim_end_matches('.').trim())?;
     if !caps[2].to_lowercase().contains("instead") {
         return None;
@@ -5177,6 +5175,30 @@ fn build_flip_crowd_reroll_rules() -> Vec<(Regex, Builder)> {
             e.optional = c.get(1).is_some();
             Some(e)
         }),
+        // "When you roll <S>[ or <S>], you may re-roll" — a turn-roll re-roll gated on
+        // the rolled skill (Brock Smith V2's gimmick, wrapped in "Once per turn roll:").
+        // The gate becomes a `RollWasSkill` condition (or an OR-set) read against the
+        // roll context in `offer_reroll`; the bare "re-roll" re-rolls the current turn
+        // roll (`This`). Anchored past the "re-roll your (next) turn roll" bodies, so no
+        // overlap. Self-side only — the "force your opponent to re-roll" phrasing lacks
+        // "you may re-roll" and stays on its own rule.
+        rule(
+            &format!(r"When you roll ({SKNC}(?:,? (?:or )?{SKNC})*),? you may re-?roll"),
+            |c| {
+                let cond = roll_was_any(&c[1]).unwrap_or_else(|| Condition::RollWasSkill {
+                    skill: skill(&c[1]),
+                    who: Who::SelfSide,
+                });
+                let mut e = eff(
+                    Trigger::OnPlay,
+                    vec![reroll(Who::SelfSide, RollWhen::This, false)],
+                    cond,
+                    Duration::Instant,
+                );
+                e.optional = true;
+                Some(e)
+            },
+        ),
         // "[You may] bury this card to re-roll your Breakout roll" (My Most Powerful
         // Spell, via WHILE_IN_DISCARD). The "bury this card" cost (a self-recycle out of
         // the discard) is a documented simplification — DROPPED — so the effect can
@@ -8956,13 +8978,12 @@ pub fn parse_text(
                 continue;
             }
         }
-        // "If your <S> skill is greater than your opponent's <S>, <body> instead" REPLACES
-        // the preceding sibling: gate the base on Not(compare) and add the replacement
-        // (sharing the base's trigger) on the compare, so exactly one fires. Only when the
-        // base's first action is the SAME variant as the replacement (a draw replaces a
-        // draw, a roll a roll) — otherwise the "instead" is not about this base, so leave
-        // it (falls through to Unsupported).
-        if let Some((cond, actions)) = skill_compare_instead(clause, source) {
+        // "If <gate>, <body> instead" REPLACES the preceding sibling: gate the base on
+        // Not(gate) and add the replacement (sharing the base's trigger) on the gate, so
+        // exactly one fires. Only when the base's first action is the SAME variant as the
+        // replacement (a draw replaces a draw, a bury a bury) — otherwise the "instead" is
+        // not about this base, so leave it (falls through to Unsupported).
+        if let Some((cond, actions)) = gated_instead(clause, source) {
             let same_variant = effects.last().is_some_and(|base| {
                 base.actions
                     .first()

@@ -419,6 +419,28 @@ impl HeuristicPolicy {
         legal[worst].clone()
     }
 
+    /// Dismantler's "discard any number of cards from your hand": keep shedding the least
+    /// valuable card until the opponent's hand would be stripped — the count
+    /// `D* = opp_hand - offset` the engine used to force (D-1 ≥ opp_hand empties them for
+    /// offset -1) — then stop. Each option carries `discarded`/`opp_hand`/`offset`. A
+    /// no-op-to-continue past D* keeps the actor's remaining cards.
+    fn at_coupled_discard(&self, legal: &[Value], state: &GameState, key: &str) -> Value {
+        let hint = |k: &str| legal[0].get(k).and_then(Value::as_i64).unwrap_or(0);
+        let discarded = hint("discarded");
+        let target = (hint("opp_hand") - hint("offset")).max(0);
+        if discarded >= target {
+            return or_first(by_kind(legal, "none"), legal); // stop — keep the rest
+        }
+        // Shed the least valuable card (mirrors at_discard); never the "none" option.
+        let worst = (0..legal.len())
+            .filter(|&i| okind(&legal[i]) != "none")
+            .min_by_key(|&i| {
+                discard_keep_value(hand_card(state, key, ocard(&legal[i])), state, key)
+            })
+            .unwrap();
+        legal[worst].clone()
+    }
+
     /// The effect owner burying the OPPONENT's hand (The Man from I.T.): disrupt the
     /// most valuable card, looked up in the opponent's hand (the pool owner). Negated
     /// `min_by_key` keeps the FIRST maximum on a tie, matching Python `max`.
@@ -478,6 +500,7 @@ impl Policy for HeuristicPolicy {
             "bury_opp_hand" => self.at_bury_opp_hand(legal, state, key),
             "skill" => at_choose_skill(legal, state, key),
             "discard" => self.at_discard(legal, state, key),
+            "coupled_discard" => self.at_coupled_discard(legal, state, key),
             "reveal" => at_reveal(legal, state, key),
             "optional" => self.at_optional(legal),
             "elect_bump" => self.at_elect_bump(legal, state, key),

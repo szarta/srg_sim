@@ -4708,6 +4708,27 @@ fn skill_compare_instead_grammar() {
         }),
         "the base flip was not re-gated"
     );
+
+    // Crowd-Meter gate (Sweet & Salty Impact Drop): a bury base replaced by a bigger bury
+    // when the meter is high enough. The gate is any `gate_condition`, not just a compare.
+    let effs = parse_text(
+        "Your opponent buries 2 cards in their hand. If the Crowd Meter is 3 or greater, your opponent buries 3 cards in their hand instead.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2, "the base bury + the replacement bury");
+    let base = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(
+        base["condition"]["@type"], "Not",
+        "base gated on Not(meter)"
+    );
+    assert_eq!(base["condition"]["item"]["@type"], "CrowdMeterCompare");
+    assert_eq!(base["actions"][0]["@type"], "Bury");
+    let instead = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(instead["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(instead["actions"][0]["@type"], "Bury");
+    assert_eq!(base["trigger"], instead["trigger"], "shared trigger");
 }
 
 /// Opponent turn-roll modifiers (task #131), all riding TurnRollBonus{who:Opp} / the

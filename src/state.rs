@@ -926,6 +926,7 @@ impl GameState {
             CountZone::InPlay => &player.in_play,
             CountZone::Discard => &player.discard,
             CountZone::FlippedThisTurn => &player.flipped_this_turn,
+            CountZone::Hand => &player.hand,
         };
         let mut out = Vec::new();
         for c in cards {
@@ -1197,6 +1198,12 @@ impl GameState {
                 .count() as i64,
             CountZone::FlippedThisTurn => player
                 .flipped_this_turn
+                .iter()
+                .filter(skip)
+                .filter(|c| conditions::card_matches(c, filter))
+                .count() as i64,
+            CountZone::Hand => player
+                .hand
                 .iter()
                 .filter(skip)
                 .filter(|c| conditions::card_matches(c, filter))

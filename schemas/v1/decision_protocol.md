@@ -92,6 +92,7 @@ Three builders produce the card options (`src/engine.rs`):
 | `return_to_hand` | An in-play card to bounce to hand (either board) | `play`-option **+ `owner`** per in-play card | no |
 | `bury` | (do_pass) recycle a discard card to deck bottom — `play`-options; **or** (bury_from_discard) bury from a discard pile — `discard`-options **+ `owner`** | see note (two shapes) | no |
 | `discard` | A hand card to discard (own hand) | `discard`-option per hand card | no |
+| `coupled_discard` | How many of your hand cards to discard for a "discard **any number**" effect (Dismantler): pick one at a time, or stop | `discard`-option per hand card, then a trailing `{"kind":"none"}` (pick-or-stop, like `target`). Options also carry `discarded`/`opp_hand`/`offset` AI hints a human ignores | no |
 | `discard_opp_hand` | A card in the **opponent's** hand to force-discard | `discard`-option (same wire shape as `discard`) | no |
 | `bury_hand` | A card from your own hand to deck bottom | `discard`-option | no |
 | `bury_opp_hand` | A card from the opponent's hand to deck bottom | `discard`-option | no |

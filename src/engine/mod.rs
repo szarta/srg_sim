@@ -1479,6 +1479,7 @@ impl Engine {
             | Action::FlipGimmickSigns { .. }
             | Action::CountsAsInPlay { .. }
             | Action::ElectBumpOnSameSkill { .. }
+            | Action::BumpInsteadOnSameSkillLoss
             | Action::Unstoppable { .. }
             // A card's Stop declaration is read structurally at stop-time
             // (`card_can_stop`), never executed here — so an OnPlay Stop is a no-op,
@@ -3070,23 +3071,22 @@ impl Engine {
         Ok(())
     }
 
-    /// Defector's Dismantler (schema v76). "Discard any number of cards from your
-    /// hand, your opponent discards the same number of cards from their hand
-    /// `offset`." No policy count-choice hook exists, so N is a heuristic: strip the
-    /// opponent's hand when affordable — `N = min(self_hand, opp_hand + 1)`, so the
-    /// opponent (who sheds `N + offset`) empties whenever the actor can pay. The
-    /// self-discard fires `OnBury` so a discard-recur gimmick (Defector's own) still
-    /// triggers; a self-hand-loss suppressor zeroes the whole trade.
+    /// Defector's Dismantler (schema v76). "Discard **any number** of cards from your
+    /// hand, your opponent discards the same number of cards from their hand `offset`."
+    /// "Any number" is the ACTOR'S choice (0..hand) — surfaced as a real decision
+    /// ([`discard_any_number`](Self::discard_any_number)) so a human/frontend controls
+    /// the count instead of the count being forced. The AI answers it via
+    /// `at_coupled_discard` (its classic strip-the-opponent count). The self-discard
+    /// fires `OnBury` so a discard-recur gimmick (Defector's own) still triggers; a
+    /// self-hand-loss suppressor zeroes the whole trade.
     fn act_coupled_discard(&mut self, offset: i64, key: &str) -> Eng<()> {
         let opp = self.state.opponent_of(key);
         if self.suppresses_self_hand_loss(key, key) {
             self.log_effect(key, "SuppressSelfHandLoss", Some(key), json!({"n": 0}));
             return Ok(());
         }
-        let self_hand = self.state.players[key].hand.len() as i64;
-        let opp_hand = self.state.players[&opp].hand.len() as i64;
-        let n = self_hand.min(opp_hand + 1).max(0);
-        if n > 0 && self.discard_from_hand(key, key, n as usize, false, None)? > 0 {
+        let n = self.discard_any_number(key, offset)? as i64;
+        if n > 0 {
             self.run_on_bury(key, true, true)?; // effect-caused hand discard (gimmick recur)
         }
         let opp_n = (n + offset).max(0);
@@ -3094,6 +3094,60 @@ impl Engine {
             self.run_on_bury(&opp, true, true)?;
         }
         Ok(())
+    }
+
+    /// The actor's "discard any number of cards from your hand" choice: pick a card to
+    /// discard or stop early, until they stop or the hand empties — the "up to" idiom the
+    /// frontend already renders (card options + `none`). Each option carries the context
+    /// the AI policy reads (`discarded` so far, `opp_hand`, `offset`) to reproduce the
+    /// strip-the-opponent count; a human ignores the hints and picks freely. Returns the
+    /// number discarded; the batch is logged as one Discard event.
+    fn discard_any_number(&mut self, key: &str, offset: i64) -> Eng<usize> {
+        let opp = self.state.opponent_of(key);
+        let opp_hand = self.state.players[&opp].hand.len() as i64;
+        let mut dropped: Vec<Card> = Vec::new();
+        loop {
+            let pool: Vec<Card> = self.state.players[key].hand.clone();
+            if pool.is_empty() {
+                break;
+            }
+            let mut legal: Vec<Value> = pool.iter().map(discard_option).collect();
+            legal.push(json!({"kind": "none"}));
+            for o in &mut legal {
+                o["discarded"] = json!(dropped.len());
+                o["opp_hand"] = json!(opp_hand);
+                o["offset"] = json!(offset);
+            }
+            let chosen = self.decide("coupled_discard", key, legal)?;
+            if chosen["kind"] == "none" {
+                break;
+            }
+            let card = find_by_uuid(&pool, &chosen);
+            let hand = &mut self.state.players.get_mut(key).unwrap().hand;
+            if let Some(pos) = hand.iter().position(|c| c.db_uuid == card.db_uuid) {
+                hand.remove(pos);
+            }
+            dropped.push(card);
+        }
+        let n = dropped.len();
+        if !dropped.is_empty() {
+            let cards = dropped.iter().map(|c| c.db_uuid.clone()).collect();
+            self.state
+                .players
+                .get_mut(key)
+                .unwrap()
+                .discard
+                .extend(dropped);
+            let t = self.state.turn_no;
+            self.log(Event::Discard(CardMovement {
+                t,
+                player: key.to_owned(),
+                cards,
+                source: None,
+                hidden: false,
+            }));
+        }
+        Ok(n)
     }
 
     /// `actor` picks and discards one of `target`'s in-play cards matching `selector`
@@ -6556,6 +6610,18 @@ impl Engine {
                 bumps = nb;
                 continue;
             }
+            // Forced same-skill bump when the owner would LOSE (Brock Smith V1): a
+            // same-skill roll the gimmick's owner is losing is converted into a bump.
+            if let Some((nsa, nva, nsb, nvb, nb)) =
+                self.try_forced_same_skill_bump(sa, va, sb, vb, bumps, lowest)?
+            {
+                sa = nsa;
+                va = nva;
+                sb = nsb;
+                vb = nvb;
+                bumps = nb;
+                continue;
+            }
             if va != vb {
                 break; // a decided roll: no value tie and no elected bump
             }
@@ -6637,6 +6703,58 @@ impl Engine {
             return Ok(None);
         }
         Ok(Some(self.do_bump(bumps)?))
+    }
+
+    /// Brock Smith V1's start-of-match gimmick: both rolled the same skill, values
+    /// differ, and the side holding `BumpInsteadOnSameSkillLoss` is the one who would
+    /// LOSE the turn roll → force a bump ("bump instead"). Unlike the elective bump this
+    /// takes no decision (the card is mandatory) and is unlimited. `Some(fresh roll)` if
+    /// a forced bump happened. In a 1v1 the sole opponent is the "chosen opponent".
+    #[allow(clippy::type_complexity)]
+    fn try_forced_same_skill_bump(
+        &mut self,
+        sa: Skill,
+        va: i64,
+        sb: Skill,
+        vb: i64,
+        bumps: i64,
+        lowest: bool,
+    ) -> Eng<Option<(Skill, i64, Skill, i64, i64)>> {
+        if self
+            .forced_same_skill_bump_loser(sa, va, sb, vb, lowest)
+            .is_none()
+        {
+            return Ok(None);
+        }
+        Ok(Some(self.do_bump(bumps)?))
+    }
+
+    /// The side whose `BumpInsteadOnSameSkillLoss` gimmick forces a bump on this roll:
+    /// `Some(loser)` only when both rolled the SAME skill, the values differ, and the
+    /// side that would LOSE holds the gimmick (Brock Smith V1). `None` on a different
+    /// skill, a value tie (already bumps for free), or when the loser has no gimmick.
+    fn forced_same_skill_bump_loser(
+        &self,
+        sa: Skill,
+        va: i64,
+        sb: Skill,
+        vb: i64,
+        lowest: bool,
+    ) -> Option<String> {
+        if sa != sb || va == vb {
+            return None;
+        }
+        let loser = if roll_winner(va, vb, lowest) == "A" {
+            "B"
+        } else {
+            "A"
+        };
+        let owns = self.standing_effects(loser).iter().any(|e| {
+            e.actions
+                .iter()
+                .any(|a| matches!(a, Action::BumpInsteadOnSameSkillLoss))
+        });
+        owns.then(|| loser.to_owned())
     }
 
     /// Perform a bump: both draw 1, fire OnBump punishes, and re-roll (pending mods
@@ -7836,6 +7954,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::WinTie { .. } => "WinTie",
         Action::Bump { .. } => "Bump",
         Action::ElectBumpOnSameSkill { .. } => "ElectBumpOnSameSkill",
+        Action::BumpInsteadOnSameSkillLoss => "BumpInsteadOnSameSkillLoss",
         Action::Stop { .. } => "Stop",
         Action::BlankGimmick { .. } => "BlankGimmick",
         Action::FlipGimmick { .. } => "FlipGimmick",

@@ -1251,6 +1251,9 @@
                 "$ref": "#/$defs/Bump"
               },
               {
+                "$ref": "#/$defs/BumpInsteadOnSameSkillLoss"
+              },
+              {
                 "$ref": "#/$defs/ElectBumpOnSameSkill"
               },
               {
@@ -1655,7 +1658,8 @@
       "enum": [
         "IN_PLAY",
         "DISCARD",
-        "FLIPPED_THIS_TURN"
+        "FLIPPED_THIS_TURN",
+        "HAND"
       ],
       "type": "string"
     },
@@ -2242,6 +2246,9 @@
                 "$ref": "#/$defs/Bump"
               },
               {
+                "$ref": "#/$defs/BumpInsteadOnSameSkillLoss"
+              },
+              {
                 "$ref": "#/$defs/ElectBumpOnSameSkill"
               },
               {
@@ -2670,6 +2677,19 @@
         "entrance"
       ],
       "type": "string"
+    },
+    "BumpInsteadOnSameSkillLoss": {
+      "additionalProperties": false,
+      "description": "Persistent, FORCED same-skill bump when the owner would LOSE the turn roll (Brock Smith V1). Unlike the elective ElectBumpOnSameSkill it is unlimited and mandatory, firing only on a same-skill roll the owner is losing. schema v151",
+      "properties": {
+        "@type": {
+          "const": "BumpInsteadOnSameSkillLoss"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
     },
     "ElectBumpOnSameSkill": {
       "additionalProperties": false,
@@ -3538,6 +3558,9 @@
         },
         {
           "$ref": "#/$defs/Effect"
+        },
+        {
+          "$ref": "#/$defs/BumpInsteadOnSameSkillLoss"
         },
         {
           "$ref": "#/$defs/ElectBumpOnSameSkill"
@@ -5275,6 +5298,9 @@
                 "$ref": "#/$defs/Bump"
               },
               {
+                "$ref": "#/$defs/BumpInsteadOnSameSkillLoss"
+              },
+              {
                 "$ref": "#/$defs/ElectBumpOnSameSkill"
               },
               {
@@ -5913,6 +5939,9 @@
               },
               {
                 "$ref": "#/$defs/Bump"
+              },
+              {
+                "$ref": "#/$defs/BumpInsteadOnSameSkillLoss"
               },
               {
                 "$ref": "#/$defs/ElectBumpOnSameSkill"
@@ -7079,5 +7108,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 150
+  "version": 151
 }

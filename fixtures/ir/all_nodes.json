@@ -431,6 +431,9 @@
     "uses": 0
   },
   {
+    "@type": "BumpInsteadOnSameSkillLoss"
+  },
+  {
     "@type": "FinishBonus",
     "delta": 0,
     "skill": "Power"
