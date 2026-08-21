@@ -2611,19 +2611,22 @@ fn skill_list(text: &str) -> Vec<Skill> {
 }
 
 fn atk(text: &str) -> AtkType {
-    match text {
-        "Strike" => AtkType::Strike,
-        "Grapple" => AtkType::Grapple,
-        "Submission" => AtkType::Submission,
+    // Case-insensitive: a few stop-target clauses lowercase the word ("lead Strike"),
+    // and the `(?i)` STOP_PART_RE can hand back any casing.
+    match text.to_ascii_lowercase().as_str() {
+        "strike" => AtkType::Strike,
+        "grapple" => AtkType::Grapple,
+        "submission" => AtkType::Submission,
         other => unreachable!("atk regex admitted {other:?}"),
     }
 }
 
 fn order(text: &str) -> PlayOrder {
-    match text {
-        "Lead" => PlayOrder::Lead,
-        "Follow Up" => PlayOrder::Followup,
-        "Finish" => PlayOrder::Finish,
+    // Case-insensitive (see `atk`): admits "lead"/"Lead", "follow up"/"Follow Up", …
+    match text.to_ascii_lowercase().as_str() {
+        "lead" => PlayOrder::Lead,
+        "follow up" => PlayOrder::Followup,
+        "finish" => PlayOrder::Finish,
         other => unreachable!("order regex admitted {other:?}"),
     }
 }
@@ -2652,8 +2655,12 @@ static COUNT_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(?:(lead|follow up|finish) )?(strike|grapple|submission)$").unwrap()
 });
 static STOP_PART_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(?:(Lead|Follow Up|Finish) )?(Strike|Grapple|Submission)$").unwrap()
+    Regex::new(r"(?i)^(?:(Lead|Follow Up|Finish) )?(Strike|Grapple|Submission)$").unwrap()
 });
+/// A stop-target OR-part that is a bare order with NO type — "Follow Up" in "stop any
+/// Follow Up or Finish Grapple", where the type on a later part distributes leftward.
+static ORDER_ONLY_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)^(Lead|Follow Up|Finish)$").unwrap());
 
 fn count_order(text: &str) -> PlayOrder {
     match text {
@@ -3217,16 +3224,50 @@ fn stop_targets(text: &str) -> Option<Vec<Action>> {
     // A multi-name qualifier is peeled at body level (its inner " or " must not split into a
     // second target); it applies to every type-part below. A single name stays per-part.
     let (body, list_target) = strip_target_names(body);
-    let mut stops = Vec::new();
+    // First pass: each OR-part is a full `<order?> <type>` or a BARE ORDER (whose type is
+    // supplied by a later part — "Follow Up or Finish Grapple" = a Follow Up AND a Finish
+    // Grapple). Anything else declines the whole target.
+    let mut parts: Vec<StopPart> = Vec::new();
     for part in OR_RE.split(body) {
         let (head, part_target) = strip_target_filter(part);
-        let m = STOP_PART_RE.captures(norm_stop_part(head))?;
+        let norm = norm_stop_part(head);
+        if let Some(m) = STOP_PART_RE.captures(norm) {
+            parts.push(StopPart::Full {
+                order: m.get(1).map(|g| order(g.as_str())),
+                atk_type: atk(&m[2]),
+                target: part_target,
+            });
+        } else {
+            // A bare order ("Follow Up") with no type of its own; otherwise the whole
+            // target is not a plain stop-part list and declines.
+            let m = ORDER_ONLY_RE.captures(norm)?;
+            parts.push(StopPart::BareOrder(order(&m[1]), part_target));
+        }
+    }
+    // Second pass: a bare order inherits the type of the nearest FULL part (following ones
+    // first, then preceding). If no part carries a type at all, the target is undetermined.
+    let mut stops = Vec::new();
+    for (i, p) in parts.iter().enumerate() {
+        let (order, atk_type, target) = match p {
+            StopPart::Full {
+                order,
+                atk_type,
+                target,
+            } => (*order, *atk_type, target.clone()),
+            StopPart::BareOrder(o, target) => {
+                let atk_type = parts[i + 1..]
+                    .iter()
+                    .chain(parts[..i].iter().rev())
+                    .find_map(StopPart::atk_type)?;
+                (Some(*o), atk_type, target.clone())
+            }
+        };
         stops.push(Action::Stop {
-            order: m.get(1).map(|g| order(g.as_str())),
-            atk_type: Some(atk(&m[2])),
+            order,
+            atk_type: Some(atk_type),
             source_is_skillreq: false,
             even_unstoppable,
-            target: list_target.clone().or(part_target),
+            target: list_target.clone().or(target),
             also_order: also_order.clone(),
         });
     }
@@ -3234,6 +3275,26 @@ fn stop_targets(text: &str) -> Option<Vec<Action>> {
         None
     } else {
         Some(stops)
+    }
+}
+
+/// One parsed OR-part of a "stop any …" target (see [`stop_targets`]).
+enum StopPart {
+    Full {
+        order: Option<PlayOrder>,
+        atk_type: AtkType,
+        target: Option<CardFilter>,
+    },
+    /// A bare order with no type of its own; its type is distributed from a `Full` part.
+    BareOrder(PlayOrder, Option<CardFilter>),
+}
+
+impl StopPart {
+    fn atk_type(&self) -> Option<AtkType> {
+        match self {
+            StopPart::Full { atk_type, .. } => Some(*atk_type),
+            StopPart::BareOrder(..) => None,
+        }
     }
 }
 

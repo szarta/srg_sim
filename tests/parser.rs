@@ -1397,6 +1397,60 @@ fn stop_also_order_grammar() {
     assert_eq!(a["also_order"], Value::Null);
 }
 
+/// COMPOUND-ORDER stop targets (#120): a bare order shares the type of a later part —
+/// "stop any Follow Up or Finish Grapple" = (Follow Up Grapple) AND (Finish Grapple) —
+/// and a lowercased order word ("lead Strike") is admitted.
+#[test]
+fn stop_compound_order_grammar() {
+    fn stops(text: &str) -> Value {
+        let e = parse_text(text, EffectSource::Card, None, None);
+        serde_json::to_value(&e[0]).unwrap()["actions"].clone()
+    }
+
+    // Type on the last part distributes leftward to the bare "Follow Up".
+    let a = stops("Stop any Follow Up or Finish Grapple.");
+    assert_eq!(a[0]["order"], "Followup");
+    assert_eq!(a[0]["atk_type"], "Grapple");
+    assert_eq!(a[1]["order"], "Finish");
+    assert_eq!(a[1]["atk_type"], "Grapple");
+
+    // Gated + "even if it cannot be stopped": both Stops inherit even_unstoppable, and the
+    // shared type still distributes.
+    let e = parse_text(
+        "If your Technique skill is greater than your opponent's Technique skill, stop \
+         any Follow Up or Finish Strike, even if it cannot be stopped.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let a = serde_json::to_value(&e[0]).unwrap()["actions"].clone();
+    assert_eq!(a[0]["order"], "Followup");
+    assert_eq!(a[0]["atk_type"], "Strike");
+    assert_eq!(a[0]["even_unstoppable"], true);
+    assert_eq!(a[1]["order"], "Finish");
+    assert_eq!(a[1]["even_unstoppable"], true);
+
+    // A body-level "with \"X\" or \"Y\" in the name" list applies to every distributed part.
+    let a = stops("Stop any Follow Up or Finish Submission with \"Hold\" or \"Knot\" in the name.");
+    assert_eq!(a[0]["order"], "Followup");
+    assert_eq!(a[0]["atk_type"], "Submission");
+    assert_eq!(
+        a[0]["target"]["name_contains"],
+        serde_json::json!(["Hold", "Knot"])
+    );
+    assert_eq!(a[1]["order"], "Finish");
+    assert_eq!(
+        a[1]["target"]["name_contains"],
+        serde_json::json!(["Hold", "Knot"])
+    );
+
+    // Lowercased order word is admitted; each part fully specified (no distribution needed).
+    let a = stops("Stop any lead Strike or any Finish Strike.");
+    assert_eq!(a[0]["order"], "Lead");
+    assert_eq!(a[0]["atk_type"], "Strike");
+    assert_eq!(a[1]["order"], "Finish");
+}
+
 /// FINISH-OFF-STOP (#120, schema v145): "[if the stopped card had no logo/req / if played
 /// as a Stop,] this card is also a Finish" -> an `OnStop{Theirs}` effect carrying the
 /// `FinishIfStop` marker (the engine runs a finish sequence off the successful stop), the
