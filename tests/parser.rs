@@ -4092,6 +4092,14 @@ fn double_these_bonuses_gates() {
         cond("If you re-rolled your turn roll for any reason, double these bonuses.")["@type"],
         "RerolledTurnRoll"
     );
+    // "either player re-rolled …" -> Or of both sides (also the "previous turn roll" idiom).
+    let c = cond("If either player re-rolled their previous turn roll, double these bonuses.");
+    assert_eq!(c["@type"], "Or");
+    assert_eq!(
+        c["items"][0],
+        serde_json::json!({"@type": "RerolledTurnRoll"})
+    );
+    assert_eq!(c["items"][1]["who"], "OPP");
     assert_eq!(
         cond("If you ended the last turn without playing a card, double these bonuses.")["@type"],
         "EndedTurnNoPlay"
