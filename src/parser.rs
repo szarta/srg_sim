@@ -2073,6 +2073,35 @@ fn passive_discard_effect(body: &str) -> Option<Effect> {
     Some(effect)
 }
 
+/// Parse a turn-roll-DELTA gate — "your turn roll was [exactly|at least] N (greater|less)
+/// than your opponent's[ turn roll]" — into a signed roll-gap [`Condition`]. The context's
+/// `gap` is `opp - self`, so a self-GREATER roll is a NEGATIVE gap:
+///   - "at least N greater" -> `RollLeadAtLeast{N}` (self leads by ≥ N)
+///   - "at least N less"     -> `RollGapAtLeast{N}`  (self trails by ≥ N)
+///   - "exactly N greater"   -> `RollGapExactly{-N}`
+///   - "exactly N less"      -> `RollGapExactly{N}`
+///
+/// A bare "N greater/less" (no `exactly`/`at least` qualifier) DECLINES rather than guess
+/// exact-vs-threshold, so it stays `Unsupported`.
+fn roll_delta_gate(t: &str) -> Option<Condition> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^your turn roll was (exactly|at least) (\d+) (greater|less) than your opponent'?s(?: turn roll)?$",
+        )
+        .unwrap()
+    });
+    let c = RE.captures(t)?;
+    let n: i64 = c[2].parse().ok()?;
+    let at_least = c[1].eq_ignore_ascii_case("at least");
+    let greater = c[3].eq_ignore_ascii_case("greater");
+    Some(match (at_least, greater) {
+        (true, true) => Condition::RollLeadAtLeast { k: n },
+        (true, false) => Condition::RollGapAtLeast { k: n },
+        (false, true) => Condition::RollGapExactly { k: -n },
+        (false, false) => Condition::RollGapExactly { k: n },
+    })
+}
+
 /// Parse a turn-roll-VALUE gate — "your turn roll is N" / "your opponent's turn roll is
 /// N", with an optional "or greater" (`Ge`), "or less" (`Le`), or a second value "or M"
 /// (an `Or` of two `Eq`s — Shade's "9 or 10"). The opponent form ("your opponent's turn
@@ -2081,8 +2110,10 @@ fn passive_discard_effect(body: &str) -> Option<Effect> {
 /// time. Returns `None` for any other shape. schema v130.
 fn turn_roll_value_gate(t: &str) -> Option<Condition> {
     static RE: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"(?i)^your (opponent's )?turn roll is (\d+)(?: or (greater|less|(\d+)))?$")
-            .unwrap()
+        Regex::new(
+            r"(?i)^your (opponent's )?turn roll (?:is|was) (\d+)(?: or (greater|less|(\d+)))?$",
+        )
+        .unwrap()
     });
     let c = RE.captures(t)?;
     let who = if c.get(1).is_some() {
@@ -2119,6 +2150,11 @@ fn gate_condition(text: &str) -> Option<Condition> {
             r"(?i)^your opponent rolled {SK} for their turn roll$"
         ))
         .unwrap()
+    });
+    // "your [opponent's] turn roll was <S>" — the same rolled-skill gate written in the
+    // "turn roll was" idiom (the value twin is `turn_roll_value_gate`'s "is|was").
+    static ROLL_WAS_SK: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(r"(?i)^your (opponent's )?turn roll was {SK}$")).unwrap()
     });
     static ROLL_VAL: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^you rolled (\d+) for your turn roll$").unwrap());
@@ -2205,6 +2241,20 @@ fn gate_condition(text: &str) -> Option<Condition> {
             skill: skill(&c[1]),
             who: Who::Opp,
         });
+    }
+    if let Some(c) = ROLL_WAS_SK.captures(t) {
+        let who = if c.get(1).is_some() {
+            Who::Opp
+        } else {
+            Who::SelfSide
+        };
+        return Some(Condition::RollWasSkill {
+            skill: skill(&c[2]),
+            who,
+        });
+    }
+    if let Some(c) = roll_delta_gate(t) {
+        return Some(c);
     }
     if let Some(c) = ROLL_VAL.captures(t) {
         return Some(Condition::RollValue {
@@ -2716,7 +2766,7 @@ fn finish_off_stop(cm_delta: Option<i64>, condition: Condition) -> Effect {
 /// engine evaluates this from the CARD OWNER's side with their turn roll context.
 fn stop_condition(text: &str) -> Option<Condition> {
     static CROWD: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"^the [Cc]rowd [Mm]eter is (\d+) or (greater|less)$").unwrap()
+        Regex::new(r"^the [Cc]rowd [Mm]eter is (\d+) or (greater|higher|less|lower)$").unwrap()
     });
     // "greater than" / "higher than" (synonyms) vs the opponent's same-or-other
     // skill; an optional "or equal to" promotes the comparator Gt -> Ge. Group 2 is
@@ -2807,7 +2857,7 @@ fn stop_condition(text: &str) -> Option<Condition> {
 
     let t = text.trim();
     if let Some(c) = CROWD.captures(t) {
-        let cmp = if &c[2] == "greater" {
+        let cmp = if matches!(&c[2], "greater" | "higher") {
             Comparator::Ge
         } else {
             Comparator::Le

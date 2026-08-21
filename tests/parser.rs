@@ -2132,6 +2132,41 @@ fn cannot_be_stopped_gates() {
     assert_eq!(e["actions"][0]["@type"], "Unstoppable");
     assert_eq!(e["actions"][0]["by_order"], "Followup");
     assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+
+    // "turn roll WAS <skill>" (opp) — the "was" idiom of the rolled-skill gate.
+    let e = unstop("If your opponent's turn roll was Agility, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "RollWasSkill");
+    assert_eq!(e["condition"]["who"], "OPP");
+
+    // "turn roll WAS <N> or less" (opp) — the "was" idiom of the value gate.
+    let e = unstop("If your opponent's turn roll was 4 or less, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "RollValue");
+    assert_eq!(e["condition"]["who"], "OPP");
+    assert_eq!(e["condition"]["cmp"], "<=");
+    assert_eq!(e["condition"]["value"], 4);
+
+    // Roll-DELTA gates: gap = opp - self, so self-greater is a NEGATIVE gap.
+    let e = unstop("When your turn roll was exactly 2 greater than your opponent's turn roll, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "RollGapExactly");
+    assert_eq!(e["condition"]["k"], -2);
+
+    let e = unstop(
+        "If your turn roll was at least 3 less than your opponent's, this card cannot be stopped.",
+    );
+    assert_eq!(e["condition"]["@type"], "RollGapAtLeast");
+    assert_eq!(e["condition"]["k"], 3);
+
+    // Compound: CM "3 or higher" AND a roll-lead delta.
+    let e = unstop("When the Crowd Meter is 3 or higher and your turn roll was at least 2 greater than your opponent's, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "And");
+    assert_eq!(e["condition"]["items"][0]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["condition"]["items"][1]["@type"], "RollLeadAtLeast");
+    assert_eq!(e["condition"]["items"][1]["k"], 2);
+
+    // A bare "N greater" (no exactly/at least) declines -> stays Unsupported.
+    let e =
+        one("If your turn roll was 2 greater than your opponent's, this card cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
 /// Player-scope "Your cards with \"X\" in the name cannot be stopped" (#120): a
