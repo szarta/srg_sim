@@ -1236,6 +1236,14 @@ fn generic_gated_stop_grammar() {
     // A gate `gate_condition` cannot map declines (stays Unsupported), not a bad Stop.
     let e = eff0("If the moon is full, stop any Grapple.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
+
+    // Turn-roll value gate (folded into gate_condition) now reaches the gated-stop rule.
+    let e = eff0("If your opponent's turn roll was 10 or greater, stop any Finish Strike.");
+    assert_eq!(e["condition"]["@type"], "RollValue");
+    assert_eq!(e["condition"]["cmp"], ">=");
+    assert_eq!(e["condition"]["value"], 10);
+    assert_eq!(e["condition"]["who"], "OPP");
+    assert_eq!(e["actions"][0]["@type"], "Stop");
 }
 
 /// Card-title in-play gate (#120): "you have \"X\"[ or \"Y\"] in play" is a `HasInPlay`

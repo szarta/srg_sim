@@ -2329,6 +2329,12 @@ fn gate_condition(text: &str) -> Option<Condition> {
     if let Some(c) = roll_delta_gate(t) {
         return Some(c);
     }
+    // "your [opponent's] turn roll is/was N[ or greater/less]" — the turn-roll value gate.
+    // Anchored, number-keyed, so it never collides with the skill-roll "you roll <S>" event
+    // family; shared here so every gated family (also-<order>, gated stops, buffs) reaches it.
+    if let Some(c) = turn_roll_value_gate(t) {
+        return Some(c);
+    }
     if let Some(c) = ROLL_VAL.captures(t) {
         return Some(Condition::RollValue {
             cmp: Comparator::Eq,
