@@ -983,6 +983,18 @@
       ],
       "type": "object"
     },
+    "CanStopUnstoppable": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "CanStopUnstoppable"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "CardFilter": {
       "additionalProperties": false,
       "properties": {
@@ -1360,6 +1372,9 @@
               },
               {
                 "$ref": "#/$defs/DoubleFinishIf"
+              },
+              {
+                "$ref": "#/$defs/CanStopUnstoppable"
               },
               {
                 "$ref": "#/$defs/DoubleFinishIfBumped"
@@ -2355,6 +2370,9 @@
               },
               {
                 "$ref": "#/$defs/DoubleFinishIf"
+              },
+              {
+                "$ref": "#/$defs/CanStopUnstoppable"
               },
               {
                 "$ref": "#/$defs/DoubleFinishIfBumped"
@@ -3549,6 +3567,9 @@
         },
         {
           "$ref": "#/$defs/DoubleFinishIf"
+        },
+        {
+          "$ref": "#/$defs/CanStopUnstoppable"
         },
         {
           "$ref": "#/$defs/DoubleFinishIfBumped"
@@ -5409,6 +5430,9 @@
                 "$ref": "#/$defs/DoubleFinishIf"
               },
               {
+                "$ref": "#/$defs/CanStopUnstoppable"
+              },
+              {
                 "$ref": "#/$defs/DoubleFinishIfBumped"
               },
               {
@@ -6050,6 +6074,9 @@
               },
               {
                 "$ref": "#/$defs/DoubleFinishIf"
+              },
+              {
+                "$ref": "#/$defs/CanStopUnstoppable"
               },
               {
                 "$ref": "#/$defs/DoubleFinishIfBumped"
@@ -7121,5 +7148,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 153
+  "version": 154
 }

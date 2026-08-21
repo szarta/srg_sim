@@ -6701,6 +6701,18 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
 
 fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
     vec![
+        // "You can stop cards that cannot be stopped" — a player-scope enabler: while it
+        // is in play (or declared on a competitor, e.g. JT Dunn), EVERY one of the owner's
+        // stops may stop an otherwise-unstoppable attack. The per-`Stop` `even_unstoppable`
+        // flag ("stop any X that cannot be stopped") is the single-card twin.
+        rule(r"[Yy]ou can stop cards that cannot be stopped", |_| {
+            Some(eff(
+                Trigger::Static,
+                vec![Action::CanStopUnstoppable],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
         // "Your cards cannot be stopped by [printed] <order>[ cards]" — the PLAYER-SCOPE
         // shield (Cat/Dog/Sheep Uprising's "printed Finishes"). Covers every one of the
         // owner's cards, so the engine reads it even from an in-play main-deck source

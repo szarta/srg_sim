@@ -2195,6 +2195,26 @@ fn your_cards_cannot_be_stopped_by_printed_finishes() {
     );
 }
 
+/// "You can stop cards that cannot be stopped" — a player-scope `CanStopUnstoppable`
+/// enabler (Pixel Palace Plancha / Throw Into the Turnbuckle / That's Cheesy Chinlock).
+/// The standing twin of the per-`Stop` `even_unstoppable` flag. schema v154.
+#[test]
+fn you_can_stop_cards_that_cannot_be_stopped() {
+    // Only the standing clause; the leading shuffle sentence parses separately.
+    let effs = parse_text(
+        "You can stop cards that cannot be stopped.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "one effect");
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["actions"][0]["@type"], "CanStopUnstoppable");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["duration"], "WHILE_IN_PLAY");
+    assert_eq!(e["condition"]["@type"], "Always");
+}
+
 /// Match-stipulation gate (task #130): "this is a <X> Match" -> IsMatchType, an OR-set
 /// when disjoined ("Steel Cage or Liger's Den"). Cascades through every gated family —
 /// generic body, double-bonuses, also-a, cannot-be-stopped. schema v92.

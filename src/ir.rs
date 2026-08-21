@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 153;
+pub const SCHEMA_VERSION: i64 = 154;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -2251,6 +2251,14 @@ pub enum Action {
         number_min: i64,
         number_max: i64,
     },
+    /// A player-scope standing declaration that the DECLARER's Stops may stop an
+    /// attack even when it "cannot be stopped" ("You can stop cards that cannot be
+    /// stopped" — Pixel Palace Plancha / Throw Into the Turnbuckle / That's Cheesy
+    /// Chinlock; JT Dunn). The per-`Stop` `even_unstoppable` flag says "THIS stop
+    /// bypasses"; this node says "ALL of your stops bypass" while it is in play (or
+    /// declared on a gimmick). Read in `card_can_stop` via `can_stop_unstoppable`,
+    /// never executed. schema v154
+    CanStopUnstoppable,
     DoubleFinishIfBumped,
     /// Double this card's own printed Finish-roll bonuses when `condition` holds —
     /// the conditional generalization of [`Self::DoubleFinishIfBumped`] ("double
@@ -3924,6 +3932,14 @@ pub enum IrNode {
         number_min: i64,
         number_max: i64,
     },
+    /// A player-scope standing declaration that the DECLARER's Stops may stop an
+    /// attack even when it "cannot be stopped" ("You can stop cards that cannot be
+    /// stopped" — Pixel Palace Plancha / Throw Into the Turnbuckle / That's Cheesy
+    /// Chinlock; JT Dunn). The per-`Stop` `even_unstoppable` flag says "THIS stop
+    /// bypasses"; this node says "ALL of your stops bypass" while it is in play (or
+    /// declared on a gimmick). Read in `card_can_stop` via `can_stop_unstoppable`,
+    /// never executed. schema v154
+    CanStopUnstoppable,
     DoubleFinishIfBumped,
     /// Double this card's own printed Finish-roll bonuses when `condition` holds —
     /// the conditional generalization of [`Self::DoubleFinishIfBumped`] ("double

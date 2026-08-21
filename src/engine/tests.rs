@@ -5158,6 +5158,58 @@ mod even_unstoppable_stop_tests {
         let sibling = named_finish_attack("Some Other Attack");
         assert!(engine.card_can_stop("A", &stopper_printed_as("Finish"), &sibling));
     }
+
+    /// A main-deck card carrying a Static `CanStopUnstoppable` ("You can stop cards that
+    /// cannot be stopped").
+    fn can_stop_unstoppable_card() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "enabler", "name": "Pixel Palace Plancha",
+            "number": 13, "play_order": "Followup", "raw_text": "", "tags": [],
+            "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "CanStopUnstoppable"}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "You can stop cards that cannot be stopped.", "source": "card",
+                "optional": false
+            }]
+        }))
+        .expect("enabler")
+    }
+
+    #[test]
+    fn can_stop_unstoppable_lets_a_plain_stop_catch_an_unstoppable_attack() {
+        let mut engine = engine();
+        // Without the enabler, a plain stop can't catch an unstoppable attack.
+        assert!(!engine.card_can_stop("A", &stopper("Finish", false), &attack(true)));
+        // A (the defender) has "You can stop cards that cannot be stopped" in play →
+        // now every one of A's plain stops beats the shield.
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(can_stop_unstoppable_card());
+        assert!(engine.card_can_stop("A", &stopper("Finish", false), &attack(true)));
+        // The order filter still applies — a Lead stop can't catch a Finish attack.
+        assert!(!engine.card_can_stop("A", &stopper("Lead", false), &attack(true)));
+    }
+
+    #[test]
+    fn can_stop_unstoppable_is_defender_scoped_not_the_attackers() {
+        let mut engine = engine();
+        // The enabler on the ATTACKER (B) must NOT help the DEFENDER (A) stop.
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .in_play
+            .push(can_stop_unstoppable_card());
+        assert!(!engine.card_can_stop("A", &stopper("Finish", false), &attack(true)));
+    }
 }
 
 /// "This card can only be stopped by Follow Ups" (#120 whitelist inverse): the parser

@@ -5317,6 +5317,10 @@ impl Engine {
         // `even_unstoppable` ("stop any Finish Strike that cannot be stopped").
         let attacker = self.state.opponent_of(defender);
         let unstoppable = self.attack_is_unstoppable_by(&attacker, attack, stopper);
+        // A per-`Stop` `even_unstoppable` flag bypasses THIS attack's Unstoppable; a
+        // player-scope `CanStopUnstoppable` declaration ("You can stop cards that cannot
+        // be stopped") lets ALL of the defender's stops bypass while it is in play.
+        let can_beat_unstoppable = self.can_stop_unstoppable(defender);
         stopper.effects.iter().any(|eff| {
             conditions::holds(&eff.condition, &self.state, defender, None)
                 && attacker_meets_tag_gates(eff, attack, unstoppable)
@@ -5324,12 +5328,19 @@ impl Engine {
                     Action::Stop {
                         even_unstoppable, ..
                     } => {
-                        (!unstoppable || *even_unstoppable)
+                        (!unstoppable || *even_unstoppable || can_beat_unstoppable)
                             && self.stop_matches_for(defender, action, attack)
                     }
                     _ => false,
                 })
         })
+    }
+
+    /// Whether `defender` declares a standing `CanStopUnstoppable` ("You can stop cards
+    /// that cannot be stopped") from an in-play card, competitor, or entrance — every
+    /// one of their stops may then stop an otherwise-unstoppable attack.
+    fn can_stop_unstoppable(&self, defender: &str) -> bool {
+        self.declares_static(defender, |a| matches!(a, Action::CanStopUnstoppable))
     }
 
     /// Whether `attack` is `Unstoppable` against `stopper` from `attacker`'s view: a
@@ -8033,6 +8044,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::FlipGimmickSigns { .. } => "FlipGimmickSigns",
         Action::Unstoppable { .. } => "Unstoppable",
         Action::AlsoLead { .. } => "AlsoLead",
+        Action::CanStopUnstoppable => "CanStopUnstoppable",
         Action::DoubleFinishIfBumped => "DoubleFinishIfBumped",
         Action::DoubleFinishIf { .. } => "DoubleFinishIf",
         Action::RequireStops { .. } => "RequireStops",

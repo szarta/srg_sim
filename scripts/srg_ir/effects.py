@@ -1630,6 +1630,16 @@ class SuppressStop(IRNode):
 
 
 @dataclass(frozen=True)
+class CanStopUnstoppable(IRNode):
+    """A player-scope standing declaration that the DECLARER's Stops may stop an attack
+    even when it "cannot be stopped" ("You can stop cards that cannot be stopped" —
+    Pixel Palace Plancha / Throw Into the Turnbuckle / That's Cheesy Chinlock; JT Dunn).
+    The per-``Stop`` ``even_unstoppable`` flag says "THIS stop bypasses"; this node says
+    "ALL of your stops bypass" while it is in play (or on a gimmick). Read in
+    ``_card_can_stop``; never executed. schema v154"""
+
+
+@dataclass(frozen=True)
 class DoubleFinishIfBumped(IRNode):
     """A static self-declaration: double THIS card's printed Finish bonuses if the
     finisher bumped on the turn roll that set up the finish ("If you bumped on the
@@ -2294,6 +2304,7 @@ Action = (
     | AlsoLead
     | StopCountsOrderAs
     | SuppressStop
+    | CanStopUnstoppable
     | DoubleFinishIfBumped
     | DoubleFinishIf
     | RequireStops
