@@ -5343,14 +5343,21 @@ impl Engine {
     fn attack_is_unstoppable_by(&self, attacker: &str, attack: &Card, stopper: &Card) -> bool {
         let roll = self.roll_ctx.get(attacker);
         let holds_for = |eff: &Effect, roll: Option<&RollContext>| {
-            eff.actions.iter().any(|a| unstoppable_gate(a, stopper))
+            eff.actions
+                .iter()
+                .any(|a| unstoppable_gate(a, stopper, attack))
                 && conditions::holds(&eff.condition, &self.state, attacker, roll)
         };
+        // Both scopes evaluate with the attacker's turn-roll context: a self-scope
+        // "if you rolled 7 …" and a player-scope "when you roll Agility: your cards
+        // with 'Flying' …" both key on the attacker's roll. The gimmick scan only
+        // ever visits `Unstoppable`-bearing effects (via `holds_for`), so feeding it
+        // the roll changes nothing for the roll-independent declarations.
         attack.effects.iter().any(|eff| holds_for(eff, roll))
             || self
                 .gimmick_standing_effects(attacker)
                 .iter()
-                .any(|eff| matches!(eff.trigger, Trigger::Static) && holds_for(eff, None))
+                .any(|eff| matches!(eff.trigger, Trigger::Static) && holds_for(eff, roll))
     }
 
     /// Whether `defender` declares that `stopper` (by its deck number) cannot act as a
@@ -7794,14 +7801,16 @@ fn attacker_meets_tag_gates(eff: &Effect, attack: &Card, unstoppable: bool) -> b
     })
 }
 
-/// Whether an `Unstoppable` action shields the attack against `stopper`: the
-/// stopper must satisfy every set gate (play order, name, skill-requirement).
-/// Non-`Unstoppable` actions never match.
-fn unstoppable_gate(a: &Action, stopper: &Card) -> bool {
+/// Whether an `Unstoppable` action shields `attack` against `stopper`: the stopper
+/// must satisfy every set STOPPER gate (play order, name, skill-requirement) AND, if
+/// the shield is a player-scope "your cards with \"X\" in the name" declaration, the
+/// ATTACK's name must contain that substring. Non-`Unstoppable` actions never match.
+fn unstoppable_gate(a: &Action, stopper: &Card, attack: &Card) -> bool {
     let Action::Unstoppable {
         by_order,
         by_name,
         by_skillreq,
+        applies_name,
     } = a
     else {
         return false;
@@ -7813,7 +7822,10 @@ fn unstoppable_gate(a: &Action, stopper: &Card) -> bool {
             .tags
             .iter()
             .any(|t| t == crate::cards::SKILL_REQUIREMENT_TAG);
-    order_ok && name_ok && skillreq_ok
+    let applies_ok = applies_name
+        .as_ref()
+        .is_none_or(|x| attack.name.to_lowercase().contains(&x.to_lowercase()));
+    order_ok && name_ok && skillreq_ok && applies_ok
 }
 
 /// Whether `card` is a legal play given the player's own persistent board (the

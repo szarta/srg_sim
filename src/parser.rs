@@ -2551,6 +2551,7 @@ fn unstoppable(by_order: Option<PlayOrder>, by_name: Option<String>) -> Action {
         by_order,
         by_name,
         by_skillreq: false,
+        applies_name: None,
     }
 }
 
@@ -2574,6 +2575,20 @@ fn unstoppable_skillreq() -> Action {
         by_order: None,
         by_name: None,
         by_skillreq: true,
+        applies_name: None,
+    }
+}
+
+/// "Your cards with \"X\" in the name cannot be stopped" — a player-scope shield
+/// authored on a gimmick/competitor/entrance card that protects only the owner's
+/// attacks whose name contains `x`. Read by the engine's standing-effect scan
+/// (`attack_is_unstoppable_by`), which AND-s `applies_name` against the attack.
+fn unstoppable_applies_name(x: &str) -> Action {
+    Action::Unstoppable {
+        by_order: None,
+        by_name: None,
+        by_skillreq: false,
+        applies_name: Some(x.to_owned()),
     }
 }
 
@@ -6703,6 +6718,31 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
                     Trigger::Static,
                     vec![unstoppable_skillreq()],
                     Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // "[When you roll <S> for your turn roll: ]Your cards with \"X\" in the name
+        // cannot be stopped" — a player-scope shield (competitor/gimmick/entrance) that
+        // protects only the owner's attacks whose name contains X (`applies_name`),
+        // optionally gated on the owner's turn roll being a given skill. The engine's
+        // standing scan applies it across every one of the owner's cards.
+        rule(
+            &format!(
+                r#"(?:When you roll {SK} for your turn roll: )?Your cards with "([^"]+)" in the name cannot be stopped\.?"#
+            ),
+            |c| {
+                let condition = match c.get(1) {
+                    Some(m) => Condition::RollWasSkill {
+                        skill: skill(m.as_str()),
+                        who: Who::SelfSide,
+                    },
+                    None => Condition::Always,
+                };
+                Some(eff(
+                    Trigger::Static,
+                    vec![unstoppable_applies_name(&c[2])],
+                    condition,
                     Duration::WhileInPlay,
                 ))
             },

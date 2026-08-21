@@ -4957,6 +4957,103 @@ mod even_unstoppable_stop_tests {
         // …but an ordinary stopper still stops it (the shield is only vs skill-req).
         assert!(engine.card_can_stop("A", &stopper("Finish", false), &attack(false)));
     }
+
+    /// A player-scope `Unstoppable{applies_name}` gimmick effect ("Your cards with
+    /// \"X\" in the name cannot be stopped"), optionally roll-gated.
+    fn applies_name_unstoppable(name: &str, condition: Value) -> Value {
+        json!({
+            "@type": "Effect", "trigger": {"@type": "Static"}, "condition": condition,
+            "actions": [{"@type": "Unstoppable", "by_order": null, "by_name": null,
+                         "by_skillreq": false, "applies_name": name}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "u", "source": "gimmick", "optional": false
+        })
+    }
+
+    /// A plain Finish attack with the given name and no own effects.
+    fn named_finish_attack(name: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": name, "number": 1,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []
+        }))
+        .expect("named finish attack")
+    }
+
+    #[test]
+    fn player_scope_name_filter_shields_only_matching_attacks() {
+        let mut engine = engine();
+        // B (the attacker) declares "Your cards with \"Flying\" in the name cannot be
+        // stopped" on their gimmick — an `applies_name` player-scope shield.
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .competitor
+            .effects
+            .push(
+                serde_json::from_value(applies_name_unstoppable(
+                    "Flying",
+                    json!({"@type": "Always"}),
+                ))
+                .unwrap(),
+            );
+        // A B attack whose name contains "Flying" is unshielded no plain stop can catch…
+        assert!(!engine.card_can_stop(
+            "A",
+            &stopper("Finish", false),
+            &named_finish_attack("Flying Cross")
+        ));
+        // …but a differently named B attack is still stoppable (the shield is name-scoped).
+        assert!(engine.card_can_stop(
+            "A",
+            &stopper("Finish", false),
+            &named_finish_attack("Clothesline")
+        ));
+    }
+
+    #[test]
+    fn player_scope_name_filter_honors_turn_roll_gate() {
+        use crate::conditions::RollContext;
+        let roll = |skill: Skill| RollContext {
+            skill: Some(skill),
+            gap: Some(0),
+            value: Some(5),
+            opp_skill: Some(skill),
+        };
+        let mut engine = engine();
+        // "When you roll Agility for your turn roll: Your cards with \"Flying\" in the
+        // name cannot be stopped" — the shield only holds on an Agility turn roll.
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .competitor
+            .effects
+            .push(
+                serde_json::from_value(applies_name_unstoppable(
+                    "Flying",
+                    json!({"@type": "RollWasSkill", "skill": "Agility", "who": "SELF"}),
+                ))
+                .unwrap(),
+            );
+        // Attacker B rolled Agility → shield holds → the plain stop can't catch it.
+        engine.roll_ctx.insert("B".into(), roll(Skill::Agility));
+        assert!(!engine.card_can_stop(
+            "A",
+            &stopper("Finish", false),
+            &named_finish_attack("Flying Cross")
+        ));
+        // B rolled Power → gate false → the plain stop catches it.
+        engine.roll_ctx.insert("B".into(), roll(Skill::Power));
+        assert!(engine.card_can_stop(
+            "A",
+            &stopper("Finish", false),
+            &named_finish_attack("Flying Cross")
+        ));
+    }
 }
 
 /// "This card can only be stopped by Follow Ups" (#120 whitelist inverse): the parser

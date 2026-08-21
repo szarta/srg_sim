@@ -349,7 +349,7 @@ ElectBumpOnSameSkill(uses=2)  # Static roll-off grant: owner MAY bump on a same-
 BumpInsteadOnSameSkillLoss    # Static roll-off marker: FORCED bump when the owner would LOSE a same-skill roll — unlimited, mandatory (Brock Smith V1: "when you and that opponent roll the same skill and they would win the turn roll, bump instead"). schema v151
 Stop(order?, atk_type?, source_is_skillreq?, even_unstoppable=False, target?, also_order=[])   # also_order (v146): the stopped attack must ALSO count as one of these orders via an AlsoLead whose condition holds — "Stop any Finish X that is also a Lead[ or a Follow Up]" (a multi-order attack). AND-ed in stop_matches_for.  BlankGimmick(who, duration=WHILE_IN_PLAY)
 StopRequiresTag(tag)          # marker paired with a sibling Stop in the same effect: the stop is legal only vs an attacker carrying `tag` — "Stop any Grapple with a Spotlight" (read by card_can_stop). schema v26
-Unstoppable(by_order?)        # Static self-decl: cannot be stopped by stops of `by_order` (None = anything)
+Unstoppable(by_order?, by_name?, by_skillreq=False, applies_name?)  # Static self-decl: cannot be stopped by stops of `by_order`/named `by_name`/skill-req `by_skillreq` (None/False = anything). applies_name = player-scope "your cards with \"X\" in the name cannot be stopped", matched against the ATTACK not the stopper (schema v152)
 AlsoLead(condition, order=Lead)  # Static self-decl: also playable in `order`'s slot while `condition` holds
                               # (order=Followup -> "also a Follow Up", playable when a Lead is in play; schema v70)
 BlankText(selector, who, discard_only=False)   LoseBy(kind=DISQUALIFICATION|PINFALL, who)  # discard_only: blank only cards in the target's discard pile

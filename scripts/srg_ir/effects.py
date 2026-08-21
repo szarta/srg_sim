@@ -1581,6 +1581,9 @@ class Unstoppable(IRNode):
     #: "Cannot be stopped by Skill Requirement cards" — unstoppable against a
     #: stopper carrying a skill requirement. schema v65
     by_skillreq: bool = False
+    #: "Your cards with \"X\" in the name cannot be stopped" — player-scope shield
+    #: matched against the ATTACK's name (not the stopper); None = all. schema v152
+    applies_name: str | None = None
 
 
 @dataclass(frozen=True)

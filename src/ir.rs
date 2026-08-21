@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 151;
+pub const SCHEMA_VERSION: i64 = 152;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -2212,6 +2212,12 @@ pub enum Action {
         /// one of the owner's cards. schema v65
         #[serde(default)]
         by_skillreq: bool,
+        /// "Your cards with \"X\" in the name cannot be stopped" — a player-scope
+        /// declaration (gimmick/competitor/entrance) that only shields the owner's
+        /// attacks whose NAME contains this substring; `None` = every card. Matched
+        /// against the ATTACK, not the stopper (distinct from `by_name`). schema v152
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        applies_name: Option<String>,
     },
     AlsoLead {
         condition: Condition,
@@ -3872,6 +3878,12 @@ pub enum IrNode {
         /// one of the owner's cards. schema v65
         #[serde(default)]
         by_skillreq: bool,
+        /// "Your cards with \"X\" in the name cannot be stopped" — a player-scope
+        /// declaration (gimmick/competitor/entrance) that only shields the owner's
+        /// attacks whose NAME contains this substring; `None` = every card. Matched
+        /// against the ATTACK, not the stopper (distinct from `by_name`). schema v152
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        applies_name: Option<String>,
     },
     AlsoLead {
         condition: Condition,

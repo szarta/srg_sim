@@ -2134,6 +2134,33 @@ fn cannot_be_stopped_gates() {
     assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
 }
 
+/// Player-scope "Your cards with \"X\" in the name cannot be stopped" (#120): a
+/// gimmick/competitor shield carrying `applies_name` (matched against the ATTACK),
+/// optionally gated on the owner's turn roll being a given skill. schema v152.
+#[test]
+fn your_cards_with_name_cannot_be_stopped() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    // Ungated -> applies_name set, Always, no stopper gate.
+    let e = one("Your cards with \"Flying\" in the name cannot be stopped.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["actions"][0]["applies_name"], "Flying");
+    assert_eq!(e["actions"][0]["by_order"], Value::Null);
+    assert_eq!(e["condition"]["@type"], "Always");
+
+    // Turn-roll-gated -> RollWasSkill(SELF) condition.
+    let e =
+        one("When you roll Submission for your turn roll: Your cards with \"Suplex\" in the name cannot be stopped");
+    assert_eq!(e["actions"][0]["applies_name"], "Suplex");
+    assert_eq!(e["condition"]["@type"], "RollWasSkill");
+    assert_eq!(e["condition"]["skill"], "Submission");
+    assert_eq!(e["condition"]["who"], "SELF");
+}
+
 /// Match-stipulation gate (task #130): "this is a <X> Match" -> IsMatchType, an OR-set
 /// when disjoined ("Steel Cage or Liger's Den"). Cascades through every gated family —
 /// generic body, double-bonuses, also-a, cannot-be-stopped. schema v92.
