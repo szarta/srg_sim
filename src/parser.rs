@@ -2073,6 +2073,29 @@ fn passive_discard_effect(body: &str) -> Option<Effect> {
     Some(effect)
 }
 
+/// "you have `<name-and-list>` in play" / "you have cards with `<list>` in play" — EACH
+/// named card present in play, an AND of per-name `HasInPlay` gates. Distinct from a name
+/// OR-list (one card matching any of the names); requires ≥2 quoted names, so a single-name
+/// gate keeps its own branch. Names are matched as name-substrings. `None` otherwise.
+fn multi_name_and_in_play(t: &str) -> Option<Condition> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r#"(?i)^you have (?:cards? with )?("[^"]+"(?:,? (?:and )?"[^"]+")+)(?: in the name)? in play$"#,
+        )
+        .unwrap()
+    });
+    let names = quoted_names(&RE.captures(t)?[1]);
+    if names.len() < 2 {
+        return None;
+    }
+    Some(Condition::And {
+        items: names
+            .into_iter()
+            .map(|n| has_in_play(Who::SelfSide, cf_name(vec![n]), 1))
+            .collect(),
+    })
+}
+
 /// Parse a turn-roll-DELTA gate — "your turn roll was [exactly|at least] N (greater|less)
 /// than your opponent's[ turn roll]" — into a signed roll-gap [`Condition`]. The context's
 /// `gap` is `opp - self`, so a self-GREATER roll is a NEGATIVE gap:
@@ -2146,8 +2169,11 @@ fn gate_condition(text: &str) -> Option<Condition> {
         Regex::new(&format!(r"(?i)^you rolled {SK} for your turn roll$")).unwrap()
     });
     static ROLL_OPP: LazyLock<Regex> = LazyLock::new(|| {
+        // "rolled" (past, a completed-roll gate) and "rolls" (present, "if your opponent
+        // rolls X for their turn roll") — both are gate phrasings; the event family is
+        // "When your opponent rolls X" and never routes through gate_condition.
         Regex::new(&format!(
-            r"(?i)^your opponent rolled {SK} for their turn roll$"
+            r"(?i)^your opponent roll(?:ed|s) {SK} for their turn roll$"
         ))
         .unwrap()
     });
@@ -2183,8 +2209,11 @@ fn gate_condition(text: &str) -> Option<Condition> {
         // ("your opponent has a Stop in play") is a countless branch that reads as 1.
         Regex::new(r"(?i)^your opponent has (?:(\d+)(?: or more)?|an?) (.+?) in play$").unwrap()
     });
-    static OPP_PLAY_NONE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(?i)^your opponent has (?:no|0) (.+?) in play$").unwrap());
+    static OPP_PLAY_NONE: LazyLock<Regex> = LazyLock::new(|| {
+        // "your opponent has no/0 X in play" and the "does not have [a/an] X in play" twin.
+        Regex::new(r"(?i)^your opponent (?:has (?:no|0)|does not have(?: an?)?) (.+?) in play$")
+            .unwrap()
+    });
     static MATCH_TYPE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(?i)^this is an? (.+?) match$").unwrap());
 
@@ -2357,6 +2386,12 @@ fn gate_condition(text: &str) -> Option<Condition> {
     // family that routes through `gate_condition` (double-bonuses, the generic gate
     // rule, "also a <order>") shares its whole vocabulary.
     if let Some(c) = stop_condition(t) {
+        return Some(c);
+    }
+    // "you have X and Y[ and Z] in play" — each named card present (an AND of per-name
+    // gates). Tried before the generic compound splitter, whose " and " split would
+    // bisect the name list into halves that don't parse on their own.
+    if let Some(c) = multi_name_and_in_play(t) {
         return Some(c);
     }
     // Compound gate: "<A> or <B>" / "<A> and <B>" where each half is itself a modeled
@@ -2592,8 +2627,16 @@ fn count_atk(text: &str) -> AtkType {
 /// Parse a count descriptor ("Lead", "Strike", "Lead Strike"), case-insensitive
 /// with an optional trailing "s", into a [`CardFilter`], or `None`.
 fn count_filter(text: &str) -> Option<CardFilter> {
-    let t = text.trim().to_lowercase();
-    let t = t.trim_end_matches('s');
+    // Normalize the "Follow-Up" hyphen (the DB writes both "Follow Up" and "Follow-Up")
+    // so COUNT_RE's "follow up" matches either — e.g. "3 Follow-Up Strikes in play".
+    let lower = text.trim().to_lowercase().replace("follow-up", "follow up");
+    let t = lower.trim_end_matches('s');
+    // "skill requirement": the synthetic SkillRequirement tag (folded from a card's
+    // `requirements:` block at load), a first-class selector everywhere count_filter is
+    // read — HasInPlay gates, per-counts, recurs ("5 skill requirement cards in play").
+    if t == "skill requirement" {
+        return Some(cf_tag(crate::cards::SKILL_REQUIREMENT_TAG));
+    }
     if let Some(m) = COUNT_RE.captures(t) {
         let order = m.get(1).map(|g| count_order(g.as_str()));
         return Some(CardFilter {

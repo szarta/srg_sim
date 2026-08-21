@@ -2167,6 +2167,50 @@ fn cannot_be_stopped_gates() {
     let e =
         one("If your turn roll was 2 greater than your opponent's, this card cannot be stopped.");
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
+
+    // Opponent "does not have <X> in play" -> HasInPlay{OPP, <1}.
+    let e =
+        unstop("If your opponent does not have a Submission in play, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["who"], "OPP");
+    assert_eq!(e["condition"]["cmp"], "<");
+    assert_eq!(e["condition"]["filter"]["atk_type"], "Submission");
+
+    // Opponent present-tense "rolls <S>" gate (the past-tense twin already parsed).
+    let e =
+        unstop("If your opponent rolls Power for their turn roll, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "RollWasSkill");
+    assert_eq!(e["condition"]["who"], "OPP");
+
+    // "skill requirement cards in play" count gate -> SkillRequirement tag.
+    let e = unstop("If you have 5 skill requirement cards in play, this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["count"], 5);
+    assert_eq!(e["condition"]["filter"]["tag"], "SkillRequirement");
+
+    // Hyphenated "Follow-Up <type>" count gate normalizes to the Follow Up order.
+    let e = unstop("When you have 3 Follow-Up Strikes in play, this card cannot be stopped.");
+    assert_eq!(e["condition"]["filter"]["play_order"], "Followup");
+    assert_eq!(e["condition"]["filter"]["atk_type"], "Strike");
+
+    // Multi-name AND: each named card present in play (an And of per-name gates), NOT an
+    // OR-list. Two forms: bare "X and Y", and "cards with X, Y, and Z".
+    let e = unstop(
+        "If you have \"Arm Stomp\" and \"Shoulder Snap\" in play, this card cannot be stopped.",
+    );
+    assert_eq!(e["condition"]["@type"], "And");
+    assert_eq!(
+        e["condition"]["items"][0]["filter"]["name_contains"][0],
+        "Arm Stomp"
+    );
+    assert_eq!(
+        e["condition"]["items"][1]["filter"]["name_contains"][0],
+        "Shoulder Snap"
+    );
+
+    let e = unstop("If you have cards with \"Wave\", \"Line\", and \"Impact\" in play this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "And");
+    assert_eq!(e["condition"]["items"].as_array().unwrap().len(), 3);
 }
 
 /// Player-scope "Your cards with \"X\" in the name cannot be stopped" (#120): a
