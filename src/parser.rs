@@ -196,6 +196,56 @@ fn cf_name(names: Vec<String>) -> CardFilter {
     }
 }
 
+/// Parse an "added text" body (#133) through the full grammar; `None` if it is empty or
+/// any action fails to map, so the injection rule declines and the clause stays
+/// Unsupported rather than grafting a partial body onto the target cards.
+fn inject_body(text: &str) -> Option<Vec<Effect>> {
+    let body = parse_text(text, EffectSource::Card, None, None);
+    if body.is_empty()
+        || body.iter().any(|e| {
+            e.actions
+                .iter()
+                .any(|a| matches!(a, Action::Unsupported { .. }))
+        })
+    {
+        return None;
+    }
+    Some(body)
+}
+
+/// A Static `AddText` injection effect (#133): graft `effects` onto the `scope`-selected
+/// controllers' in-play cards matching `name_contains`/`order`/`atk_type`.
+fn add_text_eff(
+    name_contains: Vec<String>,
+    order: Option<PlayOrder>,
+    atk_type: Option<AtkType>,
+    scope: TextScope,
+    effects: Vec<Effect>,
+) -> Effect {
+    eff(
+        Trigger::Static,
+        vec![Action::AddText {
+            name_contains,
+            order,
+            atk_type,
+            scope,
+            effects,
+        }],
+        Condition::Always,
+        Duration::WhileInPlay,
+    )
+}
+
+/// Controller scope for a text-injection prefix (#133): "All" reaches both boards, "your
+/// opponent's" the opponent's, everything else ("all your" / "your") the self side.
+fn injection_scope(prefix: &str) -> TextScope {
+    match prefix.to_ascii_lowercase().trim() {
+        "all" => TextScope::Both,
+        "your opponent's" | "your opponents" => TextScope::Opp,
+        _ => TextScope::SelfSide,
+    }
+}
+
 /// Blank the matching card(s) wherever they sit (the in-play Spotlight/named-card form).
 fn blank_text(selector: CardFilter, who: Who) -> Action {
     Action::BlankText {
@@ -4522,33 +4572,66 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
         rule(
             r#"(?i)^(All your |All |Your opponent'?s |Your )(Lead|Follow Up|Finish) (Strike|Grapple|Submission)s have the added text:?\s*"?(.+?)"?\.?$"#,
             |c| {
-                let scope = match c[1].to_ascii_lowercase().trim() {
-                    "all" => TextScope::Both,
-                    "your opponent's" | "your opponents" => TextScope::Opp,
-                    _ => TextScope::SelfSide, // "all your" / "your"
-                };
-                let body = parse_text(&c[4], EffectSource::Card, None, None);
-                if body.is_empty()
-                    || body.iter().any(|e| {
-                        e.actions
-                            .iter()
-                            .any(|a| matches!(a, Action::Unsupported { .. }))
-                    })
-                {
+                let body = inject_body(&c[4])?;
+                Some(add_text_eff(
+                    Vec::new(),
+                    Some(order(&c[2])),
+                    Some(atk(&c[3])),
+                    injection_scope(&c[1]),
+                    body,
+                ))
+            },
+        ),
+        // Name-scoped injection (#133): "Your [<order>] [<type>[ cards]] with "X"[, "Y"] in
+        // the name have the added text[:] "<body>"" — self-side, filtered by title substring
+        // (OR-list) plus any leading order/type. The body is captured strictly inside quotes,
+        // so a raw that packs a SECOND clause after the closing quote declines (it needs the
+        // clause splitter first) rather than swallowing it.
+        rule(
+            r#"(?i)^Your (?:(Lead|Follow Up|Finish) )?(?:(Strike|Grapple|Submission)s? )?(?:cards? )?with ("[^"]+"(?:,? (?:and |or )?"[^"]+")*) in the name have the added text[,:]?\s*"(.+?)"\.?$"#,
+            |c| {
+                let names = quoted_names(&c[3]);
+                if names.is_empty() {
                     return None;
                 }
-                Some(eff(
-                    Trigger::Static,
-                    vec![Action::AddText {
-                        name_contains: Vec::new(),
-                        order: Some(order(&c[2])),
-                        atk_type: Some(atk(&c[3])),
-                        scope,
-                        effects: body,
-                    }],
-                    Condition::Always,
-                    Duration::WhileInPlay,
+                let body = inject_body(&c[4])?;
+                Some(add_text_eff(
+                    names,
+                    c.get(1).map(|m| order(m.as_str())),
+                    c.get(2).map(|m| atk(m.as_str())),
+                    TextScope::SelfSide,
+                    body,
                 ))
+            },
+        ),
+        // Type-only injection (#133): "Your [<order>] <type>[ cards] have the added text[:]
+        // "<body>"" — no name filter (all of the self-side's cards of that type/order). The
+        // scoped order+type rule above wins the "Your Finish Strikes …" form first; this
+        // catches order-less "Your Grapple cards …" / "Your Submissions …".
+        rule(
+            r#"(?i)^Your (?:(Lead|Follow Up|Finish) )?(Strike|Grapple|Submission)s?(?: cards?)? have the added text[,:]?\s*"(.+?)"\.?$"#,
+            |c| {
+                let body = inject_body(&c[3])?;
+                Some(add_text_eff(
+                    Vec::new(),
+                    c.get(1).map(|m| order(m.as_str())),
+                    Some(atk(&c[2])),
+                    TextScope::SelfSide,
+                    body,
+                ))
+            },
+        ),
+        // Single named card injection (#133): "Your "<Name>" has the added text[:] "<body>""
+        // (Finger Poke of Doom, Swift Arm Wrestling) — one specific self-side card by title.
+        rule(
+            r#"(?i)^Your ("[^"]+") has the added text[,:]?\s*"(.+?)"\.?$"#,
+            |c| {
+                let names = quoted_names(&c[1]);
+                if names.is_empty() {
+                    return None;
+                }
+                let body = inject_body(&c[2])?;
+                Some(add_text_eff(names, None, None, TextScope::SelfSide, body))
             },
         ),
         // "When hit: Your opponent's cards with <name-list> in the name have blank text"

@@ -1314,6 +1314,45 @@ fn text_injection_grammar() {
     // A body with no grammar declines (the whole clause stays Unsupported).
     let a = add("All Finish Strikes have the added text: \"Blah blah nonsense.\"");
     assert_eq!(a["@type"], "Unsupported");
+
+    // Name-scoped: "Your cards with \"X\" in the name have the added text \"Y\"" -> SELF,
+    // filtered by title substring (OR-list), no order/type.
+    let a = add("Your cards with \"America\" in the name have the added text: \"Draw 2 cards\".");
+    assert_eq!(a["@type"], "AddText");
+    assert_eq!(a["name_contains"], serde_json::json!(["America"]));
+    assert_eq!(a["order"], Value::Null);
+    assert_eq!(a["atk_type"], Value::Null);
+    assert_eq!(a["scope"], Value::Null); // SELF is skip-serialized
+    assert_eq!(a["effects"][0]["actions"][0]["@type"], "Draw");
+
+    // Name-scoped with a leading type: "Your Submissions with \"Hold\" in the name …".
+    let a = add(
+        "Your Submissions with \"Hold\" in the name have the added text \"Your opponent's next roll is -3.\"",
+    );
+    assert_eq!(a["@type"], "AddText");
+    assert_eq!(a["atk_type"], "Submission");
+    assert_eq!(a["name_contains"], serde_json::json!(["Hold"]));
+
+    // Type-only, order-less: "Your Grapple cards have the added text \"…\"" — no name filter.
+    let a = add("Your Grapple cards have the added text \"Draw 2 cards.\"");
+    assert_eq!(a["@type"], "AddText");
+    assert_eq!(a["atk_type"], "Grapple");
+    assert_eq!(a["name_contains"], Value::Null); // empty -> skip-serialized
+
+    // Single named card: "Your \"Finger Poke of Doom\" has the added text \"…\"".
+    let a = add("Your \"Finger Poke of Doom\" has the added text: \"Your next turn roll is +2.\"");
+    assert_eq!(a["@type"], "AddText");
+    assert_eq!(
+        a["name_contains"],
+        serde_json::json!(["Finger Poke of Doom"])
+    );
+    assert_eq!(a["order"], Value::Null);
+
+    // A second clause packed after the closing quote declines (needs clause-splitting first).
+    let a = add(
+        "Your cards with \"Belly\" in the name have the added text: \"Draw 2 cards.\" Double the numbers in the text of your cards with \"Chin\" in the name.",
+    );
+    assert_eq!(a["@type"], "Unsupported");
 }
 
 /// Whitelist "can only be stopped by <order>" (#120): the inverse of "cannot be stopped
