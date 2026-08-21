@@ -1258,13 +1258,17 @@ impl Engine {
                 per_who,
                 per_zone,
                 all,
+                from_crowd,
             } => {
+                // `from_crowd` sets the count to the live Crowd Meter plus `count` (offset).
                 // `all` buries every matching card in the target's hand: set the count to
                 // the hand size (an upper bound — the per-card loop stops when no matching
                 // card remains) and skip `per`. Otherwise "bury 1 … for each <X> in
                 // `per_zone`" scales the count by the per-filter match count — in play
                 // (Cardona) or flipped this turn (Scott's Five Star Heart Punch).
-                let count = if *all {
+                let count = if *from_crowd {
+                    self.crowd_count(*count)
+                } else if *all {
                     let target = self.target(*who, key);
                     self.state.players[&target].hand.len() as i64
                 } else {
@@ -1321,10 +1325,14 @@ impl Engine {
                 per_who,
                 choose,
                 all,
+                from_crowd,
             } => {
+                // `from_crowd` sets the count to the live Crowd Meter plus `count` (offset).
                 // `all` discards every matching card in the target's hand (see Bury): set
                 // count to the hand size and skip `per`.
-                let (count, per) = if *all {
+                let (count, per) = if *from_crowd {
+                    (self.crowd_count(*count), None)
+                } else if *all {
                     let target = self.target(*who, key);
                     (self.state.players[&target].hand.len() as i64, None)
                 } else {
@@ -1662,6 +1670,13 @@ impl Engine {
             return Ok(None);
         }
         Ok(Some(find_by_uuid(cards, &chosen)))
+    }
+
+    /// A count sourced from the live Crowd Meter plus a signed `offset`, floored at 0 —
+    /// the shared `from_crowd` resolution for Draw/Bury/Discard ("… equal to the Crowd
+    /// Meter [+N]"). Never negative (a negative meter+offset yields 0 cards).
+    fn crowd_count(&self, offset: i64) -> i64 {
+        (self.state.crowd_meter + offset).max(0)
     }
 
     fn act_draw(&mut self, spec: DrawSpec, key: &str) -> Eng<()> {

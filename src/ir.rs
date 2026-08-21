@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 159;
+pub const SCHEMA_VERSION: i64 = 160;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1182,6 +1182,13 @@ pub enum Action {
         /// card remains. schema v90
         #[serde(default)]
         all: bool,
+        /// Count is the live Crowd Meter plus `count` as a signed offset, clamped to >=0 —
+        /// "your opponent buries cards in their hand equal to the Crowd Meter +1", "bury
+        /// cards in your discard pile equal to the Crowd Meter". Mirrors [`Action::Draw::
+        /// from_crowd`]; mutually exclusive with `per`/`all`. `count` is the offset here,
+        /// not a flat count. Additive/skip-when-false. schema v160
+        #[serde(default, skip_serializing_if = "is_false")]
+        from_crowd: bool,
     },
     /// Bury the TRIGGERING card — "bury this card" on an `OnStop` clause (task #94:
     /// "If stopped, discard 1 card from your hand and bury this card or lose ..."). The
@@ -1344,6 +1351,12 @@ pub enum Action {
         /// count to the target's hand size. schema v90
         #[serde(default)]
         all: bool,
+        /// Count is the live Crowd Meter plus `count` as a signed offset, clamped to >=0 —
+        /// "your opponent discards cards from their hand equal to the Crowd Meter +1".
+        /// Mirrors [`Action::Draw::from_crowd`]; mutually exclusive with `per`/`all`.
+        /// `count` is the offset here, not a flat count. Additive/skip-when-false. schema v160
+        #[serde(default, skip_serializing_if = "is_false")]
+        from_crowd: bool,
     },
     Search {
         filter: CardFilter,
@@ -2899,6 +2912,13 @@ pub enum IrNode {
         /// card remains. schema v90
         #[serde(default)]
         all: bool,
+        /// Count is the live Crowd Meter plus `count` as a signed offset, clamped to >=0 —
+        /// "your opponent buries cards in their hand equal to the Crowd Meter +1", "bury
+        /// cards in your discard pile equal to the Crowd Meter". Mirrors [`Action::Draw::
+        /// from_crowd`]; mutually exclusive with `per`/`all`. `count` is the offset here,
+        /// not a flat count. Additive/skip-when-false. schema v160
+        #[serde(default, skip_serializing_if = "is_false")]
+        from_crowd: bool,
     },
     /// Bury the TRIGGERING card — "bury this card" on an `OnStop` clause (task #94:
     /// "If stopped, discard 1 card from your hand and bury this card or lose ..."). The
@@ -3061,6 +3081,12 @@ pub enum IrNode {
         /// count to the target's hand size. schema v90
         #[serde(default)]
         all: bool,
+        /// Count is the live Crowd Meter plus `count` as a signed offset, clamped to >=0 —
+        /// "your opponent discards cards from their hand equal to the Crowd Meter +1".
+        /// Mirrors [`Action::Draw::from_crowd`]; mutually exclusive with `per`/`all`.
+        /// `count` is the offset here, not a flat count. Additive/skip-when-false. schema v160
+        #[serde(default, skip_serializing_if = "is_false")]
+        from_crowd: bool,
     },
     Search {
         filter: CardFilter,

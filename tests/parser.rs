@@ -741,6 +741,56 @@ fn draw_rider_grammar() {
     assert_eq!(e["actions"][0]["@type"], "Choice");
 }
 
+/// Crowd-Meter-scaled Bury/Discard counts (#97, schema v160): "… equal to the Crowd
+/// Meter [+N]" -> from_crowd with the offset carried in `count`. Fully anchored, so a
+/// bare "buries cards equal to …" (no hand/discard zone) or a compound tail declines.
+#[test]
+fn crowd_meter_bury_discard_counts() {
+    fn parse1_v(text: &str) -> Value {
+        serde_json::to_value(&parse_text(text, EffectSource::Card, None, None)[0]).unwrap()
+    }
+    fn a(text: &str) -> Value {
+        parse1_v(text)["actions"][0].clone()
+    }
+
+    // Opponent discards, no offset -> count 0 (the dispatch floors meter+0 at 0).
+    let x = a("Your opponent discards cards equal to the Crowd Meter.");
+    assert_eq!(x["@type"], "Discard");
+    assert_eq!(x["from_crowd"], true);
+    assert_eq!(x["who"], "OPP");
+    assert_eq!(x["count"], 0);
+    assert_eq!(x["random"], false);
+
+    // "from their hand" + offset; "randomly" sets random.
+    let x = a("Your opponent randomly buries cards in their hand equal to the Crowd Meter +1.");
+    assert_eq!(x["@type"], "Bury");
+    assert_eq!(x["from_crowd"], true);
+    assert_eq!(x["source"], "HAND");
+    assert_eq!(x["random"], true);
+    assert_eq!(x["count"], 1);
+
+    // Self-side discard-pile bury vs opponent's discard-pile bury.
+    let x = a("Bury cards in your discard pile equal to the Crowd Meter +2.");
+    assert_eq!(x["source"], "DISCARD");
+    assert_eq!(x["who"], "SELF");
+    assert_eq!(x["count"], 2);
+    let x = a("Bury cards in your opponent's discard pile equal to the Crowd Meter +1.");
+    assert_eq!(x["who"], "OPP");
+    assert_eq!(x["source"], "DISCARD");
+
+    // Bare "buries cards equal to …" (no zone) is NOT matched -> stays Unsupported.
+    let x = a("Your opponent buries cards equal to the Crowd Meter +1.");
+    assert_eq!(x["@type"], "Unsupported");
+
+    // Gated form composes over the body via the OnStop split.
+    let e = parse1_v(
+        "If stopped, your opponent discards cards from their hand equal to the Crowd Meter +1.",
+    );
+    assert_eq!(e["trigger"]["@type"], "OnStop");
+    assert_eq!(e["actions"][0]["from_crowd"], true);
+    assert_eq!(e["actions"][0]["count"], 1);
+}
+
 /// Multiline "Choose one:" header (Booty Drop Chop): the header sits on its own line
 /// and its options are the FOLLOWING clauses, composed into a single `Choice` (not
 /// each option fired independently, which would draw both piles).

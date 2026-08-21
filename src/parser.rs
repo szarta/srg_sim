@@ -616,6 +616,7 @@ fn discard(count: i64, who: Who, random: bool, per: Option<CardFilter>, per_who:
         per_who,
         choose: false,
         all: false,
+        from_crowd: false,
     }
 }
 
@@ -631,6 +632,42 @@ fn discard_choose(count: i64, selector: CardFilter) -> Action {
         per_who: Who::SelfSide,
         choose: true,
         all: false,
+        from_crowd: false,
+    }
+}
+
+/// "[Your opponent] buries cards [in their hand / discard pile] equal to the Crowd Meter
+/// [+`offset`]" (#97) — the buried count is the live Crowd Meter plus `offset` (carried in
+/// `count`, floored at 0 by the dispatch). schema v160.
+fn bury_crowd(offset: i64, who: Who, random: bool, source: BuryFrom) -> Action {
+    Action::Bury {
+        choose: false,
+        selector: CardFilter::default(),
+        count: offset,
+        who,
+        random,
+        source,
+        per: None,
+        per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
+        all: false,
+        from_crowd: true,
+    }
+}
+
+/// "Your opponent discards cards [from their hand] equal to the Crowd Meter [+`offset`]"
+/// (#97) — the discarded count is the live Crowd Meter plus `offset`. schema v160.
+fn discard_crowd(offset: i64, who: Who, random: bool) -> Action {
+    Action::Discard {
+        selector: CardFilter::default(),
+        count: offset,
+        who,
+        random,
+        per: None,
+        per_who: Who::SelfSide,
+        choose: false,
+        all: false,
+        from_crowd: true,
     }
 }
 
@@ -973,6 +1010,7 @@ fn bury(count: i64, who: Who) -> Action {
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
         all: false,
+        from_crowd: false,
     }
 }
 
@@ -991,6 +1029,7 @@ fn bury_choose(count: i64, selector: CardFilter) -> Action {
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
         all: false,
+        from_crowd: false,
     }
 }
 
@@ -1018,6 +1057,7 @@ fn bury_per(
         per_who: Who::SelfSide,
         per_zone,
         all: false,
+        from_crowd: false,
     }
 }
 
@@ -1055,6 +1095,7 @@ fn bury_hand(count: i64, who: Who, random: bool, choose: bool) -> Action {
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
         all: false,
+        from_crowd: false,
     }
 }
 
@@ -1073,6 +1114,7 @@ fn bury_all_hand(selector: CardFilter, who: Who) -> Action {
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
         all: true,
+        from_crowd: false,
     }
 }
 
@@ -1088,6 +1130,7 @@ fn discard_all_hand(selector: CardFilter, who: Who) -> Action {
         per_who: Who::SelfSide,
         choose: false,
         all: true,
+        from_crowd: false,
     }
 }
 
@@ -1107,6 +1150,7 @@ fn bury_whole_discard(who: Who) -> Action {
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
         all: false,
+        from_crowd: false,
     }
 }
 
@@ -1463,6 +1507,7 @@ fn discard_type_or_lose(count: i64, atk_type: AtkType) -> Effect {
             per_who: Who::SelfSide,
             choose: false,
             all: false,
+            from_crowd: false,
         }],
     };
     let lose = ChoiceOption {
@@ -6199,6 +6244,58 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
 
 fn build_bury_discard_rules() -> Vec<(Regex, Builder)> {
     vec![
+        // Crowd-Meter-scaled counts (#97): "… equal to the Crowd Meter [+N]" — the count
+        // is the live meter plus the offset (from_crowd), floored at 0. FULLY ANCHORED, so
+        // a compound "… or draw …" tail declines (stays Unsupported); gated/triggered forms
+        // ("If stopped, …") compose over these bodies via the gate/trigger split.
+        rule(
+            r"(?i)^Your opponent (randomly )?discards cards?(?: from their hand)? equal to the crowd meter(?: \+(\d+))?$",
+            |c| {
+                let random = c.get(1).is_some();
+                let offset = c.get(2).map_or(0, |m| m.as_str().parse().unwrap());
+                Some(eff(
+                    on_hit(),
+                    vec![discard_crowd(offset, Who::Opp, random)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"(?i)^Bury cards? in your (opponent's )?discard pile equal to the crowd meter(?: \+(\d+))?$",
+            |c| {
+                let who = if c.get(1).is_some() {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
+                let offset = c.get(2).map_or(0, |m| m.as_str().parse().unwrap());
+                Some(eff(
+                    on_hit(),
+                    vec![bury_crowd(offset, who, false, BuryFrom::Discard)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        rule(
+            r"(?i)^Your opponent (randomly )?buries cards? in their (hand|discard pile) equal to the crowd meter(?: \+(\d+))?$",
+            |c| {
+                let random = c.get(1).is_some();
+                let source = if c[2].eq_ignore_ascii_case("hand") {
+                    BuryFrom::Hand
+                } else {
+                    BuryFrom::Discard
+                };
+                let offset = c.get(3).map_or(0, |m| m.as_str().parse().unwrap());
+                Some(eff(
+                    on_hit(),
+                    vec![bury_crowd(offset, Who::Opp, random, source)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Provenance-gated flip self-trigger (schema v87). "flipped by \"<X>\"": the
         // flip must have been caused by a card whose name matches -> FlippedByName. All
         // are the Set-Up-the-Ladder ladder-match cards; add-to-hand. (Comma optional.)
@@ -6925,6 +7022,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                         per_who: Who::SelfSide,
                         per_zone: CountZone::InPlay,
                         all: false,
+                        from_crowd: false,
                     }],
                     Condition::Always,
                     Duration::Instant,

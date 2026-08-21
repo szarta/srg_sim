@@ -952,6 +952,10 @@
         "count": {
           "type": "integer"
         },
+        "from_crowd": {
+          "description": "Count is the live Crowd Meter plus `count` as a signed offset, clamped to >=0 — \"your opponent buries cards in their hand equal to the Crowd Meter +1\". Mutually exclusive with `per`/`all`. Absent = false. schema v160",
+          "type": "boolean"
+        },
         "per": {
           "anyOf": [
             {
@@ -1848,6 +1852,10 @@
         },
         "count": {
           "type": "integer"
+        },
+        "from_crowd": {
+          "description": "Count is the live Crowd Meter plus `count` as a signed offset, clamped to >=0 — \"your opponent discards cards from their hand equal to the Crowd Meter +1\". Mutually exclusive with `per`/`all`. Absent = false. schema v160",
+          "type": "boolean"
         },
         "per": {
           "anyOf": [
@@ -7232,5 +7240,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 159
+  "version": 160
 }

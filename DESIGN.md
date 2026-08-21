@@ -237,7 +237,10 @@ Always
 **Action** — the *what* (mutations); each names a `target` (SELF/OPP/a card/skill):
 ```
 Draw(n, from=TOP|BOTTOM, who, per?, per_who=SELF, cap?, per_excludes_trigger=False, from_crowd=False)  # from_crowd -> count = Crowd Meter + n (n is the signed offset), clamped to cap, floored at 0 — "draw cards equal to the Crowd Meter +1 (Max +5)"; mutually exclusive with per (schema v108)
-Bury(selector, count, per?, per_who=SELF, per_zone=IN_PLAY, all=False)   Discard(selector, count, who, per?, per_who=SELF, all=False)
+Bury(selector, count, per?, per_who=SELF, per_zone=IN_PLAY, all=False, from_crowd=False)   Discard(selector, count, who, per?, per_who=SELF, all=False, from_crowd=False)
+                              # Bury/Discard from_crowd (schema v160): count = Crowd Meter + count (signed offset),
+                              #   floored at 0 — "your opponent buries/discards cards … equal to the Crowd Meter [+N]";
+                              #   mutually exclusive with per/all (mirrors Draw.from_crowd)
                               # Bury/Discard `all` (schema v90): shed EVERY hand card matching `selector`, ignoring
                               # count/per ("they bury/discard all Strike cards"); dispatch derives count from hand size.
                               # Bury per_zone (schema v130): the zone `per` counts — IN_PLAY (Cardona) or FLIPPED_THIS_TURN

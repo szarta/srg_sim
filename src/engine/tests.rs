@@ -3564,6 +3564,7 @@ mod suppress_hand_loss_tests {
             per_who: Who::SelfSide,
             choose: false,
             all: false,
+            from_crowd: false,
         }
     }
 
@@ -3595,6 +3596,7 @@ mod suppress_hand_loss_tests {
             per_who: Who::SelfSide,
             choose: false,
             all: false,
+            from_crowd: false,
         };
         engine.apply_action(&opp_discard, "B", "").unwrap();
         assert_eq!(
@@ -3620,6 +3622,7 @@ mod suppress_hand_loss_tests {
             per_who: Who::SelfSide,
             per_zone: CountZone::InPlay,
             all: false,
+            from_crowd: false,
         };
         let before = hand_len(&engine, "A");
         engine.apply_action(&bury, "A", "").unwrap();
@@ -7304,6 +7307,7 @@ mod cardona_mechanism_tests {
             per_who: Who::SelfSide,
             per_zone: CountZone::InPlay,
             all: false,
+            from_crowd: false,
         };
         e.apply_action(&bury, "A", "").unwrap();
         assert_eq!(
@@ -7311,6 +7315,57 @@ mod cardona_mechanism_tests {
             1,
             "2 Leads in play → bury 2 from the opponent's hand (3 → 1)"
         );
+    }
+
+    #[test]
+    fn bury_from_crowd_reads_the_live_meter_plus_offset() {
+        // "Your opponent buries cards in their hand equal to the Crowd Meter +1" (#97):
+        // count = meter (3) + offset (1) = 4 from B's 5-card hand.
+        let mut e = engine();
+        e.state.crowd_meter = 3;
+        e.state.players.get_mut("B").unwrap().hand =
+            (0..5).map(|i| card(&format!("h{i}"), "Lead")).collect();
+        let bury = Action::Bury {
+            selector: CardFilter::default(),
+            count: 1, // the offset, not a flat count
+            who: Who::Opp,
+            random: true,
+            source: BuryFrom::Hand,
+            choose: false,
+            per: None,
+            per_who: Who::SelfSide,
+            per_zone: CountZone::InPlay,
+            all: false,
+            from_crowd: true,
+        };
+        e.apply_action(&bury, "A", "").unwrap();
+        assert_eq!(
+            e.state.players["B"].hand.len(),
+            1,
+            "meter 3 + offset 1 = 4 buried (5 → 1)"
+        );
+    }
+
+    #[test]
+    fn from_crowd_count_floors_at_zero() {
+        // A meter of 0 with a 0 offset buries nothing (never negative); the hand is intact.
+        let mut e = engine();
+        e.state.crowd_meter = 0;
+        e.state.players.get_mut("B").unwrap().hand =
+            (0..3).map(|i| card(&format!("h{i}"), "Lead")).collect();
+        let discard = Action::Discard {
+            selector: CardFilter::default(),
+            count: 0,
+            who: Who::Opp,
+            random: true,
+            per: None,
+            per_who: Who::SelfSide,
+            choose: false,
+            all: false,
+            from_crowd: true,
+        };
+        e.apply_action(&discard, "A", "").unwrap();
+        assert_eq!(e.state.players["B"].hand.len(), 3, "meter 0 → discard 0");
     }
 
     #[test]
@@ -7348,6 +7403,7 @@ mod cardona_mechanism_tests {
             per_who: Who::SelfSide,
             per_zone: CountZone::FlippedThisTurn,
             all: false,
+            from_crowd: false,
         };
         e.apply_action(&bury, "A", "").unwrap();
         assert_eq!(
@@ -7419,6 +7475,7 @@ mod cardona_mechanism_tests {
             per_who: Who::SelfSide,
             per_zone: CountZone::InPlay,
             all: true,
+            from_crowd: false,
         };
         e.apply_action(&bury, "A", "").unwrap();
         let hand = &e.state.players["B"].hand;
