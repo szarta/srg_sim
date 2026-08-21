@@ -331,7 +331,7 @@ BuffSkill(skill, delta, who, duration=WHILE_IN_PLAY, target_highest?, target_low
                                                  # ("+1 for each card in play with 'Chin' in the name, Max +3"; FLIPPED_THIS_TURN
                                                  # = cards flipped this turn, "for each Strike flipped: +1 to Strike"); schema v7/v74
 MaxHandSize(delta, who, duration=WHILE_IN_PLAY, set=None)  # Static cap mod: signed delta, or absolute set ("handsize is N", lowest wins, overrides base)
-AddText(name_contains=[...], effects=[Effect...])  # Static gimmick: the owner's played cards whose title matches (case-insensitive OR) gain `effects` (their own triggers, usually OnPlay), injected at play time alongside the card's own. El Super Santa/Sabu. schema v25
+AddText(name_contains=[...], order?, atk_type?, scope=SELF, effects=[Effect...])  # Static: cards matching name_contains AND order/atk_type gain `effects` while the source is active. OnPlay/OnHit bodies inject at play time (El Super Santa/Sabu "Draw 2"); Static bodies join each matching in-play card's CONTROLLER's standing set, once PER matching card ("All Finish Strikes … 'Your Finish rolls are +1'"). scope (v159): SELF ("your …") / OPP ("your opponent's …") / BOTH ("All …", either board). schema v25 (order/atk_type/scope: v159)
 Reroll(who, once=True, choose=False, when=THIS, cost?, finish=False, breakout=False)  # who=SELF/OPP die; choose=owner picks
                               # a player; when=NEXT grants a one-shot re-roll for the owner's next turn roll
                               # (schema v9 choose, v10 when). Structural read in the roll-off. finish=True (v76): a

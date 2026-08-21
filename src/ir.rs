@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 158;
+pub const SCHEMA_VERSION: i64 = 159;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -516,6 +516,26 @@ pub enum Who {
     SelfSide,
     #[serde(rename = "OPP")]
     Opp,
+}
+
+/// Which controllers' cards an [`Action::AddText`] injection reaches: `SELF` (the source
+/// owner's cards — "your …"), `OPP` (the opponent's — "your opponent's …"), or `BOTH`
+/// boards ("All …"). schema v159
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum TextScope {
+    #[default]
+    #[serde(rename = "SELF")]
+    SelfSide,
+    #[serde(rename = "OPP")]
+    Opp,
+    #[serde(rename = "BOTH")]
+    Both,
+}
+
+/// `skip_serializing_if` predicate for a `TextScope` field carrying the enum default
+/// (`SELF`), so pre-v159 `AddText` nodes (all self-scoped) round-trip byte-identically.
+fn is_default_text_scope(s: &TextScope) -> bool {
+    matches!(s, TextScope::SelfSide)
 }
 
 // ---------------------------------------------------------------------------
@@ -1673,8 +1693,25 @@ pub enum Action {
     /// declarer gains the positive part of the opponent's `effective - base`. A
     /// derived-stats fold like `BuffSkill`, never executed. schema v46
     MirrorOpponentIncrease,
+    /// Rule-text injection: "`<scope>` cards[ with `<names>` in the name] have the added
+    /// text: '`<body>`'". While the source is active (its effect condition holds), `effects`
+    /// are grafted onto every matching in-play card so its CONTROLLER gains the text. Two
+    /// consumption paths: OnPlay/OnHit bodies fire when a matching card is played
+    /// (`injected_text`, play-time — El Super Santa's "Draw 2"); Static bodies join the
+    /// matching card's controller's standing set, once **per** matching in-play card
+    /// (`injected_standing_effects` — "All Finish Strikes … 'Your Finish rolls are +1'").
+    /// `name_contains` (name-substring OR-list) and `order`/`atk_type` (play-order /
+    /// attack-type) AND-combine into the match filter. `scope` picks the controllers.
+    /// schema v25 (order/atk_type/scope: v159)
     AddText {
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         name_contains: Vec<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        order: Option<PlayOrder>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        atk_type: Option<AtkType>,
+        #[serde(default, skip_serializing_if = "is_default_text_scope")]
+        scope: TextScope,
         effects: Vec<Effect>,
     },
     /// Add a chosen competitor's Gimmick to the actor's own (The SRG Boss — "add
@@ -3373,8 +3410,25 @@ pub enum IrNode {
     /// declarer gains the positive part of the opponent's `effective - base`. A
     /// derived-stats fold like `BuffSkill`, never executed. schema v46
     MirrorOpponentIncrease,
+    /// Rule-text injection: "`<scope>` cards[ with `<names>` in the name] have the added
+    /// text: '`<body>`'". While the source is active (its effect condition holds), `effects`
+    /// are grafted onto every matching in-play card so its CONTROLLER gains the text. Two
+    /// consumption paths: OnPlay/OnHit bodies fire when a matching card is played
+    /// (`injected_text`, play-time — El Super Santa's "Draw 2"); Static bodies join the
+    /// matching card's controller's standing set, once **per** matching in-play card
+    /// (`injected_standing_effects` — "All Finish Strikes … 'Your Finish rolls are +1'").
+    /// `name_contains` (name-substring OR-list) and `order`/`atk_type` (play-order /
+    /// attack-type) AND-combine into the match filter. `scope` picks the controllers.
+    /// schema v25 (order/atk_type/scope: v159)
     AddText {
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         name_contains: Vec<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        order: Option<PlayOrder>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        atk_type: Option<AtkType>,
+        #[serde(default, skip_serializing_if = "is_default_text_scope")]
+        scope: TextScope,
         effects: Vec<Effect>,
     },
     /// Add a chosen competitor's Gimmick to the actor's own (The SRG Boss — "add

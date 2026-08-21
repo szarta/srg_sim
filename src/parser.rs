@@ -20,7 +20,7 @@ use crate::ir::{
     CountZone, DeckEnd, Dest, Direction, DqScope, Duration, Effect, EffectSource, EffectTag,
     Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RequireKind,
     RerollCost, RerollCostKind, RerollCostTag, RevealSource, RollWhen, ScryRest, SearchSource,
-    ShuffleSource, Skill, Trigger, Vs, Who,
+    ShuffleSource, Skill, TextScope, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -4512,6 +4512,45 @@ fn build_draw_search_rules() -> Vec<(Regex, Builder)> {
                 Duration::WhileInPlay,
             ))
         }),
+        // TEXT INJECTION (#133): "(All|All your|Your|Your opponent's) <order> <type>s have
+        // the added text[:] '<body>'" — graft the re-parsed <body> onto a CLASS of cards.
+        // The scope prefix picks the affected controllers: "All" = both boards, "All your"
+        // / "Your" = self, "Your opponent's" = opp. Static bodies ("Your Finish rolls are
+        // +1") join each matching in-play card's controller's standing set (per card);
+        // OnPlay/OnHit bodies fire at play time. A body with no grammar declines (the whole
+        // clause stays Unsupported). Quoting/trailing-period punctuation is tolerated.
+        rule(
+            r#"(?i)^(All your |All |Your opponent'?s |Your )(Lead|Follow Up|Finish) (Strike|Grapple|Submission)s have the added text:?\s*"?(.+?)"?\.?$"#,
+            |c| {
+                let scope = match c[1].to_ascii_lowercase().trim() {
+                    "all" => TextScope::Both,
+                    "your opponent's" | "your opponents" => TextScope::Opp,
+                    _ => TextScope::SelfSide, // "all your" / "your"
+                };
+                let body = parse_text(&c[4], EffectSource::Card, None, None);
+                if body.is_empty()
+                    || body.iter().any(|e| {
+                        e.actions
+                            .iter()
+                            .any(|a| matches!(a, Action::Unsupported { .. }))
+                    })
+                {
+                    return None;
+                }
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::AddText {
+                        name_contains: Vec::new(),
+                        order: Some(order(&c[2])),
+                        atk_type: Some(atk(&c[3])),
+                        scope,
+                        effects: body,
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         // "When hit: Your opponent's cards with <name-list> in the name have blank text"
         // (Ultra Dracula) — a STATEFUL blank: only once this competitor is hit does the
         // opponent's themed set go blank. OnHit{who:Opp, on_any} fires whenever the opponent

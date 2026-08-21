@@ -91,11 +91,33 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "atk_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtkType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope": {
+          "$ref": "#/$defs/TextScope"
         }
       },
       "required": [
         "@type",
-        "name_contains",
         "effects"
       ],
       "type": "object"
@@ -7126,6 +7148,14 @@
       ],
       "type": "string"
     },
+    "TextScope": {
+      "enum": [
+        "SELF",
+        "OPP",
+        "BOTH"
+      ],
+      "type": "string"
+    },
     "Who": {
       "enum": [
         "SELF",
@@ -7202,5 +7232,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 158
+  "version": 159
 }

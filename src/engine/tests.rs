@@ -6891,6 +6891,89 @@ mod man_from_it_tests {
         );
     }
 
+    /// Text injection (#133): "All Finish Strikes have the added text: 'Your Finish rolls
+    /// are +1'" grafts a Static `FinishRollBonus` onto every matching in-play card's
+    /// controller — once PER matching card (stacks), and (scope BOTH) onto EITHER board.
+    #[test]
+    fn add_text_injects_finish_bonus_per_matching_card_both_boards() {
+        // A declarer carrying the injection (itself a Lead Grapple, so it never self-counts).
+        let decl: Card = serde_json::from_value(json!({
+            "atk_type":"Grapple","db_uuid":"decl","name":"decl","number":1,
+            "play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"AddText","order":"Finish","atk_type":"Strike","scope":"BOTH",
+                    "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                        "actions":[{"@type":"FinishRollBonus","delta":1,"when_skill":null,"either":false}],
+                        "duration":"WHILE_IN_PLAY","optional":false,
+                        "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                        "raw_clause":"","source":"card"}]}],
+                "duration":"WHILE_IN_PLAY","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let fs = |uuid: &str| -> Card {
+            serde_json::from_value(json!({
+                "atk_type":"Strike","db_uuid":uuid,"name":uuid,"number":30,
+                "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{},"effects":[]
+            }))
+            .unwrap()
+        };
+        let mut engine = engine_with(json!([]));
+        engine.state.turn_no = 2;
+
+        // One Finish Strike on A's board → +1 to A's Finish rolls.
+        engine.state.players.get_mut("A").unwrap().in_play = vec![decl.clone(), fs("fs1")];
+        assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 5), 1);
+
+        // A second matching card stacks the injected text → +2.
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(fs("fs2"));
+        assert_eq!(engine.finish_roll_bonus("A", Skill::Power, 5), 2);
+
+        // scope BOTH: B's own Finish Strike gains the text too → +1 for B.
+        engine.state.players.get_mut("B").unwrap().in_play = vec![fs("fs3")];
+        assert_eq!(engine.finish_roll_bonus("B", Skill::Power, 5), 1);
+    }
+
+    /// Text injection scope (#133): a SELF-scoped "All your Finish Strikes …" grant reaches
+    /// only the source owner's matching cards, never the opponent's.
+    #[test]
+    fn add_text_self_scope_does_not_reach_opponent() {
+        let decl: Card = serde_json::from_value(json!({
+            "atk_type":"Grapple","db_uuid":"decl","name":"decl","number":1,
+            "play_order":"Lead","raw_text":"","tags":[],"finish_bonuses":{},
+            "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"AddText","order":"Finish","atk_type":"Strike","scope":"SELF",
+                    "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                        "actions":[{"@type":"FinishRollBonus","delta":1,"when_skill":null,"either":false}],
+                        "duration":"WHILE_IN_PLAY","optional":false,
+                        "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                        "raw_clause":"","source":"card"}]}],
+                "duration":"WHILE_IN_PLAY","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let fs: Card = serde_json::from_value(json!({
+            "atk_type":"Strike","db_uuid":"fs","name":"fs","number":30,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{},"effects":[]
+        }))
+        .unwrap();
+        let mut engine = engine_with(json!([]));
+        engine.state.turn_no = 2;
+        // Declarer on A; a Finish Strike on B (the OPPONENT of the source owner).
+        engine.state.players.get_mut("A").unwrap().in_play = vec![decl];
+        engine.state.players.get_mut("B").unwrap().in_play = vec![fs];
+        // B's Finish Strike does NOT gain a SELF-scoped grant declared by A.
+        assert_eq!(engine.finish_roll_bonus("B", Skill::Power, 5), 0);
+    }
+
     /// Foxworthy V3 Bell Cracker: "if you have 0 cards in your deck, double these
     /// bonuses" — `DoubleFinishIf{DeckSizeCompare{=, 0, SELF}}`.
     #[test]

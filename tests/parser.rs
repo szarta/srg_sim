@@ -1283,6 +1283,39 @@ fn title_in_play_gate_grammar() {
     assert_eq!(cond["items"][1]["@type"], "HasInPlay");
 }
 
+/// Text injection (#133): "(All|All your|Your|Your opponent's) <order> <type>s have the
+/// added text[:] '<body>'" -> a Static AddText carrying the re-parsed body, the play-order
+/// / attack-type target, and the scope from the prefix.
+#[test]
+fn text_injection_grammar() {
+    fn add(text: &str) -> Value {
+        let e = parse_text(text, EffectSource::Card, None, None);
+        serde_json::to_value(&e[0]).unwrap()["actions"][0].clone()
+    }
+
+    // "All …" -> BOTH boards; the body is a Static FinishRollBonus.
+    let a = add("All Finish Strikes have the added text: \"Your Finish rolls are +1.\"");
+    assert_eq!(a["@type"], "AddText");
+    assert_eq!(a["order"], "Finish");
+    assert_eq!(a["atk_type"], "Strike");
+    assert_eq!(a["scope"], "BOTH");
+    assert_eq!(a["effects"][0]["actions"][0]["@type"], "FinishRollBonus");
+
+    // "All your …" -> SELF (scope skip-serialized to absent at the default).
+    let a = add("All your Finish Submissions have the added text: \"Your Finish rolls are +1\".");
+    assert_eq!(a["atk_type"], "Submission");
+    assert_eq!(a["scope"], Value::Null);
+
+    // Glued opening quote / no closing quote is tolerated.
+    let a = add("All Finish Grapples have the added text\"Your Finish rolls are +1.");
+    assert_eq!(a["order"], "Finish");
+    assert_eq!(a["atk_type"], "Grapple");
+
+    // A body with no grammar declines (the whole clause stays Unsupported).
+    let a = add("All Finish Strikes have the added text: \"Blah blah nonsense.\"");
+    assert_eq!(a["@type"], "Unsupported");
+}
+
 /// Whitelist "can only be stopped by <order>" (#120): the inverse of "cannot be stopped
 /// by <order>" — modeled with no new IR as an `Unstoppable{by_order}` per COMPLEMENTARY
 /// play order, optionally condition-gated.

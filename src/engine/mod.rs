@@ -21,7 +21,7 @@ use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, Condition, CountZone, DeckEnd, Dest,
     Direction, Duration, Effect, EffectSource, LoseKind, PlayOrder, RequireKind, RerollCost,
     RerollCostKind, RevealDest, RevealFrom, RevealMatch, RevealSource, RollWhen, ScryRest,
-    SearchSource, ShuffleSource, Skill, Trigger, Who,
+    SearchSource, ShuffleSource, Skill, TextScope, Trigger, Who,
 };
 use crate::rng::SeededRNG;
 use crate::skills::Skills;
@@ -769,6 +769,20 @@ impl Engine {
     }
 
     fn standing_effects(&self, key: &str) -> Vec<Effect> {
+        let mut out = self.declared_standing_effects(key);
+        // Text-injection family (#133): Static "added text" grafted onto `key`'s matching
+        // in-play cards by an active AddText on either board. Kept out of
+        // `declared_standing_effects` (which `injected_standing_effects` reads) so injections
+        // never feed themselves.
+        out.extend(self.injected_standing_effects(key));
+        out
+    }
+
+    /// `key`'s standing effects as DECLARED — gimmick + in-play cards' own effects + copied
+    /// (`CopyText`) effects — WITHOUT any [`AddText`](Action::AddText) injection. The base
+    /// [`injected_standing_effects`](Self::injected_standing_effects) reads to find the
+    /// injection sources, so it must not itself include injected effects.
+    fn declared_standing_effects(&self, key: &str) -> Vec<Effect> {
         let mut out = self.gimmick_standing_effects(key);
         for card in &self.state.players[key].in_play {
             out.extend(card.effects.iter().cloned());
@@ -799,6 +813,13 @@ impl Engine {
         out.extend(
             self.state
                 .copied_effects(key)
+                .into_iter()
+                .map(|e| (None, e)),
+        );
+        // Text-injection family (#133): injected Static effects carry no source card
+        // (`None`), same as gimmick/copied — no per-count reader gates on them.
+        out.extend(
+            self.injected_standing_effects(key)
                 .into_iter()
                 .map(|e| (None, e)),
         );
@@ -5227,15 +5248,96 @@ impl Engine {
             for action in &eff.actions {
                 if let Action::AddText {
                     name_contains,
+                    order,
+                    atk_type,
+                    scope,
                     effects,
                 } = action
                 {
+                    // Play-time path: only OnPlay/OnHit bodies (El Super Santa's "Draw 2").
+                    // Static bodies ("Your Finish rolls are +1") join the standing set via
+                    // `injected_standing_effects`. `key` is the source owner here (its own
+                    // standing effects), so an OPP-scoped grant never reaches key's own card.
+                    if matches!(scope, TextScope::Opp) {
+                        continue;
+                    }
                     let gate = CardFilter {
                         name_contains: name_contains.clone(),
+                        play_order: *order,
+                        atk_type: *atk_type,
                         ..Default::default()
                     };
                     if conditions::card_matches(card, &gate) {
-                        out.extend(effects.iter().cloned());
+                        out.extend(
+                            effects
+                                .iter()
+                                .filter(|e| !matches!(e.trigger, Trigger::Static))
+                                .cloned(),
+                        );
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// Static "added text" grafted onto `key`'s in-play cards by any active
+    /// [`Action::AddText`] injection on EITHER board ("All Finish Strikes have the added
+    /// text: 'Your Finish rolls are +1'"). For each active Static AddText whose `scope`
+    /// reaches `key` as a controller, every one of `key`'s in-play cards matching the
+    /// injection filter contributes the injected Static effects — once **per** matching
+    /// card (stacks per card). The OnPlay/OnHit twin runs at play time
+    /// ([`injected_text`](Self::injected_text)). Empty when no injection applies.
+    fn injected_standing_effects(&self, key: &str) -> Vec<Effect> {
+        let mut out = Vec::new();
+        let opp = self.state.opponent_of(key);
+        for source in [key, opp.as_str()] {
+            for eff in self.declared_standing_effects(source) {
+                if !matches!(eff.trigger, Trigger::Static)
+                    || !conditions::holds(&eff.condition, &self.state, source, None)
+                {
+                    continue;
+                }
+                for action in &eff.actions {
+                    let Action::AddText {
+                        name_contains,
+                        order,
+                        atk_type,
+                        scope,
+                        effects,
+                    } = action
+                    else {
+                        continue;
+                    };
+                    let reaches = match scope {
+                        TextScope::Both => true,
+                        TextScope::SelfSide => source == key,
+                        TextScope::Opp => self.state.opponent_of(source) == key,
+                    };
+                    if !reaches {
+                        continue;
+                    }
+                    // Only Static bodies join the standing set; OnPlay/OnHit go to `injected_text`.
+                    let statics: Vec<&Effect> = effects
+                        .iter()
+                        .filter(|e| matches!(e.trigger, Trigger::Static))
+                        .collect();
+                    if statics.is_empty() {
+                        continue;
+                    }
+                    let gate = CardFilter {
+                        name_contains: name_contains.clone(),
+                        play_order: *order,
+                        atk_type: *atk_type,
+                        ..Default::default()
+                    };
+                    let matches = self.state.players[key]
+                        .in_play
+                        .iter()
+                        .filter(|c| conditions::card_matches(c, &gate))
+                        .count();
+                    for _ in 0..matches {
+                        out.extend(statics.iter().map(|e| (*e).clone()));
                     }
                 }
             }

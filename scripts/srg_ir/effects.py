@@ -140,6 +140,16 @@ class Who(Enum):
     OPP = "OPP"
 
 
+class TextScope(Enum):
+    """Which controllers' cards an ``AddText`` injection reaches: ``SELF`` (the source
+    owner's — "your …"), ``OPP`` (the opponent's — "your opponent's …"), ``BOTH`` boards
+    ("All …"). schema v159"""
+
+    SELF = "SELF"
+    OPP = "OPP"
+    BOTH = "BOTH"
+
+
 class Comparator(Enum):
     GT = ">"
     GE = ">="
@@ -1441,15 +1451,19 @@ class MirrorOpponentIncrease(IRNode):
 
 @dataclass(frozen=True)
 class AddText(IRNode):
-    """"Your cards with ``name_contains`` in the name have the added text ``effects``"
-    (El Super Santa / Sabu / El Super Hombre). A ``Static`` gimmick declaration read
-    at play time: when active (its ``Effect.condition`` holds), each of the owner's
-    played cards whose title matches ``name_contains`` (case-insensitive OR) gains
-    ``effects``, run alongside the card's own effects. Never executed as a mutation
-    (a passive marker); the injected effects carry their own triggers (usually
-    ``OnPlay``)."""
+    """""``<scope>`` cards[ with ``name_contains`` in the name] have the added text
+    ``effects``". ``name_contains`` (title-substring OR-list) and ``order``/``atk_type``
+    (play-order / attack-type, schema v159) AND-combine into the match filter; ``scope``
+    (v159) picks the controllers. Two engine consumption paths: OnPlay/OnHit bodies fire at
+    play time (El Super Santa's "Draw 2"); Static bodies join each matching in-play card's
+    controller's standing set, once per matching card ("All Finish Strikes … 'Your Finish
+    rolls are +1'"). The ``order``/``atk_type``/``scope`` fields are grammar-authored (task
+    #133); existing name-scoped overrides omit them (SELF / no order-type filter)."""
 
     name_contains: tuple[str, ...] = ()
+    order: PlayOrder | None = None
+    atk_type: AtkType | None = None
+    scope: TextScope = TextScope.SELF
     effects: tuple[Effect, ...] = ()
 
 
