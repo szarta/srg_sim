@@ -5320,7 +5320,7 @@ impl Engine {
         // A per-`Stop` `even_unstoppable` flag bypasses THIS attack's Unstoppable; a
         // player-scope `CanStopUnstoppable` declaration ("You can stop cards that cannot
         // be stopped") lets ALL of the defender's stops bypass while it is in play.
-        let can_beat_unstoppable = self.can_stop_unstoppable(defender);
+        let can_beat_unstoppable = self.can_stop_unstoppable(defender, attack);
         stopper.effects.iter().any(|eff| {
             conditions::holds(&eff.condition, &self.state, defender, None)
                 && attacker_meets_tag_gates(eff, attack, unstoppable)
@@ -5338,9 +5338,16 @@ impl Engine {
 
     /// Whether `defender` declares a standing `CanStopUnstoppable` ("You can stop cards
     /// that cannot be stopped") from an in-play card, competitor, or entrance — every
-    /// one of their stops may then stop an otherwise-unstoppable attack.
-    fn can_stop_unstoppable(&self, defender: &str) -> bool {
-        self.declares_static(defender, |a| matches!(a, Action::CanStopUnstoppable))
+    /// one of their stops may then stop an otherwise-unstoppable attack. An `only_order`
+    /// declaration ("Ignore … on your opponent's Finish cards") applies only when the
+    /// incoming attack's PRINTED play order matches.
+    fn can_stop_unstoppable(&self, defender: &str, attack: &Card) -> bool {
+        self.declares_static(defender, |a| match a {
+            Action::CanStopUnstoppable { only_order } => {
+                only_order.is_none() || *only_order == Some(attack.play_order)
+            }
+            _ => false,
+        })
     }
 
     /// Whether `attack` is `Unstoppable` against `stopper` from `attacker`'s view: a
@@ -8049,7 +8056,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::FlipGimmickSigns { .. } => "FlipGimmickSigns",
         Action::Unstoppable { .. } => "Unstoppable",
         Action::AlsoLead { .. } => "AlsoLead",
-        Action::CanStopUnstoppable => "CanStopUnstoppable",
+        Action::CanStopUnstoppable { .. } => "CanStopUnstoppable",
         Action::DoubleFinishIfBumped => "DoubleFinishIfBumped",
         Action::DoubleFinishIf { .. } => "DoubleFinishIf",
         Action::RequireStops { .. } => "RequireStops",

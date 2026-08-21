@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 155;
+pub const SCHEMA_VERSION: i64 = 156;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -2262,7 +2262,15 @@ pub enum Action {
     /// bypasses"; this node says "ALL of your stops bypass" while it is in play (or
     /// declared on a gimmick). Read in `card_can_stop` via `can_stop_unstoppable`,
     /// never executed. schema v154
-    CanStopUnstoppable,
+    ///
+    /// `only_order` narrows the bypass to attacks whose PRINTED play order matches
+    /// ("Ignore any \"Cannot be stopped\" text on your opponent's Finish cards" —
+    /// Pineapple/Trash Can/Sledgehammer Uprising); `None` is the original blanket
+    /// enabler. schema v156
+    CanStopUnstoppable {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        only_order: Option<PlayOrder>,
+    },
     DoubleFinishIfBumped,
     /// Double this card's own printed Finish-roll bonuses when `condition` holds —
     /// the conditional generalization of [`Self::DoubleFinishIfBumped`] ("double
@@ -3943,7 +3951,15 @@ pub enum IrNode {
     /// bypasses"; this node says "ALL of your stops bypass" while it is in play (or
     /// declared on a gimmick). Read in `card_can_stop` via `can_stop_unstoppable`,
     /// never executed. schema v154
-    CanStopUnstoppable,
+    ///
+    /// `only_order` narrows the bypass to attacks whose PRINTED play order matches
+    /// ("Ignore any \"Cannot be stopped\" text on your opponent's Finish cards" —
+    /// Pineapple/Trash Can/Sledgehammer Uprising); `None` is the original blanket
+    /// enabler. schema v156
+    CanStopUnstoppable {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        only_order: Option<PlayOrder>,
+    },
     DoubleFinishIfBumped,
     /// Double this card's own printed Finish-roll bonuses when `condition` holds —
     /// the conditional generalization of [`Self::DoubleFinishIfBumped`] ("double

@@ -1639,6 +1639,11 @@ class CanStopUnstoppable(IRNode):
     "ALL of your stops bypass" while it is in play (or on a gimmick). Read in
     ``_card_can_stop``; never executed. schema v154"""
 
+    #: Narrows the bypass to attacks whose PRINTED play order matches ("Ignore any
+    #: \"Cannot be stopped\" text on your opponent's Finish cards"); None = blanket.
+    #: schema v156
+    only_order: PlayOrder | None = None
+
 
 @dataclass(frozen=True)
 class DoubleFinishIfBumped(IRNode):

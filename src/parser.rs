@@ -6760,11 +6760,29 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
         rule(r"[Yy]ou can stop cards that cannot be stopped", |_| {
             Some(eff(
                 Trigger::Static,
-                vec![Action::CanStopUnstoppable],
+                vec![Action::CanStopUnstoppable { only_order: None }],
                 Condition::Always,
                 Duration::WhileInPlay,
             ))
         }),
+        // "Ignore any \"Cannot be stopped\" text on your opponent's <order> cards" — the
+        // same defender-scope bypass, but narrowed to the opponent's attacks of a single
+        // PRINTED play order (Pineapple/Trash Can/Sledgehammer Uprising key on "Finish
+        // cards"). While it is in play every one of the owner's stops beats an
+        // otherwise-unstoppable attack of that order; other orders are unaffected.
+        rule(
+            r#"Ignore any "Cannot be stopped" text on your opponent'?s (Follow[ -]?Ups?|Leads?|Finish(?:es)?)(?: cards)?"#,
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::CanStopUnstoppable {
+                        only_order: Some(stopper_order(&c[1])),
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         // "Your cards cannot be stopped by [printed] <order>[ cards]" — the PLAYER-SCOPE
         // shield (Cat/Dog/Sheep Uprising's "printed Finishes"). Covers every one of the
         // owner's cards, so the engine reads it even from an in-play main-deck source

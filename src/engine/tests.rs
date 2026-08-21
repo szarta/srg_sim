@@ -5274,6 +5274,66 @@ mod even_unstoppable_stop_tests {
             .push(can_stop_unstoppable_card());
         assert!(!engine.card_can_stop("A", &stopper("Finish", false), &attack(true)));
     }
+
+    /// A `CanStopUnstoppable{only_order:Finish}` enabler ("Ignore any \"Cannot be
+    /// stopped\" text on your opponent's Finish cards" — Pineapple / Trash Can /
+    /// Sledgehammer Uprising). schema v156.
+    fn ignore_finish_unstoppable_card() -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "enabler-fin", "name": "Pineapple Uprising",
+            "number": 7, "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "CanStopUnstoppable", "only_order": "Finish"}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "Ignore any \"Cannot be stopped\" text on your opponent's Finish cards.",
+                "source": "card", "optional": false
+            }]
+        }))
+        .expect("finish enabler")
+    }
+
+    /// An `Unstoppable` (by anything) attack of an arbitrary printed play order.
+    fn unstoppable_attack_of_order(order: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "atk", "name": "atk", "number": 1,
+            "play_order": order, "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Unstoppable", "by_order": null}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }]
+        }))
+        .expect("attack")
+    }
+
+    #[test]
+    fn only_order_enabler_bypasses_only_matching_order_attacks() {
+        let mut engine = engine();
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .in_play
+            .push(ignore_finish_unstoppable_card());
+        // The Finish-only enabler lets a plain Finish stop catch an unstoppable
+        // FINISH attack…
+        assert!(engine.card_can_stop(
+            "A",
+            &stopper("Finish", false),
+            &unstoppable_attack_of_order("Finish")
+        ));
+        // …but an unstoppable LEAD attack is NOT bypassed (only_order narrows it).
+        assert!(!engine.card_can_stop(
+            "A",
+            &stopper("Lead", false),
+            &unstoppable_attack_of_order("Lead")
+        ));
+    }
 }
 
 /// "This card can only be stopped by Follow Ups" (#120 whitelist inverse): the parser

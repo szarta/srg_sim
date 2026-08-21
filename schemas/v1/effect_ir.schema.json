@@ -988,6 +988,16 @@
       "properties": {
         "@type": {
           "const": "CanStopUnstoppable"
+        },
+        "only_order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -7149,5 +7159,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 155
+  "version": 156
 }

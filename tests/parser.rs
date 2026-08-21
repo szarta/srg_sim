@@ -2210,9 +2210,32 @@ fn you_can_stop_cards_that_cannot_be_stopped() {
     assert_eq!(effs.len(), 1, "one effect");
     let e = serde_json::to_value(&effs[0]).unwrap();
     assert_eq!(e["actions"][0]["@type"], "CanStopUnstoppable");
+    assert!(
+        e["actions"][0].get("only_order").is_none() || e["actions"][0]["only_order"].is_null(),
+        "the blanket enabler carries no only_order"
+    );
     assert_eq!(e["trigger"]["@type"], "Static");
     assert_eq!(e["duration"], "WHILE_IN_PLAY");
     assert_eq!(e["condition"]["@type"], "Always");
+}
+
+/// "Ignore any \"Cannot be stopped\" text on your opponent's Finish cards" —
+/// a `CanStopUnstoppable` narrowed to the opponent's PRINTED Finish attacks
+/// (Pineapple / Trash Can / Sledgehammer Uprising's second clause). schema v156.
+#[test]
+fn ignore_cannot_be_stopped_on_opponent_finishes() {
+    let effs = parse_text(
+        "Ignore any \"Cannot be stopped\" text on your opponent's Finish cards.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 1, "one effect");
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["actions"][0]["@type"], "CanStopUnstoppable");
+    assert_eq!(e["actions"][0]["only_order"], "Finish");
+    assert_eq!(e["trigger"]["@type"], "Static");
+    assert_eq!(e["duration"], "WHILE_IN_PLAY");
 }
 
 /// Leader of the Unit JT Dunn: the " & "-compound splits into TWO effects (the guarded
