@@ -2159,6 +2159,40 @@ fn your_cards_with_name_cannot_be_stopped() {
     assert_eq!(e["condition"]["@type"], "RollWasSkill");
     assert_eq!(e["condition"]["skill"], "Submission");
     assert_eq!(e["condition"]["who"], "SELF");
+
+    // "Your cards with X in the name cannot be stopped" is player-scope.
+    let e = one("Your cards with \"Flying\" in the name cannot be stopped.");
+    assert_eq!(e["actions"][0]["player_scope"], true);
+}
+
+/// Player-scope "Your cards cannot be stopped by [printed] <order>" (#120): the
+/// Cat/Dog/Sheep Uprising shield -> `Unstoppable{by_order, player_scope:true}`.
+/// "printed Finishes" keys on the STOPPER's printed play order (`by_order`), the same
+/// thing `by_order` already means; a card playable AS a Finish is not a printed one.
+/// schema v153.
+#[test]
+fn your_cards_cannot_be_stopped_by_printed_finishes() {
+    fn one(text: &str) -> Value {
+        let effs = parse_text(text, EffectSource::Card, None, None);
+        assert_eq!(effs.len(), 1, "one effect for {text:?}");
+        serde_json::to_value(&effs[0]).unwrap()
+    }
+
+    let e = one("Your cards cannot be stopped by printed Finishes.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["actions"][0]["by_order"], "Finish");
+    assert_eq!(e["actions"][0]["player_scope"], true);
+    assert_eq!(e["condition"]["@type"], "Always");
+
+    // "printed Finish cards" (984d0965's body phrasing) and a plain-order variant.
+    assert_eq!(
+        one("Your cards cannot be stopped by printed Finish cards.")["actions"][0]["by_order"],
+        "Finish"
+    );
+    assert_eq!(
+        one("Your cards cannot be stopped by Follow Ups.")["actions"][0]["by_order"],
+        "Followup"
+    );
 }
 
 /// Match-stipulation gate (task #130): "this is a <X> Match" -> IsMatchType, an OR-set

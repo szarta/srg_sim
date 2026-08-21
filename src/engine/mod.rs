@@ -5342,22 +5342,34 @@ impl Engine {
     /// attacks because the gimmick scan excludes in-play cards.
     fn attack_is_unstoppable_by(&self, attacker: &str, attack: &Card, stopper: &Card) -> bool {
         let roll = self.roll_ctx.get(attacker);
-        let holds_for = |eff: &Effect, roll: Option<&RollContext>| {
-            eff.actions
-                .iter()
-                .any(|a| unstoppable_gate(a, stopper, attack))
-                && conditions::holds(&eff.condition, &self.state, attacker, roll)
+        // `player_scope_only` filters the in-play scan to "Your cards …" declarations so
+        // a self-scope "This card cannot be stopped" on an in-play card never leaks to a
+        // sibling attack (that card is only ever shielded via its own effects).
+        let holds_for = |eff: &Effect, player_scope_only: bool| {
+            eff.actions.iter().any(|a| {
+                unstoppable_gate(a, stopper, attack) && (!player_scope_only || is_player_scope(a))
+            }) && conditions::holds(&eff.condition, &self.state, attacker, roll)
         };
-        // Both scopes evaluate with the attacker's turn-roll context: a self-scope
-        // "if you rolled 7 …" and a player-scope "when you roll Agility: your cards
-        // with 'Flying' …" both key on the attacker's roll. The gimmick scan only
-        // ever visits `Unstoppable`-bearing effects (via `holds_for`), so feeding it
-        // the roll changes nothing for the roll-independent declarations.
-        attack.effects.iter().any(|eff| holds_for(eff, roll))
+        // All scopes evaluate with the attacker's turn-roll context: a self-scope "if you
+        // rolled 7 …" and a player-scope "when you roll Agility: your cards with 'Flying'
+        // …" both key on the attacker's roll. Each scan only ever visits
+        // `Unstoppable`-bearing effects (via `holds_for`), so feeding it the roll changes
+        // nothing for the roll-independent declarations.
+        attack.effects.iter().any(|eff| holds_for(eff, false))
+            // Gimmick / entrance / competitor player-scope ("Your cards cannot be stopped
+            // by Skill Requirements"). Excludes in-play cards.
             || self
                 .gimmick_standing_effects(attacker)
                 .iter()
-                .any(|eff| matches!(eff.trigger, Trigger::Static) && holds_for(eff, roll))
+                .any(|eff| matches!(eff.trigger, Trigger::Static) && holds_for(eff, false))
+            // Main-deck player-scope: a "Your cards cannot be stopped by …" shield read
+            // off an in-play card (Cat/Dog/Sheep Uprising), applied to every attack the
+            // owner plays. Restricted to `player_scope` so self-scope shields don't leak.
+            || self.state.players[attacker]
+                .in_play
+                .iter()
+                .flat_map(|c| c.effects.iter())
+                .any(|eff| matches!(eff.trigger, Trigger::Static) && holds_for(eff, true))
     }
 
     /// Whether `defender` declares that `stopper` (by its deck number) cannot act as a
@@ -7811,6 +7823,7 @@ fn unstoppable_gate(a: &Action, stopper: &Card, attack: &Card) -> bool {
         by_name,
         by_skillreq,
         applies_name,
+        player_scope: _,
     } = a
     else {
         return false;
@@ -7826,6 +7839,19 @@ fn unstoppable_gate(a: &Action, stopper: &Card, attack: &Card) -> bool {
         .as_ref()
         .is_none_or(|x| attack.name.to_lowercase().contains(&x.to_lowercase()));
     order_ok && name_ok && skillreq_ok && applies_ok
+}
+
+/// Whether an `Unstoppable` is a player-scope "Your cards cannot be stopped by …"
+/// declaration (covers every one of the owner's cards) rather than a self-scope
+/// "This card …". Gates the in-play scan in [`Engine::attack_is_unstoppable_by`].
+fn is_player_scope(a: &Action) -> bool {
+    matches!(
+        a,
+        Action::Unstoppable {
+            player_scope: true,
+            ..
+        }
+    )
 }
 
 /// Whether `card` is a legal play given the player's own persistent board (the

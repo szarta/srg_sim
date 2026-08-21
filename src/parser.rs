@@ -2552,6 +2552,21 @@ fn unstoppable(by_order: Option<PlayOrder>, by_name: Option<String>) -> Action {
         by_name,
         by_skillreq: false,
         applies_name: None,
+        player_scope: false,
+    }
+}
+
+/// "Your cards cannot be stopped by `<order>`" — the player-scope twin of
+/// [`unstoppable`]: shields EVERY one of the owner's cards against a stopper of that
+/// play order (Cat/Dog/Sheep Uprising's "printed Finishes"). `player_scope` lets the
+/// engine read it even from an in-play main-deck source.
+fn unstoppable_player_scope(by_order: Option<PlayOrder>) -> Action {
+    Action::Unstoppable {
+        by_order,
+        by_name: None,
+        by_skillreq: false,
+        applies_name: None,
+        player_scope: true,
     }
 }
 
@@ -2576,19 +2591,21 @@ fn unstoppable_skillreq() -> Action {
         by_name: None,
         by_skillreq: true,
         applies_name: None,
+        player_scope: false,
     }
 }
 
 /// "Your cards with \"X\" in the name cannot be stopped" — a player-scope shield
-/// authored on a gimmick/competitor/entrance card that protects only the owner's
-/// attacks whose name contains `x`. Read by the engine's standing-effect scan
-/// (`attack_is_unstoppable_by`), which AND-s `applies_name` against the attack.
+/// (`player_scope`) that protects only the owner's attacks whose name contains `x`.
+/// Read by the engine's standing-effect scan (`attack_is_unstoppable_by`), which
+/// AND-s `applies_name` against the attack.
 fn unstoppable_applies_name(x: &str) -> Action {
     Action::Unstoppable {
         by_order: None,
         by_name: None,
         by_skillreq: false,
         applies_name: Some(x.to_owned()),
+        player_scope: true,
     }
 }
 
@@ -6683,6 +6700,23 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
 
 fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
     vec![
+        // "Your cards cannot be stopped by [printed] <order>[ cards]" — the PLAYER-SCOPE
+        // shield (Cat/Dog/Sheep Uprising's "printed Finishes"). Covers every one of the
+        // owner's cards, so the engine reads it even from an in-play main-deck source
+        // (`player_scope`). "printed <order>" is emphasis for the printed play order —
+        // exactly what `by_order` keys on (a card printed at slot #28-30 is Finish);
+        // a card merely playable AS a Finish is not, and never matches the gate.
+        rule(
+            r"Your cards cannot be stopped by (?:printed )?(Follow[ -]?Ups?|Leads?|Finish(?:es)?)(?: cards)?",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![unstoppable_player_scope(Some(stopper_order(&c[1])))],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         // "(This card) cannot be stopped by <order>" — unstoppable against a stopper
         // of that play order (extends the original Follow-Ups-only rule to Leads and
         // Finishes and the "This card " lead-in).

@@ -5054,6 +5054,79 @@ mod even_unstoppable_stop_tests {
             &named_finish_attack("Flying Cross")
         ));
     }
+
+    /// A stop card whose OWN printed play order is `card_order` (a "printed Finish"
+    /// stopper is a card printed at slot #28-30), carrying a wide order-agnostic Stop.
+    fn stopper_printed_as(card_order: &str) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "s", "name": "s", "number": 1,
+            "play_order": card_order, "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Stop", "order": null, "atk_type": null,
+                             "source_is_skillreq": false, "even_unstoppable": false}],
+                "duration": "INSTANT",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "stop", "source": "card", "optional": false
+            }]
+        }))
+        .expect("printed-order stopper")
+    }
+
+    /// A main-deck card carrying a Static `Unstoppable{by_order:Finish}` — either the
+    /// player-scope "Your cards cannot be stopped by printed Finishes" shield or the
+    /// self-scope "This card cannot be stopped by Finishes" (`player_scope` toggles).
+    fn finish_shield_card(player_scope: bool) -> Card {
+        serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "shield", "name": "Cat Uprising", "number": 5,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Unstoppable", "by_order": "Finish", "by_name": null,
+                             "by_skillreq": false, "player_scope": player_scope}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }]
+        }))
+        .expect("finish shield card")
+    }
+
+    #[test]
+    fn player_scope_printed_finish_shield_from_in_play_covers_siblings() {
+        let mut engine = engine();
+        // B (the attacker) has "Your cards cannot be stopped by printed Finishes"
+        // (Cat Uprising) IN PLAY — a player-scope shield read off an in-play card.
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .in_play
+            .push(finish_shield_card(true));
+        let sibling = named_finish_attack("Some Other Attack");
+        // A different B attack can't be caught by a printed-Finish stopper…
+        assert!(!engine.card_can_stop("A", &stopper_printed_as("Finish"), &sibling));
+        // …but a Lead-printed stopper (not a printed Finish) still catches it.
+        assert!(engine.card_can_stop("A", &stopper_printed_as("Lead"), &sibling));
+    }
+
+    #[test]
+    fn self_scope_shield_in_play_does_not_leak_to_siblings() {
+        let mut engine = engine();
+        // The SAME shield authored self-scope ("This card cannot be stopped by
+        // Finishes", player_scope=false) protects only its own card, so a sibling
+        // attack is still catchable by a printed-Finish stopper from in play.
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .in_play
+            .push(finish_shield_card(false));
+        let sibling = named_finish_attack("Some Other Attack");
+        assert!(engine.card_can_stop("A", &stopper_printed_as("Finish"), &sibling));
+    }
 }
 
 /// "This card can only be stopped by Follow Ups" (#120 whitelist inverse): the parser

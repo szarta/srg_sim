@@ -1584,6 +1584,9 @@ class Unstoppable(IRNode):
     #: "Your cards with \"X\" in the name cannot be stopped" — player-scope shield
     #: matched against the ATTACK's name (not the stopper); None = all. schema v152
     applies_name: str | None = None
+    #: "Your cards cannot be stopped by …" (vs "This card …") — covers every one of
+    #: the owner's cards, read even from an in-play main-deck source. schema v153
+    player_scope: bool = False
 
 
 @dataclass(frozen=True)

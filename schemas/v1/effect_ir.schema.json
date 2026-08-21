@@ -7003,6 +7003,9 @@
         },
         "by_skillreq": {
           "type": "boolean"
+        },
+        "player_scope": {
+          "type": "boolean"
         }
       },
       "required": [
@@ -7118,5 +7121,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 152
+  "version": 153
 }
