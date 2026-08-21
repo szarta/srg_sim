@@ -2211,6 +2211,24 @@ fn cannot_be_stopped_gates() {
     let e = unstop("If you have cards with \"Wave\", \"Line\", and \"Impact\" in play this card cannot be stopped.");
     assert_eq!(e["condition"]["@type"], "And");
     assert_eq!(e["condition"]["items"].as_array().unwrap().len(), 3);
+
+    // Unqualified "the card X is in play" counts EITHER board -> Or[SELF, OPP]. Quoted
+    // and bare (unquoted) name forms both parse.
+    let e = unstop("When the card \"Bulldog Takedown\" is in play this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "Or");
+    assert_eq!(e["condition"]["items"][0]["who"], "SELF");
+    assert_eq!(
+        e["condition"]["items"][0]["filter"]["name_contains"][0],
+        "Bulldog Takedown"
+    );
+    assert_eq!(e["condition"]["items"][1]["who"], "OPP");
+
+    let e = unstop("When the card Body Scissors is in play this card cannot be stopped.");
+    assert_eq!(e["condition"]["@type"], "Or");
+    assert_eq!(
+        e["condition"]["items"][1]["filter"]["name_contains"][0],
+        "Body Scissors"
+    );
 }
 
 /// Player-scope "Your cards with \"X\" in the name cannot be stopped" (#120): a

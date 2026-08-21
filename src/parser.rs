@@ -2190,6 +2190,12 @@ fn gate_condition(text: &str) -> Option<Condition> {
         )
         .unwrap()
     });
+    // "the card X is in play" (X quoted or a bare name) — an UNqualified named-card gate.
+    // Per Brandon, an unqualified "the card X is in play" counts EITHER player's board, so
+    // it maps to an Or of a self- and an opponent-side name gate (Roll Up / Senton Splash /
+    // Full Mounted Choke Hold's combo enablers).
+    static NAMED_CARD_IN_PLAY: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r#"(?i)^the card "?([^"]+?)"? is in play$"#).unwrap());
     static HAVE_INPLAY: LazyLock<Regex> = LazyLock::new(|| {
         // The article "a"/"an" ("you have a Stop in play") reads as count 1, like a bare
         // count; "another" keeps its own branch (tried first so "another" never matches
@@ -2372,6 +2378,15 @@ fn gate_condition(text: &str) -> Option<Condition> {
             cf_name(vec![c[1].to_owned()]),
             1,
         ));
+    }
+    if let Some(c) = NAMED_CARD_IN_PLAY.captures(t) {
+        let filter = || cf_name(vec![c[1].to_owned()]);
+        return Some(Condition::Or {
+            items: vec![
+                has_in_play(Who::SelfSide, filter(), 1),
+                has_in_play(Who::Opp, filter(), 1),
+            ],
+        });
     }
     if let Some(c) = HAVE_INPLAY.captures(t) {
         let count = c
