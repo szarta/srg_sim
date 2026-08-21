@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 156;
+pub const SCHEMA_VERSION: i64 = 157;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -948,6 +948,16 @@ pub enum Condition {
     /// Nic Nemeth). Reads the post-roll context's `skill` vs `opp_skill`; needs a
     /// roll context (false without one, and in single-sided re-roll/switch contexts).
     SameRolledSkill,
+    /// The owner has at least `count` of their OWN competitor's related Finishes in play
+    /// — "if you have 2 Syzygy Finishes in play, …" (Syzygy; also Void/Fortress). A card's
+    /// "<Competitor> Finishes" are exactly that competitor's `related_finishes` set, NOT
+    /// every Finish: a deck may legally run logoless finishes that are not the competitor's,
+    /// so this must count identity, not play order. Such a card only ever sits in its own
+    /// competitor's deck, so the OWNER's `Competitor.related_finishes` is the set. Read
+    /// against the owner's in-play `db_uuid`s; never executed. schema v157
+    RelatedFinishesInPlay {
+        count: i64,
+    },
     /// This is the first turn of the game (`GameState.turn_no <= 1` — 0 at setup, 1 once
     /// the first turn begins). Gates the "if this is the first turn of the game, …" riders
     /// (this card is also a `<order>` / cannot be stopped). A "considered first turn"
@@ -2692,6 +2702,13 @@ pub enum IrNode {
     /// Nic Nemeth). Reads the post-roll context's `skill` vs `opp_skill`; needs a
     /// roll context (false without one, and in single-sided re-roll/switch contexts).
     SameRolledSkill,
+    /// The owner has at least `count` of their OWN competitor's related Finishes in play
+    /// ("if you have 2 Syzygy Finishes in play" — Syzygy/Void/Fortress). Counts card
+    /// IDENTITY (`Competitor.related_finishes`), not Finish order, since a deck may run
+    /// logoless finishes. schema v157
+    RelatedFinishesInPlay {
+        count: i64,
+    },
     /// This is the first turn of the game (`GameState.turn_no <= 1`). Gates the "if this is
     /// the first turn of the game, …" riders. schema v119
     FirstTurn,

@@ -883,6 +883,10 @@
     "k": 0
   },
   {
+    "@type": "RelatedFinishesInPlay",
+    "count": 0
+  },
+  {
     "@type": "RollGapExactly",
     "k": 0
   },

@@ -2229,6 +2229,20 @@ fn cannot_be_stopped_gates() {
         e["condition"]["items"][1]["filter"]["name_contains"][0],
         "Body Scissors"
     );
+
+    // "<Competitor> Finishes in play" reads the owner's competitor set, not the Finish
+    // order (a deck may run logoless finishes). The 3 Body Problem's Syzygy gate.
+    let e =
+        one("If you have 2 Syzygy Finishes in play, this card cannot be stopped by Follow Ups.");
+    assert_eq!(e["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(e["actions"][0]["by_order"], "Followup");
+    assert_eq!(e["condition"]["@type"], "RelatedFinishesInPlay");
+    assert_eq!(e["condition"]["count"], 2);
+
+    // A TYPE qualifier ("Grapple Finishes") is NOT a competitor set — the related-finishes
+    // gate declines it (so it never masquerades as one).
+    let e = one("If you have 2 Grapple Finishes in play, this card cannot be stopped.");
+    assert_ne!(e["condition"]["@type"], "RelatedFinishesInPlay");
 }
 
 /// Player-scope "Your cards with \"X\" in the name cannot be stopped" (#120): a

@@ -2096,6 +2096,37 @@ fn multi_name_and_in_play(t: &str) -> Option<Condition> {
     })
 }
 
+/// "you have N `<Competitor>` Finishes in play" — the owner's competitor-finish set (its
+/// `related_finishes`), NOT every Finish (a deck may run logoless finishes that are not the
+/// competitor's), so it maps to [`Condition::RelatedFinishesInPlay`]. The `<Competitor>`
+/// qualifier is descriptive — the engine reads the OWNER's competitor — so a bare type/order
+/// qualifier ("Grapple Finishes", "Finish … cards") is DECLINED here and left to the ordinary
+/// in-play gate. Syzygy's "2 Syzygy Finishes in play"; Void/Fortress name their own sets too.
+fn related_finishes_in_play(t: &str) -> Option<Condition> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^you have (\d+) ([A-Za-z][A-Za-z0-9' ]*?) [Ff]inishes in play$").unwrap()
+    });
+    let c = RE.captures(t)?;
+    let name = c[2].trim();
+    // A play-order / attack-type / skill qualifier is a Finish-TYPE count, not a competitor
+    // set — decline so it never masquerades as a related-finishes gate.
+    const SKILLS: [&str; 6] = [
+        "power",
+        "technique",
+        "agility",
+        "strike",
+        "submission",
+        "grapple",
+    ];
+    let is_skill = SKILLS.iter().any(|s| name.eq_ignore_ascii_case(s));
+    if count_filter(name).is_some() || is_skill {
+        return None;
+    }
+    Some(Condition::RelatedFinishesInPlay {
+        count: c[1].parse().ok()?,
+    })
+}
+
 /// Parse a turn-roll-DELTA gate — "your turn roll was [exactly|at least] N (greater|less)
 /// than your opponent's[ turn roll]" — into a signed roll-gap [`Condition`]. The context's
 /// `gap` is `opp - self`, so a self-GREATER roll is a NEGATIVE gap:
@@ -2407,6 +2438,9 @@ fn gate_condition(text: &str) -> Option<Condition> {
     // gates). Tried before the generic compound splitter, whose " and " split would
     // bisect the name list into halves that don't parse on their own.
     if let Some(c) = multi_name_and_in_play(t) {
+        return Some(c);
+    }
+    if let Some(c) = related_finishes_in_play(t) {
         return Some(c);
     }
     // Compound gate: "<A> or <B>" / "<A> and <B>" where each half is itself a modeled

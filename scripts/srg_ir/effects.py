@@ -831,6 +831,17 @@ class RollLeadAtLeast(IRNode):
 
 
 @dataclass(frozen=True)
+class RelatedFinishesInPlay(IRNode):
+    """The owner has at least ``count`` of their OWN competitor's related Finishes
+    in play — "if you have 2 Syzygy Finishes in play" (Syzygy/Void/Fortress). Counts
+    card IDENTITY (the competitor's ``related_finishes`` uuids), not Finish play order,
+    since a deck may legally run logoless finishes that are not the competitor's.
+    schema v157"""
+
+    count: int
+
+
+@dataclass(frozen=True)
 class SameRolledSkill(IRNode):
     """True iff the owner and their target rolled the **same skill** for this
     turn-roll (Hex, Nic Nemeth). Reads the post-roll context's ``skill`` vs
@@ -2228,6 +2239,7 @@ Condition = (
     | RollLeadAtLeast
     | RollValue
     | PrintedRollValue
+    | RelatedFinishesInPlay
     | SameRolledSkill
     | OppWonLastRoll
     | BumpedLastTurnRoll

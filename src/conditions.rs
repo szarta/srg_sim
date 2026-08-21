@@ -321,6 +321,18 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             let n = count_in_play(&state.players[&subject].in_play, filter, None);
             cmp_apply(*cmp, n, *count)
         }
+        Condition::RelatedFinishesInPlay { count } => {
+            // The owner's "<Competitor> Finishes" are exactly that competitor's
+            // `related_finishes` uuids — count how many of them the owner has in play
+            // (identity, not Finish order, so a logoless finish never counts).
+            let related = &state.players[owner].competitor.related_finishes;
+            let n = state.players[owner]
+                .in_play
+                .iter()
+                .filter(|c| related.contains(&c.db_uuid))
+                .count() as i64;
+            n >= *count
+        }
         Condition::HasInHand { who, filter, count } => {
             let subject = who_key(state, owner, *who);
             let n = state.players[&subject]

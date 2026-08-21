@@ -191,6 +191,9 @@ RollLeadAtLeast(k)           # self rolled >= k HIGHER than opp (gap <= -k) — 
 RollValue(cmp, value, who=SELF)  # the turn-roll VALUE (die+stat+mods) `who` rolled: SELF (the trigger's roller) or OPP — "your opponent's turn roll is N" (Scott Prime's The Loaded Glove); the opp value is derived from the actor's roll ctx as value+gap. schema v130
 PrintedRollValue(who, value) # the rolled skill's PRINTED (base, unbuffed) stat on the who-side's competitor == value
                              # ("rolls their printed 8 skill" — Collin); needs a roll ctx, who follows the trigger. schema v17
+RelatedFinishesInPlay(count) # the owner has >= count of their OWN competitor's related Finishes in play ("2 Syzygy
+                             # Finishes in play" — Syzygy/Void/Fortress). Counts card IDENTITY (Competitor.related_finishes),
+                             # NOT Finish play order, since a deck may run logoless finishes. schema v157
 SameRolledSkill              # you and your target rolled the SAME skill this turn-roll (Hex, Nic Nemeth):
                              # RollContext.skill == .opp_skill (new field carrying the other side's rolled skill,
                              # set only in the post-roll/pair contexts). Needs a roll ctx. schema v18

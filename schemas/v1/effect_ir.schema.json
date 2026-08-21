@@ -215,6 +215,9 @@
               "$ref": "#/$defs/PrintedRollValue"
             },
             {
+              "$ref": "#/$defs/RelatedFinishesInPlay"
+            },
+            {
               "$ref": "#/$defs/SameRolledSkill"
             },
             {
@@ -367,6 +370,9 @@
               },
               {
                 "$ref": "#/$defs/PrintedRollValue"
+              },
+              {
+                "$ref": "#/$defs/RelatedFinishesInPlay"
               },
               {
                 "$ref": "#/$defs/SameRolledSkill"
@@ -1960,6 +1966,9 @@
               "$ref": "#/$defs/PrintedRollValue"
             },
             {
+              "$ref": "#/$defs/RelatedFinishesInPlay"
+            },
+            {
               "$ref": "#/$defs/SameRolledSkill"
             },
             {
@@ -2533,6 +2542,9 @@
             },
             {
               "$ref": "#/$defs/PrintedRollValue"
+            },
+            {
+              "$ref": "#/$defs/RelatedFinishesInPlay"
             },
             {
               "$ref": "#/$defs/SameRolledSkill"
@@ -3885,6 +3897,9 @@
           "$ref": "#/$defs/SwapHandDiscard"
         },
         {
+          "$ref": "#/$defs/RelatedFinishesInPlay"
+        },
+        {
           "$ref": "#/$defs/SameRolledSkill"
         },
         {
@@ -4342,6 +4357,9 @@
             },
             {
               "$ref": "#/$defs/PrintedRollValue"
+            },
+            {
+              "$ref": "#/$defs/RelatedFinishesInPlay"
             },
             {
               "$ref": "#/$defs/SameRolledSkill"
@@ -4939,6 +4957,9 @@
               },
               {
                 "$ref": "#/$defs/PrintedRollValue"
+              },
+              {
+                "$ref": "#/$defs/RelatedFinishesInPlay"
               },
               {
                 "$ref": "#/$defs/SameRolledSkill"
@@ -6215,6 +6236,22 @@
       ],
       "type": "object"
     },
+    "RelatedFinishesInPlay": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "RelatedFinishesInPlay"
+        },
+        "count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "@type",
+        "count"
+      ],
+      "type": "object"
+    },
     "RollGapExactly": {
       "additionalProperties": false,
       "properties": {
@@ -6495,6 +6532,9 @@
             },
             {
               "$ref": "#/$defs/PrintedRollValue"
+            },
+            {
+              "$ref": "#/$defs/RelatedFinishesInPlay"
             },
             {
               "$ref": "#/$defs/SameRolledSkill"
@@ -7159,5 +7199,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 156
+  "version": 157
 }
