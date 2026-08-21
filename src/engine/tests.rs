@@ -6842,6 +6842,55 @@ mod man_from_it_tests {
         );
     }
 
+    /// Opponent-scoped `RerolledTurnRoll{who:OPP}` (schema v158) reads the OPPONENT's
+    /// `rerolled_turn` flag, not the owner's — "if your opponent re-rolled their turn roll,
+    /// double these bonuses". Owner A's own re-roll must NOT satisfy it; only B's does.
+    #[test]
+    fn rerolled_turn_roll_opp_reads_the_opponents_flag() {
+        let card: Card = serde_json::from_value(json!({
+            "atk_type":"Submission","db_uuid":"opp_reroll","name":"x","number":30,
+            "play_order":"Finish","raw_text":"","tags":[],"finish_bonuses":{"Submission":3},
+            "effects":[{"@type":"Effect","trigger":{"@type":"Static"},"condition":{"@type":"Always"},
+                "actions":[{"@type":"DoubleFinishIf","condition":
+                    {"@type":"RerolledTurnRoll","who":"OPP"}}],
+                "duration":"WHILE_IN_PLAY","optional":false,
+                "frequency":{"@type":"FrequencyGuard","kind":"UNLIMITED","n":null},
+                "raw_clause":"","source":"card"}]
+        }))
+        .unwrap();
+        let mut engine = engine_with(json!([]));
+        engine.state.turn_no = 4;
+        engine.state.players.get_mut("A").unwrap().in_play = vec![card.clone()];
+
+        // A (the owner) re-rolled, B did not → the OPP-scoped gate is NOT satisfied.
+        engine
+            .state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flags
+            .insert("rerolled_turn".to_owned(), json!(4));
+        assert_eq!(
+            engine.card_finish_bonus(&card, Skill::Submission, "A"),
+            3,
+            "owner's own re-roll must not satisfy who:OPP"
+        );
+
+        // B (the opponent) re-rolled → doubled.
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .flags
+            .insert("rerolled_turn".to_owned(), json!(4));
+        assert_eq!(
+            engine.card_finish_bonus(&card, Skill::Submission, "A"),
+            6,
+            "opponent's re-roll satisfies who:OPP"
+        );
+    }
+
     /// Foxworthy V3 Bell Cracker: "if you have 0 cards in your deck, double these
     /// bonuses" — `DoubleFinishIf{DeckSizeCompare{=, 0, SELF}}`.
     #[test]

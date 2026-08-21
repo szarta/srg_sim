@@ -885,10 +885,12 @@ class BuriedSpotlightLastTurn(IRNode):
 
 @dataclass(frozen=True)
 class RerolledTurnRoll(IRNode):
-    """True iff the owner re-rolled their turn roll THIS turn (any turn die re-rolled
+    """True iff ``who`` re-rolled their turn roll THIS turn (any turn die re-rolled
     at the roll-off; ``flags["rerolled_turn"]``). Gates King Brian Cage's finish riders
     ("if you rolled Power for your turn roll or you re-rolled your turn roll, …"), OR'd
-    with ``RollWasSkill{Power}``. schema v80"""
+    with ``RollWasSkill{Power}``, and the opponent twin ("if your opponent re-rolled …").
+    The Rust `who` field (v158, OPP) is grammar-only — not mirrored here, as no override
+    uses the OPP form (cf. ``EndedTurnNoPlay``/``BrokeOutLastTurn``). schema v80"""
 
 
 @dataclass(frozen=True)

@@ -5690,6 +5690,9 @@
       "properties": {
         "@type": {
           "const": "RerolledTurnRoll"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
         }
       },
       "required": [
@@ -7199,5 +7202,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 157
+  "version": 158
 }

@@ -213,9 +213,9 @@ EndedTurnNoPlay{who}         # `who` ended the PREVIOUS turn without playing a c
                              # SELF (skip-when-self; The SRG Boss); OPP gates Impact is Family V1. schema v78; who added v140
 BuriedSpotlightLastTurn{who} # `who` buried a Spotlight card on the PREVIOUS turn (flags["buried_spotlight_turn"] == turn_no-1,
                              # stamped when a Bury moves a Spotlight-tagged card). Gates Impact is Family V1's stall-punish rider. schema v140
-RerolledTurnRoll             # the owner re-rolled their turn roll THIS turn (any turn die re-rolled at the roll-off;
-                             # PlayerState.flags["rerolled_turn"]). Gates King Brian Cage's finish riders, OR'd with
-                             # RollWasSkill{Power}. schema v80
+RerolledTurnRoll {who}       # `who` re-rolled their turn roll THIS turn (any turn die re-rolled at the roll-off;
+                             # PlayerState.flags["rerolled_turn"]). Gates King Brian Cage's finish riders (OR'd with
+                             # RollWasSkill{Power}) + the opponent twin. who defaults SELF, skip-when-self. schema v80 (who: v158)
 HitCard(filter, who?, last_turn?)  # who hit a card matching `filter` this turn (last_turn=False) or the previous turn
                              # (True) — "if you hit a Grapple last turn". Reads PlayerState.hit_this_turn/hit_last_turn
                              # (by-card, rotated at turn start); empty filter = any hit. Filtered sibling of HitThisTurn. schema v91

@@ -4079,9 +4079,17 @@ fn double_these_bonuses_gates() {
     let c = cond("If your opponent rolled Grapple for their turn roll, double these bonuses.");
     assert_eq!(c["who"], "OPP");
 
-    // Flag gates.
+    // Flag gates. Self re-roll: who defaults SELF (skip-serialized -> absent).
+    let c = cond("If you re-rolled your turn roll, double these bonuses.");
+    assert_eq!(c["@type"], "RerolledTurnRoll");
+    assert_eq!(c["who"], Value::Null);
+    // Opponent twin (schema v158): who = OPP.
+    let c = cond("If your opponent re-rolled their turn roll, double these bonuses.");
+    assert_eq!(c["@type"], "RerolledTurnRoll");
+    assert_eq!(c["who"], "OPP");
+    // "for any reason" phrasing still parses (self).
     assert_eq!(
-        cond("If you re-rolled your turn roll, double these bonuses.")["@type"],
+        cond("If you re-rolled your turn roll for any reason, double these bonuses.")["@type"],
         "RerolledTurnRoll"
     );
     assert_eq!(

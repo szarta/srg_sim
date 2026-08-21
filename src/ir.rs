@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 157;
+pub const SCHEMA_VERSION: i64 = 158;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1013,13 +1013,19 @@ pub enum Condition {
         who: Who,
         last_turn: bool,
     },
-    /// The owner re-rolled their turn roll **this** turn — any of their turn dice was
+    /// `who` re-rolled their turn roll **this** turn — any of their turn dice was
     /// re-rolled at the roll-off (a granted "re-roll your next turn roll", a standing
     /// `Reroll{This}`, or a bump re-roll). Reads `PlayerState.flags["rerolled_turn"]`,
     /// stamped in `offer_rerolls` for the re-rolled side; false otherwise. Gates King
     /// Brian Cage's finish riders ("if you rolled Power for your turn roll or you
-    /// re-rolled your turn roll, …"), OR'd with `RollWasSkill{Power}`. schema v80
-    RerolledTurnRoll,
+    /// re-rolled your turn roll, …"), OR'd with `RollWasSkill{Power}`, and the
+    /// opponent twin "if your opponent re-rolled their turn roll, …". `who` defaults to
+    /// SELF (skip-when-self, so pre-v158 `{"@type":"RerolledTurnRoll"}` nodes round-trip
+    /// byte-identically). schema v80 (who: v158)
+    RerolledTurnRoll {
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+    },
     /// "flipped for your Gimmick" — the flip currently resolving was caused by a
     /// Gimmick-source effect. Reads [`GameState::flip_provenance`]; only meaningful on a
     /// flipped card's own `OnFlip{SELF}` self-trigger. schema v87
@@ -2745,9 +2751,13 @@ pub enum IrNode {
         who: Who,
         last_turn: bool,
     },
-    /// The owner re-rolled their turn roll this turn. Reads `flags["rerolled_turn"]`,
-    /// stamped in `offer_rerolls`. Gates King Brian Cage's finish riders. schema v80
-    RerolledTurnRoll,
+    /// `who` re-rolled their turn roll this turn. Reads `flags["rerolled_turn"]`, stamped
+    /// in `offer_rerolls`. Gates King Brian Cage's finish riders + the opponent twin.
+    /// `who` defaults to SELF (skip-when-self). schema v80 (who: v158)
+    RerolledTurnRoll {
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+    },
     /// The flip currently resolving was caused by a Gimmick-source effect. schema v87
     FlippedForGimmick,
     /// The flip currently resolving was caused by a card whose name contains one of

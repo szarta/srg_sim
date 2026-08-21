@@ -2342,10 +2342,24 @@ fn gate_condition(text: &str) -> Option<Condition> {
             who: Who::SelfSide,
         });
     }
+    // "you|your opponent re-rolled[ your/their [last ]turn roll][ for any reason]" — the
+    // turn-roll re-roll gate, `who`-scoped (the opponent twin gates also-<order>, gated
+    // stops, double-bonus off "your opponent re-rolled their turn roll").
+    static REROLL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^(you|your opponent) re-?rolled(?: (?:your|their) (?:last )?turn roll)?(?: for any reason)?$",
+        )
+        .unwrap()
+    });
+    if let Some(c) = REROLL.captures(t) {
+        let who = if c[1].eq_ignore_ascii_case("you") {
+            Who::SelfSide
+        } else {
+            Who::Opp
+        };
+        return Some(Condition::RerolledTurnRoll { who });
+    }
     match t.to_lowercase().as_str() {
-        "you re-rolled your turn roll" | "you re-rolled your last turn roll" => {
-            return Some(Condition::RerolledTurnRoll)
-        }
         "you bumped on the last turn roll" | "you bumped on the previous turn roll" => {
             return Some(Condition::BumpedLastTurnRoll)
         }

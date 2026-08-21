@@ -441,8 +441,9 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .and_then(serde_json::Value::as_i64)
                 == Some(want)
         }
-        Condition::RerolledTurnRoll => {
-            state.players[owner]
+        Condition::RerolledTurnRoll { who } => {
+            let subject = who_key(state, owner, *who);
+            state.players[&subject]
                 .flags
                 .get("rerolled_turn")
                 .and_then(serde_json::Value::as_i64)
