@@ -2584,14 +2584,15 @@ fn only_stopped_by(only: PlayOrder) -> Vec<Action> {
 }
 
 /// "Cannot be stopped by Skill Requirement cards" — an `Unstoppable` keyed on the
-/// stopper carrying a skill requirement.
-fn unstoppable_skillreq() -> Action {
+/// stopper carrying a skill requirement. `player_scope` distinguishes the "Your cards
+/// …" declaration (covers every owner card, read from in play) from "This card …".
+fn unstoppable_skillreq(player_scope: bool) -> Action {
     Action::Unstoppable {
         by_order: None,
         by_name: None,
         by_skillreq: true,
         applies_name: None,
-        player_scope: false,
+        player_scope,
     }
 }
 
@@ -6746,11 +6747,12 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
         // main-deck card it shields that card; on a gimmick/entrance ("Your cards …")
         // the engine's standing scan applies it to every one of the owner's cards.
         rule(
-            r"(?:This card |Your cards )?[Cc]annot be stopped by (?:cards with [Ss]kill [Rr]equirements|[Ss]kill [Rr]equirement cards)",
-            |_| {
+            r"(This card |Your cards )?[Cc]annot be stopped by (?:cards with [Ss]kill [Rr]equirements|[Ss]kill [Rr]equirement cards)",
+            |c| {
+                let player_scope = c.get(1).is_some_and(|m| m.as_str().starts_with("Your"));
                 Some(eff(
                     Trigger::Static,
-                    vec![unstoppable_skillreq()],
+                    vec![unstoppable_skillreq(player_scope)],
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))

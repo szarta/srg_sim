@@ -216,7 +216,7 @@
 {"domain":"unstoppable_draw","index":214,"pattern":"^(?:Your cards cannot be stopped by (?:printed )?(Follow[ -]?Ups?|Leads?|Finish(?:es)?)(?: cards)?)$"},
 {"domain":"unstoppable_draw","index":215,"pattern":"^(?:(?:This card )?[Cc]annot be stopped by (Follow[ -]?Ups?|Leads?|Finish(?:es)?))$"},
 {"domain":"unstoppable_draw","index":216,"pattern":"^(?:(?:This card )?[Cc]annot be stopped by \"([^\"]+)\")$"},
-{"domain":"unstoppable_draw","index":217,"pattern":"^(?:(?:This card |Your cards )?[Cc]annot be stopped by (?:cards with [Ss]kill [Rr]equirements|[Ss]kill [Rr]equirement cards))$"},
+{"domain":"unstoppable_draw","index":217,"pattern":"^(?:(This card |Your cards )?[Cc]annot be stopped by (?:cards with [Ss]kill [Rr]equirements|[Ss]kill [Rr]equirement cards))$"},
 {"domain":"unstoppable_draw","index":218,"pattern":"^(?:(?:When you roll (Power|Technique|Agility|Strike|Submission|Grapple) for your turn roll: )?Your cards with \"([^\"]+)\" in the name cannot be stopped\\.?)$"},
 {"domain":"unstoppable_draw","index":219,"pattern":"^(?:(?:(?:If|When) (.+?),? )?[Tt]his card cannot be stopped(?: by (Follow[ -]?Ups?|Leads?|Finish(?:es)?))?)$"},
 {"domain":"unstoppable_draw","index":220,"pattern":"^(?:(?:(?:If|When) (.+?),? )?[Tt]his card can only be stopped by (?:an? )?(Follow[ -]?Ups?|Leads?|Finish(?:es)?))$"},

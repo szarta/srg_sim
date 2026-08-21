@@ -4958,6 +4958,37 @@ mod even_unstoppable_stop_tests {
         assert!(engine.card_can_stop("A", &stopper("Finish", false), &attack(false)));
     }
 
+    #[test]
+    fn player_scope_skillreq_from_in_play_maindeck_shields_siblings() {
+        let mut engine = engine();
+        // A MAIN-DECK "Your cards cannot be stopped by cards with Skill Requirements"
+        // card is IN PLAY (player_scope), so it shields the owner's OTHER attacks.
+        let shield: Card = serde_json::from_value(json!({
+            "atk_type": "Strike", "db_uuid": "shield", "name": "shield", "number": 5,
+            "play_order": "Lead", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "Unstoppable", "by_order": null, "by_name": null,
+                             "by_skillreq": true, "player_scope": true}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "u", "source": "card", "optional": false
+            }]
+        }))
+        .unwrap();
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .in_play
+            .push(shield);
+        // A sibling attack (no own shield) can't be caught by a skill-req stopper…
+        assert!(!engine.card_can_stop("A", &skillreq_stopper(), &attack(false)));
+        // …but an ordinary stopper still catches it (shield is only vs skill-req).
+        assert!(engine.card_can_stop("A", &stopper("Finish", false), &attack(false)));
+    }
+
     /// A player-scope `Unstoppable{applies_name}` gimmick effect ("Your cards with
     /// \"X\" in the name cannot be stopped"), optionally roll-gated.
     fn applies_name_unstoppable(name: &str, condition: Value) -> Value {
