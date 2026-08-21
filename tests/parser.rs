@@ -1208,6 +1208,36 @@ fn not_first_card_stop_grammar() {
     assert_eq!(e[1]["condition"]["who"], "OPP");
 }
 
+/// Generic gated stop (#120): "(If|When) <gate>[,:] stop any <X>" routes any gate that
+/// `gate_condition` models onto a plain stop target — the catch-all beyond the specific
+/// skill-greater / another-<type> / Crowd-Meter gated-stop rules.
+#[test]
+fn generic_gated_stop_grammar() {
+    fn eff0(text: &str) -> Value {
+        serde_json::to_value(&parse_text(text, EffectSource::Card, None, None)[0]).unwrap()
+    }
+
+    // Lowercase "if" + Crowd-Meter gate (the specific rule wanted a capital "If").
+    let e = eff0("if the Crowd Meter is 1 or greater, stop any Follow Up Strike.");
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["condition"]["cmp"], ">=");
+    assert_eq!(e["actions"][0]["order"], "Followup");
+    assert_eq!(e["actions"][0]["atk_type"], "Strike");
+
+    // Colon separator + skill-vs-opponent gate.
+    let e = eff0(
+        "If your Submission skill is greater than your opponent's Submission skill: \
+         Stop any Finish Strike.",
+    );
+    assert_eq!(e["condition"]["@type"], "SkillCompare");
+    assert_eq!(e["condition"]["skill"], "Submission");
+    assert_eq!(e["actions"][0]["order"], "Finish");
+
+    // A gate `gate_condition` cannot map declines (stays Unsupported), not a bad Stop.
+    let e = eff0("If the moon is full, stop any Grapple.");
+    assert_eq!(e["actions"][0]["@type"], "Unsupported");
+}
+
 /// Whitelist "can only be stopped by <order>" (#120): the inverse of "cannot be stopped
 /// by <order>" — modeled with no new IR as an `Unstoppable{by_order}` per COMPLEMENTARY
 /// play order, optionally condition-gated.

@@ -8258,6 +8258,17 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                 )
             },
         ),
+        // Generic gated stop: "(If|When) <gate>[,:] stop any <X>" — the catch-all for a
+        // condition-gated stop whose gate is any shape `gate_condition` already models (Crowd
+        // Meter, skill-vs-opp, in-play counts, roll/hit history, `and`/`or` compounds, …) and
+        // whose <X> is a plain stop target. Placed AFTER the specific gated-stop rules above so
+        // each keeps its exact phrasing; this only fires on the ones they don't claim. A gate
+        // `gate_condition` can't map, or a target that isn't a plain stop list, declines (the
+        // clause stays Unsupported). Ordered before the "When you roll …" trigger rules, whose
+        // present-tense roll gates `gate_condition` does not match, so those still route there.
+        rule(r"(?i)^(?:If|When) (.+?)[,:] stop any (.+)", |c| {
+            stop_eff(&c[2], gate_condition(&c[1])?)
+        }),
         // Generic roll trigger-body split: "When you roll <Skill>[ for your turn roll]
         // [:,] <body>" -> the body re-parsed through the grammar with OnRoll{skill}
         // attached. Single-skill only; the multi-skill OR ("roll Strike, Submission, or
