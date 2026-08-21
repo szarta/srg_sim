@@ -2215,6 +2215,78 @@ fn you_can_stop_cards_that_cannot_be_stopped() {
     assert_eq!(e["condition"]["@type"], "Always");
 }
 
+/// Leader of the Unit JT Dunn: the " & "-compound splits into TWO effects (the guarded
+/// ampersand rescue), and the left half is a name-filtered skill-requirement shield —
+/// `Unstoppable{applies_name: "Elbow", by_skillreq, player_scope}`.
+#[test]
+fn jt_dunn_compound_shield_and_enabler() {
+    let effs = parse_text(
+        "Your cards with \"Elbow\" in the name cannot be stopped by Skill Requirements & you can stop cards that cannot be stopped.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    assert_eq!(effs.len(), 2, "the ampersand splits into two effects");
+    let shield = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(shield["actions"][0]["@type"], "Unstoppable");
+    assert_eq!(shield["actions"][0]["applies_name"], "Elbow");
+    assert_eq!(shield["actions"][0]["by_skillreq"], true);
+    assert_eq!(shield["actions"][0]["player_scope"], true);
+    let enabler = serde_json::to_value(&effs[1]).unwrap();
+    assert_eq!(enabler["actions"][0]["@type"], "CanStopUnstoppable");
+
+    // The bare (non-skillreq) name-filter shield still parses with by_skillreq=false.
+    let bare = parse_text(
+        "Your cards with \"Elbow\" in the name cannot be stopped.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let b = serde_json::to_value(&bare[0]).unwrap();
+    assert_eq!(b["actions"][0]["by_skillreq"], false);
+    assert_eq!(b["actions"][0]["applies_name"], "Elbow");
+}
+
+/// A comma-less Crowd-Meter gate (JT Dunn's Fear of Diving, ~27 DB clauses): "If the
+/// Crowd Meter is N or greater/less <body>" gates the body without the separator the
+/// generic gate requires.
+#[test]
+fn comma_less_crowd_meter_gate() {
+    let effs = parse_text(
+        "If the Crowd Meter is 4 or greater stop any Finish Strike.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(e["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(e["condition"]["value"], 4);
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+}
+
+/// "Your skills are +N …" names every skill (Death by Elbow) — `skill_list` expands the
+/// bare "skills" word to all six, so the multi-skill per-count buff emits six BuffSkills.
+#[test]
+fn your_skills_expands_to_all_six() {
+    let effs = parse_text(
+        "Your skills are +1 for each other card you have in play with \"Elbow\" in the name.",
+        EffectSource::Card,
+        None,
+        None,
+    );
+    let e = serde_json::to_value(&effs[0]).unwrap();
+    assert_eq!(
+        e["actions"].as_array().unwrap().len(),
+        6,
+        "one buff per skill"
+    );
+    assert!(e["actions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .all(|a| a["@type"] == "BuffSkill" && a["per_excludes_self"] == true));
+}
+
 /// Match-stipulation gate (task #130): "this is a <X> Match" -> IsMatchType, an OR-set
 /// when disjoined ("Steel Cage or Liger's Den"). Cascades through every gated family —
 /// generic body, double-bonuses, also-a, cannot-be-stopped. schema v92.
@@ -3402,6 +3474,18 @@ fn costed_reroll_grammar() {
     let e = one("Once per turn: You may bury 3 cards in your hand to re-roll your Finish roll.");
     assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
     assert_eq!(e["actions"][0]["cost"]["count"], 3);
+
+    // Reveal N (typed) from hand -> RevealFromHand (soft cost) — Whole Lotta Lariat.
+    let e = one(
+        "Once per turn: You may reveal 2 Submissions from your hand to re-roll your Finish roll",
+    );
+    assert_eq!(e["frequency"]["kind"], "ONCE_PER_TURN");
+    let a = &e["actions"][0];
+    assert_eq!(a["@type"], "Reroll");
+    assert_eq!(a["finish"], true);
+    assert_eq!(a["cost"]["kind"], "REVEAL_FROM_HAND");
+    assert_eq!(a["cost"]["count"], 2);
+    assert_eq!(a["cost"]["filter"]["atk_type"], "Submission");
 
     // Non-cost prefix declines (stays Unsupported, no silent cost drop): "discard this
     // card" (hand-activated) and a non-payment "to" clause.

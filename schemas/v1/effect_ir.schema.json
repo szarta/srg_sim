@@ -5602,7 +5602,8 @@
       "enum": [
         "SHUFFLE_IN_PLAY",
         "BURY_FROM_HAND",
-        "DISCARD_FROM_HAND"
+        "DISCARD_FROM_HAND",
+        "REVEAL_FROM_HAND"
       ],
       "type": "string"
     },
@@ -7148,5 +7149,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 154
+  "version": 155
 }

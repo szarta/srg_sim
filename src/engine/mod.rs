@@ -7185,7 +7185,9 @@ impl Engine {
                 .filter
                 .as_ref()
                 .is_some_and(|f| self.has_in_play(owner, f)),
-            RerollCostKind::BuryFromHand | RerollCostKind::DiscardFromHand => {
+            RerollCostKind::BuryFromHand
+            | RerollCostKind::DiscardFromHand
+            | RerollCostKind::RevealFromHand => {
                 let need = c.count.unwrap_or(0).max(0) as usize;
                 let hand = &self.state.players[owner].hand;
                 let have = match &c.filter {
@@ -7219,6 +7221,9 @@ impl Engine {
                 let n = c.count.unwrap_or(0).max(0) as usize;
                 self.discard_from_hand(owner, owner, n, false, c.filter.as_ref())?;
             }
+            // Reveal is a SOFT cost: affordability (`can_pay_reroll`) already confirmed the
+            // owner holds the cards, and revealing removes nothing — no state changes.
+            RerollCostKind::RevealFromHand => {}
         }
         Ok(())
     }

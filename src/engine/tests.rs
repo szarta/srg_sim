@@ -333,6 +333,19 @@ mod breakout_modifier_tests {
         assert!(e.can_pay_reroll("A", &cost(RerollCostKind::BuryFromHand, Some(3), None)));
         assert!(!e.can_pay_reroll("A", &cost(RerollCostKind::BuryFromHand, Some(4), None)));
         assert!(e.can_pay_reroll("A", &cost(RerollCostKind::DiscardFromHand, Some(2), None)));
+        // Reveal is a SOFT cost — affords like a hand cost (holds `count` cards) but pays
+        // nothing (Whole Lotta Lariat's "reveal 2 Submissions … to re-roll"). 3 Strikes:
+        // reveal up to 3, not 4; paying leaves the hand intact.
+        assert!(e.can_pay_reroll("A", &cost(RerollCostKind::RevealFromHand, Some(3), None)));
+        assert!(!e.can_pay_reroll("A", &cost(RerollCostKind::RevealFromHand, Some(4), None)));
+        let before = e.state.players["A"].hand.len();
+        e.pay_reroll("A", &cost(RerollCostKind::RevealFromHand, Some(2), None))
+            .expect("reveal pays nothing");
+        assert_eq!(
+            e.state.players["A"].hand.len(),
+            before,
+            "reveal removes no cards"
+        );
         // Typed cost: no Submission in hand -> unaffordable.
         let subm = CardFilter {
             atk_type: Some(AtkType::Submission),
@@ -340,7 +353,11 @@ mod breakout_modifier_tests {
         };
         assert!(!e.can_pay_reroll(
             "A",
-            &cost(RerollCostKind::DiscardFromHand, Some(1), Some(subm))
+            &cost(RerollCostKind::DiscardFromHand, Some(1), Some(subm.clone()))
+        ));
+        assert!(!e.can_pay_reroll(
+            "A",
+            &cost(RerollCostKind::RevealFromHand, Some(1), Some(subm))
         ));
         // ShuffleInPlay with no matching in-play card -> unaffordable.
         let potion = CardFilter {
@@ -5040,6 +5057,53 @@ mod even_unstoppable_stop_tests {
         assert!(engine.card_can_stop(
             "A",
             &stopper("Finish", false),
+            &named_finish_attack("Clothesline")
+        ));
+    }
+
+    /// Leader of the Unit JT Dunn: "Your cards with \"Elbow\" in the name cannot be
+    /// stopped by Skill Requirements" — a shield ANDing `applies_name` (Elbow attacks
+    /// only) with `by_skillreq` (skill-requirement stoppers only). An Elbow attack is
+    /// shielded from a skillreq stopper but not a plain one; a non-Elbow attack is
+    /// stopped by either.
+    fn jt_dunn_elbow_skillreq_shield() -> Value {
+        json!({
+            "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+            "actions": [{"@type": "Unstoppable", "by_order": null, "by_name": null,
+                         "by_skillreq": true, "applies_name": "Elbow", "player_scope": true}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "u", "source": "gimmick", "optional": false
+        })
+    }
+
+    #[test]
+    fn jt_dunn_name_filtered_skillreq_shield() {
+        let mut engine = engine();
+        engine
+            .state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .competitor
+            .effects
+            .push(serde_json::from_value(jt_dunn_elbow_skillreq_shield()).unwrap());
+        // An Elbow-named B attack: shielded from a SKILL-REQUIREMENT stopper…
+        assert!(!engine.card_can_stop(
+            "A",
+            &skillreq_stopper(),
+            &named_finish_attack("Death by Elbow")
+        ));
+        // …but a plain (non-skillreq) stopper still catches it — the shield is skillreq-only.
+        assert!(engine.card_can_stop(
+            "A",
+            &stopper("Finish", false),
+            &named_finish_attack("Death by Elbow")
+        ));
+        // A non-Elbow B attack is caught even by the skillreq stopper (name filter misses).
+        assert!(engine.card_can_stop(
+            "A",
+            &skillreq_stopper(),
             &named_finish_attack("Clothesline")
         ));
     }

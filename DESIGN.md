@@ -336,7 +336,8 @@ Reroll(who, once=True, choose=False, when=THIS, cost?, finish=False, breakout=Fa
                               # (offer_breakout_reroll) — "re-roll your Breakout roll" / "force your opponent to re-roll…".
                               # cost? = RerollCost{kind, count?, filter?} (v103): SHUFFLE_IN_PLAY (shuffle a matching
                               # in-play card away, Mr. Hyde) | BURY_FROM_HAND | DISCARD_FROM_HAND ("bury/discard N cards
-                              # from your hand to re-roll"); offered only while affordable, paid on election.
+                              # from your hand to re-roll") | REVEAL_FROM_HAND (v155: soft cost — reveal N matching cards
+                              # from hand and KEEP them, Whole Lotta Lariat); offered only while affordable, paid on election.
 CoupledDiscard(offset)        # "discard any number from your hand, opp discards that number `offset`" (Dismantler,
                               # offset -1). Actor's count N is an engine heuristic (min(self_hand, opp_hand+1)); the
                               # self-discard fires OnBury; opp then sheds max(0, N+offset). schema v76

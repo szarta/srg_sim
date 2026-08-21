@@ -218,7 +218,7 @@
 {"domain":"unstoppable_draw","index":216,"pattern":"^(?:(?:This card )?[Cc]annot be stopped by (Follow[ -]?Ups?|Leads?|Finish(?:es)?))$"},
 {"domain":"unstoppable_draw","index":217,"pattern":"^(?:(?:This card )?[Cc]annot be stopped by \"([^\"]+)\")$"},
 {"domain":"unstoppable_draw","index":218,"pattern":"^(?:(This card |Your cards )?[Cc]annot be stopped by (?:cards with [Ss]kill [Rr]equirements|[Ss]kill [Rr]equirement cards))$"},
-{"domain":"unstoppable_draw","index":219,"pattern":"^(?:(?:When you roll (Power|Technique|Agility|Strike|Submission|Grapple) for your turn roll: )?Your cards with \"([^\"]+)\" in the name cannot be stopped\\.?)$"},
+{"domain":"unstoppable_draw","index":219,"pattern":"^(?:(?:When you roll (Power|Technique|Agility|Strike|Submission|Grapple) for your turn roll: )?Your cards with \"([^\"]+)\" in the name cannot be stopped( by (?:cards with [Ss]kill [Rr]equirements?|[Ss]kill [Rr]equirements?(?: cards)?))?\\.?)$"},
 {"domain":"unstoppable_draw","index":220,"pattern":"^(?:(?:(?:If|When) (.+?),? )?[Tt]his card cannot be stopped(?: by (Follow[ -]?Ups?|Leads?|Finish(?:es)?))?)$"},
 {"domain":"unstoppable_draw","index":221,"pattern":"^(?:(?:(?:If|When) (.+?),? )?[Tt]his card can only be stopped by (?:an? )?(Follow[ -]?Ups?|Leads?|Finish(?:es)?))$"},
 {"domain":"unstoppable_draw","index":222,"pattern":"^(?:This card counts as (\\d+) (Lead|Follow [Uu]p|Finish) (Strike|Grapple|Submission)s? in play)$"},
@@ -312,5 +312,6 @@
 {"domain":"stop_trigger","index":310,"pattern":"^(?:If you roll (Power|Technique|Agility|Strike|Submission|Grapple)(?: or (Power|Technique|Agility|Strike|Submission|Grapple))?, (.+))$"},
 {"domain":"stop_trigger","index":311,"pattern":"^(?:If you have a card with \"([^\"]+)\" in the name in play, (.+))$"},
 {"domain":"stop_trigger","index":312,"pattern":"^(?:If (.+?),? double (?:these|the) bonuses)$"},
-{"domain":"stop_trigger","index":313,"pattern":"^(?:(?:If|When) (.+?)[;,] (.+))$"}
+{"domain":"stop_trigger","index":313,"pattern":"^(?:(?:If|When) (the Crowd Meter is \\d+ or (?:greater|less|more)) (.+))$"},
+{"domain":"stop_trigger","index":314,"pattern":"^(?:(?:If|When) (.+?)[;,] (.+))$"}
 ]

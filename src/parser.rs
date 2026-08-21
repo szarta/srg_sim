@@ -1258,6 +1258,9 @@ fn reroll_cost(text: &str) -> Option<RerollCost> {
     static DISCARD: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(?i)^discard (\d+|a|one) (.+?)(?: from your hand)?$").unwrap()
     });
+    static REVEAL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^reveal (\d+|a|one) (.+?)(?: from your hand)?$").unwrap()
+    });
     let node = |kind, count, filter| RerollCost {
         node_type: RerollCostTag,
         kind,
@@ -1282,6 +1285,17 @@ fn reroll_cost(text: &str) -> Option<RerollCost> {
         let filter = (filter != CardFilter::default()).then_some(filter);
         return Some(node(
             RerollCostKind::DiscardFromHand,
+            count_or_word(&c[1]),
+            filter,
+        ));
+    }
+    if let Some(c) = REVEAL.captures(t) {
+        // Reveal is a SOFT cost: prove you hold the cards, keep them. A bare
+        // "card(s)" object carries no filter (match-any).
+        let filter = recur_filter(c[2].trim())?;
+        let filter = (filter != CardFilter::default()).then_some(filter);
+        return Some(node(
+            RerollCostKind::RevealFromHand,
             count_or_word(&c[1]),
             filter,
         ));
@@ -1759,6 +1773,33 @@ fn versatile_or_stop(clause: &str) -> Option<Vec<Effect>> {
 /// even-unstoppable Stop on <A>, plus a `HitThisTurn{Opp}`-gated Stop on <B>, whose
 /// opening card is safe). A single multi-target Stop effect shares one condition, so
 /// this can't be one effect — it emits the two independently gated stop effects.
+/// Guarded " & "-split rescue (Leader of the Unit JT Dunn): "Your cards with \"Elbow\"
+/// … cannot be stopped by Skill Requirements & you can stop cards that cannot be stopped"
+/// joins two independent abilities with an ampersand. `split_clauses` deliberately keeps
+/// `&` intact — it also joins noun phrases inside ONE clause ("3 Grapples & 3 other
+/// Strikes", "your Strike & Grapple cards") — so this runs only once a clause is
+/// otherwise Unsupported and commits ONLY when EVERY " & "-separated part parses on its
+/// own (a mid-phrase `&` leaves a fragment that doesn't, so it stays Unsupported). The
+/// caller stamps the shared frequency/window onto the returned effects.
+fn ampersand_compound(clause: &str, source: EffectSource) -> Option<Vec<Effect>> {
+    let parts: Vec<&str> = clause.trim().trim_end_matches('.').split(" & ").collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let mut out = Vec::new();
+    for part in parts {
+        let e = compile(part.trim(), source, Frequency::Unlimited, None);
+        if e.actions
+            .iter()
+            .any(|a| matches!(a, Action::Unsupported { .. }))
+        {
+            return None;
+        }
+        out.push(e);
+    }
+    Some(out)
+}
+
 fn stop_first_card_compound(clause: &str) -> Option<Vec<Effect>> {
     static RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
@@ -2405,6 +2446,15 @@ fn skill(text: &str) -> Skill {
 /// Technique, and Agility" (an optional trailing " skill"/" skills" is tolerated).
 /// Empty if any token isn't a skill name (the caller then declines the rule).
 fn skill_list(text: &str) -> Vec<Skill> {
+    // Bare "skills" (optionally "all"/"your") names EVERY skill — "your skills are +N",
+    // Death by Elbow's "Your skills are +1 for each other card … with 'Elbow' in the name".
+    // Handled before the "skill(s)"-stripping normalization (which would leave it empty).
+    if matches!(
+        text.trim().to_lowercase().as_str(),
+        "skills" | "all skills" | "your skills" | "all of your skills"
+    ) {
+        return Skill::ALL.to_vec();
+    }
     let normalized = text
         .replace(" skills", "")
         .replace(" skill", "")
@@ -2596,15 +2646,17 @@ fn unstoppable_skillreq(player_scope: bool) -> Action {
     }
 }
 
-/// "Your cards with \"X\" in the name cannot be stopped" — a player-scope shield
-/// (`player_scope`) that protects only the owner's attacks whose name contains `x`.
-/// Read by the engine's standing-effect scan (`attack_is_unstoppable_by`), which
-/// AND-s `applies_name` against the attack.
-fn unstoppable_applies_name(x: &str) -> Action {
+/// "Your cards with \"X\" in the name cannot be stopped[ by Skill Requirements]" — a
+/// player-scope shield (`player_scope`) that protects only the owner's attacks whose
+/// name contains `x`. Read by the engine's standing-effect scan
+/// (`attack_is_unstoppable_by`), which AND-s `applies_name` against the attack; `by_skillreq`
+/// further narrows the shield to stoppers carrying a skill requirement (Leader of the Unit
+/// JT Dunn's "… with \"Elbow\" in the name cannot be stopped by Skill Requirements").
+fn unstoppable_applies_name(x: &str, by_skillreq: bool) -> Action {
     Action::Unstoppable {
         by_order: None,
         by_name: None,
-        by_skillreq: false,
+        by_skillreq,
         applies_name: Some(x.to_owned()),
         player_scope: true,
     }
@@ -6777,7 +6829,7 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
         // standing scan applies it across every one of the owner's cards.
         rule(
             &format!(
-                r#"(?:When you roll {SK} for your turn roll: )?Your cards with "([^"]+)" in the name cannot be stopped\.?"#
+                r#"(?:When you roll {SK} for your turn roll: )?Your cards with "([^"]+)" in the name cannot be stopped( by (?:cards with [Ss]kill [Rr]equirements?|[Ss]kill [Rr]equirements?(?: cards)?))?\.?"#
             ),
             |c| {
                 let condition = match c.get(1) {
@@ -6787,9 +6839,12 @@ fn build_unstoppable_draw_rules() -> Vec<(Regex, Builder)> {
                     },
                     None => Condition::Always,
                 };
+                // The optional "by Skill Requirements" tail narrows the shield to
+                // skill-requirement stoppers (JT Dunn) instead of every stopper.
+                let by_skillreq = c.get(3).is_some();
                 Some(eff(
                     Trigger::Static,
-                    vec![unstoppable_applies_name(&c[2])],
+                    vec![unstoppable_applies_name(&c[2], by_skillreq)],
                     condition,
                     Duration::WhileInPlay,
                 ))
@@ -8340,6 +8395,16 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // Comma-less Crowd-Meter gate: "If/When the Crowd Meter is N or greater/less/more
+        // <body>" — a recurring DB phrasing (~27 clauses, incl. JT Dunn's Fear of Diving
+        // "… 4 or greater stop any Finish Strike") that drops the separator the generic
+        // gate below requires. The "or greater/less/more" terminal delimits the gate
+        // unambiguously, so no comma is needed; anything past it is the body. Placed just
+        // before the generic gate so the punctuated form still wins when present.
+        rule(
+            r"(?:If|When) (the Crowd Meter is \d+ or (?:greater|less|more)) (.+)",
+            |c| gate_body(gate_condition(&c[1])?, &c[2]),
+        ),
         // Generic condition gate: "If/When <gate>[;,] <body>" — parse the gate via
         // `gate_condition` and the body via `gate_body` (natural trigger kept, gate
         // AND-ed on). Placed LAST so every specific rule wins first; it fires only when
@@ -9301,6 +9366,22 @@ pub fn parse_text(
             // "Choose a skill: your opponent's skill of that type is -N" — a ChooseSkill
             // binding + a Static target_chosen debuff on the opponent (see the fn).
             if let Some(effs) = choose_skill_opp_debuff(clause) {
+                for mut e in effs {
+                    e.raw_clause = clause.clone();
+                    e.source = source;
+                    e.frequency = FrequencyGuard {
+                        node_type: FrequencyGuardTag,
+                        kind: freq,
+                        n,
+                    };
+                    effects.push(scope(e, &window));
+                }
+                i += 1;
+                continue;
+            }
+            // Two independent abilities joined by " & " (JT Dunn) — commit only when both
+            // halves parse. Tried last so it never shadows a clause with real grammar.
+            if let Some(effs) = ampersand_compound(clause, source) {
                 for mut e in effs {
                     e.raw_clause = clause.clone();
                     e.source = source;

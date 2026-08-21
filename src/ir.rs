@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 154;
+pub const SCHEMA_VERSION: i64 = 155;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -568,13 +568,17 @@ pub struct CardFilter {
 /// re-roll cost (Mr. Hyde's "Potion"). `BuryFromHand` / `DiscardFromHand` are hand
 /// payments (`count` cards, optionally matching `filter` for the discard case) — the
 /// "bury 4 cards in your hand to re-roll" / "discard 1 Finish from your hand to
-/// re-roll" family. schema v103
+/// re-roll" family. `RevealFromHand` is a SOFT cost — the owner reveals `count` cards
+/// matching `filter` from hand but keeps them (Whole Lotta Lariat's "reveal 2
+/// Submissions from your hand to re-roll your Finish roll"); it gates the re-roll on
+/// holding the cards without spending them. schema v103 (RevealFromHand: v155)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum RerollCostKind {
     ShuffleInPlay,
     BuryFromHand,
     DiscardFromHand,
+    RevealFromHand,
 }
 
 /// The cost of a [`Action::Reroll`] (the payment offered alongside the re-roll). Its

@@ -381,6 +381,7 @@ class RerollCostKind(Enum):
     SHUFFLE_IN_PLAY = "SHUFFLE_IN_PLAY"  # shuffle a matching in-play card into the deck
     BURY_FROM_HAND = "BURY_FROM_HAND"  # bury ``count`` cards from hand
     DISCARD_FROM_HAND = "DISCARD_FROM_HAND"  # discard ``count`` (matching) cards from hand
+    REVEAL_FROM_HAND = "REVEAL_FROM_HAND"  # reveal ``count`` (matching) cards from hand — soft cost, keeps them (v155)
 
 
 @dataclass(frozen=True)
