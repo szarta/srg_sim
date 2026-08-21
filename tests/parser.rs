@@ -1238,6 +1238,43 @@ fn generic_gated_stop_grammar() {
     assert_eq!(e["actions"][0]["@type"], "Unsupported");
 }
 
+/// Card-title in-play gate (#120): "you have \"X\"[ or \"Y\"] in play" is a `HasInPlay`
+/// name-filter on the owner's board — distinct from "with X in the name" — usable by every
+/// family routing through `gate_condition` (Finish-roll buffs, also-<order>, gated stops).
+#[test]
+fn title_in_play_gate_grammar() {
+    fn eff0(text: &str) -> Value {
+        serde_json::to_value(&parse_text(text, EffectSource::Card, None, None)[0]).unwrap()
+    }
+
+    // Single title, gating a stop.
+    let e = eff0("When you have \"Superman Punch\" in play, stop any Finish Grapple.");
+    assert_eq!(e["condition"]["@type"], "HasInPlay");
+    assert_eq!(e["condition"]["who"], "SELF");
+    assert_eq!(
+        e["condition"]["filter"]["name_contains"],
+        serde_json::json!(["Superman Punch"])
+    );
+    assert_eq!(e["actions"][0]["@type"], "Stop");
+
+    // OR-list of titles -> one name-filter matching any of them.
+    let e = eff0("When you have \"Big Boot\" or \"Spear\" in play, stop any Finish Grapple.");
+    assert_eq!(
+        e["condition"]["filter"]["name_contains"],
+        serde_json::json!(["Big Boot", "Spear"])
+    );
+
+    // Compound OR with another gate: the title gate composes under the gate splitter. The
+    // "also a <order>" family carries the gate on the AlsoLead action's own condition.
+    let e = eff0(
+        "If you broke out last turn, or you have \"Low Blow\" in play, this card is also a Lead.",
+    );
+    let cond = &e["actions"][0]["condition"];
+    assert_eq!(cond["@type"], "Or");
+    assert_eq!(cond["items"][0]["@type"], "BrokeOutLastTurn");
+    assert_eq!(cond["items"][1]["@type"], "HasInPlay");
+}
+
 /// Whitelist "can only be stopped by <order>" (#120): the inverse of "cannot be stopped
 /// by <order>" — modeled with no new IR as an `Unstoppable{by_order}` per COMPLEMENTARY
 /// play order, optionally condition-gated.

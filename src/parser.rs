@@ -2221,6 +2221,13 @@ fn gate_condition(text: &str) -> Option<Condition> {
         )
         .unwrap()
     });
+    // "you have \"X\"[, \"Y\"][ or \"Z\"] in play" — a card named X on YOUR board (an
+    // OR-list of quoted card titles; ≥1 present). Distinct from HAVE_NAME's "with X in the
+    // name" (a name-substring qualifier) and NAMED_CARD_IN_PLAY's ownerless "the card X".
+    static HAVE_TITLE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r#"(?i)^you have ("[^"]+"(?:(?:,\s*(?:or\s+)?|\s+or\s+)"[^"]+")*) in play$"#)
+            .unwrap()
+    });
     // "the card X is in play" (X quoted or a bare name) — an UNqualified named-card gate.
     // Per Brandon, an unqualified "the card X is in play" counts EITHER player's board, so
     // it maps to an Or of a self- and an opponent-side name gate (Roll Up / Senton Splash /
@@ -2409,6 +2416,12 @@ fn gate_condition(text: &str) -> Option<Condition> {
             cf_name(vec![c[1].to_owned()]),
             1,
         ));
+    }
+    if let Some(c) = HAVE_TITLE.captures(t) {
+        let names = quoted_names(&c[1]);
+        if !names.is_empty() {
+            return Some(has_in_play(Who::SelfSide, cf_name(names), 1));
+        }
     }
     if let Some(c) = NAMED_CARD_IN_PLAY.captures(t) {
         let filter = || cf_name(vec![c[1].to_owned()]);
