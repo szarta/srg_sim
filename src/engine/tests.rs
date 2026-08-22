@@ -7369,6 +7369,50 @@ mod cardona_mechanism_tests {
     }
 
     #[test]
+    fn crowd_scaled_coefficient_and_sign() {
+        // The shared per_crowd reader: coefficient in `delta` (0 read as 1), signed,
+        // clamped to cap. Meter 3.
+        let mut e = engine();
+        e.state.crowd_meter = 3;
+        assert_eq!(
+            e.state.crowd_scaled(0, None),
+            3,
+            "delta 0 reads as one meter"
+        );
+        assert_eq!(e.state.crowd_scaled(1, None), 3, "delta 1 = one meter");
+        assert_eq!(e.state.crowd_scaled(2, None), 6, "double");
+        assert_eq!(e.state.crowd_scaled(-1, None), -3, "negative subtracts");
+        assert_eq!(
+            e.state.crowd_scaled(3, Some(6)),
+            6,
+            "triple (9) clamped to cap 6"
+        );
+    }
+
+    #[test]
+    fn modify_roll_per_crowd_snapshots_signed_meter() {
+        // "Your opponent's next turn roll is - the Crowd Meter": a one-shot pending mod of
+        // -meter (2) onto B's next turn roll.
+        let mut e = engine();
+        e.state.crowd_meter = 2;
+        let act = Action::ModifyRoll {
+            who: Who::Opp,
+            delta: -1,
+            when: RollWhen::Next,
+            per: None,
+            per_who: Who::SelfSide,
+            per_zone: CountZone::InPlay,
+            on_skill: None,
+            per_crowd: true,
+        };
+        e.apply_action(&act, "A", "").unwrap();
+        assert_eq!(
+            e.state.players["B"].pending_roll_mods.next_turn, -2,
+            "opponent's next turn roll -= the meter"
+        );
+    }
+
+    #[test]
     fn bury_per_scales_by_strikes_flipped_this_turn() {
         // Scott's Five Star Heart Punch: "opponent buries 1 card in their hand for each
         // Strike flipped." A flipped 3 Strikes (+ a Grapple) this turn → bury 3 from B's

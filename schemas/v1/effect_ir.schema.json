@@ -726,6 +726,10 @@
             }
           ]
         },
+        "per_crowd": {
+          "description": "Dynamic delta = the live Crowd Meter scaled by delta as a coefficient, clamped to cap (\"your breakout rolls are + the Crowd Meter\" = delta 1; \"- the Crowd Meter\" = delta -1). Mutually exclusive with per. Absent = false. schema v161",
+          "type": "boolean"
+        },
         "per_divisor": {
           "description": "Integer divisor on the per-count before scaling (count = floor(matches / per_divisor)). schema v112",
           "anyOf": [
@@ -4293,6 +4297,10 @@
             }
           ]
         },
+        "per_crowd": {
+          "description": "Dynamic delta = the live Crowd Meter scaled by delta as a coefficient, snapshotted at apply time (\"your opponent's next turn roll is - the Crowd Meter\" = delta -1). Mutually exclusive with per/on_skill. Absent = false. schema v161",
+          "type": "boolean"
+        },
         "per_who": {
           "$ref": "#/$defs/Who"
         },
@@ -7240,5 +7248,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 160
+  "version": 161
 }

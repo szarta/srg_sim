@@ -1157,7 +1157,7 @@ impl GameState {
             skill
         };
         let d = if per_crowd {
-            cap.map_or(self.crowd_meter, |c| self.crowd_meter.min(c))
+            self.crowd_scaled(delta, cap)
         } else if let Some(filter) = per {
             // "+delta for each [other] card in `per_zone` matching `filter`", clamped to
             // cap; `exclude` drops the source card for a "for each OTHER …" buff.
@@ -1168,6 +1168,18 @@ impl GameState {
             delta
         };
         (sk, d)
+    }
+
+    /// The `per_crowd` contribution: the live Crowd Meter scaled by an effect's
+    /// coefficient, clamped to `cap` ("Max +N"). `delta` is the coefficient, with 0
+    /// treated as 1 — the historical "+ the Crowd Meter" default (existing per_crowd
+    /// nodes were authored with delta 0 or 1, so both map to a single meter). A positive
+    /// coefficient doubles/triples ("+ Triple the Crowd Meter" = 3); a negative one
+    /// subtracts ("- the Crowd Meter" = -1). Shared by every per_crowd reader.
+    pub(crate) fn crowd_scaled(&self, delta: i64, cap: Option<i64>) -> i64 {
+        let coeff = if delta == 0 { 1 } else { delta };
+        let raw = coeff * self.crowd_meter;
+        cap.map_or(raw, |c| raw.min(c))
     }
 
     /// Count the target's cards in `zone` matching `filter` (Static per-count buffs).

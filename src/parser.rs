@@ -690,6 +690,7 @@ fn modify_roll(
         per_who,
         per_zone: CountZone::InPlay,
         on_skill: None,
+        per_crowd: false,
     }
 }
 
@@ -704,6 +705,43 @@ fn modify_roll_on_skill(delta: i64, skill: Skill) -> Action {
         per_who: Who::SelfSide,
         per_zone: CountZone::InPlay,
         on_skill: Some(skill),
+        per_crowd: false,
+    }
+}
+
+/// "Your [opponent's] next turn roll is ± [double|triple] the Crowd Meter" (#97) — a
+/// one-shot pending turn-roll mod whose delta is the live meter scaled by the signed
+/// coefficient (`coeff`), snapshotted when the effect resolves.
+fn modify_roll_crowd(who: Who, coeff: i64) -> Action {
+    Action::ModifyRoll {
+        who,
+        delta: coeff,
+        when: RollWhen::Next,
+        per: None,
+        per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
+        on_skill: None,
+        per_crowd: true,
+    }
+}
+
+/// "Your [opponent's] [first] breakout roll[s] are ± [double|triple] the Crowd Meter"
+/// (#97) — a standing breakout-roll mod whose delta is the live meter scaled by the
+/// signed coefficient. `attempts` gates a single roll index ("first"/"1st" -> Some(1)).
+fn breakout_crowd(who: Who, coeff: i64, attempts: Option<i64>) -> Action {
+    Action::BreakoutModifier {
+        delta: coeff,
+        attempts,
+        when_skill: None,
+        who,
+        either: false,
+        per: None,
+        per_who: Who::SelfSide,
+        per_zone: CountZone::InPlay,
+        per_divisor: None,
+        cap: None,
+        per_excludes_self: false,
+        per_crowd: true,
     }
 }
 
@@ -1274,7 +1312,18 @@ fn type_count_buff(
 /// delta Copy Kat uses, previously override-only). Declines when the skill list is empty
 /// (so "Your Finish roll …" / "Your breakout rolls …" — different mechanisms — fall
 /// through), keeping this to plain skill buffs.
-fn crowd_meter_buff(skills_text: &str, cap: Option<regex::Match>) -> Option<Effect> {
+/// The Crowd-Meter coefficient in a "+ [double|triple] the Crowd Meter" phrase — the
+/// multiplier the per_crowd reader applies to the live meter (1 = "+ the", 2 = double,
+/// 3 = triple). Combined with a leading sign for "- the Crowd Meter" (coefficient -1).
+fn crowd_coeff(word: Option<regex::Match>) -> i64 {
+    match word.map(|m| m.as_str().to_ascii_lowercase()).as_deref() {
+        Some("double") => 2,
+        Some("triple") => 3,
+        _ => 1,
+    }
+}
+
+fn crowd_meter_buff(skills_text: &str, cap: Option<regex::Match>, coeff: i64) -> Option<Effect> {
     let skills = skill_list(skills_text);
     if skills.is_empty() {
         return None;
@@ -1284,7 +1333,7 @@ fn crowd_meter_buff(skills_text: &str, cap: Option<regex::Match>) -> Option<Effe
         .into_iter()
         .map(|s| Action::BuffSkill {
             skill: s,
-            delta: 1,
+            delta: coeff,
             who: Who::SelfSide,
             duration: Duration::WhileInPlay,
             target_highest: false,
@@ -3632,6 +3681,7 @@ fn breakout_mod_who(
         per_divisor: None,
         cap: None,
         per_excludes_self: false,
+        per_crowd: false,
     }
 }
 
@@ -3663,6 +3713,7 @@ fn breakout_per(
         per_divisor: None,
         cap,
         per_excludes_self: exclude_self,
+        per_crowd: false,
     }
 }
 
@@ -4204,8 +4255,8 @@ fn build_skill_buff_rules() -> Vec<(Regex, Builder)> {
         // only). skill_list declines "Finish roll"/"breakout rolls" (own mechanisms) and
         // "+ double/triple the Crowd Meter" fails the literal "+ the" so it stays tail.
         rule(
-            r"Your (.+?) (?:is|are) \+ the [Cc]rowd [Mm]eter(?: \((?:Max|max) \+?(\d+)\))?",
-            |c| crowd_meter_buff(&c[1], c.get(2)),
+            r"Your (.+?) (?:is|are) \+ (?:([Dd]ouble|[Tt]riple) )?the [Cc]rowd [Mm]eter(?: \((?:Max|max) \+?(\d+)\))?",
+            |c| crowd_meter_buff(&c[1], c.get(3), crowd_coeff(c.get(2))),
         ),
     ]
 }
@@ -5181,6 +5232,7 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
                         per_who: Who::SelfSide,
                         per_zone: CountZone::Discard,
                         on_skill: None,
+                        per_crowd: false,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -7818,6 +7870,7 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                         per_divisor: None,
                         cap: None,
                         per_excludes_self: false,
+                        per_crowd: false,
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -8212,12 +8265,15 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
         // (user-confirmed: additional, not redundant). "+ double/triple/half the Crowd
         // Meter" fails the literal "+ the" and stays tail (distinct multipliers).
         rule(
-            r"Your Finish rolls? (?:is|are) \+ the Crowd Meter(?: \(Max \+?(\d+)\))?",
+            r"Your Finish rolls? (?:is|are) \+ (?:([Dd]ouble|[Tt]riple) )?the Crowd Meter(?: \(Max \+?(\d+)\))?",
             |c| {
+                // Plain "+ the Crowd Meter" keeps delta 0 (the reader reads 0 as one
+                // meter); "double"/"triple" set the coefficient to 2/3.
+                let delta = c.get(1).map_or(0, |_| crowd_coeff(c.get(1)));
                 Some(eff(
                     Trigger::Static,
                     vec![Action::FinishRollBonus {
-                        delta: 0,
+                        delta,
                         when_skill: None,
                         either: false,
                         when_base_le: None,
@@ -8226,10 +8282,80 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                         per_who: Who::SelfSide,
                         per_zone: CountZone::InPlay,
                         per_divisor: None,
-                        cap: c.get(1).map(|m| m.as_str().parse().unwrap()),
+                        cap: c.get(2).map(|m| m.as_str().parse().unwrap()),
                         per_excludes_self: false,
                         per_crowd: true,
                     }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Crowd-Meter turn-roll delta (#97): "Your [opponent's] next turn roll is ±
+        // [double|triple] the Crowd Meter" -> a one-shot ModifyRoll{per_crowd}; the sign
+        // and multiplier fold into the coefficient (the reader snapshots meter×coeff).
+        rule(
+            r"Your (opponent'?s )?next turn roll is ([+-]) (?:([Dd]ouble|[Tt]riple) )?the Crowd Meter",
+            |c| {
+                let who = if c.get(1).is_some() {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
+                let sign = if &c[2] == "-" { -1 } else { 1 };
+                Some(eff(
+                    on_hit(),
+                    vec![modify_roll_crowd(who, sign * crowd_coeff(c.get(3)))],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Crowd-Meter breakout-roll delta (#97): "Your [opponent's] [first|1st] breakout
+        // roll[s] (is|are) ± [double|triple] the Crowd Meter" -> BreakoutModifier{per_crowd}.
+        // "first"/"1st" gates the single first roll (attempts = Some(1)).
+        rule(
+            r"Your (opponent'?s )?(first |1st )?breakout rolls? (?:is|are) ([+-]) (?:([Dd]ouble|[Tt]riple) )?the Crowd Meter",
+            |c| {
+                let who = if c.get(1).is_some() {
+                    Who::Opp
+                } else {
+                    Who::SelfSide
+                };
+                let attempts = c.get(2).map(|_| 1);
+                let sign = if &c[3] == "-" { -1 } else { 1 };
+                Some(eff(
+                    Trigger::Static,
+                    vec![breakout_crowd(who, sign * crowd_coeff(c.get(4)), attempts)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Compound "Your breakout and Finish rolls are + the Crowd Meter" (#97) — one clause,
+        // two standing per_crowd mods (breakout + finish), each a live-meter addend.
+        rule(
+            r"Your breakout and Finish rolls are \+ the Crowd Meter",
+            |_| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![
+                        breakout_crowd(Who::SelfSide, 1, None),
+                        Action::FinishRollBonus {
+                            delta: 0,
+                            when_skill: None,
+                            either: false,
+                            when_base_le: None,
+                            when_base_ge: None,
+                            per: None,
+                            per_who: Who::SelfSide,
+                            per_zone: CountZone::InPlay,
+                            per_divisor: None,
+                            cap: None,
+                            per_excludes_self: false,
+                            per_crowd: true,
+                        },
+                    ],
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))

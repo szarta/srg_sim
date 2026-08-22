@@ -220,6 +220,7 @@ fn negate_action(action: &Action) -> Action {
             per_who,
             per_zone,
             on_skill,
+            per_crowd,
         } => Action::ModifyRoll {
             who: *who,
             delta: -*delta,
@@ -228,6 +229,7 @@ fn negate_action(action: &Action) -> Action {
             per_who: *per_who,
             per_zone: *per_zone,
             on_skill: *on_skill,
+            per_crowd: *per_crowd,
         },
         Action::BuffSkill {
             skill,
@@ -320,6 +322,7 @@ fn negate_action(action: &Action) -> Action {
             per_divisor,
             cap,
             per_excludes_self,
+            per_crowd,
         } => Action::BreakoutModifier {
             delta: -*delta,
             attempts: *attempts,
@@ -332,6 +335,7 @@ fn negate_action(action: &Action) -> Action {
             per_divisor: *per_divisor,
             cap: *cap,
             per_excludes_self: *per_excludes_self,
+            per_crowd: *per_crowd,
         },
         other => other.clone(),
     }
@@ -1479,6 +1483,7 @@ impl Engine {
                 per_who,
                 per_zone,
                 on_skill,
+                per_crowd,
             } => self.act_modify_roll(
                 *who,
                 *delta,
@@ -1487,6 +1492,7 @@ impl Engine {
                 *per_who,
                 *per_zone,
                 *on_skill,
+                *per_crowd,
                 key,
             ),
             Action::CrowdMeter { delta } => self.act_crowd(*delta, key)?,
@@ -3373,6 +3379,7 @@ impl Engine {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     fn act_modify_roll(
         &mut self,
         who: Who,
@@ -3382,10 +3389,17 @@ impl Engine {
         per_who: Who,
         per_zone: CountZone,
         on_skill: Option<Skill>,
+        per_crowd: bool,
         key: &str,
     ) {
         let target = self.target(who, key);
-        let mut delta = delta;
+        // `per_crowd` snapshots the live Crowd Meter (scaled by `delta` as a coefficient)
+        // as the pending delta — "your opponent's next turn roll is - the Crowd Meter".
+        let mut delta = if per_crowd {
+            self.state.crowd_scaled(delta, None)
+        } else {
+            delta
+        };
         if let Some(per) = per {
             let counter = self.target(per_who, key);
             delta *= self.state.count_in_zone(per, per_zone, &counter);
@@ -6016,11 +6030,11 @@ impl Engine {
                         continue;
                     }
                     if when_skill.is_none() || *when_skill == Some(skill) {
-                        // `per_crowd`: a SECOND live-Crowd-Meter addend (clamped to `cap`),
-                        // "Your Finish roll is + the Crowd Meter (Max +N)".
+                        // `per_crowd`: a SECOND live-Crowd-Meter addend (scaled by the
+                        // coefficient in `delta`, clamped to `cap`) — "Your Finish roll is
+                        // + the Crowd Meter (Max +N)", "+ Triple the Crowd Meter".
                         if *per_crowd {
-                            total += cap
-                                .map_or(self.state.crowd_meter, |c| self.state.crowd_meter.min(c));
+                            total += self.state.crowd_scaled(*delta, *cap);
                             continue;
                         }
                         // Flat `delta`, or `delta * (count of `per_who`'s cards in
@@ -6091,11 +6105,11 @@ impl Engine {
                 } = a
                 {
                     if *s == skill && (*either || *who == applies_who) {
-                        // `per_crowd` uses the live Crowd Meter (clamped to `cap`) as the
-                        // delta — "your Technique is + the Crowd Meter (Max +3) during
-                        // your turn roll"; the flat `delta` otherwise.
+                        // `per_crowd` uses the live Crowd Meter scaled by the coefficient
+                        // in `delta` (clamped to `cap`) — "your Technique is + the Crowd
+                        // Meter (Max +3) during your turn roll"; the flat `delta` otherwise.
                         total += if *per_crowd {
-                            cap.map_or(self.state.crowd_meter, |c| self.state.crowd_meter.min(c))
+                            self.state.crowd_scaled(*delta, *cap)
                         } else {
                             *delta
                         };
@@ -6174,6 +6188,7 @@ impl Engine {
                     per_divisor,
                     cap,
                     per_excludes_self,
+                    per_crowd,
                 } = a
                 {
                     let attempt_ok = attempts.is_none() || *attempts == Some(attempt_no);
@@ -6183,23 +6198,28 @@ impl Engine {
                     if !((*either || *who == want) && attempt_ok && skill_ok) {
                         continue;
                     }
-                    // Flat `delta`, or `delta * (count of `per_who`'s cards in `per_zone`
-                    // matching the filter)` — "+1 for each Stop they have in play"; the
-                    // per-count parallel of `finish_bonus_from`. Counted from `owner`'s
-                    // POV (they declared it), so `per_who=Opp` counts the OTHER board.
-                    total += match per {
-                        Some(f) => self.per_count_product(
-                            *delta,
-                            f,
-                            *per_who,
-                            *per_zone,
-                            *per_divisor,
-                            *cap,
-                            *per_excludes_self,
-                            src.as_deref(),
-                            owner,
-                        ),
-                        None => *delta,
+                    // `per_crowd`: the live Crowd Meter scaled by `delta` (clamped to `cap`)
+                    // — "your breakout rolls are + the Crowd Meter". Otherwise flat `delta`,
+                    // or `delta * (count of `per_who`'s cards in `per_zone` matching the
+                    // filter)` — "+1 for each Stop they have in play"; the per-count parallel
+                    // of `finish_bonus_from`, counted from `owner`'s POV.
+                    total += if *per_crowd {
+                        self.state.crowd_scaled(*delta, *cap)
+                    } else {
+                        match per {
+                            Some(f) => self.per_count_product(
+                                *delta,
+                                f,
+                                *per_who,
+                                *per_zone,
+                                *per_divisor,
+                                *cap,
+                                *per_excludes_self,
+                                src.as_deref(),
+                                owner,
+                            ),
+                            None => *delta,
+                        }
                     };
                 }
             }

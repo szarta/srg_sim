@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 160;
+pub const SCHEMA_VERSION: i64 = 161;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -1631,6 +1631,12 @@ pub enum Action {
         /// schema v99
         #[serde(default, skip_serializing_if = "Option::is_none")]
         on_skill: Option<Skill>,
+        /// Dynamic delta = the live Crowd Meter scaled by the coefficient in `delta` —
+        /// "your opponent's next turn roll is - the Crowd Meter" (delta -1), "… is + the
+        /// Crowd Meter" (delta 1). Snapshotted at apply time (an imperative pending mod);
+        /// mutually exclusive with `per`/`on_skill`. Additive/skip-when-false. schema v161
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_crowd: bool,
     },
     /// Add `delta` to the owner's CURRENT roll value, mid-roll-off. Unlike
     /// `ModifyRoll{when=This}` (a pending mod consumed at roll start), this applies to a
@@ -2214,6 +2220,13 @@ pub enum Action {
         /// in play". schema v112
         #[serde(default, skip_serializing_if = "is_false")]
         per_excludes_self: bool,
+        /// Dynamic delta = the live Crowd Meter scaled by the coefficient in `delta`
+        /// (clamped to `cap`) — "your breakout rolls are + the Crowd Meter" (delta 1),
+        /// "your opponent's 1st breakout roll is - the Crowd Meter" (delta -1). The
+        /// breakout parallel of the FinishRollBonus/TurnRollBonus per_crowd; mutually
+        /// exclusive with `per`. Additive/skip-when-false. schema v161
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_crowd: bool,
     },
     /// Grant the actor a TIMED, imperative breakout-roll bonus of `delta`, swept at the
     /// end of the turn — "add +1 to your breakout rolls until the end of the turn" (The
@@ -3361,6 +3374,12 @@ pub enum IrNode {
         /// schema v99
         #[serde(default, skip_serializing_if = "Option::is_none")]
         on_skill: Option<Skill>,
+        /// Dynamic delta = the live Crowd Meter scaled by the coefficient in `delta` —
+        /// "your opponent's next turn roll is - the Crowd Meter" (delta -1), "… is + the
+        /// Crowd Meter" (delta 1). Snapshotted at apply time (an imperative pending mod);
+        /// mutually exclusive with `per`/`on_skill`. Additive/skip-when-false. schema v161
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_crowd: bool,
     },
     /// Add `delta` to the owner's CURRENT roll value, mid-roll-off. Unlike
     /// `ModifyRoll{when=This}` (a pending mod consumed at roll start), this applies to a
@@ -3944,6 +3963,13 @@ pub enum IrNode {
         /// in play". schema v112
         #[serde(default, skip_serializing_if = "is_false")]
         per_excludes_self: bool,
+        /// Dynamic delta = the live Crowd Meter scaled by the coefficient in `delta`
+        /// (clamped to `cap`) — "your breakout rolls are + the Crowd Meter" (delta 1),
+        /// "your opponent's 1st breakout roll is - the Crowd Meter" (delta -1). The
+        /// breakout parallel of the FinishRollBonus/TurnRollBonus per_crowd; mutually
+        /// exclusive with `per`. Additive/skip-when-false. schema v161
+        #[serde(default, skip_serializing_if = "is_false")]
+        per_crowd: bool,
     },
     /// Grant the actor a TIMED, imperative breakout-roll bonus of `delta`, swept at the
     /// end of the turn — "add +1 to your breakout rolls until the end of the turn" (The

@@ -791,6 +791,59 @@ fn crowd_meter_bury_discard_counts() {
     assert_eq!(e["actions"][0]["count"], 1);
 }
 
+/// Crowd-Meter-scaled ROLLS (#97, schema v161): turn/breakout roll deltas of ± the
+/// Crowd Meter (ModifyRoll/BreakoutModifier per_crowd) and the double/triple multiplier
+/// on skill/Finish buffs. The signed coefficient rides in `delta`; the reader treats 0
+/// as one meter, so plain "+ the Crowd Meter" keeps its legacy delta.
+#[test]
+fn crowd_meter_roll_scaling() {
+    fn e0(text: &str) -> Value {
+        serde_json::to_value(&parse_text(text, EffectSource::Card, None, None)[0]).unwrap()
+    }
+    fn a(text: &str) -> Value {
+        e0(text)["actions"][0].clone()
+    }
+
+    // Turn roll "- the Crowd Meter" -> ModifyRoll{per_crowd, delta -1, who Opp}.
+    let x = a("Your opponent's next turn roll is - the Crowd Meter.");
+    assert_eq!(x["@type"], "ModifyRoll");
+    assert_eq!(x["per_crowd"], true);
+    assert_eq!(x["delta"], -1);
+    assert_eq!(x["who"], "OPP");
+
+    // Opponent's 1st breakout roll -> BreakoutModifier{per_crowd, delta -1, attempts 1}.
+    let x = a("Your opponent's 1st breakout roll is - the Crowd Meter.");
+    assert_eq!(x["@type"], "BreakoutModifier");
+    assert_eq!(x["per_crowd"], true);
+    assert_eq!(x["delta"], -1);
+    assert_eq!(x["who"], "OPP");
+    assert_eq!(x["attempts"], 1);
+
+    // "+ Triple the Crowd Meter" -> FinishRollBonus{per_crowd, delta 3}.
+    let x = a("Your Finish roll is + Triple the Crowd Meter.");
+    assert_eq!(x["@type"], "FinishRollBonus");
+    assert_eq!(x["per_crowd"], true);
+    assert_eq!(x["delta"], 3);
+
+    // "+ double the Crowd Meter" -> per-skill BuffSkill{per_crowd, delta 2}.
+    let x = a("Your Technique and Submission are + double the Crowd Meter.");
+    assert_eq!(x["@type"], "BuffSkill");
+    assert_eq!(x["per_crowd"], true);
+    assert_eq!(x["delta"], 2);
+
+    // Plain "+ the Crowd Meter" keeps the legacy delta 0 (reader reads it as one meter).
+    let x = a("Your Finish rolls are + the Crowd Meter.");
+    assert_eq!(x["per_crowd"], true);
+    assert_eq!(x["delta"], 0);
+
+    // Compound "breakout and Finish rolls are + the Crowd Meter" -> two per_crowd actions.
+    let e = e0("Your breakout and Finish rolls are + the Crowd Meter.");
+    assert_eq!(e["actions"][0]["@type"], "BreakoutModifier");
+    assert_eq!(e["actions"][0]["per_crowd"], true);
+    assert_eq!(e["actions"][1]["@type"], "FinishRollBonus");
+    assert_eq!(e["actions"][1]["per_crowd"], true);
+}
+
 /// Multiline "Choose one:" header (Booty Drop Chop): the header sits on its own line
 /// and its options are the FOLLOWING clauses, composed into a single `Choice` (not
 /// each option fired independently, which would draw both piles).
@@ -4771,11 +4824,13 @@ fn crowd_meter_buff_grammar() {
         .iter()
         .all(|a| a["per_crowd"] == true && a["cap"] == Value::Null));
 
-    // A multiplier form ("+ double the Crowd Meter") is a distinct mechanism and declines
-    // -> Unsupported. ("Your Finish roll is + the Crowd Meter" is now a FinishRollBonus
-    // {per_crowd}, covered by `finish_crowd_meter_grammar`.)
-    let text = "Your Technique and Submission are + double the Crowd Meter.";
-    assert_eq!(a1(text)["actions"][0]["@type"], "Unsupported", "{text:?}");
+    // A multiplier form ("+ double the Crowd Meter") now scales the meter by a coefficient
+    // (#97, v161): per-skill BuffSkill{per_crowd, delta 2}. (Full roll-scaling coverage in
+    // `crowd_meter_roll_scaling`.)
+    let a = a1("Your Technique and Submission are + double the Crowd Meter.")["actions"][0].clone();
+    assert_eq!(a["@type"], "BuffSkill");
+    assert_eq!(a["per_crowd"], true);
+    assert_eq!(a["delta"], 2);
 }
 
 /// Skill-buff family (task #119/#130): a standing skill buff gated on "another
@@ -5366,18 +5421,13 @@ fn finish_crowd_meter_grammar() {
     let v = one("Your Finish rolls are + the Crowd Meter (Max +3).");
     assert_eq!(v["actions"][0]["cap"], 3);
 
-    // A multiplier ("+ double the Crowd Meter") fails the literal "+ the" and stays tail.
-    let effs = parse_text(
-        "Your Finish roll is + double the Crowd Meter.",
-        EffectSource::Card,
-        None,
-        None,
-    );
-    let v = serde_json::to_value(&effs[0]).unwrap();
-    assert_eq!(
-        v["actions"][0]["@type"], "Unsupported",
-        "the double-Crowd-Meter multiplier is not this rule"
-    );
+    // A multiplier ("+ double/Triple the Crowd Meter") now scales the meter by a
+    // coefficient (#97, v161): the same FinishRollBonus{per_crowd} with delta 2/3.
+    let v = one("Your Finish roll is + Triple the Crowd Meter.");
+    assert_eq!(v["actions"][0]["delta"], 3, "triple = coefficient 3");
+    // Plain "+ the Crowd Meter" keeps delta 0 (the reader reads 0 as one meter).
+    let v = one("Your Finish roll is + the Crowd Meter.");
+    assert_eq!(v["actions"][0]["delta"], 0);
 }
 
 /// Gated flat next-turn-roll bonus (task #131): "If you have another <order|atk> in
