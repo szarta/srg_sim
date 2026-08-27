@@ -6621,3 +6621,58 @@ fn match_type_gate_grammar() {
     let v = effs("If this is a Steel Cage match and this card is flipped, flip 1 card.");
     assert!(is_unsupported(&v[0]));
 }
+
+#[test]
+fn deck_size_and_multi_roll_gates() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+    fn is_unsupported(e: &Value) -> bool {
+        e["actions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["@type"] == "Unsupported")
+    }
+
+    // Deck-size gate. Bare "N cards" = exact (Eq); N=0 is the deck-empty gate. SELF side.
+    // The "also a <order>" family carries its gate on the AlsoLead action's own condition.
+    let v = effs("If you have 0 cards in your deck, this card is also a Follow Up.");
+    assert_eq!(v.len(), 1);
+    assert!(!is_unsupported(&v[0]));
+    let cond = &v[0]["actions"][0]["condition"];
+    assert_eq!(cond["@type"], "DeckSizeCompare");
+    assert_eq!(cond["cmp"], "=");
+    assert_eq!(cond["value"], 0);
+    assert_eq!(cond["who"], "SELF");
+
+    // "or fewer" = Le, opponent side; body is a gated skill buff.
+    let v = effs("If your opponent has 4 or fewer cards in their deck, +5 to Agility.");
+    assert!(!is_unsupported(&v[0]));
+    let cond = &v[0]["condition"];
+    assert_eq!(cond["@type"], "DeckSizeCompare");
+    assert_eq!(cond["cmp"], "<=");
+    assert_eq!(cond["value"], 4);
+    assert_eq!(cond["who"], "OPP");
+
+    // Two-skill turn-roll gate -> Or of two RollWasSkill gates (SELF).
+    let v =
+        effs("If you rolled Agility or Strike for your turn roll, this card is also a Follow Up.");
+    assert!(!is_unsupported(&v[0]));
+    let cond = &v[0]["actions"][0]["condition"];
+    assert_eq!(cond["@type"], "Or");
+    let items = cond["items"].as_array().unwrap();
+    assert_eq!(items.len(), 2);
+    assert!(items
+        .iter()
+        .all(|i| i["@type"] == "RollWasSkill" && i["who"] == "SELF"));
+
+    // Case-insensitive Crowd-Meter compare — "1 or Greater" (capital) now parses.
+    let v = effs("If the Crowd Meter is 1 or Greater, stop any Follow Up Strike.");
+    assert!(!is_unsupported(&v[0]));
+    assert_eq!(v[0]["condition"]["@type"], "CrowdMeterCompare");
+    assert_eq!(v[0]["condition"]["cmp"], ">=");
+}

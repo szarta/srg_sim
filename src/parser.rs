@@ -2369,6 +2369,22 @@ fn turn_roll_value_gate(t: &str) -> Option<Condition> {
 /// (skill / value / same-as-opponent), the re-roll / bump / ended-turn flags, the no-DQ
 /// match state, and in-play gates (type / order / name-substring). Returns `None` for a
 /// gate not yet modeled, so the caller declines and the clause stays `Unsupported`.
+/// An OR of two `RollWasSkill` gates for `who` — "you rolled <a> or <b> for your turn roll".
+fn rolled_either(a: &str, b: &str, who: Who) -> Condition {
+    Condition::Or {
+        items: vec![
+            Condition::RollWasSkill {
+                skill: skill(a),
+                who,
+            },
+            Condition::RollWasSkill {
+                skill: skill(b),
+                who,
+            },
+        ],
+    }
+}
+
 fn gate_condition(text: &str) -> Option<Condition> {
     static ROLL_SELF: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(&format!(r"(?i)^you rolled {SK} for your turn roll$")).unwrap()
@@ -2379,6 +2395,22 @@ fn gate_condition(text: &str) -> Option<Condition> {
         // "When your opponent rolls X" and never routes through gate_condition.
         Regex::new(&format!(
             r"(?i)^your opponent roll(?:ed|s) {SK} for their turn roll$"
+        ))
+        .unwrap()
+    });
+    // Two-skill turn-roll gate — "you rolled <S> or <S> for your turn roll" (and the
+    // opponent twin) — an OR of the single-skill `RollWasSkill` gates. The single-skill
+    // regexes above are anchored `… {SK} for …`, so an "A or B" list never matches them;
+    // this variant catches the disjunction.
+    static ROLL_SELF2: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(
+            r"(?i)^you rolled {SK} or {SK} for your turn roll$"
+        ))
+        .unwrap()
+    });
+    static ROLL_OPP2: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(&format!(
+            r"(?i)^your opponent roll(?:ed|s) {SK} or {SK} for their turn roll$"
         ))
         .unwrap()
     });
@@ -2476,6 +2508,12 @@ fn gate_condition(text: &str) -> Option<Condition> {
                 last_turn: c[2].eq_ignore_ascii_case("last"),
             });
         }
+    }
+    if let Some(c) = ROLL_SELF2.captures(t) {
+        return Some(rolled_either(&c[1], &c[2], Who::SelfSide));
+    }
+    if let Some(c) = ROLL_OPP2.captures(t) {
+        return Some(rolled_either(&c[1], &c[2], Who::Opp));
     }
     if let Some(c) = ROLL_SELF.captures(t) {
         return Some(Condition::RollWasSkill {
@@ -3075,7 +3113,19 @@ fn finish_off_stop(cm_delta: Option<i64>, condition: Condition) -> Effect {
 /// engine evaluates this from the CARD OWNER's side with their turn roll context.
 fn stop_condition(text: &str) -> Option<Condition> {
     static CROWD: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"^the [Cc]rowd [Mm]eter is (\d+) or (greater|higher|less|lower)$").unwrap()
+        // Case-insensitive on the direction word: the DB writes "1 or Greater" (capital)
+        // as often as lowercase, and "or more" is a synonym of "or greater".
+        Regex::new(r"(?i)^the crowd meter is (\d+) or (greater|higher|more|less|lower)$").unwrap()
+    });
+    // "you have N [or fewer/more] cards in your deck" / "your opponent has N … in their
+    // deck" — a deck-size gate reading the live deck length (`DeckSizeCompare`, engine-
+    // supported since v82). Bare "N cards" is exact (N=0 = deck-empty); "or fewer/less"
+    // = Le, "or more" = Ge.
+    static DECK: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^(you have|your opponent has) (\d+)(?: or (fewer|less|more))? cards? in (?:your|their) deck$",
+        )
+        .unwrap()
     });
     // "greater than" / "higher than" (synonyms) vs the opponent's same-or-other
     // skill; an optional "or equal to" promotes the comparator Gt -> Ge. Group 2 is
@@ -3166,7 +3216,8 @@ fn stop_condition(text: &str) -> Option<Condition> {
 
     let t = text.trim();
     if let Some(c) = CROWD.captures(t) {
-        let cmp = if matches!(&c[2], "greater" | "higher") {
+        let dir = c[2].to_ascii_lowercase();
+        let cmp = if matches!(dir.as_str(), "greater" | "higher" | "more") {
             Comparator::Ge
         } else {
             Comparator::Le
@@ -3174,6 +3225,23 @@ fn stop_condition(text: &str) -> Option<Condition> {
         return Some(Condition::CrowdMeterCompare {
             cmp,
             value: c[1].parse().ok()?,
+        });
+    }
+    if let Some(c) = DECK.captures(t) {
+        let who = if c[1].eq_ignore_ascii_case("you have") {
+            Who::SelfSide
+        } else {
+            Who::Opp
+        };
+        let cmp = match c.get(3).map(|m| m.as_str().to_ascii_lowercase()).as_deref() {
+            Some("more") => Comparator::Ge,
+            Some("fewer") | Some("less") => Comparator::Le,
+            _ => Comparator::Eq,
+        };
+        return Some(Condition::DeckSizeCompare {
+            cmp,
+            value: c[2].parse().ok()?,
+            who,
         });
     }
     // "\"X\" is in your discard pile" — a name-in-discard gate (a 4-card family: School
