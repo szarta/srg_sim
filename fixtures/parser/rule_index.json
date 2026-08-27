@@ -325,5 +325,6 @@
 {"domain":"stop_trigger","index":323,"pattern":"^(?:If you have a card with \"([^\"]+)\" in the name in play, (.+))$"},
 {"domain":"stop_trigger","index":324,"pattern":"^(?:If (.+?),? double (?:these|the) bonuses)$"},
 {"domain":"stop_trigger","index":325,"pattern":"^(?:(?:If|When) (the Crowd Meter is \\d+ or (?:greater|less|more)) (.+))$"},
-{"domain":"stop_trigger","index":326,"pattern":"^(?:(?:If|When) (.+?)[;,] (.+))$"}
+{"domain":"stop_trigger","index":326,"pattern":"^(?:(?:If|When) (this is an? .+? match) (.+))$"},
+{"domain":"stop_trigger","index":327,"pattern":"^(?:(?:If|When) (.+?)[;,] (.+))$"}
 ]

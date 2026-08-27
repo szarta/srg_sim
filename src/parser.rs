@@ -1944,6 +1944,36 @@ fn ampersand_compound(clause: &str, source: EffectSource) -> Option<Vec<Effect>>
     Some(out)
 }
 
+/// "<base> and if this is a <X> match, <rider>" — an unconditional base effect with a
+/// match-type-gated rider joined mid-sentence by "and" (the Ring of Fire "… your opponent
+/// flips 1 card" family). `split_clauses` keeps them in one clause because there is no
+/// sentence boundary, so this rescue splits at the " and if this is a … match," seam and
+/// re-parses EACH side through the full pipeline (`parse_text`), committing only when both
+/// sides parse with no `Unsupported`. The seam is anchored on "if this is a … match," so it
+/// never fires on an "and" that joins two gate clauses ("… match and this card is flipped").
+/// No recursion risk: neither half contains the seam. schema-free.
+fn trailing_match_gate_compound(clause: &str, source: EffectSource) -> Option<Vec<Effect>> {
+    static RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"(?i)^(.+?) and (if this is an? .+? match,.+)$").unwrap());
+    let c = RE.captures(clause.trim().trim_end_matches('.').trim())?;
+    let has_unsupported = |es: &[Effect]| {
+        es.is_empty()
+            || es.iter().any(|e| {
+                e.actions
+                    .iter()
+                    .any(|a| matches!(a, Action::Unsupported { .. }))
+            })
+    };
+    let left = parse_text(&uppercase_first(c[1].trim()), source, None, None);
+    let right = parse_text(&uppercase_first(c[2].trim()), source, None, None);
+    if has_unsupported(&left) || has_unsupported(&right) {
+        return None;
+    }
+    let mut out = left;
+    out.extend(right);
+    Some(out)
+}
+
 fn stop_first_card_compound(clause: &str) -> Option<Vec<Effect>> {
     static RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(
@@ -9019,6 +9049,17 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
             r"(?:If|When) (the Crowd Meter is \d+ or (?:greater|less|more)) (.+)",
             |c| gate_body(gate_condition(&c[1])?, &c[2]),
         ),
+        // Comma-less match-type gate: "If/When this is a <X> match <body>" — the same
+        // stipulation gate as the generic rule below, but for the DB phrasings that drop
+        // the separator after "match" ("If this is a Tag Team match draw 1 card", "…
+        // Triad match your opponent's turn roll is -2"). "match" is an unambiguous
+        // delimiter, so no comma is needed; the non-greedy `.+? match` stops at the first
+        // "match", leaving the rest as the body. Placed before the generic gate so the
+        // punctuated form still routes there; declines (via gate_condition/gate_body)
+        // when the stipulation ("Main Event", "Title") or the body isn't modelled.
+        rule(r"(?:If|When) (this is an? .+? match) (.+)", |c| {
+            gate_body(gate_condition(&c[1])?, &c[2])
+        }),
         // Generic condition gate: "If/When <gate>[;,] <body>" — parse the gate via
         // `gate_condition` and the body via `gate_body` (natural trigger kept, gate
         // AND-ed on). Placed LAST so every specific rule wins first; it fires only when
@@ -9996,6 +10037,23 @@ pub fn parse_text(
             // Two independent abilities joined by " & " (JT Dunn) — commit only when both
             // halves parse. Tried last so it never shadows a clause with real grammar.
             if let Some(effs) = ampersand_compound(clause, source) {
+                for mut e in effs {
+                    e.raw_clause = clause.clone();
+                    e.source = source;
+                    e.frequency = FrequencyGuard {
+                        node_type: FrequencyGuardTag,
+                        kind: freq,
+                        n,
+                    };
+                    effects.push(scope(e, &window));
+                }
+                i += 1;
+                continue;
+            }
+            // "<base> and if this is a <X> match, <rider>" (Ring of Fire flip family) —
+            // an unconditional base plus a match-type-gated rider joined mid-sentence.
+            // Split at the seam and re-parse both halves; commit only when both parse.
+            if let Some(effs) = trailing_match_gate_compound(clause, source) {
                 for mut e in effs {
                     e.raw_clause = clause.clone();
                     e.source = source;

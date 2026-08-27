@@ -6566,3 +6566,58 @@ fn stop_and_breakout_trigger_phrasings() {
     assert_eq!(v["duration"], "WHILE_IN_DISCARD");
     assert_eq!(v["actions"][0]["@type"], "ShuffleSelfIntoDeck");
 }
+
+/// Match-type stipulation gates (task #97): the comma-less "If this is a <X> match
+/// <body>" phrasing and the trailing "<base> and if this is a <X> match, <rider>"
+/// compound that `split_clauses` keeps in one clause. Both reuse the existing
+/// `IsMatchType` condition + `gate_body`; no new IR.
+#[test]
+fn match_type_gate_grammar() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+    fn is_unsupported(e: &Value) -> bool {
+        e["actions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["@type"] == "Unsupported")
+    }
+
+    // Comma-less gate: "match" delimits the stipulation from the body.
+    let v = effs("If this is a Tag Team match draw 1 card.");
+    assert_eq!(v.len(), 1);
+    assert_eq!(v[0]["condition"]["@type"], "IsMatchType");
+    assert_eq!(v[0]["condition"]["types"][0], "TAG_TEAM");
+    assert_eq!(v[0]["actions"][0]["@type"], "Draw");
+
+    // Comma-less gate over an OR-list stipulation + a passive body.
+    let v = effs("If this is a Steel Cage or Liger's Den match your maximum handsize is +2.");
+    assert_eq!(v.len(), 1);
+    assert_eq!(v[0]["condition"]["types"].as_array().unwrap().len(), 2);
+    assert_eq!(v[0]["actions"][0]["@type"], "MaxHandSize");
+
+    // Trailing "and if this is a <X> match, <rider>": the base ("Stop … or each player
+    // buries …") stays unconditional; the flip rider is IsMatchType-gated. Three effects.
+    let v = effs("Stop any Lead Strike or each player buries 1 card in their hand and if this is a Ring of Fire match, your opponent flips 1 card.");
+    assert!(!v.iter().any(is_unsupported), "no Unsupported in {v:?}");
+    let flip = v
+        .iter()
+        .find(|e| e["actions"][0]["@type"] == "Flip")
+        .expect("a match-gated flip effect");
+    assert_eq!(flip["condition"]["@type"], "IsMatchType");
+    assert_eq!(flip["condition"]["types"][0], "RING_OF_FIRE");
+    assert_eq!(flip["actions"][0]["who"], "OPP");
+
+    // A non-stipulation "match" ("Main Event") declines cleanly — stays Unsupported.
+    let v = effs("If this is a Main Event match, add that card to your hand instead.");
+    assert!(is_unsupported(&v[0]));
+
+    // The "and" that joins two GATE clauses ("… match and this card is flipped") must not
+    // be split by the trailing-rider rescue — it stays Unsupported, not a garbage split.
+    let v = effs("If this is a Steel Cage match and this card is flipped, flip 1 card.");
+    assert!(is_unsupported(&v[0]));
+}
