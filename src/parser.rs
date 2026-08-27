@@ -2444,7 +2444,10 @@ fn gate_condition(text: &str) -> Option<Condition> {
         // The article "a"/"an" ("you have a Stop in play") reads as count 1, like a bare
         // count; "another" keeps its own branch (tried first so "another" never matches
         // the "an" article). The count group stays group 1 (None -> 1).
-        Regex::new(r"(?i)^you have (?:another |an? |(\d+) (?:or more )?)?(.+?) in play$").unwrap()
+        Regex::new(
+            r"(?i)^you have (?:another |an? |(?:at least )?(\d+) (?:or more )?)?(.+?) in play$",
+        )
+        .unwrap()
     });
     static HIT: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"(?i)^you hit (?:a |an |another )?(.+?) (this|last) turn$").unwrap()
@@ -8270,6 +8273,26 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
                 Some(eff(
                     Trigger::Static,
                     vec![breakout_attempts_action(delta, set, who, None, None, false)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // "[Your opponent|You|They] cannot break[ ]out [this turn]" — a HARD breakout
+        // prevention (schema v162), distinct from a reduced attempt count (which floors
+        // at 1). A Static in-play standing marker read by the engine's `breakout_prevented`
+        // short-circuit; `who` (Opp for "your opponent"/"they", SelfSide for "you") names
+        // the prevented side. Gated forms ("When the Crowd Meter is 3 or greater, your
+        // opponent cannot breakout") flow through the generic gate rule + gate_body, which
+        // ANDs the gate onto this effect's condition.
+        rule(
+            r"([Yy]our opponent|[Yy]ou|[Tt]hey) cannot break ?out(?: this turn)?",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::PreventBreakout {
+                        who: attempts_who(&c[1]),
+                    }],
                     Condition::Always,
                     Duration::WhileInPlay,
                 ))

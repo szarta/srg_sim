@@ -1550,6 +1550,9 @@ impl Engine {
             // A defender's "opponent needs N in play to hit you with a Finish" is read
             // in `playable_options`, never executed as a mutation — a no-op here.
             | Action::FinishRequires { .. }
+            // "Your opponent cannot breakout" is a standing marker read in
+            // `breakout_prevented` (short-circuits the breakout loop), never executed.
+            | Action::PreventBreakout { .. }
             | Action::BumpDrawReplace
             // Pretty Paul's bump-replacement is read structurally in `roll_off`
             // (`try_bump_replacement`), never executed here — a no-op, not Unsupported.
@@ -6335,10 +6338,46 @@ impl Engine {
 
     /// Up to `BREAKOUT_ATTEMPTS` defender rolls; the first that beats the finish
     /// value breaks out. Returns whether the defender broke out.
+    /// Whether a standing `PreventBreakout` effect (on either board, its condition
+    /// holding) stops `defender` from breaking out this attempt. The finisher's
+    /// `PreventBreakout{who:Opp}` prevents their opponent (the defender); the defender's
+    /// own `PreventBreakout{who:SelfSide}` prevents itself. No such node exists in the
+    /// frozen corpus, so this returns false there and the breakout path stays identical.
+    fn breakout_prevented(&self, defender: &str) -> bool {
+        let opp = self.state.opponent_of(defender);
+        self.side_prevents_breakout(&opp, Who::Opp)
+            || self.side_prevents_breakout(defender, Who::SelfSide)
+    }
+
+    /// Does `owner` have an in-play `PreventBreakout` whose `who == want` and whose
+    /// condition holds (from `owner`'s POV)?
+    fn side_prevents_breakout(&self, owner: &str, want: Who) -> bool {
+        self.standing_effects_sourced(owner)
+            .iter()
+            .any(|(_src, eff)| {
+                conditions::holds(&eff.condition, &self.state, owner, None)
+                    && eff
+                        .actions
+                        .iter()
+                        .any(|a| matches!(a, Action::PreventBreakout { who } if *who == want))
+            })
+    }
+
     fn breakout(&mut self, defender: &str, finish_value: i64) -> Eng<bool> {
         let cm = self.state.crowd_meter;
         let mut rolls: Vec<BreakoutRoll> = Vec::new();
         let mut broke = false;
+        // A standing "your opponent cannot breakout" short-circuits the whole loop: the
+        // defender gets zero rolls and cannot escape. Logged as a Breakout with no rolls.
+        if self.breakout_prevented(defender) {
+            self.log(Event::Breakout {
+                t: self.state.turn_no,
+                defender: defender.to_owned(),
+                broke_out: false,
+                rolls,
+            });
+            return Ok(false);
+        }
         // `BREAKOUT_ATTEMPTS` by default; raised/lowered by any `BreakoutAttempts`
         // ("your opponent gets 2 Breakout rolls this turn" / "1 additional/fewer").
         let attempts = self.breakout_attempts_for(defender);
@@ -8170,6 +8209,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::PutSelfOnDeckTop => "PutSelfOnDeckTop",
         Action::PutFromHandOnDeckTop { .. } => "PutFromHandOnDeckTop",
         Action::GrantBreakoutBonus { .. } => "GrantBreakoutBonus",
+        Action::PreventBreakout { .. } => "PreventBreakout",
         Action::PlaySelf => "PlaySelf",
         Action::ChooseName { .. } => "ChooseName",
         Action::LoseBy { .. } => "LoseBy",

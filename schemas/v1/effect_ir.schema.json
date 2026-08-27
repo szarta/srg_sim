@@ -681,6 +681,22 @@
       ],
       "type": "object"
     },
+    "PreventBreakout": {
+      "additionalProperties": false,
+      "description": "The affected player CANNOT break out — a hard prevention distinct from BreakoutAttempts (whose count floors at 1). A Static in-play standing marker read by breakout_prevented, which short-circuits the whole breakout loop (zero rolls, no escape); gated by the effect's own condition, evaluated at breakout time. who (default SELF) names the prevented side from the owner's POV: OPP = 'your opponent cannot breakout', SELF = 'you cannot breakout'. schema v162",
+      "properties": {
+        "@type": {
+          "const": "PreventBreakout"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "BreakoutModifier": {
       "additionalProperties": false,
       "properties": {
@@ -1394,6 +1410,9 @@
               },
               {
                 "$ref": "#/$defs/GrantBreakoutBonus"
+              },
+              {
+                "$ref": "#/$defs/PreventBreakout"
               },
               {
                 "$ref": "#/$defs/BreakoutModifier"
@@ -2399,6 +2418,9 @@
               },
               {
                 "$ref": "#/$defs/GrantBreakoutBonus"
+              },
+              {
+                "$ref": "#/$defs/PreventBreakout"
               },
               {
                 "$ref": "#/$defs/BreakoutModifier"
@@ -3587,6 +3609,9 @@
         },
         {
           "$ref": "#/$defs/GrantBreakoutBonus"
+        },
+        {
+          "$ref": "#/$defs/PreventBreakout"
         },
         {
           "$ref": "#/$defs/BreakoutModifier"
@@ -5475,6 +5500,9 @@
                 "$ref": "#/$defs/GrantBreakoutBonus"
               },
               {
+                "$ref": "#/$defs/PreventBreakout"
+              },
+              {
                 "$ref": "#/$defs/BreakoutModifier"
               },
               {
@@ -6123,6 +6151,9 @@
               },
               {
                 "$ref": "#/$defs/GrantBreakoutBonus"
+              },
+              {
+                "$ref": "#/$defs/PreventBreakout"
               },
               {
                 "$ref": "#/$defs/BreakoutModifier"
@@ -7248,5 +7279,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 161
+  "version": 162
 }

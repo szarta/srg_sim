@@ -659,6 +659,46 @@ mod breakout_modifier_tests {
     }
 
     #[test]
+    fn prevent_breakout_short_circuits_the_loop() {
+        // A `PreventBreakout` on B (the finisher, who:OPP) stops A — the defender —
+        // from breaking out at all: a finish A would otherwise beat (5 >= 4) is now
+        // inescapable, and the logged Breakout carries zero rolls.
+        let mut engine = engine();
+        assert!(
+            engine.breakout("A", 4).unwrap(),
+            "5 >= 4 breaks out unaided"
+        );
+        let prevent = json!({
+            "@type": "Effect",
+            "trigger": {"@type": "Static"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "PreventBreakout", "who": "OPP"}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "your opponent cannot breakout", "source": "gimmick", "optional": false
+        });
+        push_gimmick(&mut engine, "B", prevent);
+        assert!(
+            !engine.breakout("A", 4).unwrap(),
+            "PreventBreakout stops A from breaking out"
+        );
+        let Some(Event::Breakout {
+            rolls, broke_out, ..
+        }) = engine.log.events.last()
+        else {
+            panic!("last event is a Breakout");
+        };
+        assert!(!broke_out);
+        assert!(rolls.is_empty(), "prevented breakout rolls zero dice");
+
+        // The marker is who:OPP on B, so it never prevents B's own breakout.
+        assert!(
+            engine.breakout("B", 4).unwrap(),
+            "B's own breakout is unaffected by its OPP-directed prevention"
+        );
+    }
+
+    #[test]
     fn opponent_rolling_ten_on_breakout_fires_the_loss() {
         // "If your opponent rolls 10 for their Breakout roll, you lose via
         // disqualification" (task #94): A (finisher) holds the clause; B (defender)

@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 161;
+pub const SCHEMA_VERSION: i64 = 162;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -2243,6 +2243,19 @@ pub enum Action {
         #[serde(default, skip_serializing_if = "is_self_who")]
         who: Who,
     },
+    /// The affected player CANNOT break out — a hard prevention distinct from
+    /// [`Action::BreakoutAttempts`] (whose count is clamped to a floor of 1, so it can
+    /// never zero out the rolls). A Static, in-play standing effect gated by the
+    /// effect's own condition (evaluated at breakout time): "When the Crowd Meter is 3
+    /// or greater, your opponent cannot breakout" / "If you have at least 10 Strikes in
+    /// play, your opponent cannot break out". `who` names the prevented side from the
+    /// OWNER's POV — `Opp` (the common case) = "your opponent cannot breakout",
+    /// `SelfSide` = "you cannot breakout". Read by `breakout_prevented`, which short-
+    /// circuits the whole breakout loop (zero rolls, no escape). schema v162
+    PreventBreakout {
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+    },
     /// Modifies the NUMBER of breakout attempts (rolls) the affected player gets this
     /// turn — the "reduced / extra breakout rolls" family, distinct from
     /// [`Action::BreakoutModifier`] (which shifts a roll's VALUE, not the count). `set`
@@ -3983,6 +3996,19 @@ pub enum IrNode {
     /// schema v132
     GrantBreakoutBonus {
         delta: i64,
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+    },
+    /// The affected player CANNOT break out — a hard prevention distinct from
+    /// [`Action::BreakoutAttempts`] (whose count is clamped to a floor of 1, so it can
+    /// never zero out the rolls). A Static, in-play standing effect gated by the
+    /// effect's own condition (evaluated at breakout time): "When the Crowd Meter is 3
+    /// or greater, your opponent cannot breakout" / "If you have at least 10 Strikes in
+    /// play, your opponent cannot break out". `who` names the prevented side from the
+    /// OWNER's POV — `Opp` (the common case) = "your opponent cannot breakout",
+    /// `SelfSide` = "you cannot breakout". Read by `breakout_prevented`, which short-
+    /// circuits the whole breakout loop (zero rolls, no escape). schema v162
+    PreventBreakout {
         #[serde(default, skip_serializing_if = "is_self_who")]
         who: Who,
     },

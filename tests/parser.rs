@@ -6676,3 +6676,45 @@ fn deck_size_and_multi_roll_gates() {
     assert_eq!(v[0]["condition"]["@type"], "CrowdMeterCompare");
     assert_eq!(v[0]["condition"]["cmp"], ">=");
 }
+
+#[test]
+fn prevent_breakout_grammar() {
+    fn effs(text: &str) -> Vec<Value> {
+        parse_text(text, EffectSource::Card, None, None)
+            .iter()
+            .map(|e| serde_json::to_value(e).unwrap())
+            .collect()
+    }
+    fn is_unsupported(e: &Value) -> bool {
+        e["actions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["@type"] == "Unsupported")
+    }
+
+    // Bare body: "your opponent cannot breakout" -> Static PreventBreakout{who:OPP}.
+    let v = effs("Your opponent cannot breakout.");
+    assert_eq!(v.len(), 1);
+    assert_eq!(v[0]["trigger"]["@type"], "Static");
+    assert_eq!(v[0]["duration"], "WHILE_IN_PLAY");
+    assert_eq!(v[0]["actions"][0]["@type"], "PreventBreakout");
+    assert_eq!(v[0]["actions"][0]["who"], "OPP");
+
+    // "break out" (spaced) is accepted, and a crowd-meter gate ANDs onto the condition.
+    let v = effs("When the Crowd Meter is 3 or greater, your opponent cannot break out.");
+    assert!(!is_unsupported(&v[0]));
+    assert_eq!(v[0]["actions"][0]["@type"], "PreventBreakout");
+    assert_eq!(v[0]["condition"]["@type"], "CrowdMeterCompare");
+
+    // An in-play gate, now including the "at least N" phrasing.
+    let v = effs("If you have at least 10 Strikes in play, your opponent cannot break out.");
+    assert!(!is_unsupported(&v[0]));
+    assert_eq!(v[0]["condition"]["@type"], "HasInPlay");
+    assert_eq!(v[0]["condition"]["count"], 10);
+
+    // "you cannot breakout" -> who:SELF (default, omitted from the serialization).
+    let v = effs("You cannot breakout.");
+    assert_eq!(v[0]["actions"][0]["@type"], "PreventBreakout");
+    assert!(v[0]["actions"][0].get("who").is_none());
+}
