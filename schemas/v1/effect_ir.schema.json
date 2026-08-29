@@ -289,6 +289,9 @@
               "$ref": "#/$defs/FlippedByName"
             },
             {
+              "$ref": "#/$defs/FlippedCardIs"
+            },
+            {
               "$ref": "#/$defs/DeckSizeCompare"
             },
             {
@@ -444,6 +447,9 @@
               },
               {
                 "$ref": "#/$defs/FlippedByName"
+              },
+              {
+                "$ref": "#/$defs/FlippedCardIs"
               },
               {
                 "$ref": "#/$defs/DeckSizeCompare"
@@ -1726,7 +1732,8 @@
       "enum": [
         "STOPPED",
         "HIT",
-        "DISCARDED"
+        "DISCARDED",
+        "FLIPPED"
       ],
       "type": "string"
     },
@@ -2098,6 +2105,9 @@
             },
             {
               "$ref": "#/$defs/FlippedByName"
+            },
+            {
+              "$ref": "#/$defs/FlippedCardIs"
             },
             {
               "$ref": "#/$defs/DeckSizeCompare"
@@ -2684,6 +2694,9 @@
               "$ref": "#/$defs/FlippedByName"
             },
             {
+              "$ref": "#/$defs/FlippedCardIs"
+            },
+            {
               "$ref": "#/$defs/DeckSizeCompare"
             },
             {
@@ -3249,6 +3262,23 @@
       "required": [
         "@type",
         "who"
+      ],
+      "type": "object"
+    },
+    "FlippedCardIs": {
+      "additionalProperties": false,
+      "description": "True iff the most recently flipped card (last of flipped_this_turn, owner's side) matches filter — 'Flip 1 card. If it is a Grapple or Submission, …'. schema v165",
+      "properties": {
+        "@type": {
+          "const": "FlippedCardIs"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        }
+      },
+      "required": [
+        "@type",
+        "filter"
       ],
       "type": "object"
     },
@@ -4082,6 +4112,9 @@
           "$ref": "#/$defs/FlippedByName"
         },
         {
+          "$ref": "#/$defs/FlippedCardIs"
+        },
+        {
           "$ref": "#/$defs/RequireStops"
         },
         {
@@ -4513,6 +4546,9 @@
             },
             {
               "$ref": "#/$defs/FlippedByName"
+            },
+            {
+              "$ref": "#/$defs/FlippedCardIs"
             },
             {
               "$ref": "#/$defs/DeckSizeCompare"
@@ -5129,6 +5165,9 @@
               },
               {
                 "$ref": "#/$defs/FlippedByName"
+              },
+              {
+                "$ref": "#/$defs/FlippedCardIs"
               },
               {
                 "$ref": "#/$defs/DeckSizeCompare"
@@ -6721,6 +6760,9 @@
               "$ref": "#/$defs/FlippedByName"
             },
             {
+              "$ref": "#/$defs/FlippedCardIs"
+            },
+            {
               "$ref": "#/$defs/DeckSizeCompare"
             },
             {
@@ -7346,5 +7388,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 164
+  "version": 165
 }

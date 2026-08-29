@@ -511,6 +511,12 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
             };
             hits.iter().any(|c| card_matches(c, filter))
         }
+        // The most recently flipped card (the owner flips) matches — "Flip 1 card. If it
+        // is a Grapple or Submission, …".
+        Condition::FlippedCardIs { filter } => state.players[owner]
+            .flipped_this_turn
+            .last()
+            .is_some_and(|c| card_matches(c, filter)),
     }
 }
 

@@ -1928,6 +1928,62 @@ mod copy_runtime_text_tests {
         e.act_copy_runtime_text(CopyReferent::Stopped, "A").unwrap();
         assert!(e.state.players["A"].copied_runtime_effects.is_empty());
     }
+
+    #[test]
+    fn flipped_referent_copies_the_last_flipped_card() {
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flipped_this_turn
+            .push(serde_json::from_value(bonus_card("flip", 5, false)).unwrap());
+        e.act_copy_runtime_text(CopyReferent::Flipped, "A").unwrap();
+        assert_eq!(
+            strike_finish_bonuses(&e, "A"),
+            5,
+            "copies the just-flipped card"
+        );
+    }
+
+    #[test]
+    fn flipped_card_is_gate_matches_the_flipped_type() {
+        use crate::conditions;
+        use crate::ir::{CardFilter, Condition};
+        let mut e = engine();
+        // bonus_card is atk_type Strike, play_order Lead.
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .flipped_this_turn
+            .push(serde_json::from_value(bonus_card("flip", 1, false)).unwrap());
+        let strike = Condition::FlippedCardIs {
+            filter: CardFilter {
+                atk_type: Some(AtkType::Strike),
+                ..Default::default()
+            },
+        };
+        let grapple = Condition::FlippedCardIs {
+            filter: CardFilter {
+                atk_type: Some(AtkType::Grapple),
+                ..Default::default()
+            },
+        };
+        assert!(
+            conditions::holds(&strike, &e.state, "A", None),
+            "flipped Strike matches"
+        );
+        assert!(
+            !conditions::holds(&grapple, &e.state, "A", None),
+            "not a Grapple"
+        );
+        // Nothing flipped on B's side.
+        assert!(
+            !conditions::holds(&strike, &e.state, "B", None),
+            "B flipped nothing"
+        );
+    }
 }
 
 /// The Hard Counter's discard-pile tier. `WhileInDiscard` `OnLoseTurn` effects arm a

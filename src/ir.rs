@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 164;
+pub const SCHEMA_VERSION: i64 = 165;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -279,6 +279,9 @@ pub enum CopyReferent {
     Stopped,
     Hit,
     Discarded,
+    /// The card just flipped (the last of `flipped_this_turn`) — "Flip 1 card. If it is
+    /// a Grapple, you may have this card copy its text" (Shieldmaiden's Kiss). schema v165
+    Flipped,
 }
 
 /// Which zone(s) a [`Action::Search`] tutors from — `Deck` (the default, historical
@@ -1086,6 +1089,13 @@ pub enum Condition {
     },
     GimmickFlipped {
         who: Who,
+    },
+    /// The most recently flipped card (the last of `PlayerState.flipped_this_turn`)
+    /// matches `filter` — "Flip 1 card. If it is a Grapple or Submission, …" (Shieldmaiden's
+    /// Kiss / Chain Reaction). False when nothing has been flipped this turn. Reads the
+    /// flipped card's atk type / play order via `filter`. schema v165
+    FlippedCardIs {
+        filter: CardFilter,
     },
     /// It is currently `who`'s turn — the active player (roll-off winner) is the
     /// `who`-side. Gates a continuous effect to a turn phase ("during your opponent's
@@ -2895,6 +2905,10 @@ pub enum IrNode {
     },
     GimmickFlipped {
         who: Who,
+    },
+    /// Mirror of [`Condition::FlippedCardIs`]. schema v165
+    FlippedCardIs {
+        filter: CardFilter,
     },
     DuringTurn {
         who: Who,

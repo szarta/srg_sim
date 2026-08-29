@@ -173,6 +173,7 @@ class CopyReferent(Enum):
     STOPPED = "STOPPED"  # the card just stopped
     HIT = "HIT"  # the card just hit
     DISCARDED = "DISCARDED"  # the card just shed from a hand by an effect
+    FLIPPED = "FLIPPED"  # the card just flipped (last of flipped_this_turn)
 
 
 class Duration(Enum):
@@ -963,6 +964,16 @@ class GimmickFlipped(IRNode):
     against its back effects (Copy Kat V2)."""
 
     who: Who = Who.SELF
+
+
+@dataclass(frozen=True)
+class FlippedCardIs(IRNode):
+    """True iff the most recently flipped card (the last of ``flipped_this_turn``, on the
+    owner's side) matches ``filter`` — "Flip 1 card. If it is a Grapple or Submission, …"
+    (Shieldmaiden's Kiss / Chain Reaction). False when nothing was flipped this turn.
+    schema v165"""
+
+    filter: CardFilter = CardFilter()
 
 
 @dataclass(frozen=True)

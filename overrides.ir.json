@@ -2861,6 +2861,189 @@
       }
     }
   ],
+  "305a8bffd5134958b3c90b3e7434580d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Technique"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Technique",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Flip",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "until": null,
+          "until_to_hand": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Flip 1 card.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "CopyRuntimeText",
+                  "referent": "FLIPPED"
+                }
+              ],
+              "label": "copy the flipped card's text"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "BuffSkill",
+                  "cap": null,
+                  "delta": 2,
+                  "duration": "UNTIL_END_OF_TURN",
+                  "per": null,
+                  "per_crowd": false,
+                  "per_zone": "IN_PLAY",
+                  "skill": "Power",
+                  "target_highest": false,
+                  "target_lowest": false,
+                  "who": "SELF"
+                }
+              ],
+              "label": "+2 to Power"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "Or",
+        "items": [
+          {
+            "@type": "FlippedCardIs",
+            "filter": {
+              "@type": "CardFilter",
+              "any_of": [],
+              "atk_type": "Grapple",
+              "is_stop": null,
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            }
+          },
+          {
+            "@type": "FlippedCardIs",
+            "filter": {
+              "@type": "CardFilter",
+              "any_of": [],
+              "atk_type": "Submission",
+              "is_stop": null,
+              "name": null,
+              "name_contains": [],
+              "number": null,
+              "play_order": null,
+              "play_orders": [],
+              "raw": null,
+              "tag": null,
+              "text_contains": []
+            }
+          }
+        ]
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "If it is a Grapple or Submission, you may have this card copy its text, or +2 to Power.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    }
+  ],
   "30a1a508143640d0bae1ebaa3e108ad9": [
     {
       "@type": "Effect",
@@ -12013,6 +12196,170 @@
         "@type": "OnStop",
         "dir": "YOURS",
         "order": null
+      }
+    }
+  ],
+  "af764de4e7a14c3ebc8d3884c209592d": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Power"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Power",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 2,
+          "skill": "Grapple"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+2 to Grapple",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Flip",
+          "n": 1,
+          "per": null,
+          "per_who": "SELF",
+          "until": null,
+          "until_to_hand": false,
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Flip 1 card.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Choice",
+          "options": [
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "CopyRuntimeText",
+                  "referent": "FLIPPED"
+                }
+              ],
+              "label": "copy the flipped card's text"
+            },
+            {
+              "@type": "ChoiceOption",
+              "actions": [
+                {
+                  "@type": "BuffSkill",
+                  "cap": null,
+                  "delta": 2,
+                  "duration": "UNTIL_END_OF_TURN",
+                  "per": null,
+                  "per_crowd": false,
+                  "per_zone": "IN_PLAY",
+                  "skill": "Technique",
+                  "target_highest": false,
+                  "target_lowest": false,
+                  "who": "SELF"
+                }
+              ],
+              "label": "+2 to Technique"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "@type": "FlippedCardIs",
+        "filter": {
+          "@type": "CardFilter",
+          "any_of": [],
+          "atk_type": null,
+          "is_stop": null,
+          "name": null,
+          "name_contains": [],
+          "number": null,
+          "play_order": null,
+          "play_orders": [
+            "Lead",
+            "Followup"
+          ],
+          "raw": null,
+          "tag": null,
+          "text_contains": []
+        }
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "If that card is a Lead or Follow Up, this card may copy its text, or +2 to Technique.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
       }
     }
   ],

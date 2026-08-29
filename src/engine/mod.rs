@@ -1985,6 +1985,10 @@ impl Engine {
             CopyReferent::Stopped => self.stopped_card.clone(),
             CopyReferent::Hit => self.hit_card.clone(),
             CopyReferent::Discarded => self.hand_discard_uuids.first().cloned(),
+            CopyReferent::Flipped => self.state.players[key]
+                .flipped_this_turn
+                .last()
+                .map(|c| c.db_uuid.clone()),
         };
         let Some(uuid) = uuid else { return Ok(()) };
         let Some(card) = self.find_card_anywhere(&uuid) else {

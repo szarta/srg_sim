@@ -12832,3 +12832,117 @@ f076870e86ba49a483986f30ca74295e:
   raw_clause: you may copy its text
   source: card
   optional: true
+
+# Shieldmaiden's Kiss (Grapple Finish, db_uuid 305a...). Card text:
+#   "+2 to Technique
+#    +2 to Grapple
+#    Flip 1 card.  If it is a Grapple or Submission, you may have this card copy its
+#    text, or +2 to Power."
+# Flip 1, then (if the flipped card is a Grapple/Submission) a "you may" choice between
+# the v164 CopyRuntimeText{FLIPPED} (copy the just-flipped card for the turn) and a
+# +2 Power turn buff. The flip effect runs before the gate, binding FlippedCardIs.
+305a8bffd5134958b3c90b3e7434580d:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions: [{'@type': FinishBonus, skill: Technique, delta: 2}]
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Technique
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions: [{'@type': FinishBonus, skill: Grapple, delta: 2}]
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF, order: null, atk_type: null, name_contains: [], text_contains: [], on_any: false}
+  condition: {'@type': Always}
+  actions: [{'@type': Flip, n: 1, who: SELF, per: null, per_who: SELF, until: null, until_to_hand: false}]
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: Flip 1 card.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF, order: null, atk_type: null, name_contains: [], text_contains: [], on_any: false}
+  condition:
+    '@type': Or
+    items:
+    - '@type': FlippedCardIs
+      filter: {'@type': CardFilter, number: null, atk_type: Grapple, play_order: null, tag: null, name: null, raw: null}
+    - '@type': FlippedCardIs
+      filter: {'@type': CardFilter, number: null, atk_type: Submission, play_order: null, tag: null, name: null, raw: null}
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: copy the flipped card's text
+      actions: [{'@type': CopyRuntimeText, referent: FLIPPED}]
+    - '@type': ChoiceOption
+      label: +2 to Power
+      actions: [{'@type': BuffSkill, skill: Power, delta: 2, who: SELF, duration: UNTIL_END_OF_TURN}]
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: If it is a Grapple or Submission, you may have this card copy its text, or +2 to Power.
+  source: card
+  optional: true
+
+# Chain Reaction (Grapple Finish, db_uuid af76...). Card text:
+#   "+2 to Power
+#    +2 to Grapple
+#    Flip 1 card.
+#    If that card is a Lead or Follow Up, this card may copy its text, or +2 to Technique."
+# Same shape as Shieldmaiden's Kiss; the flipped-card gate is play-order (Lead/Follow Up).
+af764de4e7a14c3ebc8d3884c209592d:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions: [{'@type': FinishBonus, skill: Power, delta: 2}]
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Power
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions: [{'@type': FinishBonus, skill: Grapple, delta: 2}]
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +2 to Grapple
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF, order: null, atk_type: null, name_contains: [], text_contains: [], on_any: false}
+  condition: {'@type': Always}
+  actions: [{'@type': Flip, n: 1, who: SELF, per: null, per_who: SELF, until: null, until_to_hand: false}]
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: Flip 1 card.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF, order: null, atk_type: null, name_contains: [], text_contains: [], on_any: false}
+  condition:
+    '@type': FlippedCardIs
+    filter: {'@type': CardFilter, number: null, atk_type: null, play_order: null, play_orders: [Lead, Followup], tag: null, name: null, raw: null}
+  actions:
+  - '@type': Choice
+    options:
+    - '@type': ChoiceOption
+      label: copy the flipped card's text
+      actions: [{'@type': CopyRuntimeText, referent: FLIPPED}]
+    - '@type': ChoiceOption
+      label: +2 to Technique
+      actions: [{'@type': BuffSkill, skill: Technique, delta: 2, who: SELF, duration: UNTIL_END_OF_TURN}]
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: If that card is a Lead or Follow Up, this card may copy its text, or +2 to Technique.
+  source: card
+  optional: true
