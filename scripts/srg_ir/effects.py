@@ -522,10 +522,19 @@ class OnLoseTurn(IRNode):
 class OnStop(IRNode):
     """When a stop happens in the given direction. ``order``, when set, gates on the
     STOPPED card's play order — "when your opponent stops your Finish" (La Fenix
-    Super Lucha); ``None`` = any stopped card (the default)."""
+    Super Lucha); ``None`` = any stopped card (the default). ``atk_type``, when set,
+    gates on the STOPPED card's attack type — "When you stop a Strike" (The Matador);
+    absent-when-None so pre-v166 fixtures round-trip."""
 
     dir: Direction
     order: PlayOrder | None = None
+    atk_type: AtkType | None = None
+
+    def to_dict(self) -> dict:
+        d = super().to_dict()
+        if self.atk_type is None:
+            d.pop("atk_type", None)
+        return d
 
 
 @dataclass(frozen=True)

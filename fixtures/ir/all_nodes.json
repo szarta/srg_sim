@@ -1281,5 +1281,36 @@
       }
     ],
     "then_optional": true
+  },
+  {
+    "@type": "StoppedAttackThisTurn",
+    "order": "Finish",
+    "atk_type": "Strike"
+  },
+  {
+    "@type": "PlayFromHandAsTurn",
+    "filter": {
+      "@type": "CardFilter",
+      "atk_type": null,
+      "is_stop": null,
+      "name": null,
+      "name_contains": [],
+      "number": null,
+      "play_order": null,
+      "play_orders": [],
+      "raw": null,
+      "tag": null,
+      "text_contains": []
+    },
+    "orders": [
+      "Lead",
+      "Followup"
+    ]
+  },
+  {
+    "@type": "GimmickTypeReclass",
+    "who": "OPP",
+    "from": "Submission",
+    "to": "Strike"
   }
 ]

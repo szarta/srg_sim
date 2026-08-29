@@ -7247,7 +7247,7 @@ mod man_from_it_tests {
         let mut engine = engine_with(json!([]));
         engine.state.players.get_mut("A").unwrap().discard = vec![watcher("w")];
         engine
-            .run_on_stop_gimmicks("A", Direction::Theirs, PlayOrder::Lead)
+            .run_on_stop_gimmicks("A", Direction::Theirs, PlayOrder::Lead, AtkType::Strike)
             .unwrap();
         assert_eq!(
             engine.state.players["A"].discard.len(),
@@ -7259,7 +7259,7 @@ mod man_from_it_tests {
         let mut engine = engine_with(json!([]));
         engine.state.players.get_mut("A").unwrap().discard = vec![watcher("w")];
         engine
-            .run_on_stop_gimmicks("A", Direction::Yours, PlayOrder::Lead)
+            .run_on_stop_gimmicks("A", Direction::Yours, PlayOrder::Lead, AtkType::Strike)
             .unwrap();
         assert_eq!(
             engine.state.players["A"].discard.len(),
@@ -11468,5 +11468,174 @@ mod catch_these_hands_tests {
             e.state.players["A"].pending_roll_draws.is_empty(),
             "consumed after firing"
         );
+    }
+}
+
+/// The Matador (`PlayFromHandAsTurn` + `OnStop.atk_type`), Rolling Ibiza Drop
+/// (`StoppedAttackThisTurn`), and ¡No La Cara! (`GimmickTypeReclass`) — schema v166.
+#[cfg(test)]
+mod matador_finishes_tests {
+    use super::*;
+
+    struct FirstLegal;
+    impl Decider for FirstLegal {
+        fn decide(&mut self, _p: &str, _v: &str, l: &[Value], _s: &mut GameState) -> Option<Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _v: &str) -> String {
+            "first-legal".to_owned()
+        }
+    }
+
+    fn atk_card(uuid: &str, atk: &str, order: &str) -> Value {
+        json!({
+            "atk_type": atk, "db_uuid": uuid, "name": uuid, "number": 1,
+            "play_order": order, "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []
+        })
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let filler: Vec<Value> = (0..6)
+            .map(|i| atk_card(&format!("f{i}"), "Strike", "Lead"))
+            .collect();
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Global", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-e"), "name": "e"}, "cards": filler.clone(),
+            }))
+            .unwrap()
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(FirstLegal),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn grapple_filter() -> CardFilter {
+        CardFilter {
+            atk_type: Some(AtkType::Grapple),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn plays_a_matching_grapple_from_hand_as_a_turn() {
+        let mut e = engine();
+        e.state.players.get_mut("A").unwrap().hand = vec![
+            serde_json::from_value(atk_card("g", "Grapple", "Lead")).unwrap(),
+            serde_json::from_value(atk_card("s", "Strike", "Lead")).unwrap(),
+        ];
+        e.act_play_from_hand_as_turn(
+            &grapple_filter(),
+            &[PlayOrder::Lead, PlayOrder::Followup],
+            "A",
+        )
+        .unwrap();
+        assert!(
+            e.state.players["A"]
+                .in_play
+                .iter()
+                .any(|c| c.db_uuid == "g"),
+            "the Lead Grapple was played as an out-of-turn action"
+        );
+        assert!(
+            e.state.players["A"].hand.iter().any(|c| c.db_uuid == "s"),
+            "the Strike stays in hand (wrong type)"
+        );
+    }
+
+    #[test]
+    fn no_matching_grapple_is_a_no_op() {
+        let mut e = engine();
+        // Only a Strike Lead and a Finish Grapple (excluded order) — neither is a Lead/FU Grapple.
+        e.state.players.get_mut("A").unwrap().hand = vec![
+            serde_json::from_value(atk_card("s", "Strike", "Lead")).unwrap(),
+            serde_json::from_value(atk_card("fg", "Grapple", "Finish")).unwrap(),
+        ];
+        let before = e.state.players["A"].in_play.len();
+        e.act_play_from_hand_as_turn(
+            &grapple_filter(),
+            &[PlayOrder::Lead, PlayOrder::Followup],
+            "A",
+        )
+        .unwrap();
+        assert_eq!(
+            e.state.players["A"].in_play.len(),
+            before,
+            "nothing playable -> no card enters play"
+        );
+    }
+
+    fn no_la_cara_in_discard(from: &str, to: &str) -> Value {
+        json!({
+            "atk_type": "Submission", "db_uuid": "NLC", "name": "No La Cara", "number": 30,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [{
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "GimmickTypeReclass", "who": "OPP", "from": from, "to": to}],
+                "duration": "WHILE_IN_DISCARD",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "t", "source": "card", "optional": false
+            }]
+        })
+    }
+
+    #[test]
+    fn reclass_maps_opponent_submissions_to_strikes() {
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .discard
+            .push(serde_json::from_value(no_la_cara_in_discard("Submission", "Strike")).unwrap());
+        // A's gimmick sees B's (opponent's) Submission as a Strike.
+        assert!(e.gimmick_reclass_matches("A", "B", AtkType::Submission, AtkType::Strike));
+        // Wrong source type / wrong hitter / self-type are all rejected.
+        assert!(!e.gimmick_reclass_matches("A", "B", AtkType::Grapple, AtkType::Strike));
+        assert!(!e.gimmick_reclass_matches("A", "A", AtkType::Submission, AtkType::Strike));
+        assert!(!e.gimmick_reclass_matches("A", "B", AtkType::Strike, AtkType::Strike));
+    }
+
+    #[test]
+    fn stopped_attack_this_turn_reads_the_per_turn_stamp() {
+        let mut e = engine();
+        e.state.turn_no = 4;
+        {
+            let flags = &mut e.state.players.get_mut("A").unwrap().flags;
+            flags.insert("stopped_attacks_turn".to_owned(), json!(4));
+            flags.insert(
+                "stopped_attacks".to_owned(),
+                json!([{"order": "Finish", "type": "Strike"}]),
+            );
+        }
+        let finish_strike = Condition::StoppedAttackThisTurn {
+            who: Who::SelfSide,
+            order: Some(PlayOrder::Finish),
+            atk_type: Some(AtkType::Strike),
+        };
+        assert!(conditions::holds(&finish_strike, &e.state, "A", None));
+        // A wildcard on type still matches; a Grapple gate does not.
+        let any_finish = Condition::StoppedAttackThisTurn {
+            who: Who::SelfSide,
+            order: Some(PlayOrder::Finish),
+            atk_type: None,
+        };
+        assert!(conditions::holds(&any_finish, &e.state, "A", None));
+        let finish_grapple = Condition::StoppedAttackThisTurn {
+            who: Who::SelfSide,
+            order: Some(PlayOrder::Finish),
+            atk_type: Some(AtkType::Grapple),
+        };
+        assert!(!conditions::holds(&finish_grapple, &e.state, "A", None));
+        // A stale stamp (from a prior turn) does not count.
+        e.state.turn_no = 5;
+        assert!(!conditions::holds(&finish_strike, &e.state, "A", None));
     }
 }

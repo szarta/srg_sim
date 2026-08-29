@@ -449,6 +449,39 @@ pub fn holds(cond: &Condition, state: &GameState, owner: &str, roll: Option<&Rol
                 .and_then(serde_json::Value::as_i64)
                 == Some(state.turn_no)
         }
+        // `who` stopped an attack matching (order, atk_type) THIS turn — the per-turn
+        // `stopped_attacks` list `apply_stop` stamps on the stopping side, scoped to
+        // `stopped_attacks_turn == turn_no`. `None` on either facet is a wildcard.
+        Condition::StoppedAttackThisTurn {
+            who,
+            order,
+            atk_type,
+        } => {
+            let subject = who_key(state, owner, *who);
+            let p = &state.players[&subject];
+            let fresh = p
+                .flags
+                .get("stopped_attacks_turn")
+                .and_then(serde_json::Value::as_i64)
+                == Some(state.turn_no);
+            fresh
+                && p.flags
+                    .get("stopped_attacks")
+                    .and_then(serde_json::Value::as_array)
+                    .is_some_and(|list| {
+                        list.iter().any(|entry| {
+                            let ord_ok = order.is_none_or(|o| {
+                                entry.get("order").and_then(serde_json::Value::as_str)
+                                    == Some(o.name())
+                            });
+                            let type_ok = atk_type.is_none_or(|t| {
+                                entry.get("type").and_then(serde_json::Value::as_str)
+                                    == Some(t.name())
+                            });
+                            ord_ok && type_ok
+                        })
+                    })
+        }
         Condition::FlippedForGimmick => state
             .flip_provenance
             .as_ref()

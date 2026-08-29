@@ -158,6 +158,7 @@ fn on_your_stop() -> Trigger {
     Trigger::OnStop {
         dir: Direction::Yours,
         order: None,
+        atk_type: None,
     }
 }
 
@@ -168,6 +169,7 @@ fn on_their_stop() -> Trigger {
     Trigger::OnStop {
         dir: Direction::Theirs,
         order: None,
+        atk_type: None,
     }
 }
 
@@ -2230,16 +2232,22 @@ fn while_in_discard_effect(remainder: &str) -> Option<Effect> {
 /// A passive family-A discard body — a bare Static effect (no trigger word) that the
 /// engine reads directly from the discard pile. Only hand-size mods have a discard
 /// reader (`owner_hand_mods` scans the pile), so an effect whose actions are all
-/// `MaxHandSize`/`MinHandSize` is emitted with `WhileInDiscard`; anything else declines
-/// and stays Unsupported. schema v136
+/// `MaxHandSize`/`MinHandSize`/`GimmickTypeReclass` is emitted with `WhileInDiscard`;
+/// anything else declines and stays Unsupported. schema v136 (reclass: v166)
 fn passive_discard_effect(body: &str) -> Option<Effect> {
     let mut effect = match_grammar(body)?;
     let readable = matches!(effect.trigger, Trigger::Static)
         && !effect.actions.is_empty()
-        && effect
-            .actions
-            .iter()
-            .all(|a| matches!(a, Action::MaxHandSize { .. } | Action::MinHandSize { .. }));
+        && effect.actions.iter().all(|a| {
+            matches!(
+                a,
+                Action::MaxHandSize { .. }
+                    | Action::MinHandSize { .. }
+                    // ¡No La Cara!'s "…considered Strikes for your Gimmick": read from the
+                    // discard pile by `gimmick_reclass_active`.
+                    | Action::GimmickTypeReclass { .. }
+            )
+        });
     if !readable {
         return None;
     }
@@ -2601,6 +2609,24 @@ fn gate_condition(text: &str) -> Option<Condition> {
             Who::SelfSide
         };
         return Some(Condition::LostTurnRollsInARow { who, at_least: n });
+    }
+    // "you stopped a[n] [<order>] [<type>] this turn" (Rolling Ibiza Drop: "if you
+    // stopped a Finish Strike this turn, this card is also a Follow Up") -> a typed
+    // `StoppedAttackThisTurn` gate. At least one of order/type must be named, else it is
+    // the untyped "stopped a card this/last turn" handled by `StoppedCard` elsewhere.
+    static STOPPED_ATK: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^you stopped an? (?:(Lead|Follow Up|Finish) )?(Strike|Grapple|Submission)?(?: card)? this turn$").unwrap()
+    });
+    if let Some(c) = STOPPED_ATK.captures(t) {
+        let order = c.get(1).map(|m| order(m.as_str()));
+        let atk_type = c.get(2).map(|m| atk(m.as_str()));
+        if order.is_some() || atk_type.is_some() {
+            return Some(Condition::StoppedAttackThisTurn {
+                who: Who::SelfSide,
+                order,
+                atk_type,
+            });
+        }
     }
     match t.to_lowercase().as_str() {
         "you bumped on the last turn roll" | "you bumped on the previous turn roll" => {
@@ -5504,6 +5530,21 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
+        // Two-skill opponent debuff — "Your opponent's <X> and <Y> are -N" (Rolling Ibiza
+        // Drop) — one standing `BuffSkill{Opp}` per named skill. The single-skill "is -N"
+        // rule below uses the singular verb, so an "are" list never reaches it; placed
+        // first so the disjunction wins.
+        rule(&format!(r"Your opponent's {SK} and {SK} are -(\d+)"), |c| {
+            Some(eff(
+                Trigger::Static,
+                vec![
+                    buff(skill(&c[1]), -num(c, 3), Who::Opp),
+                    buff(skill(&c[2]), -num(c, 3), Who::Opp),
+                ],
+                Condition::Always,
+                Duration::WhileInPlay,
+            ))
+        }),
         rule(
             &format!(r"Your opponent's {SK}(?: skill)? is -(\d+)"),
             |c| {
@@ -5718,6 +5759,7 @@ fn build_dq_loss_rules() -> Vec<(Regex, Builder)> {
                 Trigger::OnStop {
                     dir: Direction::Yours,
                     order: None,
+                    atk_type: None,
                 },
                 vec![Action::LoseBy {
                     kind: LoseKind::Pinfall,
@@ -7189,6 +7231,44 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                 ))
             },
         ),
+        // Typed single-card recur — "Shuffle N <X> from your discard pile into your deck"
+        // (Flying Salamanca Attack's "shuffle 1 Grapple …", reached via the "If stopped,"
+        // trigger split). The count is simplified to one, as the whole shuffle-into-deck
+        // family does. Placed AFTER the bare-"cards" rules (whose literal "cards" they claim
+        // first); the typed `(.+?)` selector catches the type/name forms they miss.
+        rule(
+            r"Shuffle (?:up to )?\d+ (.+?) from your discard pile into your deck",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![shuffle_into(recur_filter(&c[1])?, ShuffleSource::Discard)],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
+        // Typed whole-set recur — "Shuffle any number of <X> from your discard pile into
+        // your deck" (Rolling Ibiza Drop) — recycle EVERY matching discard card (all=true,
+        // the "any number" heuristic maxed), with no coupled redraw (distinct from the
+        // "Take any number … then draw the same number" family above).
+        rule(
+            r"Shuffle any number of (.+?) from your discard pile into your deck",
+            |c| {
+                Some(eff(
+                    on_hit(),
+                    vec![Action::ShuffleIntoDeck {
+                        selector: recur_filter(&c[1])?,
+                        source: ShuffleSource::Discard,
+                        who: Who::SelfSide,
+                        all: true,
+                        then_draw: false,
+                        then_bury: false,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // "Choose N cards from your discard pile and randomly bury them" (a branch of
         // Khloe Mai's "when the Crowd Meter increases" gimmick) — pick N of your OWN
         // discard and recycle them to the deck. `random` honours the "randomly" wording;
@@ -7890,7 +7970,7 @@ fn build_reveal_alsolead_rules() -> Vec<(Regex, Builder)> {
         // `gate_condition` can't parse (compound "and", "played as a Stop", match-type)
         // declines, leaving the clause Unsupported. Bare (no gate) -> Always.
         rule(
-            r"(?:(?:If|When) (.+?),? )?[Tt]his card is also an? (Lead|Follow Up|Finish)",
+            r"(?:(?:If|When) (.+?),? )?[Tt]his card is also an? (Lead|Follow Up|Finish)(?: (?:Strike|Grapple|Submission))?(?: for your effects)?",
             |c| {
                 let condition = match c.get(1) {
                     Some(m) => gate_condition(m.as_str())?,
@@ -7901,6 +7981,26 @@ fn build_reveal_alsolead_rules() -> Vec<(Regex, Builder)> {
                     vec![Action::AlsoLead {
                         condition,
                         order: order(&c[2]),
+                    }],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
+        // Gimmick type-reframe (¡No La Cara!): "Your opponent's <X> are considered <Y> for
+        // your Gimmick" — the opponent's attacks of type X are seen as type Y by the OWNER's
+        // hit-gimmick type gates (`GimmickTypeReclass`, read in `on_hit_trigger_fires`).
+        // Declared from the discard pile here (a WhileInDiscard header re-stamps the
+        // duration via `passive_discard_effect`); WhileInPlay is the in-play default.
+        rule(
+            r"Your opponent's (Strike|Grapple|Submission)s? are considered (Strike|Grapple|Submission)s? for your Gimmick",
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![Action::GimmickTypeReclass {
+                        who: Who::Opp,
+                        from: atk(&c[1]),
+                        to: atk(&c[2]),
                     }],
                     Condition::Always,
                     Duration::WhileInPlay,
@@ -8647,6 +8747,39 @@ fn build_finish_breakout_rules() -> Vec<(Regex, Builder)> {
 
 fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
     vec![
+        // The Matador: "When you stop a <T>, you may play a <order> <type>[ or <order>
+        // <type>] from your hand as if it were your turn" -> OnStop{Theirs, atk_type: T}
+        // firing `PlayFromHandAsTurn` (an out-of-turn play of a matching Lead/Follow Up
+        // from hand). The "you may" / decline lives inside the action (its own choice), so
+        // the effect is NOT marked optional (no double prompt). Both listed types are the
+        // same here; the first sets the card filter, the orders come from each slot.
+        rule(
+            &format!(
+                r"When you stop an? {ATK}, you may play an? (Lead|Follow Up) {ATK}(?: or (?:an? )?(Lead|Follow Up) {ATK})? from your hand as if it were your turn"
+            ),
+            |c| {
+                let mut orders = vec![order(&c[2])];
+                if let Some(m) = c.get(4) {
+                    orders.push(order(m.as_str()));
+                }
+                Some(eff(
+                    Trigger::OnStop {
+                        dir: Direction::Theirs,
+                        order: None,
+                        atk_type: Some(atk(&c[1])),
+                    },
+                    vec![Action::PlayFromHandAsTurn {
+                        filter: CardFilter {
+                            atk_type: Some(atk(&c[3])),
+                            ..Default::default()
+                        },
+                        orders,
+                    }],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // "Stop \"X\"[, \"Y\"][ or \"Z\"]" — stop a specifically-NAMED attack (no
         // order/type constraint), an OR-list of card names. One Stop whose `target`
         // name-filter matches any attack with one of those names (order/atk_type None

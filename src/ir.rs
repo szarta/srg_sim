@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 165;
+pub const SCHEMA_VERSION: i64 = 166;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -692,6 +692,11 @@ pub enum Trigger {
         /// "if this is stopped" clauses and Gia's "when you Stop a card").
         #[serde(default)]
         order: Option<PlayOrder>,
+        /// When set, fires only if the **stopped** card's attack type matches — "When
+        /// you stop a Strike" (The Matador). `None` = any type, the backward-compatible
+        /// default. Combines (AND) with `order`. schema v166
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        atk_type: Option<AtkType>,
     },
     OnHit {
         atk_type: Option<AtkType>,
@@ -1063,6 +1068,21 @@ pub enum Condition {
     StoppedCard {
         who: Who,
         last_turn: bool,
+    },
+    /// `who` stopped an attack of a given kind THIS turn — "if you stopped a Finish
+    /// Strike this turn" (Rolling Ibiza Drop). Reads `flags["stopped_attacks"]`, the
+    /// per-turn list of stopped attacks `apply_stop` stamps on the stopping side (turn-
+    /// scoped via `flags["stopped_attacks_turn"]`). True iff any entry matches BOTH the
+    /// (optional) `order` and (optional) `atk_type`; `None` on either is a wildcard. The
+    /// typed sibling of [`Condition::StoppedCard`], which only knows THAT a stop
+    /// happened. schema v166
+    StoppedAttackThisTurn {
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        order: Option<PlayOrder>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        atk_type: Option<AtkType>,
     },
     /// `who` re-rolled their turn roll **this** turn — any of their turn dice was
     /// re-rolled at the roll-off (a granted "re-roll your next turn roll", a standing
@@ -2138,6 +2158,18 @@ pub enum Action {
     PlayExtraCard {
         order: Option<PlayOrder>,
     },
+    /// An out-of-turn play grant: the owner MAY immediately play one card from their
+    /// hand matching `filter` and one of `orders`, resolved as an ordinary turn action
+    /// ("as if it were your turn") against the opponent. Fires from a reactive trigger —
+    /// The Matador's "When you stop a Strike, you may play a Lead Grapple or Follow Up
+    /// Grapple from your hand as if it were your turn" — so the DEFENDER plays mid the
+    /// attacker's turn. `orders` restricts the play-order slots (Lead/Follow Up here,
+    /// never Finish); the card must also be chain-legal for that slot. The "you may"
+    /// lives on [`Effect::optional`]. schema v166
+    PlayFromHandAsTurn {
+        filter: CardFilter,
+        orders: Vec<PlayOrder>,
+    },
     SetFinishRoll {
         value: i64,
         condition: Condition,
@@ -2397,6 +2429,18 @@ pub enum Action {
         attack_order: PlayOrder,
         as_order: PlayOrder,
     },
+    /// Static type-reframe for the owner's Gimmick evaluation: `who`'s attacks of type
+    /// `from` are seen as type `to` when the OWNER's hit-gimmick triggers test the hit
+    /// card's attack type — ¡No La Cara!'s "Your opponent's Submissions are considered
+    /// Strikes for your Gimmick" (`who: Opp`, `from: Submission`, `to: Strike`). Read in
+    /// `on_hit_trigger_fires`, never executed; declared from the discard pile
+    /// (`Duration::WhileInDiscard`). Affects ONLY the owner's gimmick type gates, not the
+    /// card's real type anywhere else. schema v166
+    GimmickTypeReclass {
+        who: Who,
+        from: AtkType,
+        to: AtkType,
+    },
     /// Static declaration that the declarer's OWN cards whose deck number is in
     /// `[number_min, number_max]` cannot act as Stops (Jokerfish V2: "your cards
     /// #19-21 cannot stop cards"). The rest of each card's text is unaffected — only
@@ -2564,6 +2608,11 @@ pub enum IrNode {
         /// "if this is stopped" clauses and Gia's "when you Stop a card").
         #[serde(default)]
         order: Option<PlayOrder>,
+        /// When set, fires only if the **stopped** card's attack type matches — "When
+        /// you stop a Strike" (The Matador). `None` = any type, the backward-compatible
+        /// default. Combines (AND) with `order`. schema v166
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        atk_type: Option<AtkType>,
     },
     OnHit {
         atk_type: Option<AtkType>,
@@ -2888,6 +2937,16 @@ pub enum IrNode {
     StoppedCard {
         who: Who,
         last_turn: bool,
+    },
+    /// `who` stopped an attack of a given kind this turn. Reads `flags["stopped_attacks"]`
+    /// (turn-scoped). schema v166
+    StoppedAttackThisTurn {
+        #[serde(default, skip_serializing_if = "is_self_who")]
+        who: Who,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        order: Option<PlayOrder>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        atk_type: Option<AtkType>,
     },
     /// `who` re-rolled their turn roll this turn. Reads `flags["rerolled_turn"]`, stamped
     /// in `offer_rerolls`. Gates King Brian Cage's finish riders + the opponent twin.
@@ -3922,6 +3981,18 @@ pub enum IrNode {
     PlayExtraCard {
         order: Option<PlayOrder>,
     },
+    /// An out-of-turn play grant: the owner MAY immediately play one card from their
+    /// hand matching `filter` and one of `orders`, resolved as an ordinary turn action
+    /// ("as if it were your turn") against the opponent. Fires from a reactive trigger —
+    /// The Matador's "When you stop a Strike, you may play a Lead Grapple or Follow Up
+    /// Grapple from your hand as if it were your turn" — so the DEFENDER plays mid the
+    /// attacker's turn. `orders` restricts the play-order slots (Lead/Follow Up here,
+    /// never Finish); the card must also be chain-legal for that slot. The "you may"
+    /// lives on [`Effect::optional`]. schema v166
+    PlayFromHandAsTurn {
+        filter: CardFilter,
+        orders: Vec<PlayOrder>,
+    },
     SetFinishRoll {
         value: i64,
         condition: Condition,
@@ -4180,6 +4251,18 @@ pub enum IrNode {
     StopCountsOrderAs {
         attack_order: PlayOrder,
         as_order: PlayOrder,
+    },
+    /// Static type-reframe for the owner's Gimmick evaluation: `who`'s attacks of type
+    /// `from` are seen as type `to` when the OWNER's hit-gimmick triggers test the hit
+    /// card's attack type — ¡No La Cara!'s "Your opponent's Submissions are considered
+    /// Strikes for your Gimmick" (`who: Opp`, `from: Submission`, `to: Strike`). Read in
+    /// `on_hit_trigger_fires`, never executed; declared from the discard pile
+    /// (`Duration::WhileInDiscard`). Affects ONLY the owner's gimmick type gates, not the
+    /// card's real type anywhere else. schema v166
+    GimmickTypeReclass {
+        who: Who,
+        from: AtkType,
+        to: AtkType,
     },
     /// Static declaration that the declarer's OWN cards whose deck number is in
     /// `[number_min, number_max]` cannot act as Stops (Jokerfish V2: "your cards

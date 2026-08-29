@@ -1555,6 +1555,9 @@ impl Engine {
             Action::FlipGimmick { who } => self.act_flip_gimmick(*who, key),
             Action::LoseBy { kind, who } => self.act_lose_by(*kind, *who, key),
             Action::PlayExtraCard { .. } => self.act_play_extra_card(key),
+            Action::PlayFromHandAsTurn { filter, orders } => {
+                self.act_play_from_hand_as_turn(filter, orders, key)?
+            }
             Action::Choice { options } => self.act_choice(options, key, source)?,
             Action::AbsorbGimmick { effects } => self.act_absorb_gimmick(effects, key),
             Action::SwapCrowdMeter { name, effects } => {
@@ -1598,6 +1601,9 @@ impl Engine {
             | Action::MinHandSize { .. }
             | Action::MirrorOpponentIncrease
             | Action::StopCountsOrderAs { .. }
+            // "Your opponent's <X> are considered <Y> for your Gimmick" is read in
+            // `on_hit_trigger_fires` (the gimmick's hit-type gate), never executed here.
+            | Action::GimmickTypeReclass { .. }
             | Action::SuppressStop { .. }
             // A defender's "opponent needs N in play to hit you with a Finish" is read
             // in `playable_options`, never executed as a mutation — a no-op here.
@@ -4898,6 +4904,43 @@ impl Engine {
         flags.insert("extra_plays".to_owned(), json!(cur + 1));
     }
 
+    /// The Matador's out-of-turn play (`Action::PlayFromHandAsTurn`): `key` MAY play one
+    /// hand card matching `filter` in one of `orders`, resolved as an ordinary turn action
+    /// against the opponent ("as if it were your turn"). Offers the chain-legal candidates
+    /// plus a decline; a declined or empty choice is a no-op. `orders` never includes
+    /// Finish, so no finish sequence follows the landing.
+    fn act_play_from_hand_as_turn(
+        &mut self,
+        filter: &CardFilter,
+        orders: &[PlayOrder],
+        key: &str,
+    ) -> Eng<()> {
+        let opponent = self.state.opponent_of(key);
+        let board = self.state.players[key].in_play.clone();
+        let mut options: Vec<Value> = self.state.players[key]
+            .hand
+            .iter()
+            .filter(|c| {
+                orders.contains(&c.play_order)
+                    && playable_as(c.play_order, &board)
+                    && conditions::card_matches(c, filter)
+            })
+            .map(card_option)
+            .collect();
+        if options.is_empty() {
+            return Ok(());
+        }
+        options.push(json!({"kind": "decline"}));
+        let choice = self.decide("play_off_stop", key, options)?;
+        if choice["kind"] == "decline" {
+            return Ok(());
+        }
+        let number = choice["number"].as_i64().unwrap();
+        let card = self.take_from_hand(key, number);
+        self.resolve_play(key, &opponent, card)?;
+        Ok(())
+    }
+
     // -- turn loop ---------------------------------------------------------
 
     /// One full turn: bump the counter, clear per-turn state, resolve the roll-off,
@@ -5433,7 +5476,13 @@ impl Engine {
         if atk_type.is_none() && !has_name_gate && order.is_none() && !on_any {
             return false;
         }
-        let type_ok = atk_type.is_none_or(|want| card.counts_as_atk_type(want));
+        // The hit card's real type, PLUS any `GimmickTypeReclass` `key` has active that
+        // reframes `hitter`'s attacks of this type — ¡No La Cara!'s "Your opponent's
+        // Submissions are considered Strikes for your Gimmick".
+        let type_ok = atk_type.is_none_or(|want| {
+            card.counts_as_atk_type(want)
+                || self.gimmick_reclass_matches(key, hitter, card.atk_type, want)
+        });
         // "When you hit a Lead" — the play-order gate on the HIT card (ANDed).
         let order_ok = order.is_none_or(|want| want == card.play_order);
         let name_gate = CardFilter {
@@ -5442,6 +5491,41 @@ impl Engine {
             ..Default::default()
         };
         type_ok && order_ok && conditions::card_matches(card, &name_gate)
+    }
+
+    /// Whether `key` has an active `GimmickTypeReclass` reframing `hitter`'s attack of
+    /// type `from` as `want`, for `key`'s own hit-gimmick type gate. Scans `key`'s discard
+    /// pile (¡No La Cara! declares it there, `WhileInDiscard`) and in-play cards, honouring
+    /// each zone's duration; a text-blanked source is neutralised. The reclass's `who` must
+    /// target `hitter` from `key`'s vantage (`Opp` = "your opponent's <X>").
+    fn gimmick_reclass_matches(
+        &self,
+        key: &str,
+        hitter: &str,
+        from: AtkType,
+        want: AtkType,
+    ) -> bool {
+        if from == want {
+            return false;
+        }
+        let p = &self.state.players[key];
+        let zone_has = |cards: &[Card], dur: Duration| {
+            cards.iter().any(|c| {
+                !self.state.is_text_blanked(c, key)
+                    && c.effects.iter().any(|eff| {
+                        eff.duration == dur
+                            && matches!(eff.trigger, Trigger::Static)
+                            && eff.actions.iter().any(|a| {
+                                matches!(a, Action::GimmickTypeReclass { who, from: f, to }
+                                    if *f == from
+                                        && *to == want
+                                        && self.target(*who, key) == hitter)
+                            })
+                    })
+            })
+        };
+        zone_has(&p.discard, Duration::WhileInDiscard)
+            || zone_has(&p.in_play, Duration::WhileInPlay)
     }
 
     /// "Added text" effects `key`'s active gimmicks grant to `card` (El Super Santa:
@@ -5829,6 +5913,33 @@ impl Engine {
             "stopped_card_no_logo_no_req".to_owned(),
             json!(no_logo_no_req),
         );
+        // Per-turn log of stopped attacks (order + type) for `Condition::
+        // StoppedAttackThisTurn` — "if you stopped a Finish Strike this turn" (Rolling
+        // Ibiza Drop). Reset the list when this is the first stop of a new turn (the read
+        // side also turn-scopes on `stopped_attacks_turn`, so a stale list never leaks).
+        let fresh_turn = stopping
+            .flags
+            .get("stopped_attacks_turn")
+            .and_then(Value::as_i64)
+            != Some(turn);
+        if fresh_turn {
+            stopping
+                .flags
+                .insert("stopped_attacks_turn".to_owned(), json!(turn));
+            stopping
+                .flags
+                .insert("stopped_attacks".to_owned(), json!([]));
+        }
+        if let Some(list) = stopping
+            .flags
+            .get_mut("stopped_attacks")
+            .and_then(Value::as_array_mut)
+        {
+            list.push(json!({
+                "order": attack.play_order.name(),
+                "type": attack.atk_type.name(),
+            }));
+        }
         self.land_stop_card(defender, &stop, &attack)?;
         // Extra stops a `RequireStops` attack forced: each lands as a committed stop.
         // The heavy attack-side resolution below (blank-text, OnStop) runs once, keyed
@@ -5862,8 +5973,9 @@ impl Engine {
         // attacker's card was stopped (YOURS), the defender stopped a card (THEIRS =
         // "when you Stop a card", e.g. Gia).
         let stopped = attack.play_order;
-        self.run_on_stop_gimmicks(active, Direction::Yours, stopped)?;
-        self.run_on_stop_gimmicks(defender, Direction::Theirs, stopped)?;
+        let stopped_atk = attack.atk_type;
+        self.run_on_stop_gimmicks(active, Direction::Yours, stopped, stopped_atk)?;
+        self.run_on_stop_gimmicks(defender, Direction::Theirs, stopped, stopped_atk)?;
         // Finish-off-stop LAST, after every OnStop (incl. a "the Crowd Meter is +N"
         // sibling) has resolved, so the finish roll reads the updated Crowd Meter.
         if !self.ended() {
@@ -5896,11 +6008,19 @@ impl Engine {
     /// whose optional `order` gate matches the **stopped** card's play order (`None`
     /// = any). Unlike `run_effects` (trigger-name match only), this consults both
     /// `OnStop.dir` and `OnStop.order`.
-    fn run_on_stop_gimmicks(&mut self, key: &str, dir: Direction, stopped: PlayOrder) -> Eng<()> {
+    fn run_on_stop_gimmicks(
+        &mut self,
+        key: &str,
+        dir: Direction,
+        stopped: PlayOrder,
+        stopped_atk: AtkType,
+    ) -> Eng<()> {
         let effects = self.gimmick_standing_effects(key);
         for eff in &effects {
-            if matches!(eff.trigger, Trigger::OnStop { dir: d, order }
-                if d == dir && order.is_none_or(|o| o == stopped))
+            if matches!(eff.trigger, Trigger::OnStop { dir: d, order, atk_type }
+                if d == dir
+                    && order.is_none_or(|o| o == stopped)
+                    && atk_type.is_none_or(|t| t == stopped_atk))
             {
                 self.fire_if_ready(eff, key, None)?;
             }
@@ -5911,8 +6031,10 @@ impl Engine {
         // would, and this site is already called for both players with both dirs, so the
         // who-scoping falls out of the identical `dir`/`order` match.
         for (uuid, eff) in self.discard_self_triggers(key) {
-            if matches!(eff.trigger, Trigger::OnStop { dir: d, order }
-                if d == dir && order.is_none_or(|o| o == stopped))
+            if matches!(eff.trigger, Trigger::OnStop { dir: d, order, atk_type }
+                if d == dir
+                    && order.is_none_or(|o| o == stopped)
+                    && atk_type.is_none_or(|t| t == stopped_atk))
             {
                 self.self_card = Some(uuid);
                 let r = self.fire_if_ready(&eff, key, None);
@@ -8422,6 +8544,8 @@ fn action_name(action: &Action) -> &'static str {
         Action::SuppressSelfHandLoss => "SuppressSelfHandLoss",
         Action::CrowdMeter { .. } => "CrowdMeter",
         Action::PlayExtraCard { .. } => "PlayExtraCard",
+        Action::PlayFromHandAsTurn { .. } => "PlayFromHandAsTurn",
+        Action::GimmickTypeReclass { .. } => "GimmickTypeReclass",
         Action::SetFinishRoll { .. } => "SetFinishRoll",
         Action::FinishBonus { .. } => "FinishBonus",
         Action::FinishRollBonus { .. } => "FinishRollBonus",

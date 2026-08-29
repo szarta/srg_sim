@@ -277,6 +277,9 @@
               "$ref": "#/$defs/BuriedSpotlightLastTurn"
             },
             {
+              "$ref": "#/$defs/StoppedAttackThisTurn"
+            },
+            {
               "$ref": "#/$defs/StoppedCard"
             },
             {
@@ -435,6 +438,9 @@
               },
               {
                 "$ref": "#/$defs/BuriedSpotlightLastTurn"
+              },
+              {
+                "$ref": "#/$defs/StoppedAttackThisTurn"
               },
               {
                 "$ref": "#/$defs/StoppedCard"
@@ -1404,6 +1410,9 @@
                 "$ref": "#/$defs/CrowdMeter"
               },
               {
+                "$ref": "#/$defs/PlayFromHandAsTurn"
+              },
+              {
                 "$ref": "#/$defs/PlayExtraCard"
               },
               {
@@ -1441,6 +1450,9 @@
               },
               {
                 "$ref": "#/$defs/AlsoLead"
+              },
+              {
+                "$ref": "#/$defs/GimmickTypeReclass"
               },
               {
                 "$ref": "#/$defs/StopCountsOrderAs"
@@ -2095,6 +2107,9 @@
               "$ref": "#/$defs/BuriedSpotlightLastTurn"
             },
             {
+              "$ref": "#/$defs/StoppedAttackThisTurn"
+            },
+            {
               "$ref": "#/$defs/StoppedCard"
             },
             {
@@ -2445,6 +2460,9 @@
                 "$ref": "#/$defs/CrowdMeter"
               },
               {
+                "$ref": "#/$defs/PlayFromHandAsTurn"
+              },
+              {
                 "$ref": "#/$defs/PlayExtraCard"
               },
               {
@@ -2482,6 +2500,9 @@
               },
               {
                 "$ref": "#/$defs/AlsoLead"
+              },
+              {
+                "$ref": "#/$defs/GimmickTypeReclass"
               },
               {
                 "$ref": "#/$defs/StopCountsOrderAs"
@@ -2680,6 +2701,9 @@
             },
             {
               "$ref": "#/$defs/BuriedSpotlightLastTurn"
+            },
+            {
+              "$ref": "#/$defs/StoppedAttackThisTurn"
             },
             {
               "$ref": "#/$defs/StoppedCard"
@@ -3397,6 +3421,30 @@
       ],
       "type": "object"
     },
+    "GimmickTypeReclass": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "GimmickTypeReclass"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "from": {
+          "$ref": "#/$defs/AtkType"
+        },
+        "to": {
+          "$ref": "#/$defs/AtkType"
+        }
+      },
+      "required": [
+        "@type",
+        "who",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
     "GrantSwapNextTurn": {
       "additionalProperties": false,
       "properties": {
@@ -3612,6 +3660,9 @@
         },
         {
           "$ref": "#/$defs/AlsoLead"
+        },
+        {
+          "$ref": "#/$defs/GimmickTypeReclass"
         },
         {
           "$ref": "#/$defs/StopCountsOrderAs"
@@ -3914,6 +3965,9 @@
           "$ref": "#/$defs/ShuffleHandDraw"
         },
         {
+          "$ref": "#/$defs/PlayFromHandAsTurn"
+        },
+        {
           "$ref": "#/$defs/PlayExtraCard"
         },
         {
@@ -4065,6 +4119,9 @@
         },
         {
           "$ref": "#/$defs/BuriedSpotlightLastTurn"
+        },
+        {
+          "$ref": "#/$defs/StoppedAttackThisTurn"
         },
         {
           "$ref": "#/$defs/StoppedCard"
@@ -4536,6 +4593,9 @@
               "$ref": "#/$defs/BuriedSpotlightLastTurn"
             },
             {
+              "$ref": "#/$defs/StoppedAttackThisTurn"
+            },
+            {
               "$ref": "#/$defs/StoppedCard"
             },
             {
@@ -5001,6 +5061,9 @@
               "type": "null"
             }
           ]
+        },
+        "atk_type": {
+          "$ref": "#/$defs/AtkType"
         }
       },
       "required": [
@@ -5155,6 +5218,9 @@
                 "$ref": "#/$defs/BuriedSpotlightLastTurn"
               },
               {
+                "$ref": "#/$defs/StoppedAttackThisTurn"
+              },
+              {
                 "$ref": "#/$defs/StoppedCard"
               },
               {
@@ -5253,6 +5319,29 @@
       "required": [
         "@type",
         "order"
+      ],
+      "type": "object"
+    },
+    "PlayFromHandAsTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "PlayFromHandAsTurn"
+        },
+        "filter": {
+          "$ref": "#/$defs/CardFilter"
+        },
+        "orders": {
+          "items": {
+            "$ref": "#/$defs/PlayOrder"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "@type",
+        "filter",
+        "orders"
       ],
       "type": "object"
     },
@@ -5582,6 +5671,9 @@
                 "$ref": "#/$defs/CrowdMeter"
               },
               {
+                "$ref": "#/$defs/PlayFromHandAsTurn"
+              },
+              {
                 "$ref": "#/$defs/PlayExtraCard"
               },
               {
@@ -5619,6 +5711,9 @@
               },
               {
                 "$ref": "#/$defs/AlsoLead"
+              },
+              {
+                "$ref": "#/$defs/GimmickTypeReclass"
               },
               {
                 "$ref": "#/$defs/StopCountsOrderAs"
@@ -6238,6 +6333,9 @@
                 "$ref": "#/$defs/CrowdMeter"
               },
               {
+                "$ref": "#/$defs/PlayFromHandAsTurn"
+              },
+              {
                 "$ref": "#/$defs/PlayExtraCard"
               },
               {
@@ -6275,6 +6373,9 @@
               },
               {
                 "$ref": "#/$defs/AlsoLead"
+              },
+              {
+                "$ref": "#/$defs/GimmickTypeReclass"
               },
               {
                 "$ref": "#/$defs/StopCountsOrderAs"
@@ -6748,6 +6849,9 @@
               "$ref": "#/$defs/BuriedSpotlightLastTurn"
             },
             {
+              "$ref": "#/$defs/StoppedAttackThisTurn"
+            },
+            {
               "$ref": "#/$defs/StoppedCard"
             },
             {
@@ -7085,6 +7189,41 @@
       ],
       "type": "object"
     },
+    "StoppedAttackThisTurn": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "StoppedAttackThisTurn"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        },
+        "order": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlayOrder"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "atk_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AtkType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "@type"
+      ],
+      "type": "object"
+    },
     "StoppedCard": {
       "additionalProperties": false,
       "properties": {
@@ -7388,5 +7527,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 165
+  "version": 166
 }
