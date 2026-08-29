@@ -166,6 +166,15 @@ class Vs(Enum):
     VALUE = "VALUE"  # the literal ``value`` field
 
 
+class CopyReferent(Enum):
+    """Which runtime card a :class:`CopyRuntimeText` snapshots — the card the resolving
+    event was about, resolved live from engine state. schema v164"""
+
+    STOPPED = "STOPPED"  # the card just stopped
+    HIT = "HIT"  # the card just hit
+    DISCARDED = "DISCARDED"  # the card just shed from a hand by an effect
+
+
 class Duration(Enum):
     """How long a buff / passive effect stays active (DESIGN.md §3)."""
 
@@ -664,6 +673,21 @@ class OnDiscardMove(IRNode):
 
 
 @dataclass(frozen=True)
+class OnHandDiscardMove(IRNode):
+    """Fires when ``who`` discards move-type card(s) from their HAND due to a card effect
+    (the "discard N cards" effects and the coupled trade — NOT the end-of-turn hand-size
+    shed). Distinct from :class:`OnDiscardMove` (cards LEAVING the discard pile). Bad Boy
+    Ref: "when your opponent discards a single card of a particular move type … you may
+    add one card of the same move type from your discard pile to your hand". Fires ONLY
+    when the discard is unique per move type (any type shed twice = no activation) and
+    exposes those distinct types to a same-turn :class:`AddFromDiscard` with
+    ``match_hand_discard_move``. ``who`` from the effect owner's POV (OPP = "your opponent
+    discards"). schema v163"""
+
+    who: Who
+
+
+@dataclass(frozen=True)
 class OnCrowdMeterIncrease(IRNode):
     """Fires whenever the (shared) Crowd Meter goes UP — the per-turn +1 after a
     breakout or an effect-driven ``CrowdMeter`` swing (a decrease never fires it). The
@@ -864,6 +888,19 @@ class OppWonLastRoll(IRNode):
     (``GameState.last_roll_winner``). False before turn 1 (no previous roll). Gates a
     re-roll offer (Robert 'The Brain' Dunn: "if your opponent won the last turn roll,
     you may re-roll your turn roll")."""
+
+
+@dataclass(frozen=True)
+class LostTurnRollsInARow(IRNode):
+    """True iff ``who`` has lost at least ``at_least`` turn roll-offs in a row
+    (``PlayerState.turn_losses_in_a_row``, incremented each loss and reset on a win).
+    In a two-player match "your opponent/target won the last N turn rolls" is the same
+    as "you lost the last N in a row", so that gate maps to ``who=SELF``. Grammar
+    produces it for the won/lost-last-N-turn-rolls family; The Hard Counter's discard
+    override uses ``at_least=2`` for its +2 tier. schema v50-era."""
+
+    at_least: int = 1
+    who: Who = Who.SELF
 
 
 @dataclass(frozen=True)
@@ -1113,6 +1150,19 @@ class ShuffleIntoDeck(IRNode):
 @dataclass(frozen=True)
 class AddFromDiscard(IRNode):
     filter: CardFilter = CardFilter()
+    # Bind the recur to the move types just discarded from a hand (Bad Boy Ref's "one
+    # card of the same move type"): with this set, add one discard-pile card whose atk
+    # type is among the OnHandDiscardMove event's distinct types instead of ``filter``.
+    # schema v163
+    match_hand_discard_move: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        # Mirror the Rust `skip_serializing_if = "is_false"`: omit the flag when False so
+        # pre-v163 AddFromDiscard overrides round-trip byte-identically.
+        data = super().to_dict()
+        if not self.match_hand_discard_move:
+            data.pop("match_hand_discard_move", None)
+        return data
 
 
 @dataclass(frozen=True)
@@ -1792,6 +1842,19 @@ class CopyText(IRNode):
     who: Who = Who.SELF
     zone: CountZone = CountZone.IN_PLAY
     copy_tags: bool = False
+
+
+@dataclass(frozen=True)
+class CopyRuntimeText(IRNode):
+    """One-shot snapshot copy of the specific runtime card the resolving event was about
+    (:class:`CopyReferent`) — "copy its text" / "copy that card's text" of the card just
+    stopped / hit / discarded. Distinct from the standing, selector-driven
+    :class:`CopyText`: the referent's non-copy effects are cloned onto the copier's
+    turn-scoped ``copied_runtime_effects`` buffer (folded into ``standing_effects``, swept
+    at end of turn). Stockholm Syndrome (Bad Boy Ref) copies the just-discarded card.
+    schema v164"""
+
+    referent: CopyReferent = CopyReferent.DISCARDED
 
 
 @dataclass(frozen=True)

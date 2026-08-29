@@ -3146,6 +3146,128 @@
       }
     }
   ],
+  "36d87301e65c45118a06e5f3e12faa8a": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "FinishBonus",
+          "delta": 3,
+          "skill": "Submission"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "+3 to Submission",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": -2,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Strike",
+          "target_highest": false,
+          "target_lowest": false,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's Strike skill is -2.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 1,
+          "per": null,
+          "per_who": "OPP",
+          "per_zone": "IN_PLAY",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_DISCARD",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "When this card is in your discard pile: when your target won the last turn roll, your turn roll is +1 (armed as next-roll +1 on each turn-roll loss from discard).",
+      "source": "card",
+      "trigger": {
+        "@type": "OnLoseTurn",
+        "by": null
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "ModifyRoll",
+          "delta": 1,
+          "per": null,
+          "per_who": "OPP",
+          "per_zone": "IN_PLAY",
+          "when": "NEXT",
+          "who": "SELF"
+        }
+      ],
+      "condition": {
+        "@type": "LostTurnRollsInARow",
+        "at_least": 2,
+        "who": "SELF"
+      },
+      "duration": "WHILE_IN_DISCARD",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "if your target won the last 2 turn rolls, your turn roll is +2 instead (the marginal +1 lifting the loss-armed +1 to +2 once you have lost >=2 in a row).",
+      "source": "card",
+      "trigger": {
+        "@type": "OnLoseTurn",
+        "by": null
+      }
+    }
+  ],
   "37bd5a41ed97461cb33e713e9a13571d": [
     {
       "@type": "Effect",
@@ -3635,9 +3757,11 @@
       "actions": [
         {
           "@type": "Unstoppable",
+          "applies_name": null,
           "by_name": "Apocalypse",
           "by_order": null,
-          "by_skillreq": false
+          "by_skillreq": false,
+          "player_scope": false
         }
       ],
       "condition": {
@@ -5344,6 +5468,7 @@
       "actions": [
         {
           "@type": "AddText",
+          "atk_type": null,
           "effects": [
             {
               "@type": "Effect",
@@ -5393,7 +5518,9 @@
           ],
           "name_contains": [
             "Super"
-          ]
+          ],
+          "order": null,
+          "scope": "SELF"
         }
       ],
       "condition": {
@@ -10524,6 +10651,7 @@
       "actions": [
         {
           "@type": "AddText",
+          "atk_type": null,
           "effects": [
             {
               "@type": "Effect",
@@ -10558,7 +10686,9 @@
           ],
           "name_contains": [
             "Super"
-          ]
+          ],
+          "order": null,
+          "scope": "SELF"
         }
       ],
       "condition": {
@@ -12172,6 +12302,7 @@
       "actions": [
         {
           "@type": "AddText",
+          "atk_type": null,
           "effects": [
             {
               "@type": "Effect",
@@ -12204,7 +12335,9 @@
           ],
           "name_contains": [
             "DDT"
-          ]
+          ],
+          "order": null,
+          "scope": "SELF"
         }
       ],
       "condition": {
@@ -13188,6 +13321,7 @@
       "actions": [
         {
           "@type": "AddText",
+          "atk_type": null,
           "effects": [
             {
               "@type": "Effect",
@@ -13224,7 +13358,9 @@
             "Death",
             "Dive",
             "Chair"
-          ]
+          ],
+          "order": null,
+          "scope": "SELF"
         }
       ],
       "condition": {
@@ -14200,12 +14336,54 @@
       }
     }
   ],
+  "c43266612ad54b14893e2adaa14f286b": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "AddFromDiscard",
+          "filter": {
+            "@type": "CardFilter",
+            "any_of": [],
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "match_hand_discard_move": true
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "ONCE_PER_TURN",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "Once per turn: When your opponent discards a single card of a particular move type from their hand due to card effects, you may add one card of the same move type from your discard pile to your hand.",
+      "source": "gimmick",
+      "trigger": {
+        "@type": "OnHandDiscardMove",
+        "who": "OPP"
+      }
+    }
+  ],
   "c4a11e2c1cc1428c82d6c46a4f1f3646": [
     {
       "@type": "Effect",
       "actions": [
         {
           "@type": "AddText",
+          "atk_type": null,
           "effects": [
             {
               "@type": "Effect",
@@ -14257,7 +14435,9 @@
             "Bar",
             "Shot",
             "Bender"
-          ]
+          ],
+          "order": null,
+          "scope": "SELF"
         }
       ],
       "condition": {
@@ -17919,6 +18099,154 @@
       }
     }
   ],
+  "f076870e86ba49a483986f30ca74295e": [
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": -2,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Technique",
+          "target_highest": false,
+          "target_lowest": false,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's Technique is -2.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "BuffSkill",
+          "cap": null,
+          "delta": -2,
+          "duration": "WHILE_IN_PLAY",
+          "per": null,
+          "per_crowd": false,
+          "per_zone": "IN_PLAY",
+          "skill": "Agility",
+          "target_highest": false,
+          "target_lowest": false,
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "WHILE_IN_PLAY",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent's Agility is -2.",
+      "source": "card",
+      "trigger": {
+        "@type": "Static"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "Discard",
+          "all": false,
+          "choose": false,
+          "count": 1,
+          "per": null,
+          "per_who": "SELF",
+          "random": true,
+          "selector": {
+            "@type": "CardFilter",
+            "any_of": [],
+            "atk_type": null,
+            "is_stop": null,
+            "name": null,
+            "name_contains": [],
+            "number": null,
+            "play_order": null,
+            "play_orders": [],
+            "raw": null,
+            "tag": null,
+            "text_contains": []
+          },
+          "who": "OPP"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": false,
+      "raw_clause": "Your opponent randomly discards 1 card from their hand.",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    },
+    {
+      "@type": "Effect",
+      "actions": [
+        {
+          "@type": "CopyRuntimeText",
+          "referent": "DISCARDED"
+        }
+      ],
+      "condition": {
+        "@type": "Always"
+      },
+      "duration": "INSTANT",
+      "frequency": {
+        "@type": "FrequencyGuard",
+        "kind": "UNLIMITED",
+        "n": null
+      },
+      "optional": true,
+      "raw_clause": "you may copy its text",
+      "source": "card",
+      "trigger": {
+        "@type": "OnHit",
+        "atk_type": null,
+        "name_contains": [],
+        "on_any": false,
+        "order": null,
+        "text_contains": [],
+        "who": "SELF"
+      }
+    }
+  ],
   "f2a6fa1ed1cb46a49f1fa65e19190a4c": [],
   "f42eb6454c7e41b089ba563fdd333ab5": [
     {
@@ -18156,6 +18484,7 @@
       "actions": [
         {
           "@type": "AddText",
+          "atk_type": null,
           "effects": [
             {
               "@type": "Effect",
@@ -18206,7 +18535,9 @@
           "name_contains": [
             "Snap",
             "Finger Lock"
-          ]
+          ],
+          "order": null,
+          "scope": "SELF"
         }
       ],
       "condition": {

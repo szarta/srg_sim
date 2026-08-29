@@ -1759,6 +1759,545 @@ mod on_discard_move_tests {
     }
 }
 
+/// One-shot runtime copy (`CopyRuntimeText`): "copy its text" of the card just
+/// stopped/hit/discarded snapshots the referent's effects onto the copier for the turn.
+#[cfg(test)]
+mod copy_runtime_text_tests {
+    use super::*;
+    use crate::ir::CopyReferent;
+
+    struct FirstLegal;
+    impl Decider for FirstLegal {
+        fn decide(&mut self, _p: &str, _v: &str, l: &[Value], _s: &mut GameState) -> Option<Value> {
+            l.first().cloned()
+        }
+        fn policy_name(&self, _v: &str) -> String {
+            "first-legal".to_owned()
+        }
+    }
+
+    /// A card whose only effect is a Static `FinishBonus` `+delta` to Strike, plus (when
+    /// `with_copy`) a `CopyText` clause that must be dropped from any snapshot of it.
+    fn bonus_card(uuid: &str, delta: i64, with_copy: bool) -> Value {
+        let mut effects = vec![json!({
+            "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+            "actions": [{"@type": "FinishBonus", "skill": "Strike", "delta": delta}],
+            "duration": "WHILE_IN_PLAY",
+            "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+            "raw_clause": "t", "source": "card", "optional": false
+        })];
+        if with_copy {
+            effects.push(json!({
+                "@type": "Effect", "trigger": {"@type": "Static"}, "condition": {"@type": "Always"},
+                "actions": [{"@type": "CopyText", "who": "SELF", "zone": "IN_PLAY",
+                    "copy_tags": false, "selector": {"@type": "CardFilter", "number": null,
+                    "atk_type": null, "play_order": null, "tag": null, "name": null, "raw": null,
+                    "name_contains": [], "text_contains": []}}],
+                "duration": "WHILE_IN_PLAY",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "t", "source": "card", "optional": false
+            }));
+        }
+        json!({
+            "atk_type": "Strike", "db_uuid": uuid, "name": uuid, "number": 1, "play_order": "Lead",
+            "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": effects
+        })
+    }
+
+    fn engine() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let filler: Vec<Value> = (0..6)
+            .map(|i| bonus_card(&format!("f{i}"), 0, false))
+            .collect();
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Global", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-e"), "name": "e"}, "cards": filler.clone(),
+            }))
+            .unwrap()
+        };
+        Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(FirstLegal),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn strike_finish_bonuses(e: &Engine, key: &str) -> i64 {
+        e.standing_effects(key)
+            .iter()
+            .flat_map(|eff| &eff.actions)
+            .filter_map(|a| match a {
+                Action::FinishBonus {
+                    skill: Skill::Strike,
+                    delta,
+                } => Some(*delta),
+                _ => None,
+            })
+            .sum()
+    }
+
+    #[test]
+    fn copies_the_discarded_card_onto_the_copier() {
+        let mut e = engine();
+        // The referent card sits in B's discard (just shed); A copies it.
+        e.state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .discard
+            .push(serde_json::from_value(bonus_card("ref", 3, false)).unwrap());
+        e.hand_discard_uuids = vec!["ref".to_owned()];
+        assert_eq!(strike_finish_bonuses(&e, "A"), 0, "no copy yet");
+        e.act_copy_runtime_text(CopyReferent::Discarded, "A")
+            .unwrap();
+        assert_eq!(
+            strike_finish_bonuses(&e, "A"),
+            3,
+            "A gains the discarded card's +3 Strike finish bonus"
+        );
+    }
+
+    #[test]
+    fn copy_clauses_are_not_themselves_copied() {
+        // The referent carries a CopyText clause; only its FinishBonus is snapshotted.
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .discard
+            .push(serde_json::from_value(bonus_card("ref", 2, true)).unwrap());
+        e.hand_discard_uuids = vec!["ref".to_owned()];
+        e.act_copy_runtime_text(CopyReferent::Discarded, "A")
+            .unwrap();
+        let copied = &e.state.players["A"].copied_runtime_effects;
+        assert_eq!(
+            copied.len(),
+            1,
+            "the CopyText clause is dropped, only the bonus copied"
+        );
+    }
+
+    #[test]
+    fn hit_referent_copies_the_hit_card() {
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .in_play
+            .push(serde_json::from_value(bonus_card("hit", 4, false)).unwrap());
+        e.hit_card = Some("hit".to_owned());
+        e.act_copy_runtime_text(CopyReferent::Hit, "A").unwrap();
+        assert_eq!(
+            strike_finish_bonuses(&e, "A"),
+            4,
+            "A copies the hit card's bonus"
+        );
+    }
+
+    #[test]
+    fn snapshot_is_swept_at_end_of_turn() {
+        let mut e = engine();
+        e.state
+            .players
+            .get_mut("B")
+            .unwrap()
+            .discard
+            .push(serde_json::from_value(bonus_card("ref", 3, false)).unwrap());
+        e.hand_discard_uuids = vec!["ref".to_owned()];
+        e.act_copy_runtime_text(CopyReferent::Discarded, "A")
+            .unwrap();
+        assert_eq!(strike_finish_bonuses(&e, "A"), 3);
+        e.sweep_end_of_turn();
+        assert_eq!(
+            strike_finish_bonuses(&e, "A"),
+            0,
+            "the copy lasts only the turn"
+        );
+    }
+
+    #[test]
+    fn unresolved_referent_is_a_noop() {
+        let mut e = engine();
+        e.act_copy_runtime_text(CopyReferent::Stopped, "A").unwrap();
+        assert!(e.state.players["A"].copied_runtime_effects.is_empty());
+    }
+}
+
+/// The Hard Counter's discard-pile tier. `WhileInDiscard` `OnLoseTurn` effects arm a
+/// NEXT-roll `ModifyRoll`: +1 whenever you lose a turn roll, and +1 more once you have
+/// lost two-plus in a row. This reproduces the printed bonus (your turn roll is +1 when
+/// the target won the last roll, +2 when they won the last two) turn-by-turn.
+#[cfg(test)]
+mod hard_counter_discard_tests {
+    use super::*;
+
+    struct FirstLegal;
+    impl Decider for FirstLegal {
+        fn decide(
+            &mut self,
+            _p: &str,
+            _v: &str,
+            legal: &[Value],
+            _s: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+        fn policy_name(&self, _v: &str) -> String {
+            "first-legal".to_owned()
+        }
+    }
+
+    /// A card in A's discard carrying the two override effects (OnLoseTurn, WhileInDiscard):
+    /// unconditional +1 and a LostTurnRollsInARow{SELF,>=2}-gated +1, both `ModifyRoll{NEXT}`.
+    fn hard_counter_card() -> Value {
+        let arm = |cond: Value| {
+            json!({
+                "@type": "Effect",
+                "trigger": {"@type": "OnLoseTurn", "by": null},
+                "condition": cond,
+                "actions": [{"@type": "ModifyRoll", "who": "SELF", "delta": 1, "when": "NEXT",
+                    "per": null, "per_who": "OPP", "per_zone": "IN_PLAY"}],
+                "duration": "WHILE_IN_DISCARD",
+                "frequency": {"@type": "FrequencyGuard", "kind": "UNLIMITED", "n": null},
+                "raw_clause": "test", "source": "card", "optional": false
+            })
+        };
+        json!({
+            "atk_type": "Submission", "db_uuid": "HC", "name": "The Hard Counter", "number": 30,
+            "play_order": "Finish", "raw_text": "", "tags": [], "finish_bonuses": {},
+            "effects": [
+                arm(json!({"@type": "Always"})),
+                arm(json!({"@type": "LostTurnRollsInARow", "who": "SELF", "at_least": 2})),
+            ]
+        })
+    }
+
+    fn engine_with_hc_in_discard() -> Engine {
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let filler = |u: &str| {
+            json!({
+                "atk_type": "Strike", "db_uuid": u, "name": u, "number": 1, "play_order": "Lead",
+                "raw_text": "", "tags": [], "finish_bonuses": {}, "effects": []
+            })
+        };
+        let cards: Vec<Value> = (0..6).map(|i| filler(&format!("c{i}"))).collect();
+        let deck = |u: &str| -> Deck {
+            serde_json::from_value(json!({
+                "competitor": {"db_uuid": u, "name": u, "division": "Global", "stats": stats},
+                "entrance": {"db_uuid": format!("{u}-e"), "name": "e"}, "cards": cards.clone(),
+            }))
+            .unwrap()
+        };
+        let mut e = Engine::new(
+            deck("A"),
+            deck("B"),
+            Box::new(FirstLegal),
+            1,
+            String::new(),
+            "sim".into(),
+        );
+        e.state
+            .players
+            .get_mut("A")
+            .unwrap()
+            .discard
+            .push(serde_json::from_value(hard_counter_card()).unwrap());
+        e
+    }
+
+    fn next_mod(e: &Engine) -> i64 {
+        e.state.players["A"].pending_roll_mods.next_turn
+    }
+
+    #[test]
+    fn losing_one_arms_plus_one() {
+        let mut e = engine_with_hc_in_discard();
+        e.state.players.get_mut("A").unwrap().turn_losses_in_a_row = 1;
+        e.run_on_lose_turn("A").unwrap();
+        assert_eq!(
+            next_mod(&e),
+            1,
+            "one loss -> next roll +1 (opp won the last roll)"
+        );
+    }
+
+    #[test]
+    fn losing_two_in_a_row_arms_plus_two() {
+        let mut e = engine_with_hc_in_discard();
+        e.state.players.get_mut("A").unwrap().turn_losses_in_a_row = 2;
+        e.run_on_lose_turn("A").unwrap();
+        assert_eq!(
+            next_mod(&e),
+            2,
+            "two in a row -> +2 instead (the tier's marginal +1)"
+        );
+    }
+
+    #[test]
+    fn not_in_discard_arms_nothing() {
+        // Same card in HAND (not discard) does not fire the WhileInDiscard trigger.
+        let mut e = engine_with_hc_in_discard();
+        let hc = e.state.players.get_mut("A").unwrap().discard.pop().unwrap();
+        e.state.players.get_mut("A").unwrap().hand.push(hc);
+        e.state.players.get_mut("A").unwrap().turn_losses_in_a_row = 2;
+        e.run_on_lose_turn("A").unwrap();
+        assert_eq!(next_mod(&e), 0, "the tier is a discard-pile effect only");
+    }
+}
+
+/// Bad Boy Ref: `OnHandDiscardMove{OPP}` → `AddFromDiscard{match_hand_discard_move}`.
+/// "When your opponent discards a single card of a particular move type from their hand
+/// due to card effects, you may add one card of the same move type from your discard pile
+/// to your hand." Activates ONLY when the discard is unique per move type.
+#[cfg(test)]
+mod bad_boy_ref_tests {
+    use super::*;
+
+    struct FirstLegal;
+    impl Decider for FirstLegal {
+        fn decide(
+            &mut self,
+            _point: &str,
+            _viewer: &str,
+            legal: &[Value],
+            _state: &mut GameState,
+        ) -> Option<Value> {
+            legal.first().cloned()
+        }
+        fn policy_name(&self, _viewer: &str) -> String {
+            "first-legal".to_owned()
+        }
+    }
+
+    fn move_card(uuid: &str, atk: &str) -> Value {
+        json!({
+            "atk_type": atk, "db_uuid": uuid, "effects": [], "finish_bonuses": {},
+            "name": uuid, "number": 1, "play_order": "Lead", "raw_text": "", "tags": []
+        })
+    }
+
+    /// A has Bad Boy Ref (its gimmick fires when B sheds from hand); optional is off so
+    /// the recur always resolves — these tests exercise the activation gating and the
+    /// same-move-type recur, not the "you may" prompt.
+    fn bad_boy_engine() -> Engine {
+        let gimmick = json!({
+            "@type": "Effect",
+            "trigger": {"@type": "OnHandDiscardMove", "who": "OPP"},
+            "condition": {"@type": "Always"},
+            "actions": [{"@type": "AddFromDiscard",
+                "filter": {"@type": "CardFilter", "number": null, "atk_type": null,
+                    "play_order": null, "tag": null, "name": null, "raw": null,
+                    "name_contains": [], "text_contains": []},
+                "match_hand_discard_move": true}],
+            "duration": "INSTANT",
+            "frequency": {"@type": "FrequencyGuard", "kind": "ONCE_PER_TURN", "n": null},
+            "raw_clause": "test", "source": "gimmick", "optional": false
+        });
+        let stats =
+            json!({"Power":5,"Agility":5,"Technique":5,"Submission":5,"Grapple":5,"Strike":5});
+        let cards: Vec<Value> = (0..10)
+            .map(|i| move_card(&format!("c{i}"), "Strike"))
+            .collect();
+        let deck_a: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "BBR", "name": "Bad Boy Ref", "division": "Global",
+                "stats": stats, "effects": [gimmick]},
+            "entrance": {"db_uuid": "BBR-ent", "name": "ent"}, "cards": cards.clone(),
+        }))
+        .expect("deck A");
+        let deck_b: Deck = serde_json::from_value(json!({
+            "competitor": {"db_uuid": "B", "name": "B", "division": "Global", "stats": stats},
+            "entrance": {"db_uuid": "B-ent", "name": "ent"}, "cards": cards,
+        }))
+        .expect("deck B");
+        Engine::new(
+            deck_a,
+            deck_b,
+            Box::new(FirstLegal),
+            1,
+            String::new(),
+            "sim".into(),
+        )
+    }
+
+    fn set_zone(engine: &mut Engine, key: &str, zone: &str, cards: &[Value]) {
+        let parsed: Vec<Card> = cards
+            .iter()
+            .map(|c| serde_json::from_value(c.clone()).unwrap())
+            .collect();
+        let p = engine.state.players.get_mut(key).unwrap();
+        match zone {
+            "hand" => p.hand = parsed,
+            _ => p.discard = parsed,
+        }
+    }
+
+    fn hand_uuids(engine: &Engine, key: &str) -> Vec<String> {
+        engine.state.players[key]
+            .hand
+            .iter()
+            .map(|c| c.db_uuid.clone())
+            .collect()
+    }
+
+    fn any() -> CardFilter {
+        CardFilter::default()
+    }
+
+    /// B (via A's effect) sheds one Grapple -> A recurs a Grapple, not the Strike, from
+    /// its discard.
+    #[test]
+    fn single_move_type_discard_recurs_same_type() {
+        let mut e = bad_boy_engine();
+        set_zone(&mut e, "B", "hand", &[move_card("b-grap", "Grapple")]);
+        set_zone(&mut e, "A", "hand", &[]);
+        set_zone(
+            &mut e,
+            "A",
+            "discard",
+            &[
+                move_card("a-grap", "Grapple"),
+                move_card("a-strike", "Strike"),
+            ],
+        );
+        e.act_discard(&any(), 1, Who::Opp, false, None, Who::SelfSide, false, "A")
+            .unwrap();
+        assert_eq!(
+            hand_uuids(&e, "A"),
+            vec!["a-grap".to_owned()],
+            "recurs the SAME move type (Grapple), leaving the Strike"
+        );
+    }
+
+    /// Two of the SAME move type discarded -> no activation ("a single card of a
+    /// particular move type").
+    #[test]
+    fn two_of_one_type_does_not_activate() {
+        let mut e = bad_boy_engine();
+        set_zone(
+            &mut e,
+            "B",
+            "hand",
+            &[move_card("b-g1", "Grapple"), move_card("b-g2", "Grapple")],
+        );
+        set_zone(&mut e, "A", "hand", &[]);
+        set_zone(&mut e, "A", "discard", &[move_card("a-grap", "Grapple")]);
+        e.act_discard(&any(), 2, Who::Opp, false, None, Who::SelfSide, false, "A")
+            .unwrap();
+        assert!(
+            hand_uuids(&e, "A").is_empty(),
+            "two Grapples in one event -> no recur"
+        );
+    }
+
+    /// One of EACH type (all distinct) activates; the owner may recur any present type.
+    #[test]
+    fn distinct_types_activate_and_recur_a_present_type() {
+        let mut e = bad_boy_engine();
+        set_zone(
+            &mut e,
+            "B",
+            "hand",
+            &[
+                move_card("b-grap", "Grapple"),
+                move_card("b-strike", "Strike"),
+            ],
+        );
+        set_zone(&mut e, "A", "hand", &[]);
+        // A's discard has only a Strike among the two shed types -> the recur is a Strike.
+        set_zone(
+            &mut e,
+            "A",
+            "discard",
+            &[
+                move_card("a-strike", "Strike"),
+                move_card("a-sub", "Submission"),
+            ],
+        );
+        e.act_discard(&any(), 2, Who::Opp, false, None, Who::SelfSide, false, "A")
+            .unwrap();
+        assert_eq!(
+            hand_uuids(&e, "A"),
+            vec!["a-strike".to_owned()],
+            "recurs a card of a type just shed (Strike), not the unrelated Submission"
+        );
+    }
+
+    /// A discarded non-move card (no move type) does not activate the gimmick.
+    #[test]
+    fn non_move_discard_does_not_activate() {
+        let mut e = bad_boy_engine();
+        set_zone(&mut e, "B", "hand", &[move_card("b-none", "None")]);
+        set_zone(&mut e, "A", "hand", &[]);
+        set_zone(&mut e, "A", "discard", &[move_card("a-grap", "Grapple")]);
+        e.act_discard(&any(), 1, Who::Opp, false, None, Who::SelfSide, false, "A")
+            .unwrap();
+        assert!(
+            hand_uuids(&e, "A").is_empty(),
+            "a non-move discard has no move type to match"
+        );
+    }
+
+    /// The who=OPP gimmick ignores the OWNER's own hand discard.
+    #[test]
+    fn own_hand_discard_does_not_fire() {
+        let mut e = bad_boy_engine();
+        set_zone(&mut e, "A", "hand", &[move_card("a-hand-grap", "Grapple")]);
+        set_zone(
+            &mut e,
+            "A",
+            "discard",
+            &[move_card("a-disc-grap", "Grapple")],
+        );
+        e.act_discard(
+            &any(),
+            1,
+            Who::SelfSide,
+            false,
+            None,
+            Who::SelfSide,
+            false,
+            "A",
+        )
+        .unwrap();
+        assert!(
+            !hand_uuids(&e, "A").contains(&"a-disc-grap".to_owned()),
+            "who=OPP does not fire on your own discard"
+        );
+    }
+
+    /// Once per turn: a second qualifying discard the same turn does not recur again.
+    #[test]
+    fn once_per_turn_caps_the_recur() {
+        let mut e = bad_boy_engine();
+        set_zone(&mut e, "B", "hand", &[move_card("b-g1", "Grapple")]);
+        set_zone(&mut e, "A", "hand", &[]);
+        set_zone(
+            &mut e,
+            "A",
+            "discard",
+            &[move_card("a-g1", "Grapple"), move_card("a-g2", "Grapple")],
+        );
+        e.act_discard(&any(), 1, Who::Opp, false, None, Who::SelfSide, false, "A")
+            .unwrap();
+        set_zone(&mut e, "B", "hand", &[move_card("b-g2", "Grapple")]);
+        e.act_discard(&any(), 1, Who::Opp, false, None, Who::SelfSide, false, "A")
+            .unwrap();
+        assert_eq!(
+            hand_uuids(&e, "A").len(),
+            1,
+            "the once-per-turn cap stops the second recur"
+        );
+    }
+}
+
 #[cfg(test)]
 mod timed_buff_tests {
     use super::*;

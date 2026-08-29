@@ -54,6 +54,10 @@
         },
         "filter": {
           "$ref": "#/$defs/CardFilter"
+        },
+        "match_hand_discard_move": {
+          "description": "Bind the recur to the move types just discarded from a hand (Bad Boy Ref's 'one card of the same move type'): with this set, add one discard-pile card whose atk type is among the distinct move types the triggering OnHandDiscardMove event exposed, instead of filter. Owner picks which. Absent-when-false. schema v163",
+          "type": "boolean"
         }
       },
       "required": [
@@ -1352,6 +1356,9 @@
                 "$ref": "#/$defs/CopyText"
               },
               {
+                "$ref": "#/$defs/CopyRuntimeText"
+              },
+              {
                 "$ref": "#/$defs/BlankStoppedText"
               },
               {
@@ -1711,6 +1718,32 @@
         "who",
         "zone",
         "copy_tags"
+      ],
+      "type": "object"
+    },
+    "CopyReferent": {
+      "description": "Which runtime card a CopyRuntimeText snapshots — the card the resolving event was about, resolved live from engine state. schema v164",
+      "enum": [
+        "STOPPED",
+        "HIT",
+        "DISCARDED"
+      ],
+      "type": "string"
+    },
+    "CopyRuntimeText": {
+      "additionalProperties": false,
+      "description": "One-shot snapshot copy of the specific runtime card the resolving event was about ('copy its text' of the card just stopped/hit/discarded), not a static selector. Clones the referent's non-copy effects onto the copier's turn-scoped copied_runtime_effects buffer (folded into standing_effects, swept at end of turn). Distinct from the standing, selector-driven CopyText. schema v164",
+      "properties": {
+        "@type": {
+          "const": "CopyRuntimeText"
+        },
+        "referent": {
+          "$ref": "#/$defs/CopyReferent"
+        }
+      },
+      "required": [
+        "@type",
+        "referent"
       ],
       "type": "object"
     },
@@ -2360,6 +2393,9 @@
                 "$ref": "#/$defs/CopyText"
               },
               {
+                "$ref": "#/$defs/CopyRuntimeText"
+              },
+              {
                 "$ref": "#/$defs/BlankStoppedText"
               },
               {
@@ -2740,6 +2776,9 @@
             },
             {
               "$ref": "#/$defs/OnDiscardMove"
+            },
+            {
+              "$ref": "#/$defs/OnHandDiscardMove"
             },
             {
               "$ref": "#/$defs/Static"
@@ -3572,6 +3611,9 @@
           "$ref": "#/$defs/CopyText"
         },
         {
+          "$ref": "#/$defs/CopyRuntimeText"
+        },
+        {
           "$ref": "#/$defs/BlankStoppedText"
         },
         {
@@ -3780,6 +3822,9 @@
         },
         {
           "$ref": "#/$defs/OnDiscardMove"
+        },
+        {
+          "$ref": "#/$defs/OnHandDiscardMove"
         },
         {
           "$ref": "#/$defs/OnBump"
@@ -4589,6 +4634,22 @@
       "properties": {
         "@type": {
           "const": "OnDiscardMove"
+        },
+        "who": {
+          "$ref": "#/$defs/Who"
+        }
+      },
+      "required": [
+        "@type",
+        "who"
+      ],
+      "type": "object"
+    },
+    "OnHandDiscardMove": {
+      "additionalProperties": false,
+      "properties": {
+        "@type": {
+          "const": "OnHandDiscardMove"
         },
         "who": {
           "$ref": "#/$defs/Who"
@@ -5440,6 +5501,9 @@
                 "$ref": "#/$defs/CopyText"
               },
               {
+                "$ref": "#/$defs/CopyRuntimeText"
+              },
+              {
                 "$ref": "#/$defs/BlankStoppedText"
               },
               {
@@ -6091,6 +6155,9 @@
               },
               {
                 "$ref": "#/$defs/CopyText"
+              },
+              {
+                "$ref": "#/$defs/CopyRuntimeText"
               },
               {
                 "$ref": "#/$defs/BlankStoppedText"
@@ -7279,5 +7346,5 @@
   "$ref": "#/$defs/IRNode",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "effect_ir",
-  "version": 162
+  "version": 164
 }

@@ -439,6 +439,19 @@ pub struct Engine {
     /// `ShuffleSelfIntoDeck` / `PlaySelf` know their referent ("add IT to your hand",
     /// where IT is the flipped/discarded card). Transient, never serialized.
     self_card: Option<String>,
+    /// Move types (Strike/Grapple/Submission) of the cards moved by the most recent
+    /// `discard_from_hand` call — captured so an effect-driven hand discard can compute
+    /// its `OnHandDiscardMove` eligible set. Transient, never serialized.
+    hand_discard_atks: Vec<crate::ir::AtkType>,
+    /// `db_uuid`s of the cards moved by the most recent `discard_from_hand` call — the
+    /// referent for a `CopyRuntimeText{Discarded}` ("copy its text" of a just-discarded
+    /// card). Transient, never serialized.
+    hand_discard_uuids: Vec<String>,
+    /// The distinct move types the CURRENT `OnHandDiscardMove` event exposes (set while
+    /// `run_on_hand_discard_move` fires, cleared after) — read by an `AddFromDiscard`
+    /// with `match_hand_discard_move` to build its recur filter. Transient, never
+    /// serialized.
+    pending_hand_discard_moves: Vec<crate::ir::AtkType>,
     /// `EffectSource` of the effect whose actions are currently being applied, set
     /// around `apply_actions`. `act_flip` reads it to record whether a flip was caused
     /// by a Gimmick effect ("flipped for your Gimmick"). Transient, never serialized.
@@ -525,6 +538,7 @@ impl Engine {
                         turn_losses_in_a_row: 0,
                         breakout_bonus_eot: 0,
                         flipped_this_turn: Vec::new(),
+                        copied_runtime_effects: Vec::new(),
                         hit_this_turn: Vec::new(),
                         hit_last_turn: Vec::new(),
                         flags: serde_json::Map::new(),
@@ -544,6 +558,9 @@ impl Engine {
             stopped_card: None,
             hit_card: None,
             self_card: None,
+            hand_discard_atks: Vec::new(),
+            hand_discard_uuids: Vec::new(),
+            pending_hand_discard_moves: Vec::new(),
             firing_source: EffectSource::Card,
             firing_card_name: None,
             pending_roll_boost: 0,
@@ -795,6 +812,14 @@ impl Engine {
         // (its `CopyText` clause), so a copied Static finish/roll bonus is read here
         // like any other standing effect (DESIGN.md §3, `Action::CopyText`).
         out.extend(self.state.copied_effects(key));
+        // One-shot runtime copy ("copy its text" of the stopped/hit/discarded card):
+        // snapshotted effects live on the copier until end of turn.
+        out.extend(
+            self.state.players[key]
+                .copied_runtime_effects
+                .iter()
+                .cloned(),
+        );
         out
     }
 
@@ -825,6 +850,14 @@ impl Engine {
         out.extend(
             self.injected_standing_effects(key)
                 .into_iter()
+                .map(|e| (None, e)),
+        );
+        // One-shot runtime copy ("copy its text"): no source card, like copied/injected.
+        out.extend(
+            self.state.players[key]
+                .copied_runtime_effects
+                .iter()
+                .cloned()
                 .map(|e| (None, e)),
         );
         out
@@ -1013,6 +1046,11 @@ impl Engine {
             dropped.push(card);
         }
         let n = dropped.len();
+        // Record the move types + ids just shed, for an effect-driven caller's
+        // `OnHandDiscardMove` eligible-set computation and a `CopyRuntimeText{Discarded}`
+        // referent (read only right after the call).
+        self.hand_discard_atks = dropped.iter().map(|c| c.atk_type).collect();
+        self.hand_discard_uuids = dropped.iter().map(|c| c.db_uuid.clone()).collect();
         if !dropped.is_empty() {
             let cards = dropped.iter().map(|c| c.db_uuid.clone()).collect();
             self.state
@@ -1361,7 +1399,21 @@ impl Engine {
             } => self.act_shuffle_into_deck(
                 selector, *source, *who, *all, *then_draw, *then_bury, key,
             )?,
-            Action::AddFromDiscard { filter } => self.act_add_from_discard(filter, key)?,
+            Action::AddFromDiscard {
+                filter,
+                match_hand_discard_move,
+            } => {
+                // With `match_hand_discard_move`, recur one card of a move type just
+                // discarded from a hand (the OnHandDiscardMove event's distinct types)
+                // instead of the static `filter`; the owner picks which type/card.
+                if *match_hand_discard_move {
+                    let f = self.hand_discard_move_filter();
+                    self.act_add_from_discard(&f, key)?
+                } else {
+                    self.act_add_from_discard(filter, key)?
+                }
+            }
+            Action::CopyRuntimeText { referent } => self.act_copy_runtime_text(*referent, key)?,
             Action::AddFlippedToHand {
                 count,
                 filter,
@@ -1851,6 +1903,119 @@ impl Engine {
                 }
             }
         }
+        Ok(())
+    }
+
+    /// Fire standing `OnHandDiscardMove` gimmicks after `discarder` shed cards from hand
+    /// due to a card effect (Bad Boy Ref). `eligible` is the event's distinct move types
+    /// (empty when a type repeated — no activation); it is published so a same-turn
+    /// `AddFromDiscard{match_hand_discard_move}` recurs a matching card, then cleared.
+    /// Scans BOTH players so a `who=OPP` variant ("your opponent discards …") fires,
+    /// mirroring `run_on_discard_move`.
+    fn fire_hand_discard_move(&mut self, discarder: &str, eligible: Vec<AtkType>) -> Eng<()> {
+        if eligible.is_empty() {
+            return Ok(());
+        }
+        self.pending_hand_discard_moves = eligible;
+        let opp = self.state.opponent_of(discarder);
+        let mut result = Ok(());
+        'outer: for owner in [discarder.to_owned(), opp] {
+            let effects = self.standing_effects(&owner);
+            for eff in &effects {
+                let Trigger::OnHandDiscardMove { who } = &eff.trigger else {
+                    continue;
+                };
+                // SELF fires when the owner is the discarder; OPP when the discarder is
+                // the owner's opponent ("your opponent discards …").
+                if (*who == Who::SelfSide) == (owner.as_str() == discarder) {
+                    if let Err(e) = self.fire_if_ready(eff, &owner, None) {
+                        result = Err(e);
+                        break 'outer;
+                    }
+                }
+            }
+        }
+        self.pending_hand_discard_moves.clear();
+        result
+    }
+
+    /// The recur filter for an `AddFromDiscard{match_hand_discard_move}`: an OR over the
+    /// current `OnHandDiscardMove` event's distinct move types, so the owner may add one
+    /// discard-pile card of any type just shed. Empty pending set = matches nothing.
+    fn hand_discard_move_filter(&self) -> CardFilter {
+        CardFilter {
+            any_of: self
+                .pending_hand_discard_moves
+                .iter()
+                .map(|t| CardFilter {
+                    atk_type: Some(*t),
+                    ..Default::default()
+                })
+                .collect(),
+            ..Default::default()
+        }
+    }
+
+    /// The full card for `uuid` wherever it currently sits (either player's in-play,
+    /// discard, hand, or flipped-this-turn) — the referent lookup for a one-shot
+    /// `CopyRuntimeText` ("copy its text" of the card just stopped/hit/discarded).
+    fn find_card_anywhere(&self, uuid: &str) -> Option<Card> {
+        self.state
+            .players
+            .values()
+            .flat_map(|p| {
+                p.in_play
+                    .iter()
+                    .chain(&p.discard)
+                    .chain(&p.hand)
+                    .chain(&p.flipped_this_turn)
+            })
+            .find(|c| c.db_uuid == uuid)
+            .cloned()
+    }
+
+    /// One-shot "copy its text": snapshot the referent card's copyable effects onto `key`
+    /// for the rest of the turn. The clone is re-homed (read in the copier's standing
+    /// context, so `SELF` is the copier); copy clauses and `Unsupported` are dropped to
+    /// bound copy→copy recursion. A no-op when the referent is unresolved or has no
+    /// copyable text.
+    fn act_copy_runtime_text(&mut self, referent: crate::ir::CopyReferent, key: &str) -> Eng<()> {
+        use crate::ir::CopyReferent;
+        let uuid = match referent {
+            CopyReferent::Stopped => self.stopped_card.clone(),
+            CopyReferent::Hit => self.hit_card.clone(),
+            CopyReferent::Discarded => self.hand_discard_uuids.first().cloned(),
+        };
+        let Some(uuid) = uuid else { return Ok(()) };
+        let Some(card) = self.find_card_anywhere(&uuid) else {
+            return Ok(());
+        };
+        let copied: Vec<Effect> = card
+            .effects
+            .iter()
+            .filter(|e| {
+                !e.actions.iter().any(|a| {
+                    matches!(
+                        a,
+                        Action::CopyText { .. }
+                            | Action::CopyRuntimeText { .. }
+                            | Action::Unsupported { .. }
+                    )
+                })
+            })
+            .cloned()
+            .collect();
+        if copied.is_empty() {
+            return Ok(());
+        }
+        let n = copied.len();
+        self.state
+            .players
+            .get_mut(key)
+            .unwrap()
+            .copied_runtime_effects
+            .extend(copied);
+        self.log_effect(key, "CopyRuntimeText", None, json!({"card": uuid, "n": n}));
         Ok(())
     }
 
@@ -2507,7 +2672,9 @@ impl Engine {
                 Some(selector),
             )?;
             if n > 0 {
+                let eligible = eligible_move_types(&self.hand_discard_atks);
                 self.run_on_bury(&target, true, true)?; // effect-caused hand discard (Tommy)
+                self.fire_hand_discard_move(&target, eligible)?; // Bad Boy Ref
             }
         }
         Ok(())
@@ -3136,7 +3303,9 @@ impl Engine {
         }
         let opp_n = (n + offset).max(0);
         if opp_n > 0 && self.discard_from_hand(&opp, &opp, opp_n as usize, false, None)? > 0 {
+            let eligible = eligible_move_types(&self.hand_discard_atks);
             self.run_on_bury(&opp, true, true)?;
+            self.fire_hand_discard_move(&opp, eligible)?; // Bad Boy Ref
         }
         Ok(())
     }
@@ -3175,6 +3344,11 @@ impl Engine {
             dropped.push(card);
         }
         let n = dropped.len();
+        // Record the move types + ids just shed, for an effect-driven caller's
+        // `OnHandDiscardMove` eligible-set computation and a `CopyRuntimeText{Discarded}`
+        // referent (read only right after the call).
+        self.hand_discard_atks = dropped.iter().map(|c| c.atk_type).collect();
+        self.hand_discard_uuids = dropped.iter().map(|c| c.db_uuid.clone()).collect();
         if !dropped.is_empty() {
             let cards = dropped.iter().map(|c| c.db_uuid.clone()).collect();
             self.state
@@ -4534,6 +4708,8 @@ impl Engine {
             player
                 .timed_buffs
                 .retain(|b| b.until != Duration::UntilEndOfTurn);
+            // One-shot "copy its text" snapshots live only for the turn.
+            player.copied_runtime_effects.clear();
         }
         self.state.blanked_text.clear();
     }
@@ -7950,6 +8126,7 @@ fn trigger_name(trigger: &Trigger) -> &'static str {
         Trigger::OnDraw { .. } => "OnDraw",
         Trigger::OnFlip { .. } => "OnFlip",
         Trigger::OnDiscardMove { .. } => "OnDiscardMove",
+        Trigger::OnHandDiscardMove { .. } => "OnHandDiscardMove",
         Trigger::OnCrowdMeterIncrease => "OnCrowdMeterIncrease",
         Trigger::OnTurnStart => "OnTurnStart",
         Trigger::Static => "Static",
@@ -8105,6 +8282,23 @@ fn atk_type_matches_skill(atk: AtkType, skill: Skill) -> bool {
     )
 }
 
+/// The distinct move types a hand-discard event exposes to `OnHandDiscardMove` (Bad Boy
+/// Ref). The event activates ONLY when it is unique per move type — each of
+/// Strike/Grapple/Submission appears at most once among the shed cards. Any move type
+/// discarded twice or more returns empty (no activation, per "a single card of a
+/// particular move type"). Non-move cards (`AtkType::None`) are ignored.
+fn eligible_move_types(atks: &[AtkType]) -> Vec<AtkType> {
+    let mut present = Vec::new();
+    for want in [AtkType::Strike, AtkType::Grapple, AtkType::Submission] {
+        match atks.iter().filter(|a| **a == want).count() {
+            0 => {}
+            1 => present.push(want),
+            _ => return Vec::new(),
+        }
+    }
+    present
+}
+
 /// Value a scried card by how much the actor wants it kept/drawn: a Finish (a
 /// win condition) over a stop (defense) over a plain card. Mirrors the
 /// discard-recycle read so scry keeps the deck's best on top / in hand.
@@ -8199,6 +8393,7 @@ fn action_name(action: &Action) -> &'static str {
         Action::BlankTextPermanent { .. } => "BlankTextPermanent",
         Action::Unblank { .. } => "Unblank",
         Action::CopyText { .. } => "CopyText",
+        Action::CopyRuntimeText { .. } => "CopyRuntimeText",
         Action::BlankStoppedText => "BlankStoppedText",
         Action::BlankHitCard => "BlankHitCard",
         Action::FinishIfStop => "FinishIfStop",

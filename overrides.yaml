@@ -12651,3 +12651,184 @@ d9691f0c50c94186abfffb99b59d4211:
   raw_clause: When this card is in your discard pile and you roll the same skill as an opponent, you may shuffle it into your deck.
   source: card
   optional: true
+
+# The Hard Counter (#30 Finish Submission, db_uuid 36d8...). Card text:
+#   "+3 to Submission
+#    Your opponent's Strike skill is -2.
+#    When this card is in your discard pile:
+#    When your target won the last turn roll, your turn roll is +1;
+#    if your target won the last 2 turn rolls, your turn roll is +2 instead."
+# The +3 Submission and the opponent's-Strike -2 debuff parse via grammar; the tiered
+# discard-pile turn-roll bonus is bespoke. The engine has no standing "flat CURRENT-roll
+# bonus read from the discard pile", so it is modeled with the wired discard-dispatch
+# OnLoseTurn trigger arming a NEXT-roll mod: "your target/opponent won the last N turn
+# rolls" (evaluated at the start of your roll) == "you lost the last N in a row" the
+# instant before. On each turn-roll loss from discard, arm your next roll +1; arm +1 MORE
+# once you have lost >=2 in a row -> +2 total ("instead", as an additive tier). Byte-equal
+# to the printed bonus turn-by-turn; the only boundary case (the card entering discard
+# mid-losing-streak) never arises — you win the turn roll to play a Finish, so the streak
+# is 0 at entry. See LostTurnRollsInARow{SELF} (opponent's win streak == your loss streak).
+36d87301e65c45118a06e5f3e12faa8a:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': FinishBonus
+    skill: Submission
+    delta: 3
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: +3 to Submission
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': BuffSkill
+    skill: Strike
+    delta: -2
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: Your opponent's Strike skill is -2.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnLoseTurn, by: null}
+  condition: {'@type': Always}
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+  duration: WHILE_IN_DISCARD
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: 'When this card is in your discard pile: when your target won the last turn roll, your turn roll is +1 (armed as next-roll +1 on each turn-roll loss from discard).'
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnLoseTurn, by: null}
+  condition: {'@type': LostTurnRollsInARow, who: SELF, at_least: 2}
+  actions:
+  - '@type': ModifyRoll
+    who: SELF
+    delta: 1
+    when: NEXT
+  duration: WHILE_IN_DISCARD
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: 'if your target won the last 2 turn rolls, your turn roll is +2 instead (the marginal +1 lifting the loss-armed +1 to +2 once you have lost >=2 in a row).'
+  source: card
+  optional: false
+
+# Bad Boy Ref (SingleCompetitorCard gimmick, db_uuid c432...). Card text:
+#   "Once per turn: When your opponent discards a single card of a particular move type
+#    from their hand due to card effects, you may add one card of the same move type from
+#    your discard pile to your hand."
+# Modeled with the v163 OnHandDiscardMove trigger + AddFromDiscard{match_hand_discard_move}.
+# The trigger fires only when the opponent's effect-driven hand discard is UNIQUE per move
+# type (per the SRG ruling: as soon as two cards of the SAME move type are discarded in the
+# event, it does not activate; 1 Grapple + 1 Strike + 1 Submission activates and you choose
+# one of those types). The recur then adds one same-move-type card from your discard, the
+# owner picking which type/card. ONCE_PER_TURN, optional ("you may").
+c43266612ad54b14893e2adaa14f286b:
+- '@type': Effect
+  trigger:
+    '@type': OnHandDiscardMove
+    who: OPP
+  condition: {'@type': Always}
+  actions:
+  - '@type': AddFromDiscard
+    filter:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    match_hand_discard_move: true
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: ONCE_PER_TURN, n: null}
+  raw_clause: 'Once per turn: When your opponent discards a single card of a particular move type from their hand due to card effects, you may add one card of the same move type from your discard pile to your hand.'
+  source: gimmick
+  optional: true
+
+# Stockholm Syndrome (Bad Boy Ref finish #30, Submission, db_uuid f076...). Card text:
+#   "Your opponent's Technique is -2.
+#    Your opponent's Agility is -2.
+#    Your opponent randomly discards 1 card from their hand; you may copy its text."
+# The two debuffs and the random hand-discard are modeled (the discard is one linked
+# clause with the copy, joined by ';', so the whole card is authored here rather than
+# leaving the random discard unmodeled — and the discard fires Bad Boy Ref's own gimmick
+# when this finish is played). "you may copy its text" is the runtime-bound one-shot copy
+# of the specific just-discarded card, modeled with the v164 CopyRuntimeText{DISCARDED}
+# action (the discard effect above runs first, binding the referent): it snapshots that
+# card's text onto you for the rest of the turn. Optional ("you may").
+f076870e86ba49a483986f30ca74295e:
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': BuffSkill
+    skill: Technique
+    delta: -2
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: Your opponent's Technique is -2.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': Static}
+  condition: {'@type': Always}
+  actions:
+  - '@type': BuffSkill
+    skill: Agility
+    delta: -2
+    who: OPP
+    duration: WHILE_IN_PLAY
+  duration: WHILE_IN_PLAY
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: Your opponent's Agility is -2.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF, order: null, atk_type: null, name_contains: [], text_contains: [], on_any: false}
+  condition: {'@type': Always}
+  actions:
+  - '@type': Discard
+    selector:
+      '@type': CardFilter
+      number: null
+      atk_type: null
+      play_order: null
+      tag: null
+      name: null
+      raw: null
+    count: 1
+    who: OPP
+    random: true
+    per: null
+    per_who: SELF
+    choose: false
+    all: false
+    from_crowd: false
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: Your opponent randomly discards 1 card from their hand.
+  source: card
+  optional: false
+- '@type': Effect
+  trigger: {'@type': OnHit, who: SELF, order: null, atk_type: null, name_contains: [], text_contains: [], on_any: false}
+  condition: {'@type': Always}
+  actions:
+  - '@type': CopyRuntimeText
+    referent: DISCARDED
+  duration: INSTANT
+  frequency: {'@type': FrequencyGuard, kind: UNLIMITED, n: null}
+  raw_clause: you may copy its text
+  source: card
+  optional: true

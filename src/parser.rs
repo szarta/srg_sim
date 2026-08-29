@@ -17,10 +17,10 @@
 use crate::cards::{Card, Competitor, Deck, EntranceCard, DECK_SIZE};
 use crate::ir::{
     Action, AtkType, BuryFrom, CardFilter, ChoiceOption, ChoiceOptionTag, Comparator, Condition,
-    CountZone, DeckEnd, Dest, Direction, DqScope, Duration, Effect, EffectSource, EffectTag,
-    Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder, RequireKind,
-    RerollCost, RerollCostKind, RerollCostTag, RevealSource, RollWhen, ScryRest, SearchSource,
-    ShuffleSource, Skill, TextScope, Trigger, Vs, Who,
+    CopyReferent, CountZone, DeckEnd, Dest, Direction, DqScope, Duration, Effect, EffectSource,
+    EffectTag, Frequency, FrequencyGuard, FrequencyGuardTag, LoseKind, MatchType, PlayOrder,
+    RequireKind, RerollCost, RerollCostKind, RerollCostTag, RevealSource, RollWhen, ScryRest,
+    SearchSource, ShuffleSource, Skill, TextScope, Trigger, Vs, Who,
 };
 use regex::{Captures, Regex};
 use std::collections::BTreeMap;
@@ -2576,6 +2576,31 @@ fn gate_condition(text: &str) -> Option<Condition> {
                 items: vec![reroll(Who::SelfSide), reroll(Who::Opp)],
             },
         });
+    }
+    // Turn-roll win/loss STREAK gate — "your opponent/target won the last [N] turn rolls",
+    // "you lost the last [N] turn rolls" (and the won/lost twins). A run of consecutive
+    // roll-offs the SUBJECT lost, read from `Player.turn_losses_in_a_row`. In a 2-player
+    // match "opponent won the last N" == "you lost the last N in a row", so both map to
+    // `LostTurnRollsInARow{SelfSide}`; "you won"/"opponent lost" flip to `Opp`. N absent = 1.
+    static WON_LAST_ROLLS: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(?i)^(you|your opponent|your target) (won|lost) the last (?:(\d+) )?turn rolls?$",
+        )
+        .unwrap()
+    });
+    if let Some(c) = WON_LAST_ROLLS.captures(t) {
+        let n = c
+            .get(3)
+            .map_or(1, |m| m.as_str().parse::<i64>().unwrap_or(1));
+        let self_side = c[1].eq_ignore_ascii_case("you");
+        let won = c[2].eq_ignore_ascii_case("won");
+        // The loser is the subject on "lost", the other side on "won".
+        let who = if self_side == won {
+            Who::Opp
+        } else {
+            Who::SelfSide
+        };
+        return Some(Condition::LostTurnRollsInARow { who, at_least: n });
     }
     match t.to_lowercase().as_str() {
         "you bumped on the last turn roll" | "you bumped on the previous turn roll" => {
@@ -5479,14 +5504,17 @@ fn build_turn_roll_rules() -> Vec<(Regex, Builder)> {
                 Duration::Instant,
             ))
         }),
-        rule(&format!(r"Your opponent's {SK} is -(\d+)"), |c| {
-            Some(eff(
-                Trigger::Static,
-                vec![buff(skill(&c[1]), -num(c, 2), Who::Opp)],
-                Condition::Always,
-                Duration::WhileInPlay,
-            ))
-        }),
+        rule(
+            &format!(r"Your opponent's {SK}(?: skill)? is -(\d+)"),
+            |c| {
+                Some(eff(
+                    Trigger::Static,
+                    vec![buff(skill(&c[1]), -num(c, 2), Who::Opp)],
+                    Condition::Always,
+                    Duration::WhileInPlay,
+                ))
+            },
+        ),
         // Absolute maximum-handsize SET ("... maximum handsize is N", no sign) — the cap
         // becomes N (vs the signed delta rules just below). Standing (WhileInPlay) only:
         // the "until the end of the turn" timed variant needs the timed-buff path (not this
@@ -6127,7 +6155,10 @@ fn build_flip_trigger_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![
                         flip(num(c, 1), Who::SelfSide),
-                        Action::AddFromDiscard { filter },
+                        Action::AddFromDiscard {
+                            filter,
+                            match_hand_discard_move: false,
+                        },
                     ],
                     Condition::Always,
                     Duration::Instant,
@@ -7086,6 +7117,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![Action::AddFromDiscard {
                         filter: recur_filter(&c[2])?,
+                        match_hand_discard_move: false,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -7103,6 +7135,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![Action::AddFromDiscard {
                         filter: recur_filter(&c[1])?,
+                        match_hand_discard_move: false,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -7119,6 +7152,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                     on_hit(),
                     vec![Action::AddFromDiscard {
                         filter: recur_filter(&c[1])?,
+                        match_hand_discard_move: false,
                     }],
                     Condition::Always,
                     Duration::Instant,
@@ -7297,6 +7331,7 @@ fn build_recur_rules() -> Vec<(Regex, Builder)> {
                     Trigger::OnPlay,
                     vec![Action::AddFromDiscard {
                         filter: recur_filter(&c[3])?,
+                        match_hand_discard_move: false,
                     }],
                     has_in_play_desc(&c[1])?,
                     Duration::Instant,
@@ -8821,6 +8856,30 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
         rule(&format!(r"When you hit (?:an? )?{ATK}[,:] (.+)"), |c| {
             trigger_body(on_hit_type(atk(&c[1])), &c[2])
         }),
+        // "When your opponent hits a <ATK>, copy its text, then blank it [until the end of
+        // the turn]" -> OnHit{Opp, atk} + CopyRuntimeText{Hit} + BlankHitCard. A full-clause
+        // rule (placed before the generic opponent-hit splitter) so the runtime-copy
+        // referent stays bound to the hit trigger — a bare "copy its text" body would
+        // mis-key the flip/reveal copy cards, whose referent is the flipped/revealed card.
+        // schema v164
+        rule(
+            &format!(
+                r"(?i)When your opponent hits (?:an? )?{ATK}, copy its text, then blank it(?: until the end of the turn)?"
+            ),
+            |c| {
+                Some(eff(
+                    on_hit_type_who(atk(&c[1]), Who::Opp),
+                    vec![
+                        Action::CopyRuntimeText {
+                            referent: CopyReferent::Hit,
+                        },
+                        Action::BlankHitCard,
+                    ],
+                    Condition::Always,
+                    Duration::Instant,
+                ))
+            },
+        ),
         // Opponent-side twin (Stung: "When your opponent hits a Strike, you may put 1
         // Strike from your discard pile on top of your deck") -> OnHit{Opp, atk} + body.
         rule(
@@ -8925,9 +8984,9 @@ fn build_stop_trigger_rules() -> Vec<(Regex, Builder)> {
         // The "If stopped, … via disqualification" family above matches its whole clause
         // first; this catches the other triggers' bodies.
         rule(
-            r"[Yy]ou lose the match via (Pinfall|Disqualifications?)",
+            r"(?i)[Yy]ou lose the match via (Pinfall|Disqualifications?)",
             |c| {
-                let kind = if c[1].starts_with("Pinfall") {
+                let kind = if c[1].eq_ignore_ascii_case("pinfall") {
                     LoseKind::Pinfall
                 } else {
                     LoseKind::Disqualification

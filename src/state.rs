@@ -274,6 +274,13 @@ pub struct PlayerState {
     /// start. Transient turn state, never serialized (re-derives on replay).
     #[serde(skip)]
     pub flipped_this_turn: Vec<Card>,
+    /// Effects snapshotted onto this player by a one-shot [`Action::CopyRuntimeText`]
+    /// ("copy its text" of the card just stopped/hit/discarded). Folded into
+    /// `standing_effects` like `copied_effects`, so a copied finish/roll bonus or standing
+    /// effect projects onto the copier; cleared at end of turn (`sweep_end_of_turn`).
+    /// Transient turn state, never serialized (re-derives on replay).
+    #[serde(skip)]
+    pub copied_runtime_effects: Vec<Effect>,
     /// Cards this player HIT (landed) this turn / the PREVIOUS turn, by full card so a
     /// type/order/name filter can query them. Read by [`Condition::HitCard`] ("if you
     /// hit a Grapple last turn" / "if you hit a card with 'X' in the name this turn").

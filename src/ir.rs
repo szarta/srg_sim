@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 /// `schemas/v1/effect_ir.schema.json` (the cross-language contract). Bumped in
 /// lockstep with any IR node/field/enum-value change (CLAUDE.md §3 review gate);
 /// `tests/schema_version.rs` guards that this equals the JSON schema's value.
-pub const SCHEMA_VERSION: i64 = 162;
+pub const SCHEMA_VERSION: i64 = 164;
 
 /// `skip_serializing_if` predicate for additive `bool` fields that default to `false`
 /// (e.g. `BuffSkill.per_excludes_self`): absent-when-false keeps pre-field fixtures
@@ -265,6 +265,20 @@ pub enum RequireKind {
     Cards,
     Leads,
     FollowUps,
+}
+
+/// Which runtime card a [`Action::CopyRuntimeText`] snapshots — the specific card the
+/// resolving event was about, resolved live from engine state (not a static selector).
+/// `Stopped` = the card just stopped (`stopped_card`); `Hit` = the card just hit
+/// (`hit_card`); `Discarded` = the card just shed from a hand by an effect (the last
+/// hand-discard). "copy its text" / "copy that card's text" for the flip/reveal referents
+/// is not yet wired. schema v164
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum CopyReferent {
+    Stopped,
+    Hit,
+    Discarded,
 }
 
 /// Which zone(s) a [`Action::Search`] tutors from — `Deck` (the default, historical
@@ -814,6 +828,20 @@ pub enum Trigger {
     /// read as the owner of the PILE, from the effect owner's POV (OPP = "your
     /// opponent['s] discard pile"). Override-only.
     OnDiscardMove {
+        who: Who,
+    },
+    /// Fires when `who` discards move-type card(s) from their HAND due to a card effect
+    /// (the "discard N cards" effects and the coupled trade — NOT the end-of-turn
+    /// hand-size shed, which is a game rule, not a card effect). Distinct from
+    /// [`Trigger::OnDiscardMove`], which watches cards LEAVING the discard pile. Bad Boy
+    /// Ref: "when your opponent discards a single card of a particular move type … you
+    /// may add one card of the same move type from your discard pile to your hand". The
+    /// event fires ONLY when the discard is unique per move type — every move type among
+    /// the discarded cards appears at most once (any type discarded twice = no
+    /// activation) — and exposes those distinct move types to a same-turn
+    /// [`Action::AddFromDiscard`] with `match_hand_discard_move`. `who` is read from the
+    /// effect owner's POV (OPP = "your opponent discards"). Override-only. schema v163
+    OnHandDiscardMove {
         who: Who,
     },
     /// Fires whenever the (shared) Crowd Meter goes UP — "when the Crowd Meter
@@ -1398,6 +1426,15 @@ pub enum Action {
     },
     AddFromDiscard {
         filter: CardFilter,
+        /// Bind the recur to the move types just discarded from a hand: instead of
+        /// `filter`, add one card from your discard whose atk type is among the distinct
+        /// move types the triggering [`Trigger::OnHandDiscardMove`] exposed (Bad Boy Ref's
+        /// "one card of the same move type"). The owner picks which — a multi-type event
+        /// (1 Strike + 1 Grapple) offers either. Meaningful only inside an
+        /// `OnHandDiscardMove` effect; a no-op with no pending move types. Absent-when-false
+        /// so pre-v163 fixtures round-trip byte-identically. schema v163
+        #[serde(default, skip_serializing_if = "is_false")]
+        match_hand_discard_move: bool,
     },
     RecurToDeckTop {
         selector: CardFilter,
@@ -1915,6 +1952,17 @@ pub enum Action {
         who: Who,
         zone: CountZone,
         copy_tags: bool,
+    },
+    /// A ONE-SHOT snapshot copy of the specific runtime card the resolving event was
+    /// about ([`CopyReferent`]) — "copy its text" / "copy that card's text" of the card
+    /// just stopped / hit / discarded, not a static selector. Distinct from the standing,
+    /// selector-driven [`Action::CopyText`]: this clones the referent card's non-copy
+    /// effects into the copier's turn-scoped `copied_runtime_effects` buffer (folded into
+    /// `standing_effects`, swept at end of turn), so a copied finish/roll bonus or standing
+    /// effect projects onto the copier for the rest of the turn. Stockholm Syndrome (Bad
+    /// Boy Ref) copies the just-discarded card. schema v164
+    CopyRuntimeText {
+        referent: CopyReferent,
     },
     /// "The stopped card has blank text until the end of the turn" — blank the text of
     /// the specific card instance that was JUST stopped, for the rest of the turn (21
@@ -2647,6 +2695,10 @@ pub enum IrNode {
     OnDiscardMove {
         who: Who,
     },
+    /// Mirror of [`Trigger::OnHandDiscardMove`]. schema v163
+    OnHandDiscardMove {
+        who: Who,
+    },
     /// Mirror of [`Trigger::OnCrowdMeterIncrease`]. schema v131
     OnCrowdMeterIncrease,
     /// Fires once at the START of every turn, before the roll-off (see the `Trigger`
@@ -3154,6 +3206,15 @@ pub enum IrNode {
     },
     AddFromDiscard {
         filter: CardFilter,
+        /// Bind the recur to the move types just discarded from a hand: instead of
+        /// `filter`, add one card from your discard whose atk type is among the distinct
+        /// move types the triggering [`Trigger::OnHandDiscardMove`] exposed (Bad Boy Ref's
+        /// "one card of the same move type"). The owner picks which — a multi-type event
+        /// (1 Strike + 1 Grapple) offers either. Meaningful only inside an
+        /// `OnHandDiscardMove` effect; a no-op with no pending move types. Absent-when-false
+        /// so pre-v163 fixtures round-trip byte-identically. schema v163
+        #[serde(default, skip_serializing_if = "is_false")]
+        match_hand_discard_move: bool,
     },
     RecurToDeckTop {
         selector: CardFilter,
@@ -3671,6 +3732,17 @@ pub enum IrNode {
         who: Who,
         zone: CountZone,
         copy_tags: bool,
+    },
+    /// A ONE-SHOT snapshot copy of the specific runtime card the resolving event was
+    /// about ([`CopyReferent`]) — "copy its text" / "copy that card's text" of the card
+    /// just stopped / hit / discarded, not a static selector. Distinct from the standing,
+    /// selector-driven [`Action::CopyText`]: this clones the referent card's non-copy
+    /// effects into the copier's turn-scoped `copied_runtime_effects` buffer (folded into
+    /// `standing_effects`, swept at end of turn), so a copied finish/roll bonus or standing
+    /// effect projects onto the copier for the rest of the turn. Stockholm Syndrome (Bad
+    /// Boy Ref) copies the just-discarded card. schema v164
+    CopyRuntimeText {
+        referent: CopyReferent,
     },
     /// "The stopped card has blank text until the end of the turn" — blank the text of
     /// the specific card instance that was JUST stopped, for the rest of the turn (21
